@@ -66,6 +66,7 @@ export default function App() {
   // boot -> (enroll | lock) -> main
   const [screen, setScreen] = useState("boot");
   const [bootError, setBootError] = useState("");
+  const [bootOffline, setBootOffline] = useState(false); // backend do PC desligado (sem resposta)
   const [lockPhase, setLockPhase] = useState("ready"); // ready | scanning | verified | failed
   const [lockMessage, setLockMessage] = useState("");
   const [name, setName] = useState("");
@@ -200,6 +201,8 @@ export default function App() {
   const pendingRequestRef = useRef(pendingRequest);
   pendingRequestRef.current = pendingRequest;
   const wakeHandledRef = useRef(false);
+  // Verificação rápida ao abrir: rosto reconhecido entra sozinho na central (sem clicar em ENTRAR)
+  const quickEnterRef = useRef(false);
   const recheckTimerRef = useRef(null);
   const openWaterPanelRef = useRef(() => {});
   const { openSearchIndicator } = useSearchIndicator();
@@ -674,14 +677,19 @@ export default function App() {
         setLockPhase("ready");
         setLockMessage("");
         setScreen("lock");
-        if (wake && !wakeHandledRef.current) {
+        // Verificação rápida: ao abrir (pelo site ou no PC), já lê o rosto uma vez.
+        // É você: entra direto na sua central. Não é: a tela oferece criar um perfil novo.
+        // No app do celular a câmera seria a do PC, então lá continua pelo PIN.
+        if (!wakeHandledRef.current && !IS_JARVIS_APP) {
           wakeHandledRef.current = true;
-          verify({ trigger: "wake" });
+          quickEnterRef.current = true;
+          verify({ trigger: wake ? "wake" : "button" });
         }
       }
       else setScreen("enroll");
     } catch (err) {
       setBootError(err.message);
+      setBootOffline(!err.status);
       setScreen("boot");
     }
   }, [verify, loadPinStatus]);
@@ -691,6 +699,27 @@ export default function App() {
     bootedRef.current = true;
     boot();
   }, [boot]);
+
+  // Backend do PC desligado: confere a cada 2 s e, quando ele responder, continua sozinho (sem piscar a tela)
+  useEffect(() => {
+    if (screen !== "boot" || !bootError || !bootOffline) return undefined;
+    let alive = true;
+    const t = setInterval(async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/health`, { cache: "no-store" });
+        if (res.ok && alive) {
+          clearInterval(t);
+          boot();
+        }
+      } catch {
+        // ainda desligado
+      }
+    }, 2000);
+    return () => {
+      alive = false;
+      clearInterval(t);
+    };
+  }, [screen, bootError, bootOffline, boot]);
 
   // ---- Cadastro da foto de perfil ----
   const saveProfile = async (nameValue, photo) => {
@@ -847,7 +876,7 @@ export default function App() {
   useEffect(() => {
     if (screen !== "lock" || lockPhase !== "verified") return undefined;
     const pending = pendingRequestRef.current;
-    if (!appPrefs.clap_auto_enter && !pending) return undefined;
+    if (!appPrefs.clap_auto_enter && !pending && !quickEnterRef.current) return undefined;
     setAutoEntering(true);
     const t = setTimeout(() => {
       setPendingRequest(null);
@@ -1762,7 +1791,17 @@ export default function App() {
         <p className="ls-subbrand" style={{ textAlign: "center" }}>CENTRAL PESSOAL · v{APP_VERSION}</p>
 
         <div className="ls-status-box">
-          {bootError ? (
+          {bootError && bootOffline && BACKEND_ON_THIS_PC && !IS_JARVIS_APP ? (
+            <>
+              {/* Central aberta pelo site com o JARVIS do PC desligado: espera ele ligar e entra sozinha */}
+              <div className="ls-title is-amber">O JARVIS DO SEU PC ESTÁ DESLIGADO</div>
+              <p className="ls-hint" style={{ margin: "8px auto", maxWidth: "34rem" }}>
+                Ligue o JARVIS no computador (<b>Iniciar-JARVIS.bat</b>). Pode deixar esta página aberta: assim que ele responder, eu faço a verificação rápida do seu rosto e abro a sua central.
+              </p>
+              <p className="ls-hint ls-boot-wait" style={{ marginTop: "10px" }}>Aguardando o JARVIS responder…</p>
+              <button type="button" onClick={boot} className="ls-chip" style={{ marginTop: "12px", alignSelf: "center" }}>TENTAR NOVAMENTE</button>
+            </>
+          ) : bootError ? (
             <>
               <div className="ls-title is-failed">FALHA NA CONEXÃO COM O BACKEND</div>
               <p className="max-w-md text-sm text-red-300" style={{ margin: "8px 0" }}>{bootError}</p>

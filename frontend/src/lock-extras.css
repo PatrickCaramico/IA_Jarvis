@@ -11,6 +11,11 @@
 
 /* ---------- Botões secundários da tela de bloqueio ---------- */
 .ls-secondary { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+/* Rosto não reconhecido na verificação rápida: convite para criar perfil (âmbar = "olhe aqui") */
+.ls-new-hint { color: #fcd34d; max-width: 34rem; margin: 6px auto 10px; text-align: center; }
+.ls-boot-wait { animation: ls-boot-wait 1.6s ease-in-out infinite; }
+@keyframes ls-boot-wait { 50% { opacity: 0.45; } }
+@media (prefers-reduced-motion: reduce) { .ls-boot-wait { animation: none; } }
 .ls-chip {
   display: inline-flex; align-items: center; gap: 8px;
   padding: 7px 16px; border-radius: 999px;

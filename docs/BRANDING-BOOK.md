@@ -351,6 +351,13 @@ que o celular abre seguem o mesmo desenho.
 Planta Funda, para a câmera ler bem), "JARVIS NO CELULAR" em Orbitron, "Escaneie para baixar o app" e
 "ANDROID · v4.5 · mesma Wi-Fi". Só aparece no modo rede. Nunca leva a chave de acesso.
 
+**Verificação rápida ao abrir.** Ao abrir a central (pelo site ou no PC), o JARVIS já lê o rosto uma vez,
+sem clicar. É alguém com perfil: entra sozinho na central dessa pessoa em cerca de 1,5 s. Não reconheceu:
+a frase âmbar "Não reconheci você. Se é a sua primeira vez aqui, crie o seu perfil..." aparece sobre os
+chips, e "＋ NOVA PESSOA" vira "＋ SOU NOVO: CRIAR PERFIL" em destaque, ao lado de "USAR PIN". Com o JARVIS do
+PC desligado, a central do site mostra, em âmbar, "O JARVIS DO SEU PC ESTÁ DESLIGADO", pede para ligar o
+`Iniciar-JARVIS.bat` e pisca "Aguardando o JARVIS responder…"; quando ele responde, segue sozinha.
+
 **Pessoas.** "＋ NOVA PESSOA" é um chip como "MODO VISITANTE". O cadastro é um cartão de vidro sobre a
 planta: rótulo "NOVA PESSOA · ETAPA 1 / 3", título em Orbitron, barra de progresso ciano, foto num círculo
 de 220 px com borda ciano (a câmera aparece espelhada, como um espelho). Botão principal ciano cheio;

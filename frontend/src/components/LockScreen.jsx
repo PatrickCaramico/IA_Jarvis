@@ -145,7 +145,15 @@ export default function LockScreen({
     <button type="button" onClick={handleBtnClick} className="ls-chip is-strong ls-phone-pin">🔑 ENTRAR COM PIN</button>
   ) : null;
 
+  // Verificação rápida falhou: pode ser alguém novo. O convite para criar perfil fica em destaque.
+  const unknownFace = Boolean(onNewProfile) && phase === "failed" && !phoneApp;
   const secondaryActions = (
+    <>
+    {unknownFace && (
+      <p className="ls-hint ls-new-hint" role="status">
+        Não reconheci você. Se é a sua primeira vez aqui, crie o seu perfil; se já tem perfil, tente de novo com o rosto de frente para a câmera ou use o PIN.
+      </p>
+    )}
     <div className="ls-secondary">
       {showPinButton && !phoneApp && (
         <button type="button" className={`ls-chip ${failCount >= 2 ? "is-strong" : ""}`} onClick={onUsePin}>
@@ -156,12 +164,13 @@ export default function LockScreen({
         <button type="button" className="ls-chip" onClick={onGuest}>👤 MODO VISITANTE</button>
       )}
       {onNewProfile && (phase === "ready" || phase === "failed") && (
-        <button type="button" className="ls-chip" onClick={(e) => { e.stopPropagation(); onNewProfile(); }}
+        <button type="button" className={`ls-chip ${unknownFace ? "is-strong" : ""}`} onClick={(e) => { e.stopPropagation(); onNewProfile(); }}
           title="Criar o perfil de uma pessoa nova neste PC">
-          ＋ NOVA PESSOA
+          {unknownFace ? "＋ SOU NOVO: CRIAR PERFIL" : "＋ NOVA PESSOA"}
         </button>
       )}
     </div>
+    </>
   );
 
   // ---------------------------------------------------------------- Sentinela
