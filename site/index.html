@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>JARVIS · Assistente pessoal</title>
+  <meta name="description" content="JARVIS: assistente pessoal em português que roda no seu PC com Windows. Voz, rosto, agenda, Modo Torcedor e app Android. Seus dados ficam no seu computador." />
+  <meta name="theme-color" content="#0D3170" />
+  <link rel="icon" type="image/svg+xml" href="assets/brand/avatar.svg" />
+  <link rel="apple-touch-icon" href="assets/brand/avatar-512.png" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="JARVIS · Assistente pessoal" />
+  <meta property="og:description" content="Assistente pessoal em português, no seu PC. Voz, rosto, agenda, Modo Torcedor e app Android." />
+  <meta property="og:image" content="assets/brand/share-1200x630.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    /* Cores e fontes do Branding Book (docs/BRANDING-BOOK.md, seções 4 e 5) */
+    :root {
+      --core: #22d3ee;
+      --deep: #0e7490;
+      --amber: #f59e0b;
+      --green: #10b981;
+      --red: #ef4444;
+      --text: #e6f7fb;
+      --muted: #a9c6d6;
+      --panel: rgba(4, 22, 58, 0.82);
+      --panel-solid: #04163a;
+      --line: rgba(200, 235, 255, 0.28);
+      --plan-light: #2362b8;
+      --plan: #174a95;
+      --plan-deep: #0d3170;
+      --font-title: "Orbitron", "Rajdhani", sans-serif;
+      --font-ui: "Rajdhani", "Inter", sans-serif;
+      --font-text: "Inter", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --radius: 14px;
+      --gutter: clamp(16px, 4vw, 40px);
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--text);
+      font: 400 17px/1.6 var(--font-text);
+      background-color: var(--plan-deep);
+      background-image:
+        linear-gradient(rgba(255, 255, 255, 0.075) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.075) 1px, transparent 1px),
+        linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        radial-gradient(ellipse at 50% 0%, var(--plan-light) 0%, var(--plan) 45%, var(--plan-deep) 100%);
+      background-size: 100px 100px, 100px 100px, 20px 20px, 20px 20px, 100% 100%;
+      background-attachment: fixed;
+      overflow-x: hidden;
+    }
+    a { color: var(--core); }
+    a:focus-visible, button:focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; border-radius: 6px; }
+    img { max-width: 100%; display: block; }
+    .wrap { width: min(1120px, 100%); margin: 0 auto; padding: 0 var(--gutter); }
+    .skip { position: absolute; left: -999px; }
+    .skip:focus { left: 16px; top: 16px; z-index: 50; background: var(--panel-solid); padding: 8px 12px; }
+
+    /* Cabeçalho */
+    header.top {
+      position: sticky; top: 0; z-index: 20;
+      background: rgba(13, 49, 112, 0.82);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--line);
+    }
+    .top .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 64px; flex-wrap: wrap; }
+    .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text); }
+    .brand img { width: 34px; height: 34px; }
+    .brand b { font: 700 18px var(--font-title); letter-spacing: 4px; }
+    .brand small { font: 600 12px var(--font-ui); letter-spacing: 2px; color: var(--muted); }
+    nav.links { display: flex; gap: 6px 18px; flex-wrap: wrap; }
+    nav.links a { color: var(--text); text-decoration: none; font: 600 14px var(--font-ui); letter-spacing: 1.5px; text-transform: uppercase; opacity: 0.85; }
+    nav.links a:hover { opacity: 1; color: var(--core); }
+
+    /* Abertura */
+    .hero { padding: clamp(48px, 9vw, 110px) 0 clamp(40px, 7vw, 80px); text-align: center; }
+    .orb { width: 200px; height: 200px; margin: 0 auto 28px; position: relative; }
+    .orb svg { width: 100%; height: 100%; overflow: visible; }
+    .orb .spin { transform-origin: 100px 100px; animation: spin 40s linear infinite; }
+    .orb .spin-rev { transform-origin: 100px 100px; animation: spin 26s linear infinite reverse; }
+    .orb .core { animation: breathe 4s ease-in-out infinite; transform-origin: 100px 100px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes breathe { 50% { transform: scale(1.08); opacity: 0.92; } }
+    .eyebrow { font: 700 13px var(--font-title); letter-spacing: 3px; color: var(--core); text-transform: uppercase; }
+    h1 { font: 900 clamp(44px, 10vw, 92px)/1 var(--font-title); letter-spacing: clamp(6px, 2vw, 18px); margin: 14px 0 18px; text-shadow: 0 0 30px rgba(34, 211, 238, 0.45); }
+    .lead { font-size: clamp(18px, 2.4vw, 22px); max-width: 680px; margin: 0 auto 30px; color: var(--text); }
+    .actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 10px;
+      padding: 13px 22px; border-radius: 10px;
+      font: 700 15px var(--font-ui); letter-spacing: 1.8px; text-transform: uppercase; text-decoration: none;
+      border: 1.5px solid var(--core); color: var(--text); background: transparent;
+      transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+    }
+    .btn:hover { box-shadow: 0 0 18px rgba(34, 211, 238, 0.45); }
+    .btn.primary { background: var(--core); color: #04163a; }
+    .btn svg { width: 18px; height: 18px; flex: none; }
+    .note { margin-top: 14px; font: 500 14px var(--font-ui); letter-spacing: 1px; color: var(--muted); }
+    .hero-shot { margin-top: clamp(36px, 6vw, 64px); }
+
+    /* Moldura de planta (cantos e régua), como na central */
+    .frame { position: relative; border: 1px solid var(--line); border-radius: var(--radius); padding: 10px; background: rgba(4, 22, 58, 0.35); }
+    .frame::before, .frame::after { content: ""; position: absolute; width: 22px; height: 22px; border: 2px solid var(--core); }
+    .frame::before { top: -2px; left: -2px; border-right: 0; border-bottom: 0; border-top-left-radius: 6px; }
+    .frame::after { bottom: -2px; right: -2px; border-left: 0; border-top: 0; border-bottom-right-radius: 6px; }
+    .frame img { border-radius: 8px; width: 100%; height: auto; }
+
+    /* Seções */
+    section { padding: clamp(48px, 8vw, 96px) 0; scroll-margin-top: 64px; }
+    h2 { font: 700 clamp(26px, 4.2vw, 38px)/1.15 var(--font-title); letter-spacing: 2px; margin: 10px 0 14px; }
+    .sub { color: var(--muted); max-width: 720px; margin: 0 0 32px; }
+    .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+    .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; }
+    .card h3 { font: 700 15px var(--font-title); letter-spacing: 1.5px; margin: 12px 0 8px; text-transform: uppercase; }
+    .card p { margin: 0; color: var(--muted); font-size: 16px; }
+    .icon { width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; border: 1.5px solid var(--core); color: var(--core); }
+    .icon svg { width: 22px; height: 22px; }
+    .icon.amber { border-color: var(--amber); color: var(--amber); }
+    .icon.green { border-color: var(--green); color: var(--green); }
+
+    .split { display: grid; gap: clamp(24px, 4vw, 48px); grid-template-columns: 1fr; align-items: center; }
+    @media (min-width: 860px) { .split { grid-template-columns: 1fr 1.25fr; } .split.rev > :first-child { order: 2; } }
+    .split ul { list-style: none; padding: 0; margin: 18px 0 0; display: grid; gap: 10px; }
+    .split li { padding-left: 26px; position: relative; }
+    .split li::before { content: ""; position: absolute; left: 0; top: 0.55em; width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--core); }
+    .split.fan li::before { border-color: var(--green); }
+    .quote { font: 600 18px var(--font-ui); letter-spacing: 0.5px; color: var(--text); border-left: 3px solid var(--core); padding: 4px 0 4px 14px; margin: 20px 0 0; }
+    .fan .quote { border-color: var(--green); }
+
+    .gallery { display: grid; gap: 16px; grid-template-columns: 1fr; }
+    @media (min-width: 760px) { .gallery { grid-template-columns: 1fr 1fr; } }
+    figure { margin: 0; }
+    figcaption { font: 600 14px var(--font-ui); letter-spacing: 1.2px; color: var(--muted); margin-top: 10px; text-transform: uppercase; }
+
+    /* Branding Book */
+    .bb { display: grid; gap: 24px; grid-template-columns: 1fr; align-items: center; }
+    @media (min-width: 860px) { .bb { grid-template-columns: 1.1fr 1fr; } }
+    .swatches { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 22px 0 26px; }
+    .sw { border-radius: 10px; padding: 46px 10px 10px; font: 600 12px var(--font-mono); color: #04163a; border: 1px solid var(--line); }
+    .sw span { display: block; font: 700 12px var(--font-ui); letter-spacing: 1px; text-transform: uppercase; }
+    .sw.dark { color: var(--text); }
+    .type { display: grid; gap: 6px; }
+    .type div { display: flex; justify-content: space-between; gap: 12px; border-bottom: 1px dashed var(--line); padding: 6px 0; flex-wrap: wrap; }
+    .type b { font-weight: 400; }
+
+    /* Instalação */
+    ol.steps { counter-reset: s; list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+    ol.steps li { min-width: 0; overflow-wrap: anywhere; counter-increment: s; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 18px 18px 64px; position: relative; }
+    ol.steps li::before { content: counter(s); position: absolute; left: 18px; top: 16px; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font: 700 15px var(--font-title); color: #04163a; background: var(--core); }
+    ol.steps b { font: 700 17px var(--font-ui); letter-spacing: 1px; }
+    ol.steps p { margin: 4px 0 0; color: var(--muted); }
+    pre { margin: 10px 0 0; background: #020b1f; border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; overflow-x: auto; font: 400 14px/1.6 var(--font-mono); color: var(--text); }
+    code { font-family: var(--font-mono); font-size: 0.92em; }
+    .warn { margin-top: 18px; border: 1px solid rgba(245, 158, 11, 0.6); background: rgba(245, 158, 11, 0.08); border-radius: 10px; padding: 12px 16px; color: var(--text); }
+    .warn b { color: var(--amber); }
+
+    /* Rodapé com carimbo de planta */
+    footer { border-top: 1px solid var(--line); padding: 36px 0 48px; }
+    footer .wrap { display: flex; gap: 24px; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; }
+    footer p { margin: 0; color: var(--muted); font-size: 15px; }
+    .stamp { border: 1px solid rgba(230, 245, 255, 0.55); font: 700 12px var(--font-title); letter-spacing: 2px; min-width: 260px; }
+    .stamp div { padding: 8px 12px; }
+    .stamp div + div { border-top: 1px solid rgba(230, 245, 255, 0.55); display: flex; justify-content: space-between; gap: 12px; font-size: 11px; color: var(--muted); }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .orb .spin, .orb .spin-rev, .orb .core { animation: none; }
+    }
+    @media (max-width: 600px) {
+      body { font-size: 16px; }
+      nav.links { gap: 4px 14px; }
+      .swatches { grid-template-columns: repeat(2, 1fr); }
+      .stamp { min-width: 0; width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#conteudo">Pular para o conteúdo</a>
+
+  <header class="top">
+    <div class="wrap">
+      <a class="brand" href="#" aria-label="JARVIS, início">
+        <img src="assets/brand/avatar.svg" alt="" width="34" height="34" />
+        <b>JARVIS</b><small>v{{VERSAO}}</small>
+      </a>
+      <nav class="links" aria-label="Seções">
+        <a href="#recursos">Recursos</a>
+        <a href="#torcedor">Torcedor</a>
+        <a href="#celular">Celular</a>
+        <a href="#marca">Marca</a>
+        <a href="#instalar">Instalar</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="conteudo">
+    <!-- Abertura -->
+    <div class="hero">
+      <div class="wrap">
+        <div class="orb" aria-hidden="true">
+          <svg viewBox="0 0 200 200">
+            <defs>
+              <radialGradient id="g-core" r="50%"><stop offset="0" stop-color="#fff" /><stop offset=".3" stop-color="#c9f6ff" /><stop offset=".7" stop-color="#4fdcff" /><stop offset="1" stop-color="#0a9fd6" /></radialGradient>
+              <radialGradient id="g-halo" r="50%"><stop offset="0" stop-color="rgba(79,220,255,.45)" /><stop offset="1" stop-color="rgba(79,220,255,0)" /></radialGradient>
+            </defs>
+            <circle cx="100" cy="100" r="98" fill="url(#g-halo)" />
+            <circle cx="100" cy="100" r="92" fill="none" stroke="rgba(200,235,255,.35)" stroke-dasharray="2 4" />
+            <g class="spin">
+              <circle cx="100" cy="100" r="80" fill="none" stroke="rgba(230,245,255,.75)" stroke-width="3" stroke-dasharray="1.5 7" />
+              <path d="M100 18 a82 82 0 0 1 70 40" fill="none" stroke="#22d3ee" stroke-width="3" stroke-linecap="round" />
+            </g>
+            <g class="spin-rev">
+              <circle cx="100" cy="100" r="62" fill="none" stroke="#22d3ee" stroke-width="7" stroke-dasharray="44 9" opacity=".9" />
+            </g>
+            <circle cx="100" cy="100" r="48" fill="#0d3170" stroke="rgba(79,220,255,.5)" />
+            <circle class="core" cx="100" cy="100" r="30" fill="url(#g-core)" style="filter:drop-shadow(0 0 14px rgba(79,220,255,.9))" />
+          </svg>
+        </div>
+        <div class="eyebrow">Assistente pessoal · em português · no seu PC</div>
+        <h1>JARVIS</h1>
+        <p class="lead">Um mordomo digital para o Windows: conversa por voz, reconhece o seu rosto, cuida da agenda, da água e do foco, e responde com a IA que você escolher. Seus dados ficam no seu computador.</p>
+        <div class="actions">
+          <a class="btn primary" href="https://github.com/PatrickCaramico/IA_Jarvis">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.53-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.71 1.26 3.37.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.8 1.19 1.83 1.19 3.09 0 4.42-2.7 5.39-5.26 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z"/></svg>
+            Ver no GitHub
+          </a>
+          <a class="btn" href="https://github.com/PatrickCaramico/IA_Jarvis/releases/latest">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 21h16"/></svg>
+            App Android
+          </a>
+          <a class="btn" href="branding-book.html">Branding Book</a>
+        </div>
+        <p class="note">Windows 10 ou 11 · Python + React · Gemini, OpenAI ou Claude</p>
+        <div class="hero-shot frame">
+          <img src="assets/img/planta-bloqueio-real.webp" width="1917" height="867" alt="Tela de bloqueio do JARVIS: relógio, o orbe azul no centro sobre a planta blueprint e o clima de São Paulo" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Recursos -->
+    <section id="recursos" aria-labelledby="t-rec">
+      <div class="wrap">
+        <div class="eyebrow">O que ele faz</div>
+        <h2 id="t-rec">Tudo numa central, a um "Jarvis" de distância</h2>
+        <p class="sub">A resposta vem primeiro, o detalhe depois. E antes de qualquer ação que não dá para desfazer, ele pergunta.</p>
+        <div class="grid">
+          <article class="card">
+            <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></div>
+            <h3>Voz em português</h3>
+            <p>Fale com ele pelo microfone ou digite. "Bom dia" abre o briefing com clima, agenda, e-mails, notícias e saúde, um card por assunto.</p>
+          </article>
+          <article class="card">
+            <div class="icon amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><circle cx="12" cy="11" r="3"/><path d="M7.5 17a5 5 0 0 1 9 0"/></svg></div>
+            <h3>Rosto e PIN</h3>
+            <p>A central só abre para você. Bloqueio real, Modo Sentinela, perfil de visitante e uma central separada para cada pessoa da casa.</p>
+          </article>
+          <article class="card">
+            <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4M8 14h3"/></svg></div>
+            <h3>Agenda e tarefas</h3>
+            <p>Google Agenda, lembretes, tarefas, notas, Pomodoro e uma memória de longo prazo: "lembre que…".</p>
+          </article>
+          <article class="card">
+            <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></div>
+            <h3>Meus Sites</h3>
+            <p>Cadastre seus sites com apelidos e diga "abre o correio". Ele também abre programas, controla o Spotify e o sistema.</p>
+          </article>
+          <article class="card">
+            <div class="icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11Z"/></svg></div>
+            <h3>Água e foco</h3>
+            <p>"Bebi 300 ml" registra a água; ele lembra no ritmo certo, sem insistir. Modo foco com sons e pausas.</p>
+          </article>
+          <article class="card">
+            <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2a4 4 0 0 1 4 4v1h1a3 3 0 0 1 0 6h-1v1a4 4 0 0 1-8 0v-1H7a3 3 0 0 1 0-6h1V6a4 4 0 0 1 4-4Z"/><path d="M10 9h4M10 13h4"/></svg></div>
+            <h3>A IA que você escolher</h3>
+            <p>Gemini, OpenAI ou Claude. Muitas respostas do dia a dia nem chamam a IA: saem na hora, direto do PC.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Modo Torcedor -->
+    <section id="torcedor" aria-labelledby="t-fan">
+      <div class="wrap split fan">
+        <div>
+          <div class="eyebrow" style="color:var(--green)">Modo Torcedor</div>
+          <h2 id="t-fan">Dia de jogo, sem IA e sem inventar nada</h2>
+          <p class="sub" style="margin-bottom:0">Agenda e placar de verdade, direto da ESPN e confirmados pelo Google Notícias.</p>
+          <ul>
+            <li>Liga sozinho no dia do jogo e sai no dia seguinte, mostrando o próximo.</li>
+            <li>Placar ao vivo, gols com autor e assistência, estatísticas e tabela, até na tela de bloqueio.</li>
+            <li>Escudos dos dois times, do lado certo, mesmo sem internet.</li>
+            <li>Comemora o gol em tela cheia e avisa o intervalo e o fim do jogo, uma vez só.</li>
+          </ul>
+          <p class="quote">"GOOOL DO PALMEIRAS! Maurício, aos 21 minutos."</p>
+        </div>
+        <div class="frame">
+          <img src="assets/img/jogo-real-4x0.webp" width="1895" height="852" loading="lazy" alt="Tela de bloqueio no Modo Torcedor: painel do jogo Palmeiras 4 x 0 Remo ao vivo, aos 43 minutos, com os gols e o orbe verde" />
+        </div>
+      </div>
+    </section>
+
+    <!-- Celular e pessoas -->
+    <section id="celular" aria-labelledby="t-cel">
+      <div class="wrap">
+        <div class="eyebrow">No celular e para a casa toda</div>
+        <h2 id="t-cel">O JARVIS do seu PC, no seu bolso</h2>
+        <p class="sub">O app Android conversa com o JARVIS que roda no seu computador, pela Wi-Fi de casa: avisos, microfone nativo e o mesmo briefing. Escaneie o QR da Sentinela e entre com o PIN.</p>
+        <div class="gallery">
+          <figure>
+            <div class="frame"><img src="assets/img/sentinela-celular.png" width="1900" height="860" loading="lazy" alt="Modo Sentinela com o QR 'JARVIS no celular' no canto inferior esquerdo e o orbe azul no centro" /></div>
+            <figcaption>QR na Sentinela · baixe e pareie pelo PIN</figcaption>
+          </figure>
+          <figure>
+            <div class="frame"><img src="assets/img/nova-pessoa.png" width="1900" height="860" loading="lazy" alt="Cadastro de nova pessoa: nome, foto do rosto e o aviso de que os dados ficam só neste computador" /></div>
+            <figcaption>Uma central por pessoa · rosto + PIN</figcaption>
+          </figure>
+        </div>
+        <p class="quote">"Seu perfil, suas preferências e seus dados ficam só neste computador. Ninguém mais vê."</p>
+      </div>
+    </section>
+
+    <!-- Branding Book -->
+    <section id="marca" aria-labelledby="t-marca">
+      <div class="wrap bb">
+        <div>
+          <div class="eyebrow">Identidade</div>
+          <h2 id="t-marca">Branding Book</h2>
+          <p class="sub" style="margin-bottom:0">Competente, discreto e leal, com humor seco na medida certa. O livro da marca reúne o tom de voz, o logo Núcleo, as cores com contraste medido, as fontes, os sons, a planta blueprint e a história de cada versão.</p>
+          <div class="swatches" role="list" aria-label="Cores principais">
+            <div class="sw" role="listitem" style="background:#22d3ee"><span>Núcleo Ciano</span>#22D3EE</div>
+            <div class="sw" role="listitem" style="background:#f59e0b"><span>Âmbar Sentinela</span>#F59E0B</div>
+            <div class="sw" role="listitem" style="background:#10b981"><span>Verde Confirmação</span>#10B981</div>
+            <div class="sw dark" role="listitem" style="background:#ef4444"><span>Vermelho Crítico</span>#EF4444</div>
+            <div class="sw dark" role="listitem" style="background:#174a95"><span>Planta</span>#174A95</div>
+            <div class="sw dark" role="listitem" style="background:#05070d"><span>Abismo</span>#05070D</div>
+          </div>
+          <div class="actions" style="justify-content:flex-start">
+            <a class="btn primary" href="branding-book.html">Abrir o Branding Book</a>
+            <a class="btn" href="https://github.com/PatrickCaramico/IA_Jarvis/blob/main/docs/BRANDING-BOOK.md">Versão em texto</a>
+          </div>
+        </div>
+        <div class="card">
+          <div class="type">
+            <div><b style="font:700 22px var(--font-title);letter-spacing:3px">Orbitron</b><span class="note" style="margin:0">títulos e marca</span></div>
+            <div><b style="font:600 22px var(--font-ui);letter-spacing:1px">Rajdhani</b><span class="note" style="margin:0">interface</span></div>
+            <div><b style="font:500 20px var(--font-text)">Inter</b><span class="note" style="margin:0">texto longo</span></div>
+            <div><b style="font:600 18px var(--font-mono)">JetBrains Mono</b><span class="note" style="margin:0">dados e relógio</span></div>
+          </div>
+          <p class="quote" style="font-size:16px">"Hora de um copo d'água, senhor. Hoje foram 800 de 2000 ml."</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Instalação -->
+    <section id="instalar" aria-labelledby="t-inst">
+      <div class="wrap">
+        <div class="eyebrow">Instalação</div>
+        <h2 id="t-inst">Do clone à central em quatro passos</h2>
+        <p class="sub">Precisa de Windows 10 ou 11, Python 3.11+, Node.js 20+, Google Chrome e uma chave de IA (Gemini, OpenAI ou Anthropic). Webcam e microfone são opcionais.</p>
+        <ol class="steps">
+          <li><b>Baixe o projeto</b>
+            <pre><code>git clone https://github.com/PatrickCaramico/IA_Jarvis.git
+cd IA_Jarvis</code></pre>
+          </li>
+          <li><b>Crie o .env</b><p>Copie o <code>.env.example</code> para <code>.env</code> e preencha <code>LLM_PROVIDER</code> e a chave do provedor. Nunca compartilhe o <code>.env</code>.</p></li>
+          <li><b>Ligue o JARVIS</b><p>Dê duplo clique em <code>Iniciar-JARVIS.bat</code>. Na primeira vez ele prepara tudo sozinho, em alguns minutos, e abre o painel em <code>http://127.0.0.1:5173</code>.</p></li>
+          <li><b>Cadastre o seu rosto</b><p>Tire a foto de perfil e, em Configurações, crie o PIN. No celular, instale o app pela página de Releases ou pelo QR da Sentinela.</p></li>
+        </ol>
+        <p class="warn"><b>Este site é a vitrine.</b> O JARVIS roda no seu PC: voz, câmera, controle do sistema e os seus dados nunca passam por aqui.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <div>
+        <p>Escrito e desenvolvido por <b style="color:var(--text)">Patrick Souza</b>.</p>
+        <p>Código aberto sob a licença MIT · <a href="https://github.com/PatrickCaramico/IA_Jarvis">github.com/PatrickCaramico/IA_Jarvis</a></p>
+      </div>
+      <div class="stamp" aria-label="Carimbo: J.A.R.V.I.S., folha site, revisão v{{VERSAO}}">
+        <div>J.A.R.V.I.S.</div>
+        <div><span>FOLHA · SITE</span><span>REV. v{{VERSAO}}</span></div>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

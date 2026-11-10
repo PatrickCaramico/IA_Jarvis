@@ -1,0 +1,38 @@
+# Site de apresentação do JARVIS no Netlify (vitrine estática).
+# O JARVIS em si roda no PC do usuário; nada do backend é publicado aqui.
+# O script monta a pasta _site/ a partir de site/, das imagens de docs/ e da marca, e do Branding Book.
+
+[build]
+  command = "bash scripts/netlify/montar_site.sh"
+  publish = "_site"
+
+# Endereços curtos
+[[redirects]]
+  from = "/branding"
+  to = "/branding-book.html"
+  status = 301
+
+[[redirects]]
+  from = "/github"
+  to = "https://github.com/PatrickCaramico/IA_Jarvis"
+  status = 302
+
+[[redirects]]
+  from = "/app"
+  to = "https://github.com/PatrickCaramico/IA_Jarvis/releases/latest"
+  status = 302
+
+# Segurança básica
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+
+# Imagens e ícones mudam pouco: cache de um dia
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=86400"

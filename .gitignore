@@ -79,3 +79,6 @@ backend/tts_output/
 # ─── Pastas temporárias de sincronização (Google Drive / OneDrive) ─────────────
 .tmp.driveupload/
 .tmp.drivedownload/
+
+# ─── Site do Netlify (gerado por scripts/netlify/montar_site.sh) ───────────────
+_site/

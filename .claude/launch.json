@@ -6,6 +6,12 @@
       "runtimeExecutable": "cmd",
       "runtimeArgs": ["/c", "set VITE_API_URL=http://127.0.0.1:9&& npm --prefix frontend run dev -- --host 127.0.0.1 --port 5198 --strictPort"],
       "port": 5198
+    },
+    {
+      "name": "site-netlify",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5199", "--bind", "127.0.0.1", "--directory", "_site"],
+      "port": 5199
     }
   ]
 }

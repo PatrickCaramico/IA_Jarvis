@@ -52,6 +52,18 @@ Fontes: **Orbitron** (títulos), **Rajdhani** (interface), **Inter** (texto) e *
 - **Versão ilustrada e animada:** [docs/branding-book.html](docs/branding-book.html). Baixe o arquivo e
   abra no navegador (o GitHub mostra só o código da página).
 
+## Site de apresentação (Netlify)
+
+A vitrine do JARVIS fica em `site/` e é publicada no Netlify: apresentação, capturas, o Branding Book
+ilustrado (em `/branding-book.html`) e os links para o GitHub e para o app Android. É só um site estático;
+o JARVIS continua rodando no seu PC, e nenhum dado ou chave passa por ele.
+
+- **Montar e ver no PC:** `bash scripts/netlify/montar_site.sh` gera a pasta `_site/`; abra com
+  `python -m http.server 5199 --directory _site` e acesse `http://127.0.0.1:5199`.
+- **Publicar:** no Netlify, *Add new site > Import an existing project > GitHub* e escolha este repositório.
+  O `netlify.toml` já diz o comando e a pasta; não é preciso preencher nada. Cada envio ao `main` atualiza o site.
+- **Endereços curtos:** `/branding` (Branding Book), `/app` (última versão do APK) e `/github`.
+
 ## Requisitos
 
 - Windows 10 ou 11.

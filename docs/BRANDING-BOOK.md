@@ -407,7 +407,17 @@ as notas e o link da página de Releases. Sem internet: "Não foi possível veri
 Confira sua conexão e tente novamente." No celular, o app avisa "Atualização do JARVIS disponível" quando
 o PC tem um APK mais novo. Nada é baixado ou instalado sozinho.
 
-**No código:** `frontend/src/components/settings/SitesSettings.jsx`, `MaintenanceSettings.jsx`,
+**Site de apresentação (Netlify).** A vitrine pública segue a central: planta blueprint com grade dupla,
+o orbe Núcleo girando devagar no topo (parado com "reduzir movimento"), "JARVIS" em Orbitron com brilho
+ciano, cartões de vidro azul-marinho com ícone em círculo de contorno (ciano; âmbar para segurança; verde
+para água e para o Modo Torcedor), capturas em moldura com cantos ciano e, no rodapé, o carimbo
+"J.A.R.V.I.S. · FOLHA · SITE · REV. v5.0.0". Botão principal ciano cheio ("VER NO GITHUB"); os outros só
+com borda. Tom: o mesmo da central, e a página deixa claro que é só a vitrine ("O JARVIS roda no seu PC:
+voz, câmera, controle do sistema e os seus dados nunca passam por aqui."). A 404 diz "Procurei em toda a
+planta, senhor, e esta página não está aqui."
+
+**No código:** `site/index.html`, `site/404.html`, `netlify.toml`, `scripts/netlify/montar_site.sh`,
+`frontend/src/components/settings/SitesSettings.jsx`, `MaintenanceSettings.jsx`,
 `frontend/src/utils/updateCheck.js`, `frontend/src/hooks/useFanMatch.js` (`matchSides`, `matchLogoUrl`),
 `FanMatchBanner.jsx`, `FanScoreWidget.jsx`, `FanLockPanel.jsx`, `backend/routes/fan.py` (`/api/fan/logo`)
 e `backend/modules/tools.py` (Meus Sites).
