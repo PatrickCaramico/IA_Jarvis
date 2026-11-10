@@ -43,6 +43,7 @@ SCHEDULE_TTL = timedelta(hours=6)   # agenda completa
 LIVE_TTL = timedelta(seconds=50)    # placar durante o jogo
 DETAILS_TTL = timedelta(minutes=10) # escudos, tabela e estatísticas no resto do dia de jogo
 GOOGLE_TTL = timedelta(minutes=30)  # confirmação pelo Google Notícias
+ESPN_TRUST_TTL = timedelta(hours=24)  # agenda da ESPN mais nova que isso manda; o Google só confirma
 LIVE_WINDOW_BEFORE = timedelta(minutes=20)
 LIVE_WINDOW_AFTER = timedelta(hours=3)
 GOOGLE_MIN_ARTICLES = 2             # matérias "onde assistir" de hoje para considerar dia de jogo
@@ -338,6 +339,9 @@ def _fetch_espn_live(match: dict[str, Any], espn_team_id: str | int) -> Optional
 _VS_RE = re.compile(r"([A-Za-zÀ-ÿ.'\- ]{2,30}?)\s+[xX×]\s+([A-Za-zÀ-ÿ.'\- ]{2,30}?)(?=\s*[:|,\-–(]|\s+(?:pelo|pela|ao vivo|hoje|onde)\b|$)")
 
 
+_NOT_MAIN_TEAM_RE = re.compile(r"\bsub[- ]?\d{2}\b|\bu-?\d{2}\b|feminin|\bde base\b|junior|^jogos de hoje|\bjogos de hoje\b")
+
+
 def parse_google_news_matchday(xml_bytes: bytes, team_name: str, today: datetime) -> dict[str, Any]:
     """Conta matérias de hoje no estilo "Palmeiras x Remo: onde assistir" e descobre o adversário."""
     team_n = _norm(team_name)
@@ -355,6 +359,10 @@ def parse_google_news_matchday(xml_bytes: bytes, team_name: str, today: datetime
         except (TypeError, ValueError):
             continue
         if published.date() != today.date():
+            continue
+        # V5: base e feminino ("Palmeiras x Santos sub-20") e listas do dia ("Jogos de hoje: ...") não
+        # são jogo do time principal; antes elas faziam o Modo Torcedor "confirmar" jogo em dia sem jogo.
+        if _NOT_MAIN_TEAM_RE.search(_norm(title)):
             continue
         m = _VS_RE.search(title)
         if not m:
@@ -526,10 +534,19 @@ def get_current_or_next_match(team_key: str = "palmeiras") -> Dict[str, Any]:
     match = _pick_match(matches, now)
     sources = ["espn"] if match else []
 
+    sched = ((cache.get("schedule") or {}).get(team_key)) or {}
+    # V5: com a agenda da ESPN em dia (ela traz todas as competições do time principal), o Google
+    # Notícias só confirma; não inventa jogo. Ele vira reserva apenas com a ESPN fora do ar.
+    espn_fresh = bool(sched.get("matches")) and not _stale(sched.get("fetched_at"), ESPN_TRUST_TTL)
+
     if match and (_parse_dt(match["date"]) or now).date() == now.date() and google.get("match_today"):
         sources.append("google_news")
-    if (not match or (_parse_dt(match["date"]) or now).date() != now.date()) and google.get("match_today"):
-        # A ESPN não tem (ou está fora), mas o Google Notícias confirma jogo hoje.
+    if (
+        not espn_fresh
+        and (not match or (_parse_dt(match["date"]) or now).date() != now.date())
+        and google.get("match_today")
+    ):
+        # A ESPN está fora (agenda velha ou vazia), mas o Google Notícias confirma jogo hoje.
         match = {
             "id": f"google_{now.date().isoformat()}",
             "opponent": google.get("opponent") or "Adversário",

@@ -463,3 +463,55 @@ def test_adversary_logo_does_not_fallback_to_our_team(fan_cache, monkeypatch):
 
     assert result is None
     assert downloads == []
+
+
+def test_google_ignores_youth_women_and_daily_roundups():
+    """V5: jogos da base, do feminino e listas "Jogos de hoje" não confirmam jogo do time principal."""
+    today = datetime(2026, 11, 9, 15, 0, tzinfo=SP_TZ)
+    xml = b"""<rss><channel>
+      <item><title>Palmeiras x Santos AO VIVO: Paulista sub-20 (09/11) - Sporting News</title><pubDate>Mon, 09 Nov 2026 15:00:00 GMT</pubDate></item>
+      <item><title>Jogos de hoje: Palmeiras x Santos e Corinthians x Palmeiras; veja onde assistir</title><pubDate>Mon, 09 Nov 2026 11:14:00 GMT</pubDate></item>
+      <item><title>Segunda-feira tem Corinthians x Palmeiras sub-20; veja horarios</title><pubDate>Mon, 09 Nov 2026 16:20:00 GMT</pubDate></item>
+      <item><title>Palmeiras x Flamengo pelo Brasileiro Feminino: onde assistir</title><pubDate>Mon, 09 Nov 2026 12:00:00 GMT</pubDate></item>
+      <item><title>Palmeiras x Remo pelo Brasileirao: onde assistir ao vivo - Estadao</title><pubDate>Mon, 09 Nov 2026 05:00:00 GMT</pubDate></item>
+    </channel></rss>"""
+    found = sports_provider.parse_google_news_matchday(xml, "Palmeiras", today)
+    assert found["articles"] == 1  # só a matéria do time principal conta
+    assert found["match_today"] is False
+
+
+def test_fresh_espn_schedule_wins_over_google(fan_cache):
+    """V5: com a agenda da ESPN em dia e sem jogo hoje, o Google não inventa "jogo de hoje"."""
+    now = datetime.now(SP_TZ)
+    sports_provider.save_fan_cache({
+        "schedule": {"palmeiras": {"fetched_at": now.isoformat(), "source": "espn", "matches": [{
+            "id": "espn_next", "espn_event_id": "next", "opponent": "Cruzeiro", "competition": "Brasileirão",
+            "date": (now + timedelta(days=9)).isoformat(), "time_known": True, "venue": "Mineirão",
+            "home_away": "away", "status": "scheduled", "score": {"home": 0, "away": 0}, "minute": None,
+        }]}},
+        "google": {"palmeiras": {
+            "match_today": True, "articles": 6, "opponent": "Remo", "date": now.date().isoformat(), "checked_at": now.isoformat(),
+        }},
+    })
+    m = sports_provider.get_current_or_next_match("palmeiras")
+    assert m["opponent"] == "Cruzeiro"
+    assert m["is_match_day"] is False
+    assert m["source"] == "espn"
+
+
+def test_google_is_backup_when_espn_schedule_is_old(fan_cache):
+    """Com a ESPN fora há mais de um dia, o Google continua valendo como reserva."""
+    now = datetime.now(SP_TZ)
+    sports_provider.save_fan_cache({
+        "schedule": {"palmeiras": {"fetched_at": (now - timedelta(days=2)).isoformat(), "source": "espn", "matches": [{
+            "id": "espn_next", "espn_event_id": "next", "opponent": "Cruzeiro", "competition": "Brasileirão",
+            "date": (now + timedelta(days=9)).isoformat(), "time_known": True, "venue": "Mineirão",
+            "home_away": "away", "status": "scheduled", "score": {"home": 0, "away": 0}, "minute": None,
+        }]}},
+        "google": {"palmeiras": {
+            "match_today": True, "articles": 4, "opponent": "Remo", "date": now.date().isoformat(), "checked_at": now.isoformat(),
+        }},
+    })
+    m = sports_provider.get_current_or_next_match("palmeiras")
+    assert m["source"] == "google_news"
+    assert m["is_match_day"] is True

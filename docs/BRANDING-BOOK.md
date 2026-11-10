@@ -401,6 +401,11 @@ direita). Vêm do próprio JARVIS, que guarda uma cópia, então aparecem até s
 a reserva: o escudo local do Palmeiras ou a inicial do adversário num círculo verde. Nunca um espaço vazio
 e nunca o escudo do Palmeiras no lugar do adversário.
 
+**Jogo de verdade, nunca inventado.** Com a agenda da ESPN em dia, ela manda: o Google Notícias só
+confirma. Jogos da base (sub-20, sub-17), do feminino e listas "Jogos de hoje" não contam como jogo do
+time principal. Em dia sem jogo, a tela mostra o próximo ("Cruzeiro · Em 8d 20h"), nunca "Hoje · horário
+a confirmar" com um adversário antigo.
+
 **Aviso de versão nova.** Em Configurações > Manutenção, botão "Verificar atualizações" (só borda; mostra
 "Verificando..." enquanto consulta). Resultado em uma linha: versão mais nova, ou a versão disponível com
 as notas e o link da página de Releases. Sem internet: "Não foi possível verificar atualizações agora.
@@ -412,7 +417,7 @@ o orbe Núcleo girando devagar no topo (parado com "reduzir movimento"), "JARVIS
 ciano, cartões de vidro azul-marinho com ícone em círculo de contorno (ciano; âmbar para segurança; verde
 para água e para o Modo Torcedor), capturas em moldura com cantos ciano e, no rodapé, o carimbo
 "J.A.R.V.I.S. · FOLHA · SITE · REV. v5.0.0". Botão principal ciano cheio ("VER NO GITHUB"); os outros só
-com borda. Tom: o mesmo da central, e a página deixa claro que é só a vitrine ("O JARVIS roda no seu PC:
+com borda. Logo abaixo, num quadro de borda tracejada âmbar, o botão "ABRIR MEU JARVIS" (borda âmbar, o "olhe aqui" da Sentinela), que leva à central do próprio PC (`http://127.0.0.1:5173`) e explica que só funciona no computador onde o JARVIS está ligado. Tom: o mesmo da central, e a página deixa claro que é só a vitrine ("O JARVIS roda no seu PC:
 voz, câmera, controle do sistema e os seus dados nunca passam por aqui."). A 404 diz "Procurei em toda a
 planta, senhor, e esta página não está aqui."
 

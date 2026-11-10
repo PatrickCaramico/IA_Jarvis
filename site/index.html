@@ -102,6 +102,11 @@
     .btn:hover { box-shadow: 0 0 18px rgba(34, 211, 238, 0.45); }
     .btn.primary { background: var(--core); color: #04163a; }
     .btn svg { width: 18px; height: 18px; flex: none; }
+    .btn.amber { border-color: var(--amber); color: var(--text); }
+    .btn.amber svg { color: var(--amber); }
+    .btn.amber:hover { box-shadow: 0 0 18px rgba(245, 158, 11, 0.45); }
+    .open-jarvis { margin: 22px auto 0; max-width: 560px; padding: 16px 18px; border: 1px dashed rgba(245, 158, 11, 0.55); border-radius: var(--radius); background: rgba(4, 22, 58, 0.55); }
+    .open-jarvis p { margin: 10px 0 0; font-size: 15px; color: var(--muted); }
     .note { margin-top: 14px; font: 500 14px var(--font-ui); letter-spacing: 1px; color: var(--muted); }
     .hero-shot { margin-top: clamp(36px, 6vw, 64px); }
 
@@ -237,6 +242,13 @@
           </a>
           <a class="btn" href="branding-book.html">Branding Book</a>
         </div>
+        <div class="open-jarvis">
+          <a class="btn amber" href="http://127.0.0.1:5173" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8" stroke-dasharray="3 3"/></svg>
+            Abrir meu JARVIS
+          </a>
+          <p>Abre a central que roda neste computador. Funciona só no PC onde o JARVIS está instalado e ligado (<code>Iniciar-JARVIS.bat</code>). No celular, use o app.</p>
+        </div>
         <p class="note">Windows 10 ou 11 · Python + React · Gemini, OpenAI ou Claude</p>
         <div class="hero-shot frame">
           <img src="assets/img/planta-bloqueio-real.webp" width="1917" height="867" alt="Tela de bloqueio do JARVIS: relógio, o orbe azul no centro sobre a planta blueprint e o clima de São Paulo" />
@@ -370,7 +382,7 @@
 cd IA_Jarvis</code></pre>
           </li>
           <li><b>Crie o .env</b><p>Copie o <code>.env.example</code> para <code>.env</code> e preencha <code>LLM_PROVIDER</code> e a chave do provedor. Nunca compartilhe o <code>.env</code>.</p></li>
-          <li><b>Ligue o JARVIS</b><p>Dê duplo clique em <code>Iniciar-JARVIS.bat</code>. Na primeira vez ele prepara tudo sozinho, em alguns minutos, e abre o painel em <code>http://127.0.0.1:5173</code>.</p></li>
+          <li><b>Ligue o JARVIS</b><p>Dê duplo clique em <code>Iniciar-JARVIS.bat</code>. Na primeira vez ele prepara tudo sozinho, em alguns minutos, e abre o painel em <code>http://127.0.0.1:5173</code>. Depois, o botão <a href="http://127.0.0.1:5173" rel="noopener">Abrir meu JARVIS</a> deste site leva direto para lá.</p></li>
           <li><b>Cadastre o seu rosto</b><p>Tire a foto de perfil e, em Configurações, crie o PIN. No celular, instale o app pela página de Releases ou pelo QR da Sentinela.</p></li>
         </ol>
         <p class="warn"><b>Este site é a vitrine.</b> O JARVIS roda no seu PC: voz, câmera, controle do sistema e os seus dados nunca passam por aqui.</p>
