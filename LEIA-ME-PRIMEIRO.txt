@@ -1,0 +1,30 @@
+JARVIS v4.1 - pasta organizada
+==============================
+
+Esta pasta e o projeto completo e limpo. Tudo o que o JARVIS usa esta aqui:
+
+  Iniciar-JARVIS.bat ......... liga o JARVIS (na 1a vez instala Python/venv e npm sozinho)
+  Parar-JARVIS.bat ........... desliga
+  Abrir-Painel.bat ........... abre o painel (liga se estiver desligado)
+  Iniciar-JARVIS-Rede.bat .... acesso pelo celular na mesma rede
+  Iniciar-JARVIS-Dev.bat ..... modo desenvolvimento (recarrega o backend ao salvar)
+  Status / Ver-Logs / Diagnostico-Backend / Backup-Dados / Empacotar-Projeto / Atualizar-Frontend
+  Iniciar-Palmas / Parar-Palmas / Instalar-Palmas-no-Windows / Remover-Palmas-do-Windows
+
+  backend\   servidor Python (FastAPI)
+  frontend\  interface React (Vite + Tailwind)
+  scripts\   Ouvinte de Palmas e scripts dos .bat
+  tests\     sequencias de teste compartilhadas
+  docs\      ATUALIZACAO-V4.1.md, COPILOT-FASE1.md e o Guia de comandos do dia a dia
+  data\      seus dados (foto, memoria, tarefas, agua, preferencias) - copiados da pasta antiga
+  .env       suas chaves de API - copiado da pasta antiga (nao compartilhe)
+
+Primeira execucao
+1. Feche o JARVIS antigo (Parar-JARVIS.bat da pasta antiga), para liberar as portas 8000 e 5173.
+2. De duplo clique em Iniciar-JARVIS.bat DESTA pasta. A 1a vez demora alguns minutos
+   (cria backend\venv e frontend\node_modules).
+3. Se o Spotify ou o Google Agenda pedirem para conectar de novo, e normal: os tokens nao foram copiados.
+4. Se o Ouvinte de Palmas estava instalado no Windows pela pasta antiga, rode
+   Remover-Palmas-do-Windows.bat la e Instalar-Palmas-no-Windows.bat aqui.
+
+So depois de confirmar que tudo funciona, apague a pasta antiga.

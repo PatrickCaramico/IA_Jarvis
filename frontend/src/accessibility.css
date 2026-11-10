@@ -1,0 +1,60 @@
+/* ==========================================================================
+   V4.5: acessibilidade (Configurações > Acessibilidade). Vale em todas as telas, inclusive no bloqueio.
+   ========================================================================== */
+
+/* Foco visível em tudo que é clicável, para quem navega pelo teclado (Tab) */
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid #fbbf24;
+  outline-offset: 2px;
+}
+
+/* Tamanho do texto: a interface usa rem, então escalar a raiz aumenta tudo junto */
+[data-text="115"] { font-size: 115%; }
+[data-text="130"] { font-size: 130%; }
+
+/* Alto contraste: vidro bem mais escuro, bordas e textos mais fortes, sem textos apagados */
+[data-contrast="high"] .hl-panel,
+[data-contrast="high"] .hl-top,
+[data-contrast="high"] .lc-card,
+[data-contrast="high"] .flp-root,
+[data-contrast="high"] .np-card,
+[data-contrast="high"] .mqr-root,
+[data-contrast="high"] .bp-fan-btn,
+[data-contrast="high"] .fmb-root {
+  background: rgba(0, 6, 20, 0.96) !important;
+  border-color: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: none !important;
+}
+[data-contrast="high"] body,
+[data-contrast="high"] .ls-hint,
+[data-contrast="high"] .snt-date,
+[data-contrast="high"] .lc-sub,
+[data-contrast="high"] .np-muted,
+[data-contrast="high"] .flp-meta,
+[data-contrast="high"] .flp-comp,
+[data-contrast="high"] .fmb-meta,
+[data-contrast="high"] .flp-foot,
+[data-contrast="high"] .hl-muted {
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
+[data-contrast="high"] .ls-title { text-shadow: none; color: #ffffff; }
+[data-contrast="high"] :where(button, a, input, select):focus-visible { outline: 3px solid #fde047; outline-offset: 3px; }
+[data-contrast="high"][data-bg="blueprint"] body,
+[data-contrast="high"][data-bg="blueprint"] .hl-root,
+[data-contrast="high"][data-bg="blueprint"] .ls-container {
+  /* planta mais escura (o papel continua azul, só com menos brilho) */
+  background: var(--bp-grid), radial-gradient(ellipse 80% 70% at 50% 45%, #123a78 0%, #0b2a5c 60%, #061a3d 100%) !important;
+}
+
+/* Menos movimento: desliga animações e transições do JARVIS (o orbe para de girar) */
+[data-motion="reduce"] *,
+[data-motion="reduce"] *::before,
+[data-motion="reduce"] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+[data-motion="reduce"] .fgo-burst,
+[data-motion="reduce"][data-bg="blueprint"] .ls-container::after { display: none !important; }

@@ -1,0 +1,117 @@
+name: Release Android APK
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Build and publish APK
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Configurar JDK 17
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Configurar Android SDK 34
+        uses: android-actions/setup-android@v4
+        with:
+          packages: |
+            platforms;android-34
+            build-tools;34.0.0
+          accept-android-sdk-licenses: true
+          log-accepted-android-sdk-licenses: false
+
+      - name: Instalar FFmpeg
+        run: choco install ffmpeg --yes --no-progress
+
+      - name: Validar tag e extrair notas
+        id: release-metadata
+        shell: pwsh
+        run: |
+          $versionSource = Get-Content "backend/version.py" -Raw
+          if ($versionSource -notmatch 'VERSION\s*=\s*["''](\d+)\.(\d+)\.(\d+)["'']') {
+            throw "Não consegui ler VERSION em backend/version.py."
+          }
+          $version = "$($Matches[1]).$($Matches[2]).$($Matches[3])"
+          if ($env:GITHUB_REF_NAME -ne "v$version") {
+            throw "A tag deve corresponder a backend/version.py (esperado: v$version)."
+          }
+          $changelog = Get-Content "CHANGELOG.md" -Raw
+          $escapedVersion = [regex]::Escape($version)
+          $pattern = "(?ms)^##\s+\[?$escapedVersion\]?(?:\s|$)[^\r\n]*\r?\n(.*?)(?=^##\s+|\z)"
+          $section = [regex]::Match($changelog, $pattern)
+          if (-not $section.Success -or [string]::IsNullOrWhiteSpace($section.Groups[1].Value)) {
+            throw "Adicione ao CHANGELOG.md uma seção preenchida para a versão $version antes de criar a tag."
+          }
+          $notesPath = Join-Path $env:RUNNER_TEMP "release-notes.md"
+          [System.IO.File]::WriteAllText($notesPath, $section.Groups[1].Value.Trim(), [System.Text.UTF8Encoding]::new($false))
+          [System.IO.File]::AppendAllText($env:GITHUB_OUTPUT, "version=$version`n", [System.Text.UTF8Encoding]::new($false))
+
+      - name: Restaurar keystore de release
+        shell: pwsh
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:ANDROID_KEYSTORE_BASE64)) {
+            throw "Configure o secret ANDROID_KEYSTORE_BASE64 nas configurações do repositório."
+          }
+          try {
+            $keystoreBytes = [Convert]::FromBase64String($env:ANDROID_KEYSTORE_BASE64)
+          } catch {
+            throw "O secret ANDROID_KEYSTORE_BASE64 não contém Base64 válido."
+          }
+          if ($keystoreBytes.Length -eq 0) { throw "O keystore recebido está vazio." }
+          $keystorePath = Join-Path $env:RUNNER_TEMP "jarvis-release.jks"
+          [System.IO.File]::WriteAllBytes($keystorePath, $keystoreBytes)
+          Remove-Variable keystoreBytes
+
+      - name: Gerar e assinar APK
+        shell: pwsh
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          VERSION: ${{ steps.release-metadata.outputs.version }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:ANDROID_KEYSTORE_PASSWORD)) {
+            throw "Configure o secret ANDROID_KEYSTORE_PASSWORD nas configurações do repositório."
+          }
+          $androidSdk = $env:ANDROID_SDK_ROOT
+          if ([string]::IsNullOrWhiteSpace($androidSdk)) { $androidSdk = $env:ANDROID_HOME }
+          if ([string]::IsNullOrWhiteSpace($androidSdk)) { throw "O Android SDK não foi configurado." }
+          $keystorePath = Join-Path $env:RUNNER_TEMP "jarvis-release.jks"
+          $workRoot = Join-Path $env:RUNNER_TEMP "jarvis-apk-build"
+          $outputDirectory = Join-Path $env:GITHUB_WORKSPACE "mobile\dist"
+          & .\scripts\android\build_apk.ps1 `
+            -Quiet `
+            -JdkRoot $env:JAVA_HOME `
+            -AndroidSdkRoot $androidSdk `
+            -WorkRoot $workRoot `
+            -OutputDirectory $outputDirectory `
+            -KeystorePath $keystorePath `
+            -UseEnvironmentKeystorePassword
+          if ($LASTEXITCODE -ne 0) { throw "A geração ou assinatura do APK falhou." }
+          $versionedApk = Join-Path $outputDirectory "JARVIS-$env:VERSION.apk"
+          Copy-Item -LiteralPath (Join-Path $outputDirectory "JARVIS.apk") -Destination $versionedApk -Force
+
+      - name: Publicar release e APK
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: JARVIS v${{ steps.release-metadata.outputs.version }}
+          body_path: ${{ runner.temp }}/release-notes.md
+          files: mobile/dist/JARVIS-${{ steps.release-metadata.outputs.version }}.apk
+          fail_on_unmatched_files: true
+
+      - name: Remover keystore temporária
+        if: always()
+        shell: pwsh
+        run: Remove-Item -LiteralPath (Join-Path $env:RUNNER_TEMP "jarvis-release.jks") -Force -ErrorAction SilentlyContinue

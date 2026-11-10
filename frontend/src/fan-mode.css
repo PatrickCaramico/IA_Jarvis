@@ -1,0 +1,384 @@
+/* ==========================================================================
+   Modo Torcedor (Fan Mode) — Glassmorphism & Escopo Tático do Clube
+   Ativado quando document.documentElement.dataset.mode === "fan"
+   ========================================================================== */
+
+[data-mode="fan"] {
+  --fan-green: #046538;
+  --fan-green-deep: #021a0e;
+  --fan-green-light: #10b981;
+  --fan-green-glow: #34d399;
+  --fan-white: #ffffff;
+  --fan-glass: rgba(4, 101, 56, 0.15);
+  --fan-glass-strong: rgba(4, 101, 56, 0.28);
+  --fan-glass-border: rgba(52, 211, 153, 0.28);
+
+  /* Variáveis sobrepostas do HUD */
+  --hl-cy: #10b981;
+  --hl-cy2: #046538;
+  --hl-line: rgba(16, 185, 129, 0.35);
+  --hl-faint: rgba(16, 185, 129, 0.12);
+  --hl-panel: linear-gradient(180deg, rgba(4, 101, 56, 0.45), rgba(2, 26, 14, 0.75));
+  --hl-ok: #34d399;
+
+  /* Tema Arc sincronizado */
+  --color-arc-primary: #10b981;
+  --color-arc-secondary: #046538;
+  --color-bg: #021a0e;
+}
+
+/* Fundo da tela principal no modo torcedor */
+[data-mode="fan"] .hl-root {
+  background:
+    radial-gradient(ellipse 70% 60% at 50% 50%, rgba(4, 101, 56, 0.4) 0%, rgba(2, 22, 12, 0.98) 75%),
+    linear-gradient(var(--hl-faint) 1px, transparent 1px) 0 0 / 48px 48px,
+    linear-gradient(90deg, var(--hl-faint) 1px, transparent 1px) 0 0 / 48px 48px,
+    #02120a;
+  box-shadow: inset 0 0 100px rgba(4, 101, 56, 0.2), inset 0 0 240px rgba(0, 0, 0, 0.85);
+  color: var(--fan-white);
+  transition: background 300ms ease, box-shadow 300ms ease;
+}
+
+/* Barra superior com acabamento em vidro verde e reflexo branco */
+[data-mode="fan"] .hl-top {
+  background: linear-gradient(180deg, rgba(4, 101, 56, 0.75) 0%, rgba(2, 26, 14, 0.92) 100%);
+  border-color: rgba(52, 211, 153, 0.4);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+/* Painéis com Glassmorphism refinado */
+[data-mode="fan"] .hl-panel {
+  background: rgba(4, 35, 20, 0.55);
+  border: 1px solid rgba(52, 211, 153, 0.3);
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  border-radius: 14px;
+  transition: all 300ms ease;
+}
+
+/* Destaque nos painéis em foco ou hover */
+[data-mode="fan"] .hl-panel:hover {
+  border-color: rgba(52, 211, 153, 0.55);
+  box-shadow: 0 8px 36px rgba(4, 101, 56, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+/* Botões do HUD sob modo torcedor */
+[data-mode="fan"] .hl-btn {
+  background: rgba(4, 101, 56, 0.45);
+  border-color: rgba(52, 211, 153, 0.45);
+  color: #e6fff2;
+  backdrop-filter: blur(8px);
+}
+
+/* V4.4: botões novos do cabeçalho seguem o verde */
+[data-mode="fan"] .hl-icon-btn,
+[data-mode="fan"] .hl-act { background: rgba(4, 101, 56, 0.45); color: #e6fff2; }
+[data-mode="fan"] .hl-actions,
+[data-mode="fan"] .hl-icon-btn { border-color: rgba(52, 211, 153, 0.45); }
+[data-mode="fan"] .hl-act i,
+[data-mode="fan"] .hl-brand-name small { color: #34d399; }
+[data-mode="fan"] .hl-top::after { background: linear-gradient(90deg, transparent, rgba(52, 211, 153, 0.85), transparent); }
+
+[data-mode="fan"] .hl-btn:hover {
+  background: rgba(16, 185, 129, 0.35);
+  border-color: #34d399;
+  color: #ffffff;
+  box-shadow: 0 0 14px rgba(52, 211, 153, 0.45);
+}
+
+/* Visualizador de espectro de áudio verde */
+[data-mode="fan"] .hl-spectrum span {
+  background: linear-gradient(180deg, #34d399 0%, #10b981 60%, #046538 100%);
+  box-shadow: 0 0 8px rgba(52, 211, 153, 0.5);
+}
+
+/* Mensagens do chat no modo torcedor */
+[data-mode="fan"] .hl-msg.user {
+  background: rgba(4, 101, 56, 0.3);
+  border-left-color: #34d399;
+}
+
+[data-mode="fan"] .hl-msg.jarvis {
+  background: rgba(2, 26, 14, 0.6);
+  border-left-color: #10b981;
+}
+
+/* SideNav (Centro de Controle) sob Modo Torcedor */
+[data-mode="fan"] .snav-root {
+  background: linear-gradient(180deg, rgba(4, 38, 22, 0.96), rgba(2, 18, 10, 0.98));
+  border-right: 1px solid rgba(52, 211, 153, 0.35);
+  box-shadow: 8px 0 35px rgba(0, 0, 0, 0.7), inset -1px 0 0 rgba(52, 211, 153, 0.15);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+[data-mode="fan"] .snav-logo-ring {
+  border-color: rgba(52, 211, 153, 0.8);
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.6), inset 0 0 10px rgba(16, 185, 129, 0.3);
+}
+
+[data-mode="fan"] .snav-brand-text strong {
+  color: #f2fbf6;
+  text-shadow: 0 0 12px rgba(52, 211, 153, 0.5);
+}
+
+[data-mode="fan"] .snav-brand-text span {
+  color: #34d399;
+}
+
+[data-mode="fan"] .snav-item:hover {
+  background: rgba(4, 101, 56, 0.35);
+  border-color: rgba(52, 211, 153, 0.4);
+  color: #ffffff;
+}
+
+[data-mode="fan"] .snav-active {
+  background: rgba(4, 101, 56, 0.45) !important;
+  border-color: rgba(52, 211, 153, 0.6) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 18px rgba(4, 101, 56, 0.35);
+}
+
+[data-mode="fan"] .snav-icon {
+  color: #34d399;
+}
+
+[data-mode="fan"] .snav-active .snav-icon {
+  color: #ffffff;
+  text-shadow: 0 0 10px #34d399;
+}
+
+[data-mode="fan"] .snav-active-bar {
+  background: linear-gradient(to bottom, #10b981, #34d399);
+  box-shadow: 0 0 12px rgba(52, 211, 153, 0.9);
+}
+
+[data-mode="fan"] .snav-footer {
+  border-top-color: rgba(52, 211, 153, 0.25);
+  background: rgba(2, 18, 10, 0.7);
+}
+
+[data-mode="fan"] .snav-close:hover {
+  color: #34d399;
+}
+
+/* Fallback para navegadores sem suporte a backdrop-filter */
+@supports not (backdrop-filter: blur(1px)) {
+  [data-mode="fan"] .hl-panel {
+    background: rgba(4, 36, 26, 0.92);
+  }
+}
+
+/* Acessibilidade: respeita preferências de redução de movimento */
+@media (prefers-reduced-motion: reduce) {
+  [data-mode="fan"] .hl-panel,
+  [data-mode="fan"] .hl-root {
+    transition: none !important;
+  }
+}
+
+/* ==========================================================================
+   V4.4: dia de jogo com dados reais
+   ========================================================================== */
+
+/* Faixa da central (FanMatchBanner) */
+.fmb-root {
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 16px;
+  z-index: 30;
+  user-select: none;
+  color: #ecfdf5;
+  background: linear-gradient(90deg, rgba(2, 44, 26, 0.92), rgba(4, 101, 56, 0.88) 50%, rgba(2, 44, 26, 0.92));
+  border-bottom: 1px solid rgba(52, 211, 153, 0.55);
+  box-shadow: 0 4px 18px rgba(16, 185, 129, 0.22);
+  backdrop-filter: blur(10px);
+  font-family: "Rajdhani", sans-serif;
+}
+.fmb-left { display: flex; align-items: center; gap: 10px; min-width: 0; flex-wrap: wrap; }
+.fmb-ball { font-size: 1rem; animation: fmb-roll 3s linear infinite; display: inline-block; }
+.fmb-root.is-live .fmb-ball { animation-duration: 1.2s; }
+@keyframes fmb-roll { to { transform: rotate(360deg); } }
+.fmb-tag { font-family: "Orbitron", sans-serif; font-size: 0.68rem; letter-spacing: 0.18em; color: #6ee7b7; }
+.fmb-root.is-live .fmb-tag { color: #fecdd3; }
+.fmb-match { font-weight: 600; font-size: 0.95rem; display: inline-flex; align-items: center; gap: 6px; }
+.fmb-match em { font-style: normal; opacity: 0.6; }
+.fmb-crest { width: 24px; height: 24px; object-fit: contain; border-radius: 50%; background: rgba(2, 26, 14, 0.5); border: 1px solid rgba(52, 211, 153, 0.45); }
+.fmb-crest-empty { display: grid; place-items: center; font-family: "Orbitron", sans-serif; font-size: 0.62rem; color: #d1fae5; }
+.fmb-score {
+  font-family: "Orbitron", sans-serif; font-size: 0.85rem; padding: 1px 8px; border-radius: 4px;
+  background: rgba(0, 0, 0, 0.45); border: 1px solid rgba(110, 231, 183, 0.5);
+}
+.fmb-root.is-live .fmb-score { border-color: rgba(251, 113, 133, 0.7); box-shadow: 0 0 10px rgba(244, 63, 94, 0.35); }
+.fmb-meta { font-size: 0.78rem; color: rgba(209, 250, 229, 0.75); }
+.fmb-src {
+  font-family: "Orbitron", sans-serif; font-size: 0.5rem; letter-spacing: 0.14em; padding: 2px 6px;
+  border-radius: 999px; border: 1px solid rgba(110, 231, 183, 0.35); color: rgba(209, 250, 229, 0.7);
+}
+.fmb-actions { display: flex; align-items: center; gap: 8px; }
+.fmb-btn {
+  font-family: "Orbitron", sans-serif; font-size: 0.6rem; letter-spacing: 0.14em; padding: 4px 10px;
+  border-radius: 4px; cursor: pointer; color: #ecfdf5;
+  background: rgba(16, 185, 129, 0.22); border: 1px solid rgba(52, 211, 153, 0.6);
+}
+.fmb-btn:hover { background: rgba(16, 185, 129, 0.42); }
+.fmb-close { background: none; border: none; color: rgba(167, 243, 208, 0.6); cursor: pointer; font-size: 0.8rem; }
+.fmb-close:hover { color: #fff; }
+
+/* Painel do jogo no bloqueio (FanLockPanel) */
+.flp-root {
+  box-sizing: border-box;
+  display: flex; flex-direction: column; gap: 10px;
+  width: min(92vw, 420px);
+  padding: 12px 16px 10px; border-radius: 14px; z-index: 2;
+  color: #ecfdf5; font-family: "Rajdhani", sans-serif;
+  background: linear-gradient(180deg, rgba(2, 44, 26, 0.88), rgba(1, 26, 15, 0.93));
+  border: 1px solid rgba(52, 211, 153, 0.55);
+  box-shadow: 0 10px 32px rgba(1, 20, 12, 0.45), 0 0 22px rgba(16, 185, 129, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(12px);
+}
+.flp-root.is-live { border-color: rgba(251, 113, 133, 0.6); box-shadow: 0 10px 32px rgba(1, 20, 12, 0.45), 0 0 26px rgba(244, 63, 94, 0.25); }
+.flp-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.flp-tag { font-family: "Orbitron", sans-serif; font-size: 0.6rem; letter-spacing: 0.2em; color: #6ee7b7; }
+.flp-root.is-live .flp-tag { color: #fda4af; animation: flp-blink 1.6s ease-in-out infinite; }
+.flp-root.is-live .flp-tag::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 6px; border-radius: 50%; background: #fb7185; vertical-align: 1px; }
+@keyframes flp-blink { 50% { opacity: 0.55; } }
+.flp-comp { font-size: 0.72rem; color: rgba(209, 250, 229, 0.7); letter-spacing: 0.06em; }
+
+.flp-board { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; }
+.flp-team { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; font-weight: 600; font-size: 0.95rem; min-width: 0; }
+.flp-team span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.flp-team.is-ours span { color: #fff; }
+.flp-team:not(.is-ours) span { color: rgba(236, 253, 245, 0.8); }
+.flp-crest { width: 44px; height: 44px; object-fit: contain; filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.5)); }
+.flp-crest-empty { display: grid; place-items: center; border-radius: 50%; background: rgba(255, 255, 255, 0.1); font-family: "Orbitron", sans-serif; }
+.flp-score { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.flp-score strong {
+  display: flex; align-items: center; gap: 8px;
+  font-family: "Orbitron", sans-serif; font-size: 1.9rem; line-height: 1; color: #fff;
+  padding: 6px 12px; border-radius: 8px; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(110, 231, 183, 0.4);
+  text-shadow: 0 0 14px rgba(110, 231, 183, 0.6);
+}
+.flp-root.is-live .flp-score strong { border-color: rgba(251, 113, 133, 0.6); }
+.flp-score em { font-style: normal; font-size: 0.9rem; opacity: 0.55; }
+.flp-vs { font-size: 1rem !important; letter-spacing: 0.2em; }
+.flp-result { font-family: "Orbitron", sans-serif; font-size: 0.52rem; letter-spacing: 0.18em; padding: 2px 8px; border-radius: 999px; }
+.flp-result.r-vitória { background: rgba(16, 185, 129, 0.3); color: #a7f3d0; border: 1px solid rgba(52, 211, 153, 0.6); }
+.flp-result.r-empate { background: rgba(148, 163, 184, 0.2); color: #e2e8f0; border: 1px solid rgba(203, 213, 225, 0.4); }
+.flp-result.r-derrota { background: rgba(15, 23, 42, 0.5); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.4); }
+
+.flp-clock-bar { position: relative; height: 5px; border-radius: 999px; background: rgba(255, 255, 255, 0.1); overflow: hidden; }
+.flp-clock-bar i { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, #10b981, #6ee7b7); border-radius: inherit; transition: width 1s ease; }
+.flp-clock-bar b { position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: rgba(255, 255, 255, 0.5); }
+.flp-clock-l { display: flex; justify-content: space-between; margin-top: 2px; font-family: "Orbitron", sans-serif; font-size: 0.45rem; letter-spacing: 0.14em; color: rgba(209, 250, 229, 0.55); }
+
+.flp-count { display: flex; align-items: baseline; justify-content: center; gap: 8px; }
+.flp-count strong { font-family: "Orbitron", sans-serif; font-size: 1.35rem; color: #fff; }
+.flp-count span { font-size: 0.85rem; color: rgba(209, 250, 229, 0.75); }
+
+.flp-events { list-style: none; margin: 0; padding: 6px 0 0; display: flex; flex-direction: column; gap: 3px; border-top: 1px solid rgba(52, 211, 153, 0.2); }
+.flp-events li { display: grid; grid-template-columns: 18px 34px 1fr; align-items: baseline; gap: 4px; font-size: 0.85rem; color: rgba(236, 253, 245, 0.72); }
+.flp-events li.is-ours { color: #fff; }
+.flp-ev-min { font-family: "Orbitron", sans-serif; font-size: 0.62rem; color: #6ee7b7; }
+.flp-events li:not(.is-ours) .flp-ev-min { color: rgba(203, 213, 225, 0.7); }
+.flp-ev-who { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.flp-ev-who em { font-style: normal; opacity: 0.6; font-size: 0.78rem; }
+
+.flp-stats { display: flex; flex-direction: column; gap: 5px; padding-top: 6px; border-top: 1px solid rgba(52, 211, 153, 0.2); }
+.flp-stat { display: grid; grid-template-columns: 34px 1fr 34px; align-items: center; gap: 6px; }
+.flp-stat-v { font-family: "Orbitron", sans-serif; font-size: 0.7rem; text-align: center; color: rgba(236, 253, 245, 0.7); }
+.flp-stat-v.is-ours { color: #fff; }
+.flp-stat-mid { display: flex; flex-direction: column; gap: 2px; }
+.flp-stat-l { font-family: "Orbitron", sans-serif; font-size: 0.45rem; letter-spacing: 0.18em; text-align: center; color: rgba(209, 250, 229, 0.6); }
+.flp-stat-bar { display: flex; gap: 2px; height: 4px; }
+.flp-stat-bar i { display: block; height: 100%; border-radius: 2px; background: rgba(203, 213, 225, 0.35); }
+.flp-stat-bar i.is-ours { background: #34d399; }
+
+.flp-foot { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; font-size: 0.75rem; color: rgba(209, 250, 229, 0.7); }
+.flp-standing { font-family: "Orbitron", sans-serif; font-size: 0.55rem; letter-spacing: 0.12em; color: #a7f3d0; align-self: center; }
+.flp-next { display: grid; grid-template-columns: auto 1fr; column-gap: 8px; padding: 6px 8px; border-radius: 8px; background: rgba(0, 0, 0, 0.25); font-size: 0.85rem; }
+.flp-next-l { grid-row: span 2; align-self: center; font-family: "Orbitron", sans-serif; font-size: 0.48rem; letter-spacing: 0.18em; color: #6ee7b7; }
+.flp-next-d { font-size: 0.72rem; color: rgba(209, 250, 229, 0.65); }
+.flp-src { align-self: flex-end; font-family: "Orbitron", sans-serif; font-size: 0.42rem; letter-spacing: 0.16em; color: rgba(209, 250, 229, 0.45); }
+
+/* Telas largas: o painel vira a coluna da esquerda, na altura do orbe */
+@media (min-width: 1200px) {
+  .ls-container .flp-root {
+    position: absolute; top: 50%; left: clamp(40px, 4vw, 84px); transform: translateY(-50%);
+    width: clamp(280px, 20vw, 340px);
+    max-height: calc(100vh - 150px); overflow: hidden;
+  }
+}
+/* Telas menores: só o essencial (placar, tempo, contagem) */
+@media (max-width: 1199px) {
+  .ls-container .flp-root { padding: 8px 14px; gap: 6px; }
+  .ls-container .flp-events, .ls-container .flp-stats, .ls-container .flp-next, .ls-container .flp-src, .ls-container .flp-foot { display: none; }
+  .ls-container .flp-crest { width: 30px; height: 30px; }
+  .ls-container .flp-score strong { font-size: 1.4rem; }
+}
+@media (max-height: 760px) and (min-width: 1200px) {
+  .ls-container .flp-stats { display: none; }
+}
+
+/* Comemoração (FanGoalOverlay) */
+.fgo-root {
+  position: fixed; inset: 0; z-index: 120; display: grid; place-items: center;
+  pointer-events: auto; cursor: pointer;
+  animation: fgo-in 260ms ease-out;
+}
+.fgo-goal { background: radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.35), rgba(1, 26, 15, 0.55) 70%); }
+.fgo-conceded { background: rgba(1, 10, 20, 0.35); }
+.fgo-shout { background: radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.22), transparent 70%); pointer-events: none; }
+.fgo-card {
+  position: relative; text-align: center; padding: 22px 42px; border-radius: 18px;
+  background: linear-gradient(180deg, rgba(4, 101, 56, 0.92), rgba(1, 26, 15, 0.95));
+  border: 2px solid rgba(110, 231, 183, 0.8);
+  box-shadow: 0 0 60px rgba(16, 185, 129, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+.fgo-conceded .fgo-card { border-color: rgba(203, 213, 225, 0.5); background: linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(2, 6, 23, 0.95)); box-shadow: 0 0 30px rgba(0, 0, 0, 0.5); }
+.fgo-title {
+  font-family: "Orbitron", sans-serif; font-weight: 700; letter-spacing: 0.12em;
+  font-size: clamp(2.2rem, 7vw, 5rem); line-height: 1;
+  text-shadow: 0 0 24px rgba(110, 231, 183, 0.9), 0 0 60px rgba(16, 185, 129, 0.7);
+}
+.fgo-goal .fgo-title { animation: fgo-pulse 0.7s ease-in-out infinite alternate; }
+.fgo-conceded .fgo-title { font-size: clamp(1.2rem, 3vw, 2rem); text-shadow: none; color: #e2e8f0; }
+.fgo-shout .fgo-title { font-size: clamp(1.6rem, 4.5vw, 3rem); }
+.fgo-score { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 12px; font-family: "Rajdhani", sans-serif; font-size: 1.2rem; font-weight: 600; }
+.fgo-score strong { font-family: "Orbitron", sans-serif; font-size: 2rem; }
+.fgo-score em { font-style: normal; opacity: 0.6; font-size: 1.2rem; }
+.fgo-scorer { margin-top: 10px; font-family: "Rajdhani", sans-serif; font-size: 1.25rem; font-weight: 600; color: #ecfdf5; }
+.fgo-scorer span { font-family: "Orbitron", sans-serif; font-size: 0.8rem; color: #6ee7b7; margin-left: 4px; }
+.fgo-scorer em { display: block; font-style: normal; font-size: 0.85rem; font-weight: 500; opacity: 0.7; }
+.fgo-half, .fgo-full { background: rgba(1, 10, 20, 0.3); }
+.fgo-half { pointer-events: none; }
+.fgo-half .fgo-title, .fgo-full .fgo-title { font-size: clamp(1.6rem, 4.5vw, 3rem); }
+.fgo-full.fgo-win { background: radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.35), rgba(1, 26, 15, 0.55) 70%); }
+.fgo-full .fgo-sub { font-size: 0.9rem; color: #fff; margin-top: 8px; }
+.fgo-minute, .fgo-sub { margin-top: 4px; font-family: "Orbitron", sans-serif; font-size: 0.7rem; letter-spacing: 0.2em; color: #a7f3d0; }
+.fgo-burst { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.fgo-burst span {
+  position: absolute; left: 50%; top: 50%; width: 10px; height: 26px; border-radius: 3px;
+  background: var(--c, #34d399);
+  transform: rotate(calc(var(--i) * 25.7deg)) translateY(0);
+  animation: fgo-fly 1.4s ease-out forwards;
+}
+.fgo-burst span:nth-child(odd) { --c: #ffffff; }
+@keyframes fgo-fly {
+  to { transform: rotate(calc(var(--i) * 25.7deg)) translateY(-42vmin); opacity: 0; }
+}
+@keyframes fgo-in { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: none; } }
+@keyframes fgo-pulse { to { transform: scale(1.06); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .fmb-ball, .flp-root.is-live .flp-tag, .fgo-goal .fgo-title, .fgo-burst span, .fgo-root { animation: none !important; }
+  .fgo-burst { display: none; }
+}

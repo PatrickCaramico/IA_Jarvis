@@ -1,0 +1,331 @@
+/* ==========================================================================
+   V4.4: fundo "blueprint" (planta técnica azul), ativo com <html data-bg="blueprint">.
+   Só CSS: duas grades (fina a cada 20px, forte a cada 100px) sobre um azul royal com
+   brilho no centro. Nada de imagem e nada animado na central (os painéis usam
+   backdrop-filter, que ficaria caro com fundo em movimento). O brilho que passa devagar
+   existe só na tela de bloqueio e some com "reduzir movimento" do Windows.
+   O fundo antigo continua disponível: Configurações > Geral > Fundo > Clássico.
+   ========================================================================== */
+
+[data-bg="blueprint"] {
+  --bp-base-1: #2362b8;
+  --bp-base-2: #174a95;
+  --bp-base-3: #0d3170;
+  --bp-minor: rgba(190, 225, 255, 0.075);
+  --bp-major: rgba(205, 235, 255, 0.17);
+  --bp-ink: rgba(225, 242, 255, 0.55);
+  --bp-glass: rgba(6, 26, 62, 0.72);
+  --bp-glass-2: rgba(3, 14, 38, 0.86);
+
+  /* grade: fina (20px) + forte (100px), nos dois eixos */
+  --bp-grid:
+    linear-gradient(var(--bp-major) 1px, transparent 1px) 0 0 / 100px 100px,
+    linear-gradient(90deg, var(--bp-major) 1px, transparent 1px) 0 0 / 100px 100px,
+    linear-gradient(var(--bp-minor) 1px, transparent 1px) 0 0 / 20px 20px,
+    linear-gradient(90deg, var(--bp-minor) 1px, transparent 1px) 0 0 / 20px 20px;
+  --bp-paper: radial-gradient(ellipse 80% 70% at 50% 45%, var(--bp-base-1) 0%, var(--bp-base-2) 55%, var(--bp-base-3) 100%);
+}
+
+/* Modo Torcedor (V4.4): a planta continua AZUL; só o layout fica verde Palmeiras
+   (painéis, bordas, reator, faixas). Detalhes no fim deste arquivo. */
+[data-bg="blueprint"][data-mode="fan"] {
+  --bp-glass: rgba(2, 44, 26, 0.82);
+  --bp-glass-2: rgba(1, 26, 15, 0.9);
+  --bp-fan-line: rgba(52, 211, 153, 0.55);
+  --bp-fan-glow: rgba(16, 185, 129, 0.45);
+}
+
+[data-bg="blueprint"] body,
+[data-bg="blueprint"] .hl-root,
+[data-bg="blueprint"] .ls-container,
+[data-bg="blueprint"] .gs-root,
+[data-bg="blueprint"][data-mode="fan"] .hl-root {
+  background: var(--bp-grid), var(--bp-paper), var(--bp-base-2);
+}
+[data-bg="blueprint"] body { background-attachment: fixed; }
+
+/* Vinheta leve nas bordas, como papel sob luz */
+[data-bg="blueprint"] .hl-root,
+[data-bg="blueprint"][data-mode="fan"] .hl-root {
+  box-shadow: inset 0 0 140px rgba(2, 12, 40, 0.55);
+}
+
+/* Painéis: vidro mais escuro para o texto não sumir no azul claro */
+[data-bg="blueprint"] .hl-panel,
+[data-bg="blueprint"] .np-hud {
+  background: linear-gradient(180deg, var(--bp-glass), var(--bp-glass-2));
+  border-color: rgba(200, 235, 255, 0.28);
+  box-shadow: 0 6px 24px rgba(2, 10, 35, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+[data-bg="blueprint"] .hl-top {
+  background: linear-gradient(180deg, rgba(6, 26, 62, 0.85), rgba(3, 14, 38, 0.92));
+  border-color: rgba(200, 235, 255, 0.3);
+}
+[data-bg="blueprint"] .lc-card {
+  background: linear-gradient(180deg, var(--bp-glass), var(--bp-glass-2));
+  border-color: rgba(200, 235, 255, 0.26);
+}
+[data-bg="blueprint"][data-mode="fan"] .hl-panel,
+[data-bg="blueprint"][data-mode="fan"] .lc-card,
+[data-bg="blueprint"][data-mode="fan"] .hl-top {
+  background: linear-gradient(180deg, var(--bp-glass), var(--bp-glass-2));
+}
+
+/* --------------------------------------------------------------------------
+   Tela de bloqueio / inicialização: moldura de planta com régua e carimbo
+   -------------------------------------------------------------------------- */
+[data-bg="blueprint"] .ls-container { isolation: isolate; }
+
+/* Moldura interna com marcas de régua (a cada 20px, maiores a cada 100px) */
+[data-bg="blueprint"] .ls-container::before {
+  content: "";
+  position: fixed;
+  inset: 12px;
+  z-index: -1;
+  pointer-events: none;
+  border: 1px solid rgba(220, 240, 255, 0.35);
+  background:
+    repeating-linear-gradient(90deg, var(--bp-ink) 0 1px, transparent 1px 100px) top left / 100% 10px no-repeat,
+    repeating-linear-gradient(90deg, rgba(225, 242, 255, 0.3) 0 1px, transparent 1px 20px) top left / 100% 5px no-repeat,
+    repeating-linear-gradient(180deg, var(--bp-ink) 0 1px, transparent 1px 100px) top left / 10px 100% no-repeat,
+    repeating-linear-gradient(180deg, rgba(225, 242, 255, 0.3) 0 1px, transparent 1px 20px) top left / 5px 100% no-repeat;
+}
+
+/* Brilho que atravessa a planta devagar (só no bloqueio) */
+[data-bg="blueprint"] .ls-container::after {
+  content: "";
+  position: fixed;
+  top: -50%;
+  left: -60%;
+  width: 60%;
+  height: 200%;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(190, 230, 255, 0.07) 45%, rgba(220, 245, 255, 0.12) 50%, rgba(190, 230, 255, 0.07) 55%, transparent);
+  transform: rotate(18deg) translateX(0);
+  animation: bp-sweep 16s linear infinite;
+  will-change: transform;
+}
+@keyframes bp-sweep {
+  0% { transform: rotate(18deg) translateX(0); }
+  100% { transform: rotate(18deg) translateX(420%); }
+}
+
+/* Círculo de cota em volta do orbe, como num desenho técnico */
+[data-bg="blueprint"] .ls-orb-wrapper { position: relative; }
+[data-bg="blueprint"] .ls-orb-wrapper::before {
+  content: "";
+  position: absolute;
+  inset: -18px;
+  border-radius: 50%;
+  border: 1px dashed rgba(220, 240, 255, 0.28);
+  pointer-events: none;
+}
+
+/* --------------------------------------------------------------------------
+   Reator Arc em destaque sobre a planta (o fundo não muda)
+   O orbe foi desenhado para fundo quase preto; no azul ele sumia. Aqui ele ganha um
+   "invólucro" escuro só atrás dele, um halo que respira e cores mais claras.
+   Tudo em opacity/box-shadow estáticos: nada de filter animado (pesaria).
+   -------------------------------------------------------------------------- */
+[data-bg="blueprint"] .arc-hud { isolation: isolate; }
+
+/* Invólucro: disco azul-marinho atrás dos anéis, com aro de luz */
+[data-bg="blueprint"] .arc-hud::before {
+  content: "";
+  position: absolute;
+  inset: 2%;
+  z-index: -1;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(2, 12, 34, 0.92) 0%, rgba(3, 16, 44, 0.85) 55%, rgba(4, 22, 58, 0.55) 72%, transparent 74%);
+  box-shadow: 0 0 0 1px rgba(160, 230, 255, 0.18), 0 0 60px 8px rgba(2, 12, 40, 0.45);
+}
+
+/* Halo claro que respira em volta do reator */
+[data-bg="blueprint"] .arc-hud::after {
+  content: "";
+  position: absolute;
+  inset: -14%;
+  z-index: -2;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(140, 235, 255, 0.42) 0%, rgba(90, 210, 255, 0.22) 38%, transparent 68%);
+  animation: bp-reactor-breathe 4s ease-in-out infinite;
+}
+@keyframes bp-reactor-breathe {
+  0%, 100% { opacity: 0.65; }
+  50% { opacity: 1; }
+}
+
+/* Cores do modo normal (o Modo Torcedor mantém as dele) */
+[data-bg="blueprint"]:not([data-mode="fan"]) .arc-hud [class*="text-arc-400"] { color: rgba(205, 245, 255, 0.9); }
+[data-bg="blueprint"]:not([data-mode="fan"]) .arc-hud circle[stroke="#0d5f88"] { stroke: #0b3f73; }
+[data-bg="blueprint"]:not([data-mode="fan"]) .arc-hud circle[stroke="#4fdcff"] { stroke: #9cf0ff; }
+[data-bg="blueprint"]:not([data-mode="fan"]) .arc-hud .animate-arc-pulse { background: rgba(150, 235, 255, 0.35); }
+[data-bg="blueprint"] .arc-hud .animate-core-flicker {
+  box-shadow: 0 0 22px 4px rgba(200, 250, 255, 0.85), 0 0 60px 14px rgba(79, 220, 255, 0.55);
+}
+
+/* Fan mode: halo verde */
+[data-bg="blueprint"][data-mode="fan"] .arc-hud::after {
+  background: radial-gradient(circle, rgba(120, 255, 190, 0.38) 0%, rgba(52, 211, 153, 0.2) 38%, transparent 68%);
+}
+
+/* Sentinela "dormindo": antes o orbe era escurecido; na planta ele fica aceso */
+[data-bg="blueprint"] .snt-sleeping .snt-hud { filter: none; }
+[data-bg="blueprint"] .ls-sentinel.is-night .snt-hud { filter: brightness(0.75); }
+
+/* "alterar foto" fica acima do canto do carimbo/botão do Modo Torcedor */
+.ls-container .snt-photo-link { right: 28px; bottom: 96px; }
+[data-bg="blueprint"] .snt-photo-link { color: rgba(225, 242, 255, 0.55); }
+
+@media (prefers-reduced-motion: reduce) {
+  [data-bg="blueprint"] .arc-hud::after { animation: none; opacity: 0.85; }
+}
+
+/* Canto inferior direito: botão do Modo Torcedor (sempre) + carimbo de planta (só no blueprint) */
+.bp-corner {
+  position: fixed;
+  right: 28px;
+  bottom: 28px;
+  z-index: 3;
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.bp-fan-btn {
+  display: inline-flex; align-items: center; gap: 9px;
+  height: 46px; padding: 0 14px 0 10px; box-sizing: border-box;
+  border-radius: 10px; cursor: pointer;
+  color: rgba(230, 245, 255, 0.85);
+  background: rgba(4, 22, 58, 0.7);
+  border: 1px solid rgba(200, 235, 255, 0.35);
+  backdrop-filter: blur(8px);
+  transition: background 200ms ease, border-color 200ms ease, box-shadow 200ms ease, transform 120ms ease;
+}
+.bp-fan-btn:hover { border-color: rgba(110, 231, 183, 0.7); box-shadow: 0 0 14px rgba(16, 185, 129, 0.3); }
+.bp-fan-btn:active { transform: scale(0.97); }
+.bp-fan-btn:focus-visible { outline: 2px solid #6ee7b7; outline-offset: 2px; }
+.bp-fan-btn:disabled { opacity: 0.6; cursor: progress; }
+.bp-fan-ball { font-size: 1.15rem; filter: grayscale(0.6); transition: filter 200ms ease, transform 400ms ease; }
+.bp-fan-txt { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.15; }
+.bp-fan-txt b { font-family: "Orbitron", sans-serif; font-size: 0.58rem; letter-spacing: 0.16em; font-weight: 700; }
+.bp-fan-txt small { font-family: "Orbitron", sans-serif; font-size: 0.48rem; letter-spacing: 0.2em; opacity: 0.65; }
+.bp-fan-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(203, 213, 225, 0.45); }
+.bp-fan-btn.is-on {
+  color: #ecfdf5;
+  background: linear-gradient(180deg, rgba(4, 101, 56, 0.9), rgba(2, 44, 26, 0.92));
+  border-color: rgba(52, 211, 153, 0.75);
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.35);
+}
+.bp-fan-btn.is-on .bp-fan-ball { filter: none; transform: rotate(360deg); }
+.bp-fan-btn.is-on .bp-fan-txt small { color: #6ee7b7; opacity: 1; }
+.bp-fan-btn.is-on .bp-fan-dot { background: #34d399; box-shadow: 0 0 8px #34d399; }
+.bp-fan-btn.is-error { border-color: rgba(251, 191, 36, 0.8); }
+.bp-fan-btn.is-error .bp-fan-txt small { color: #fbbf24; opacity: 1; }
+.bp-fan-btn.is-error .bp-fan-dot { background: #fbbf24; box-shadow: 0 0 8px #fbbf24; }
+
+.bp-stamp { display: none; }
+[data-bg="blueprint"] .bp-stamp {
+  display: grid;
+  grid-template-columns: auto auto;
+  pointer-events: none;
+  border: 1px solid rgba(220, 240, 255, 0.45);
+  font-family: "Orbitron", sans-serif;
+  font-size: 0.55rem;
+  letter-spacing: 0.16em;
+  color: rgba(230, 245, 255, 0.72);
+  background: rgba(8, 35, 85, 0.35);
+}
+[data-bg="blueprint"] .bp-stamp span { padding: 4px 9px; border: 0 solid rgba(220, 240, 255, 0.3); }
+[data-bg="blueprint"] .bp-stamp .bp-stamp-title { grid-column: 1 / -1; border-bottom-width: 1px; font-size: 0.7rem; color: #fff; }
+[data-bg="blueprint"] .bp-stamp span:nth-child(2) { border-right-width: 1px; }
+
+/* V4.5: opção "📱 CELULAR" na Sentinela (canto inferior esquerdo, espelhando o carimbo).
+   Um botão do mesmo tamanho do "MODO TORCEDOR"; o cartão com o QR abre por cima dele. */
+.mqr-wrap { position: fixed; left: 28px; bottom: 28px; z-index: 3; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+.mqr-chip {
+  display: inline-flex; align-items: center; gap: 9px;
+  height: 46px; padding: 0 14px 0 12px; box-sizing: border-box;
+  border-radius: 10px; cursor: pointer; font-size: 1.05rem;
+  color: rgba(230, 245, 255, 0.85); background: rgba(4, 22, 58, 0.7);
+  border: 1px solid rgba(200, 235, 255, 0.35); backdrop-filter: blur(8px);
+  transition: border-color 200ms ease, box-shadow 200ms ease;
+}
+.mqr-chip:hover, .mqr-chip.is-open { border-color: rgba(79, 220, 255, 0.8); box-shadow: 0 0 14px rgba(79, 220, 255, 0.3); }
+.mqr-chip-txt { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.15; }
+.mqr-chip-txt b { font-family: "Orbitron", sans-serif; font-size: 0.58rem; letter-spacing: 0.16em; font-weight: 700; color: #fff; }
+.mqr-chip-txt small { font-family: "Orbitron", sans-serif; font-size: 0.46rem; letter-spacing: 0.18em; opacity: 0.65; }
+.mqr-root {
+  position: relative; display: flex; align-items: center; gap: 14px; max-width: 420px;
+  padding: 12px 34px 12px 12px; border-radius: 14px; outline: none;
+  background: linear-gradient(180deg, rgba(6, 26, 62, 0.92), rgba(3, 14, 38, 0.95));
+  border: 1px solid rgba(200, 235, 255, 0.4);
+  box-shadow: 0 12px 32px rgba(2, 10, 35, 0.5);
+  color: rgba(230, 245, 255, 0.88);
+  animation: mqr-in 180ms ease-out;
+}
+@keyframes mqr-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.mqr-code { line-height: 0; padding: 6px; border-radius: 8px; background: #fff; flex-shrink: 0; }
+.mqr-txt { display: flex; flex-direction: column; gap: 4px; }
+.mqr-txt b { font-family: "Orbitron", sans-serif; font-size: 0.62rem; letter-spacing: 0.16em; color: #fff; }
+.mqr-txt span { font-family: "Rajdhani", sans-serif; font-size: 0.95rem; line-height: 1.3; }
+.mqr-txt small { font-family: "Orbitron", sans-serif; font-size: 0.46rem; letter-spacing: 0.16em; opacity: 0.6; }
+.mqr-txt .mqr-step { font-size: 0.8rem; opacity: 0.75; }
+.mqr-close { position: absolute; top: 6px; right: 8px; background: none; border: none; color: rgba(230, 245, 255, 0.6); cursor: pointer; font-size: 0.9rem; }
+.mqr-close:hover { color: #fff; }
+[data-mode="fan"] .mqr-root, [data-mode="fan"] .mqr-chip { border-color: rgba(52, 211, 153, 0.55); background: rgba(2, 44, 26, 0.85); }
+
+@media (max-width: 900px), (max-height: 620px) {
+  [data-bg="blueprint"] .bp-stamp { display: none; }
+  .mqr-wrap { left: 16px; bottom: 60px; }
+  .mqr-chip-txt small { display: none; }
+  .bp-corner { right: 16px; bottom: 60px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bp-fan-btn, .bp-fan-ball { transition: none; }
+}
+
+/* --------------------------------------------------------------------------
+   Modo Torcedor sobre a planta azul: layout verde
+   -------------------------------------------------------------------------- */
+[data-bg="blueprint"][data-mode="fan"] .hl-root { color: #f2fbf6; }
+[data-bg="blueprint"][data-mode="fan"] .hl-panel,
+[data-bg="blueprint"][data-mode="fan"] .lc-card,
+[data-bg="blueprint"][data-mode="fan"] .np-hud {
+  border-color: var(--bp-fan-line);
+  box-shadow: 0 8px 28px rgba(1, 20, 12, 0.5), 0 0 18px rgba(16, 185, 129, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+[data-bg="blueprint"][data-mode="fan"] .hl-top {
+  background: linear-gradient(180deg, rgba(4, 101, 56, 0.9), rgba(2, 36, 19, 0.94));
+  border-color: rgba(52, 211, 153, 0.6);
+}
+/* moldura, régua, cota do orbe e carimbo em verde-claro */
+[data-bg="blueprint"][data-mode="fan"] .ls-container::before { border-color: rgba(110, 231, 183, 0.5); }
+[data-bg="blueprint"][data-mode="fan"] .ls-orb-wrapper::before { border-color: rgba(110, 231, 183, 0.45); }
+[data-bg="blueprint"][data-mode="fan"] .bp-stamp { border-color: rgba(110, 231, 183, 0.6); background: rgba(2, 44, 26, 0.6); }
+[data-bg="blueprint"][data-mode="fan"] .bp-stamp .bp-stamp-title::after { content: " · MODO TORCEDOR"; color: #6ee7b7; }
+[data-bg="blueprint"][data-mode="fan"] .ls-bracket { border-color: #34d399; }
+[data-bg="blueprint"][data-mode="fan"] .ls-title { color: #d1fae5; text-shadow: 0 0 18px rgba(16, 185, 129, 0.7); }
+
+/* Reator em verde (o JSX desenha em azul; aqui troca as cores sem mexer no componente) */
+[data-bg="blueprint"][data-mode="fan"] .arc-hud::before {
+  background: radial-gradient(circle, rgba(1, 26, 15, 0.94) 0%, rgba(2, 36, 20, 0.88) 55%, rgba(3, 50, 28, 0.55) 72%, transparent 74%);
+  box-shadow: 0 0 0 1px rgba(110, 231, 183, 0.25), 0 0 60px 8px rgba(1, 20, 12, 0.45);
+}
+[data-bg="blueprint"][data-mode="fan"] .arc-hud [class*="text-arc-400"] { color: rgba(167, 243, 208, 0.9); }
+[data-bg="blueprint"][data-mode="fan"] .arc-hud circle[stroke="#0d5f88"] { stroke: #046538; }
+[data-bg="blueprint"][data-mode="fan"] .arc-hud circle[stroke="#4fdcff"] { stroke: #6ee7b7; }
+[data-bg="blueprint"][data-mode="fan"] .arc-hud circle[stroke="#1fc2f5"] { stroke: #10b981; }
+[data-bg="blueprint"][data-mode="fan"] .arc-hud .animate-arc-pulse { background: rgba(52, 211, 153, 0.35); }
+[data-bg="blueprint"][data-mode="fan"] .arc-hud .animate-core-flicker {
+  background: radial-gradient(circle, #ffffff 0%, #d1fae5 22%, #34d399 55%, #047857 100%) !important;
+  box-shadow: 0 0 22px 4px rgba(209, 250, 229, 0.85), 0 0 60px 14px rgba(16, 185, 129, 0.6);
+}
+[data-bg="blueprint"][data-mode="fan"] .arc-hud svg[class*="drop-shadow"] { filter: drop-shadow(0 0 8px rgba(52, 211, 153, 0.85)); }
+
+@media (prefers-reduced-motion: reduce) {
+  [data-bg="blueprint"] .ls-container::after { animation: none; display: none; }
+}

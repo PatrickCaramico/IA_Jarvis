@@ -1,0 +1,32 @@
+{
+  "_descricao": "Sequências de energia compartilhadas pelos testes do detector de palmas em JavaScript (frontend/tests) e Python (scripts/tests). 'expect' é o número de palmas duplas que devem ser detectadas.",
+  "frame_ms": 10,
+  "sequences": [
+    {"name": "duas_palmas_300ms", "duration_ms": 2600, "events": [{"type": "clap", "t": 600, "level": 0.5}, {"type": "clap", "t": 900, "level": 0.45}], "expect": 1},
+    {"name": "duas_palmas_150ms", "duration_ms": 2600, "events": [{"type": "clap", "t": 600, "level": 0.5}, {"type": "clap", "t": 750, "level": 0.5}], "expect": 1},
+    {"name": "duas_palmas_700ms", "duration_ms": 3000, "events": [{"type": "clap", "t": 600, "level": 0.5}, {"type": "clap", "t": 1300, "level": 0.5}], "expect": 1},
+    {"name": "uma_palma", "duration_ms": 2600, "events": [{"type": "clap", "t": 700, "level": 0.6}], "expect": 0},
+    {"name": "tres_palmas_300ms", "duration_ms": 3000, "events": [{"type": "clap", "t": 600, "level": 0.5}, {"type": "clap", "t": 900, "level": 0.5}, {"type": "clap", "t": 1200, "level": 0.5}], "expect": 0},
+    {"name": "tres_palmas_600ms", "duration_ms": 3600, "events": [{"type": "clap", "t": 600, "level": 0.5}, {"type": "clap", "t": 1200, "level": 0.5}, {"type": "clap", "t": 1800, "level": 0.5}], "expect": 0},
+    {"name": "quatro_palmas_250ms", "duration_ms": 3200, "events": [{"type": "clap", "t": 600, "level": 0.5}, {"type": "clap", "t": 850, "level": 0.5}, {"type": "clap", "t": 1100, "level": 0.5}, {"type": "clap", "t": 1350, "level": 0.5}], "expect": 0},
+    {"name": "intervalo_curto_80ms", "duration_ms": 2600, "events": [{"type": "clap", "t": 600, "level": 0.5}, {"type": "clap", "t": 680, "level": 0.5}], "expect": 0},
+    {"name": "intervalo_longo_1000ms", "duration_ms": 3200, "events": [{"type": "clap", "t": 600, "level": 0.5}, {"type": "clap", "t": 1600, "level": 0.5}], "expect": 0},
+    {"name": "pico_unico_longo_fala", "duration_ms": 2600, "events": [{"type": "sustained", "t": 600, "dur": 600, "level": 0.4}], "expect": 0},
+    {"name": "fala_silabas", "duration_ms": 3200, "events": [{"type": "speech", "t": 500, "dur": 2000, "level": 0.3}], "expect": 0},
+    {"name": "ruido_constante_alto", "duration_ms": 3000, "noise": 0.06, "events": [], "expect": 0},
+    {"name": "degrau_de_ruido_sem_palmas", "duration_ms": 3000, "events": [{"type": "noise_level", "t": 800, "level": 0.05}], "expect": 0},
+    {"name": "ruido_moderado_com_palmas", "duration_ms": 3600, "noise": 0.02, "events": [{"type": "clap", "t": 1500, "level": 0.6}, {"type": "clap", "t": 1850, "level": 0.6}], "expect": 1},
+    {"name": "batida_de_porta", "duration_ms": 2600, "events": [{"type": "clap", "t": 700, "level": 0.9}], "expect": 0},
+    {"name": "palmas_sem_silencio_antes", "duration_ms": 2800, "events": [{"type": "sustained", "t": 100, "dur": 350, "level": 0.4}, {"type": "clap", "t": 500, "level": 0.5}, {"type": "clap", "t": 800, "level": 0.5}], "expect": 0},
+    {"name": "teclado_digitando", "duration_ms": 3400, "events": [
+      {"type": "clap", "t": 500, "level": 0.12}, {"type": "clap", "t": 640, "level": 0.12}, {"type": "clap", "t": 790, "level": 0.12},
+      {"type": "clap", "t": 920, "level": 0.12}, {"type": "clap", "t": 1080, "level": 0.12}, {"type": "clap", "t": 1210, "level": 0.12},
+      {"type": "clap", "t": 1360, "level": 0.12}, {"type": "clap", "t": 1500, "level": 0.12}, {"type": "clap", "t": 1650, "level": 0.12},
+      {"type": "clap", "t": 1790, "level": 0.12}, {"type": "clap", "t": 1930, "level": 0.12}, {"type": "clap", "t": 2080, "level": 0.12}], "expect": 0},
+    {"name": "duas_duplas_dentro_da_espera", "duration_ms": 3600, "events": [{"type": "clap", "t": 500, "level": 0.5}, {"type": "clap", "t": 800, "level": 0.5}, {"type": "clap", "t": 1800, "level": 0.5}, {"type": "clap", "t": 2100, "level": 0.5}], "expect": 1},
+    {"name": "duas_duplas_apos_a_espera", "duration_ms": 6500, "events": [{"type": "clap", "t": 500, "level": 0.5}, {"type": "clap", "t": 800, "level": 0.5}, {"type": "clap", "t": 4500, "level": 0.5}, {"type": "clap", "t": 4800, "level": 0.5}], "expect": 2},
+    {"name": "palmas_fracas_sensibilidade_1", "sensitivity": 1, "duration_ms": 2600, "events": [{"type": "clap", "t": 600, "level": 0.08}, {"type": "clap", "t": 900, "level": 0.08}], "expect": 0},
+    {"name": "palmas_fracas_sensibilidade_10", "sensitivity": 10, "duration_ms": 2600, "events": [{"type": "clap", "t": 600, "level": 0.08}, {"type": "clap", "t": 900, "level": 0.08}], "expect": 1},
+    {"name": "espera_30s_do_ouvinte", "cooldown_ms": 30000, "duration_ms": 9000, "events": [{"type": "clap", "t": 500, "level": 0.5}, {"type": "clap", "t": 800, "level": 0.5}, {"type": "clap", "t": 5500, "level": 0.5}, {"type": "clap", "t": 5800, "level": 0.5}], "expect": 1}
+  ]
+}

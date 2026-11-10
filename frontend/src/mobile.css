@@ -1,0 +1,49 @@
+/* V4.5: histórico do Canal Ativo (conversas de sessões anteriores, esmaecidas) */
+.hl-msg.is-old { opacity: 0.55; }
+.hl-msg-divider {
+  margin: 6px 0 !important; text-align: center; font-family: "Orbitron", sans-serif; font-size: 0.5rem;
+  letter-spacing: 0.22em; color: rgba(201, 246, 255, 0.55); border-top: 1px dashed rgba(201, 246, 255, 0.25); padding-top: 6px;
+}
+
+/* V4.5: JARVIS no celular (app Android ou navegador estreito). Uma coluna só, rolando:
+   cabeçalho, faixa do jogo, orbe, clima + Canal Ativo, painéis; microfone fixo embaixo. */
+@media (max-width: 760px) {
+  html, body, #root { overflow: auto; height: auto; min-height: 100%; }
+  .hl-root {
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-rows: auto !important;
+    height: auto; min-height: 100dvh; overflow: visible;
+    padding: 8px 10px calc(92px + env(safe-area-inset-bottom)); gap: 10px;
+  }
+  .hl-root > * { grid-column: 1 / -1 !important; grid-row: auto !important; }
+  .hl-top { order: 0; padding: 6px 8px; }
+  .hl-top-center, .hl-status, .hl-actions, .hl-clockbox small, .hl-brand-name small { display: none !important; }
+  .fmb-root { order: 1; flex-wrap: wrap; padding: 6px 10px; }
+  .fmb-src, .fmb-meta { display: none; }
+  .hl-center { order: 2; min-height: 0 !important; padding: 4px 0; }
+  .hl-orb { flex: none; height: min(62vw, 300px); }
+  .hl-right { order: 3; }
+  .hl-left { order: 4; }
+  /* No celular as colunas não recolhem sozinhas: ficam na rolagem */
+  .hl-root.hl-left-hidden .hl-left, .hl-root.hl-right-hidden .hl-right {
+    visibility: visible !important; opacity: 1 !important; pointer-events: auto !important;
+  }
+  .hl-left-tab-trigger, .hl-right-tab-trigger, .hl-gods-eye-trigger { display: none !important; }
+  .hl-col { overflow: visible; }
+  .hl-messages { max-height: 55vh; }
+  .hl-bottom {
+    order: 5; position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+    padding: 8px 14px calc(8px + env(safe-area-inset-bottom));
+    background: linear-gradient(180deg, rgba(6, 26, 62, 0.92), rgba(3, 14, 38, 0.97));
+    border-top: 1px solid rgba(200, 235, 255, 0.3);
+  }
+  .hl-mic { width: 64px; height: 64px; }
+
+  /* Bloqueio no celular */
+  .ls-container { padding: 20px 14px 110px; justify-content: flex-start; gap: 12px; overflow-y: auto; }
+  .snt-clock { font-size: 3rem; }
+  .ls-container .flp-root { position: static; transform: none; width: 100%; }
+  .ls-container .lc-wrap { display: flex; flex-direction: column; width: 100%; }
+  .ls-phone-pin { font-size: 0.8rem; padding: 14px 24px; }
+  .bp-corner { right: 12px; bottom: 14px; }
+}

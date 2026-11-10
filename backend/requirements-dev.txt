@@ -1,0 +1,5 @@
+# Dependências só para rodar os testes (pytest), não são necessárias para usar o JARVIS.
+-r requirements.txt
+pytest>=8.0
+httpx>=0.27   # usado pelo TestClient do FastAPI nos testes de rotas
+ruff>=0.6     # lint e formatação (configuração em pyproject.toml)

@@ -1,0 +1,90 @@
+/* V4.2.2: esqueleto de carregamento, estados vazios e faixa de "sem conexão".
+   Cores dos tokens do Branding Book (brand.css). */
+
+.j-sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+.j-skel { display: flex; flex-direction: column; gap: 8px; padding: 2px 0; }
+.j-skel-bar {
+  height: 10px; border-radius: 4px;
+  background: linear-gradient(90deg, rgba(34, 211, 238, 0.08) 0%, rgba(34, 211, 238, 0.22) 50%, rgba(34, 211, 238, 0.08) 100%);
+  background-size: 200% 100%;
+  animation: j-skel-shine 1.4s ease-in-out infinite;
+}
+.j-skel-block { height: 34px; width: 46%; border-radius: 6px; }
+@keyframes j-skel-shine { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+
+.j-empty { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; padding: 14px 8px; }
+.j-empty-icon {
+  display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%;
+  border: 1px solid rgba(34, 211, 238, 0.35); color: var(--j-core, #22d3ee); font-size: 15px;
+  box-shadow: 0 0 12px rgba(34, 211, 238, 0.18); margin-bottom: 4px;
+}
+.j-empty-title { margin: 0; font-size: 12px; color: rgba(207, 250, 254, 0.9); }
+.j-empty-hint { margin: 0; font-size: 11px; color: rgba(165, 243, 252, 0.55); max-width: 26ch; }
+.j-empty-action {
+  margin-top: 6px; padding: 4px 12px; border-radius: 4px; font-size: 11px; letter-spacing: 0.06em;
+  border: 1px solid rgba(34, 211, 238, 0.45); color: #cffafe; background: rgba(34, 211, 238, 0.08);
+}
+.j-empty-action:hover { background: rgba(34, 211, 238, 0.2); }
+.j-empty-green .j-empty-icon { border-color: rgba(16, 185, 129, 0.4); color: var(--j-green, #10b981); box-shadow: 0 0 12px rgba(16, 185, 129, 0.2); }
+.j-empty-green .j-empty-action { border-color: rgba(16, 185, 129, 0.5); background: rgba(16, 185, 129, 0.1); }
+
+.j-offline {
+  position: fixed; top: 10px; left: 50%; transform: translateX(-50%); z-index: 9000;
+  display: flex; align-items: center; gap: 10px; max-width: calc(100vw - 32px);
+  padding: 8px 16px; border-radius: 999px; font-size: 12px; letter-spacing: 0.02em;
+  color: #fde68a; background: rgba(28, 18, 4, 0.92); border: 1px solid rgba(245, 158, 11, 0.55);
+  box-shadow: 0 0 18px rgba(245, 158, 11, 0.25); animation: j-offline-in 0.25s ease-out;
+}
+.j-offline.is-back { color: #a7f3d0; background: rgba(4, 24, 18, 0.92); border-color: rgba(16, 185, 129, 0.55); box-shadow: 0 0 18px rgba(16, 185, 129, 0.25); }
+.j-offline-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--j-amber, #f59e0b); animation: j-offline-pulse 1.2s ease-in-out infinite; flex: none; }
+.j-offline.is-back .j-offline-dot { background: var(--j-green, #10b981); animation: none; }
+@keyframes j-offline-in { from { opacity: 0; transform: translate(-50%, -8px); } to { opacity: 1; transform: translate(-50%, 0); } }
+@keyframes j-offline-pulse { 50% { opacity: 0.35; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .j-skel-bar { animation: none; background: rgba(34, 211, 238, 0.14); }
+  .j-offline, .j-offline-dot { animation: none; }
+}
+
+/* ---- V4.2.2: "Tocando agora" (NowPlaying.jsx) ---- */
+.np { display: grid; gap: 7px; min-width: 0; }
+.np-lock {
+  padding: 10px 14px; border-radius: 12px; min-width: 150px;
+  background: rgba(2, 8, 19, 0.55); border: 1px solid rgba(79, 220, 255, 0.22); backdrop-filter: blur(6px);
+}
+.ls-container .np-lock { padding: 14px 18px; }
+[data-mode="fan"] .np-lock { background: var(--fan-glass, rgba(4, 101, 56, 0.15)); border-color: var(--fan-glass-border, rgba(52, 211, 153, 0.28)); }
+.np-hud {
+  border: 1px solid rgba(31, 194, 245, 0.22); border-radius: 8px; padding: 9px 12px;
+  background: linear-gradient(180deg, rgba(6, 22, 40, 0.65), rgba(2, 8, 19, 0.85)); backdrop-filter: blur(10px);
+}
+.np-head { display: flex; align-items: center; gap: 7px; font-family: "Orbitron", sans-serif; font-size: 0.5rem; letter-spacing: 0.18em; color: rgba(79, 220, 255, 0.85); }
+.np-hud .np-head { font-size: 0.55rem; }
+.np-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--j-muted, #7fa7b5); flex: none; }
+.np.is-playing .np-dot { background: var(--j-green, #10b981); box-shadow: 0 0 8px rgba(16, 185, 129, 0.7); }
+.np-eq { margin-left: auto; display: inline-flex; align-items: flex-end; gap: 2px; height: 10px; }
+.np-eq i { width: 2px; background: var(--j-green, #10b981); border-radius: 1px; animation: np-eq 0.9s ease-in-out infinite; }
+.np-eq i:nth-child(2) { animation-delay: -0.3s; } .np-eq i:nth-child(3) { animation-delay: -0.6s; }
+@keyframes np-eq { 0%, 100% { height: 3px; } 50% { height: 10px; } }
+.np-body { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.np-cover { width: 44px; height: 44px; border-radius: 6px; object-fit: cover; flex: none; border: 1px solid rgba(79, 220, 255, 0.2); }
+.np-cover-empty { display: grid; place-items: center; color: var(--j-core, #22d3ee); background: rgba(34, 211, 238, 0.08); }
+.np-text { display: grid; min-width: 0; }
+.np-text strong { font-family: "Rajdhani", sans-serif; font-weight: 600; font-size: 1rem; color: #e6faff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.np-text span { font-family: "Rajdhani", sans-serif; font-size: 0.85rem; color: rgba(201, 246, 255, 0.65); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.np.is-paused .np-text, .np.is-paused .np-cover { opacity: 0.6; }
+.np-bar { height: 3px; border-radius: 999px; background: rgba(79, 220, 255, 0.15); overflow: hidden; }
+.np-bar span { display: block; height: 100%; background: linear-gradient(90deg, #0ea5e9, #4fdcff); transition: width 1s linear; }
+.np-times { display: flex; justify-content: space-between; font-family: var(--font-data, monospace); font-size: 0.65rem; color: rgba(201, 246, 255, 0.5); font-variant-numeric: tabular-nums; }
+.np-controls { display: flex; justify-content: center; gap: 8px; }
+.np-controls button {
+  width: 34px; height: 30px; border-radius: 6px; border: 1px solid rgba(79, 220, 255, 0.3);
+  background: rgba(34, 211, 238, 0.06); color: #cffafe; font-size: 0.85rem;
+}
+.np-controls button:hover { background: rgba(34, 211, 238, 0.18); }
+.np-controls button:disabled { opacity: 0.4; }
+@media (prefers-reduced-motion: reduce) {
+  .np-eq i { animation: none; height: 6px; }
+  .np-bar span { transition: none; }
+}

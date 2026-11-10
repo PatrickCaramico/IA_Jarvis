@@ -1,0 +1,16 @@
+Há 37 dias eu comecei um projeto pessoal: um assistente que mora no meu próprio computador. Hoje ele chegou à versão 4.5. 🔵
+
+O JARVIS conversa comigo em português, reconhece meu rosto pela webcam para liberar a central, organiza agenda, tarefas e água, e escolhe a IA que eu quiser (Gemini, OpenAI ou Claude). O rosto é comparado no próprio PC, e a memória fica nele.
+
+Nesta última semana:
+🗺️ Uma identidade nova: o fundo virou uma planta técnica azul, com régua, carimbo e o reator em destaque.
+⚽ Modo Torcedor de verdade: agenda e placar ao vivo da ESPN, confirmados pelas notícias do Google, sem gastar nenhum token de IA. Ele liga sozinho no dia do jogo do Palmeiras e mostra até quem fez o gol.
+📱 JARVIS no celular: um app Android de 61 KB que se baixa por um QR na tela de bloqueio, na Wi-Fi de casa.
+👥 Uma central por pessoa: cada um entra com o próprio rosto ou PIN e vê só os próprios dados.
+♿ Acessibilidade: texto maior, alto contraste e menos movimento.
+
+Por trás: Python, FastAPI, React e OpenCV, 233 testes automáticos e um branding book que cresce junto com o projeto.
+
+O que você colocaria no seu JARVIS? 👇
+
+#ProjetoPessoal #Python #React #InteligenciaArtificial #Desenvolvimento #UXDesign

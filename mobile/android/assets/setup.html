@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>JARVIS · conectar</title>
+<style>
+  :root { --ink: #e6f7fb; --muted: rgba(225,242,255,.75); --core: #22d3ee; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; }
+  body {
+    font-family: system-ui, sans-serif; color: var(--ink); padding: 28px 22px 40px;
+    background:
+      linear-gradient(rgba(205,235,255,.17) 1px, transparent 1px) 0 0 / 100px 100px,
+      linear-gradient(90deg, rgba(205,235,255,.17) 1px, transparent 1px) 0 0 / 100px 100px,
+      linear-gradient(rgba(190,225,255,.075) 1px, transparent 1px) 0 0 / 20px 20px,
+      linear-gradient(90deg, rgba(190,225,255,.075) 1px, transparent 1px) 0 0 / 20px 20px,
+      radial-gradient(ellipse 80% 70% at 50% 35%, #2362b8, #174a95 55%, #0d3170);
+    background-attachment: fixed;
+  }
+  .brand { text-align: center; margin: 8px 0 22px; }
+  .orb { width: 92px; height: 92px; margin: 0 auto 12px; border-radius: 50%;
+    background: radial-gradient(circle, #fff 0%, #c9f6ff 22%, #4fdcff 55%, #0a9fd6 100%);
+    box-shadow: 0 0 0 10px rgba(2,12,34,.85), 0 0 0 11px rgba(160,230,255,.3), 0 0 50px 18px rgba(79,220,255,.45); }
+  h1 { margin: 0; letter-spacing: .28em; font-size: 1.5rem; font-weight: 800; }
+  .sub { margin-top: 6px; font-size: .72rem; letter-spacing: .2em; color: var(--muted); }
+  .card { background: linear-gradient(180deg, rgba(6,26,62,.86), rgba(3,14,38,.92)); border: 1px solid rgba(200,235,255,.28);
+    border-radius: 14px; padding: 18px; margin-bottom: 14px; }
+  .card h2 { margin: 0 0 12px; font-size: .78rem; letter-spacing: .2em; color: var(--core); }
+  label { display: block; font-size: .7rem; letter-spacing: .16em; color: var(--muted); margin: 10px 0 6px; }
+  input { width: 100%; padding: 13px; border-radius: 10px; border: 1px solid rgba(200,235,255,.35);
+    background: rgba(0,0,0,.35); color: #fff; font-size: 1.05rem; }
+  input.pin { letter-spacing: .5em; text-align: center; font-size: 1.3rem; }
+  button { width: 100%; margin-top: 14px; padding: 15px; border: 1px solid rgba(79,220,255,.75); border-radius: 10px;
+    background: rgba(34,211,238,.25); color: #fff; font-weight: 700; letter-spacing: .14em; font-size: .82rem; }
+  button:disabled { opacity: .5; }
+  .muted { color: var(--muted); font-size: .85rem; line-height: 1.5; }
+  .msg { display: none; margin-top: 12px; padding: 10px 12px; border-radius: 10px; font-size: .9rem; }
+  .msg.err { display: block; color: #fecaca; background: rgba(127,29,29,.35); border: 1px solid rgba(248,113,113,.5); }
+  .msg.ok { display: block; color: #bbf7d0; background: rgba(6,78,59,.4); border: 1px solid rgba(52,211,153,.5); }
+  .stamp { margin: 26px auto 0; width: fit-content; border: 1px solid rgba(220,240,255,.45); font-size: .6rem; letter-spacing: .16em; }
+  .stamp div { padding: 5px 10px; } .stamp div + div { border-top: 1px solid rgba(220,240,255,.3); color: var(--muted); }
+</style>
+</head>
+<body>
+  <div class="brand">
+    <div class="orb" aria-hidden="true"></div>
+    <h1>JARVIS</h1>
+    <div class="sub">CENTRAL PESSOAL NO CELULAR</div>
+  </div>
+
+  <form class="card" id="f">
+    <h2 id="title">CONECTAR COM O PC</h2>
+    <p class="muted" id="intro">Digite o <b>PIN</b> do perfil principal do JARVIS. O celular precisa estar na mesma Wi-Fi do PC.</p>
+    <label for="host">ENDEREÇO DO PC</label>
+    <input id="host" inputmode="decimal" autocomplete="off" placeholder="192.168.0.10">
+    <label for="pin">PIN</label>
+    <input id="pin" class="pin" type="password" inputmode="numeric" autocomplete="off" maxlength="8">
+    <button id="go" type="submit">ENTRAR</button>
+    <div id="msg" class="msg" role="status"></div>
+  </form>
+
+  <p class="muted" style="text-align:center">O endereço aparece no PC, no botão <b>📱 CELULAR</b> da tela de bloqueio.<br>A chave fica só neste celular.</p>
+  <div class="stamp" aria-hidden="true"><div>J.A.R.V.I.S. · APP ANDROID</div><div id="rev">REV. v4.5</div></div>
+
+<script>
+  var hostEl = document.getElementById("host"), pinEl = document.getElementById("pin"), msg = document.getElementById("msg"), go = document.getElementById("go");
+  function show(text, ok) { msg.textContent = text; msg.className = "msg " + (ok ? "ok" : "err"); }
+  var params = new URLSearchParams(location.hash.slice(1));
+  try {
+    hostEl.value = params.get("host") || JarvisApp.savedHost() || "";
+    document.getElementById("rev").textContent = "REV. v" + JarvisApp.version();
+  } catch (e) {}
+  if (params.get("erro") !== null) {
+    document.getElementById("title").textContent = "NÃO ACHEI O JARVIS DO PC";
+    show("Confira se o PC está com o JARVIS aberto (Iniciar-JARVIS.bat) e se o celular está na mesma Wi-Fi.", false);
+  }
+  if (hostEl.value) pinEl.focus(); else hostEl.focus();
+  // Resposta do app (Java) ao pareamento
+  window.__pairResult = function (ok, text) {
+    go.disabled = false; go.textContent = "ENTRAR";
+    show(text, ok);
+  };
+  document.getElementById("f").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var host = hostEl.value.trim().replace(/^https?:\/\//, "").replace(/[:\/].*$/, "");
+    var pin = pinEl.value.trim();
+    if (!/^[\w.-]+$/.test(host)) { show("Digite o endereço do PC (ex.: 192.168.0.10).", false); return; }
+    if (!/^\d{4,8}$/.test(pin)) { show("O PIN tem de 4 a 8 números.", false); return; }
+    go.disabled = true; go.textContent = "CONECTANDO…";
+    JarvisApp.pairWithPin(host, pin);
+  });
+</script>
+</body>
+</html>

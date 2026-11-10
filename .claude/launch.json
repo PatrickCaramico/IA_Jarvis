@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "frontend-demo",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "set VITE_API_URL=http://127.0.0.1:9&& npm --prefix frontend run dev -- --host 127.0.0.1 --port 5198 --strictPort"],
+      "port": 5198
+    }
+  ]
+}

@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>JARVIS · carrossel LinkedIn</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  @page { size: 1080px 1350px; margin: 0; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #0d3170; }
+  body { font-family: "Inter", system-ui, sans-serif; color: #e6f7fb; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  .slide {
+    position: relative; width: 1080px; height: 1350px; overflow: hidden; page-break-after: always; break-after: page;
+    padding: 96px 88px 120px;
+    background:
+      linear-gradient(rgba(205,235,255,.17) 1px, transparent 1px) 0 0 / 100px 100px,
+      linear-gradient(90deg, rgba(205,235,255,.17) 1px, transparent 1px) 0 0 / 100px 100px,
+      linear-gradient(rgba(190,225,255,.075) 1px, transparent 1px) 0 0 / 20px 20px,
+      linear-gradient(90deg, rgba(190,225,255,.075) 1px, transparent 1px) 0 0 / 20px 20px,
+      radial-gradient(ellipse 80% 70% at 50% 40%, #2362b8 0%, #174a95 55%, #0d3170 100%);
+  }
+  .slide:last-child { page-break-after: auto; break-after: auto; }
+  /* moldura de planta com régua */
+  .slide::before {
+    content: ""; position: absolute; inset: 28px; pointer-events: none; border: 1.5px solid rgba(220,240,255,.4);
+    background:
+      repeating-linear-gradient(90deg, rgba(225,242,255,.6) 0 1.5px, transparent 1.5px 100px) top left / 100% 14px no-repeat,
+      repeating-linear-gradient(90deg, rgba(225,242,255,.35) 0 1px, transparent 1px 20px) top left / 100% 7px no-repeat,
+      repeating-linear-gradient(180deg, rgba(225,242,255,.6) 0 1.5px, transparent 1.5px 100px) top left / 14px 100% no-repeat,
+      repeating-linear-gradient(180deg, rgba(225,242,255,.35) 0 1px, transparent 1px 20px) top left / 7px 100% no-repeat;
+  }
+  .corner { position: absolute; width: 44px; height: 44px; border: 0 solid #4fdcff; }
+  .c-tl { top: 44px; left: 44px; border-top-width: 3px; border-left-width: 3px; }
+  .c-br { bottom: 44px; right: 44px; border-bottom-width: 3px; border-right-width: 3px; }
+
+  .eyebrow { font-family: "Orbitron", sans-serif; font-size: 22px; letter-spacing: .28em; color: #22d3ee; font-weight: 700; }
+  h1, h2 { font-family: "Orbitron", sans-serif; margin: 18px 0 0; color: #fff; letter-spacing: .06em; line-height: 1.08; }
+  h2 { font-size: 66px; }
+  .lead { font-family: "Rajdhani", sans-serif; font-weight: 600; font-size: 38px; line-height: 1.25; color: rgba(230,245,255,.92); margin: 22px 0 0; }
+  .glass { background: linear-gradient(180deg, rgba(6,26,62,.86), rgba(3,14,38,.92)); border: 1.5px solid rgba(200,235,255,.3); border-radius: 22px; }
+
+  /* carimbo */
+  .stamp { position: absolute; right: 64px; bottom: 60px; display: grid; grid-template-columns: auto auto; border: 1.5px solid rgba(220,240,255,.55);
+    font-family: "Orbitron", sans-serif; font-size: 15px; letter-spacing: .16em; color: rgba(230,245,255,.85); background: rgba(8,35,85,.45); }
+  .stamp span { padding: 8px 14px; } .stamp .t { grid-column: 1 / -1; color: #fff; font-size: 19px; border-bottom: 1.5px solid rgba(220,240,255,.35); }
+  .stamp span:nth-child(2) { border-right: 1.5px solid rgba(220,240,255,.35); }
+  .by { position: absolute; left: 88px; bottom: 70px; font-family: "Rajdhani", sans-serif; font-weight: 600; font-size: 26px; color: rgba(230,245,255,.8); letter-spacing: .04em; }
+  .by b { color: #fff; }
+
+  /* orbe */
+  .orb { position: relative; width: 420px; height: 420px; margin: 70px auto 0; }
+  .orb .halo { position: absolute; inset: -60px; border-radius: 50%; background: radial-gradient(circle, rgba(140,235,255,.45), rgba(90,210,255,.18) 40%, transparent 68%); }
+  .orb .house { position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(circle, rgba(2,12,34,.95) 0%, rgba(3,16,44,.88) 60%, rgba(4,22,58,.4) 74%, transparent 75%); }
+  .orb .ticks { position: absolute; inset: 6px; border-radius: 50%; background: repeating-conic-gradient(rgba(205,245,255,.9) 0 .8deg, transparent .8deg 5deg); -webkit-mask: radial-gradient(circle, transparent 66%, #000 67%, #000 70%, transparent 71%); mask: radial-gradient(circle, transparent 66%, #000 67%, #000 70%, transparent 71%); }
+  .orb .coil { position: absolute; inset: 82px; border-radius: 50%; border: 22px solid #0b3f73; box-shadow: 0 0 22px rgba(79,220,255,.6), inset 0 0 18px rgba(79,220,255,.5); }
+  .orb .coil::after { content: ""; position: absolute; inset: -14px; border-radius: 50%; border: 4px dashed #9cf0ff; }
+  .orb .core { position: absolute; inset: 150px; border-radius: 50%; background: radial-gradient(circle, #fff 0%, #c9f6ff 22%, #4fdcff 55%, #0a9fd6 100%);
+    box-shadow: 0 0 40px 10px rgba(200,250,255,.85), 0 0 110px 30px rgba(79,220,255,.55); }
+  .orb.fan .coil { border-color: #046538; box-shadow: 0 0 22px rgba(52,211,153,.6), inset 0 0 18px rgba(52,211,153,.5); }
+  .orb.fan .coil::after { border-color: #6ee7b7; }
+  .orb.fan .core { background: radial-gradient(circle, #fff 0%, #d1fae5 22%, #34d399 55%, #047857 100%); box-shadow: 0 0 40px 10px rgba(209,250,229,.85), 0 0 110px 30px rgba(16,185,129,.55); }
+  .orb.fan .halo { background: radial-gradient(circle, rgba(120,255,190,.4), rgba(52,211,153,.18) 40%, transparent 68%); }
+
+  /* capa */
+  .cover h1 { font-size: 168px; letter-spacing: .2em; text-align: center; margin-top: 60px; text-shadow: 0 0 40px rgba(79,220,255,.55); }
+  .cover .eyebrow, .cover .lead { text-align: center; }
+  .cover .lead { font-size: 44px; margin-top: 10px; }
+  .cover .chip { display: block; width: fit-content; margin: 34px auto 0; padding: 14px 28px; border-radius: 999px; font-family: "Orbitron", sans-serif; font-size: 20px; letter-spacing: .18em; color: #fff; }
+
+  /* cards */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; margin-top: 56px; }
+  .card { padding: 34px 32px; }
+  .card .ico { font-size: 54px; line-height: 1; }
+  .card h3 { margin: 18px 0 8px; font-family: "Orbitron", sans-serif; font-size: 27px; letter-spacing: .08em; color: #fff; }
+  .card p { margin: 0; font-family: "Rajdhani", sans-serif; font-weight: 600; font-size: 29px; line-height: 1.25; color: rgba(230,245,255,.85); }
+
+  /* linha do tempo */
+  .tl { position: relative; margin-top: 46px; padding: 30px 34px; }
+  .tl ol { list-style: none; margin: 0; padding: 0 0 0 34px; border-left: 3px solid rgba(79,220,255,.55); }
+  .tl li { position: relative; display: grid; grid-template-columns: 170px 1fr; align-items: baseline; padding: 11px 0; }
+  .tl li::before { content: ""; position: absolute; left: -45px; top: 22px; width: 18px; height: 18px; border-radius: 50%; background: #0e7490; border: 3px solid #4fdcff; }
+  .tl li.now::before { background: #4fdcff; box-shadow: 0 0 18px #4fdcff; width: 24px; height: 24px; left: -48px; top: 19px; }
+  .tl .v { font-family: "Orbitron", sans-serif; font-weight: 700; font-size: 27px; color: #fff; }
+  .tl .d { font-family: "Rajdhani", sans-serif; font-weight: 600; font-size: 29px; color: rgba(230,245,255,.88); }
+  .tl .d small { font-family: "JetBrains Mono", monospace; font-size: 20px; color: #22d3ee; margin-right: 12px; }
+
+  /* prints */
+  .shot { margin-top: 44px; padding: 14px; border-radius: 22px; }
+  .shot img { display: block; width: 100%; border-radius: 12px; }
+  .bul { list-style: none; margin: 34px 0 0; padding: 0; display: flex; flex-direction: column; gap: 18px; }
+  .bul li { position: relative; padding-left: 46px; font-family: "Rajdhani", sans-serif; font-weight: 600; font-size: 32px; line-height: 1.25; color: rgba(230,245,255,.95); }
+  .bul li::before { content: ""; position: absolute; left: 4px; top: 14px; width: 18px; height: 18px; border-radius: 50%; border: 3px solid #4fdcff; }
+  .bul.fan li::before { border-color: #34d399; }
+  .bul b { color: #fff; }
+  .tag-fan { color: #6ee7b7; }
+  .two { display: grid; grid-template-columns: 1.45fr 1fr; gap: 20px; margin-top: 40px; }
+  .two .shot { margin: 0; }
+
+  /* números */
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; margin-top: 50px; }
+  .stat { padding: 28px 22px; text-align: center; }
+  .stat b { display: block; font-family: "Orbitron", sans-serif; font-size: 62px; color: #fff; text-shadow: 0 0 24px rgba(79,220,255,.5); }
+  .stat span { font-family: "Rajdhani", sans-serif; font-weight: 600; font-size: 26px; color: rgba(230,245,255,.85); }
+  .stack { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 34px; }
+  .stack span { padding: 12px 22px; border-radius: 999px; font-family: "JetBrains Mono", monospace; font-size: 23px; color: #e6f7fb; background: rgba(4,22,58,.7); border: 1.5px solid rgba(200,235,255,.35); }
+  .cta { margin-top: 44px; padding: 36px 38px; text-align: center; }
+  .cta p { margin: 0; font-family: "Orbitron", sans-serif; font-size: 36px; line-height: 1.3; color: #fff; letter-spacing: .04em; }
+  .cta small { display: block; margin-top: 14px; font-family: "Rajdhani", sans-serif; font-size: 28px; font-weight: 600; color: rgba(230,245,255,.8); }
+</style>
+</head>
+<body>
+
+<!-- 1. CAPA -->
+<section class="slide cover">
+  <div class="corner c-tl"></div><div class="corner c-br"></div>
+  <div class="eyebrow">PROJETO PESSOAL · 2026</div>
+  <div class="orb"><div class="halo"></div><div class="house"></div><div class="ticks"></div><div class="coil"></div><div class="core"></div></div>
+  <h1>JARVIS</h1>
+  <p class="lead">A minha central pessoal.<br>Do protótipo à v4.5 em 37 dias.</p>
+  <span class="chip glass">VOZ · ROSTO · RODA NO MEU PC</span>
+  <div class="by">por <b>Patrick Souza</b></div>
+  <div class="stamp"><span class="t">J.A.R.V.I.S.</span><span>FOLHA 01 / 07</span><span>REV. v4.5</span></div>
+</section>
+
+<!-- 2. O QUE É -->
+<section class="slide">
+  <div class="corner c-tl"></div><div class="corner c-br"></div>
+  <div class="eyebrow">CAPÍTULO I · O QUE É</div>
+  <h2>Um assistente<br>que mora no PC</h2>
+  <p class="lead">Escrevi o JARVIS do zero para cuidar da minha rotina, do meu foco e da minha saúde, rodando no meu próprio computador.</p>
+  <div class="grid2">
+    <div class="card glass"><div class="ico">🎙️</div><h3>VOZ</h3><p>Converso em português e ele responde falando.</p></div>
+    <div class="card glass"><div class="ico">🙂</div><h3>ROSTO</h3><p>A webcam libera a central. Sem rosto ou PIN, nada pessoal abre.</p></div>
+    <div class="card glass"><div class="ico">🏠</div><h3>LOCAL</h3><p>Roda no meu computador. O rosto é comparado ali mesmo e a memória fica nele.</p></div>
+    <div class="card glass"><div class="ico">🧠</div><h3>IA À ESCOLHA</h3><p>Gemini, OpenAI ou Claude, e respostas rápidas sem IA quando dá.</p></div>
+  </div>
+  <div class="stamp"><span class="t">J.A.R.V.I.S.</span><span>FOLHA 02 / 07</span><span>REV. v4.5</span></div>
+</section>
+
+<!-- 3. LINHA DO TEMPO -->
+<section class="slide">
+  <div class="corner c-tl"></div><div class="corner c-br"></div>
+  <div class="eyebrow">CAPÍTULO II · A JORNADA</div>
+  <h2>37 dias,<br>12 versões</h2>
+  <div class="tl glass">
+    <ol>
+      <li><span class="v">V1</span><span class="d"><small>29/09</small>o primeiro núcleo: voz, rosto e bloqueio</span></li>
+      <li><span class="v">V2.1</span><span class="d"><small>01/10</small>o dia a dia: tarefas, lembretes, "bom dia"</span></li>
+      <li><span class="v">V2.2</span><span class="d"><small>07/10</small>conectado: Spotify, Agenda, celular</span></li>
+      <li><span class="v">V3</span><span class="d"><small>20/10</small>a central de comando e o orbe</span></li>
+      <li><span class="v">V4.0</span><span class="d"><small>28/10</small>as Telas, Modo Torcedor e água</span></li>
+      <li><span class="v">4.1</span><span class="d"><small>29/10</small>o guardião: palmas, PIN, Sentinela</span></li>
+      <li><span class="v">4.2</span><span class="d"><small>30/10</small>a identidade: logo, cores, tom de voz</span></li>
+      <li><span class="v">4.3</span><span class="d"><small>04/11</small>o briefing em cards</span></li>
+      <li><span class="v">4.4</span><span class="d"><small>05/11</small>a planta azul e o jogo de verdade</span></li>
+      <li class="now"><span class="v">4.5</span><span class="d"><small>05/11</small>a casa: celular, pessoas, acessível</span></li>
+    </ol>
+  </div>
+  <div class="stamp"><span class="t">J.A.R.V.I.S.</span><span>FOLHA 03 / 07</span><span>REV. v4.5</span></div>
+</section>
+
+<!-- 4. A PLANTA -->
+<section class="slide">
+  <div class="corner c-tl"></div><div class="corner c-br"></div>
+  <div class="eyebrow">CAPÍTULO III · V4.4</div>
+  <h2>A planta azul</h2>
+  <p class="lead">Troquei o fundo preto por uma planta técnica e dei ao reator um invólucro próprio para ele não sumir no azul.</p>
+  <div class="shot glass"><img src="img/planta-bloqueio-real.webp" alt="Tela de bloqueio do JARVIS com fundo blueprint azul, relógio e o reator no centro"></div>
+  <ul class="bul">
+    <li><b>Só CSS:</b> grade dupla, régua e carimbo, sem nenhuma imagem.</li>
+    <li><b>Abre mais rápido:</b> a voz passou a carregar em segundo plano (4,8 s → 0,5 s na subida).</li>
+  </ul>
+  <div class="stamp"><span class="t">J.A.R.V.I.S.</span><span>FOLHA 04 / 07</span><span>REV. v4.5</span></div>
+</section>
+
+<!-- 5. MODO TORCEDOR -->
+<section class="slide">
+  <div class="corner c-tl"></div><div class="corner c-br"></div>
+  <div class="eyebrow">CAPÍTULO IV · <span class="tag-fan">MODO TORCEDOR</span></div>
+  <h2>Dia de jogo,<br>sem gastar IA</h2>
+  <div class="shot glass"><img src="img/jogo-real-4x0.webp" alt="Bloqueio no Modo Torcedor com o painel do jogo Palmeiras 4 x 0 Remo ao vivo, gols e tabela"></div>
+  <ul class="bul fan">
+    <li><b>Dados reais, zero tokens:</b> agenda e placar da ESPN, confirmação pelas notícias do Google.</li>
+    <li><b>Liga sozinho</b> no dia do jogo e sai no dia seguinte.</li>
+    <li><b>Gol com nome:</b> autor, assistência, posse e tabela no bloqueio.</li>
+  </ul>
+  <div class="stamp"><span class="t">J.A.R.V.I.S.</span><span>FOLHA 05 / 07</span><span>REV. v4.5</span></div>
+</section>
+
+<!-- 6. A CASA -->
+<section class="slide">
+  <div class="corner c-tl"></div><div class="corner c-br"></div>
+  <div class="eyebrow">CAPÍTULO V · V4.5</div>
+  <h2>A casa</h2>
+  <p class="lead">O JARVIS saiu da mesa: foi para o celular e recebe quem mora comigo.</p>
+  <div class="two">
+    <div class="shot glass"><img src="img/sentinela-celular.png" alt="Tela da Sentinela com o QR JARVIS no celular no canto"></div>
+    <div class="shot glass"><img src="img/nova-pessoa.png" alt="Cadastro de pessoa nova com foto pela webcam"></div>
+  </div>
+  <ul class="bul">
+    <li><b>App Android de 61 KB:</b> um QR no bloqueio baixa o app, na Wi-Fi de casa.</li>
+    <li><b>Uma central por pessoa:</b> rosto e PIN próprios, dados separados.</li>
+    <li><b>Acessível:</b> texto maior, alto contraste e menos movimento.</li>
+  </ul>
+  <div class="stamp"><span class="t">J.A.R.V.I.S.</span><span>FOLHA 06 / 07</span><span>REV. v4.5</span></div>
+</section>
+
+<!-- 7. BASTIDORES -->
+<section class="slide">
+  <div class="corner c-tl"></div><div class="corner c-br"></div>
+  <div class="eyebrow">CAPÍTULO VI · BASTIDORES</div>
+  <h2>Feito com<br>cuidado</h2>
+  <div class="stats">
+    <div class="stat glass"><b>233</b><span>testes automáticos</span></div>
+    <div class="stat glass"><b>12</b><span>versões em 37 dias</span></div>
+    <div class="stat glass"><b>1</b><span>PC: rosto e memória ficam nele</span></div>
+  </div>
+  <div class="stack">
+    <span>Python</span><span>FastAPI</span><span>React</span><span>Vite</span><span>OpenCV</span><span>edge-tts</span><span>Android</span><span>Node / Tailwind</span>
+  </div>
+  <div class="cta glass">
+    <p>O que você colocaria<br>no seu JARVIS?</p>
+    <small>Conta nos comentários. 👇</small>
+  </div>
+  <div class="by">por <b>Patrick Souza</b></div>
+  <div class="stamp"><span class="t">J.A.R.V.I.S.</span><span>FOLHA 07 / 07</span><span>REV. v4.5</span></div>
+</section>
+
+</body>
+</html>

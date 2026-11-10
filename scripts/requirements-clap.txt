@@ -1,0 +1,5 @@
+# Dependências SÓ do Ouvinte de Palmas (scripts/clap_launcher.py).
+# Separadas de backend/requirements.txt para não arriscar o backend.
+# numpy já vem com o opencv-python do backend; repetido aqui para instalação isolada.
+sounddevice>=0.4.6
+numpy>=1.26

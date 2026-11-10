@@ -1,0 +1,81 @@
+# ─── Ambiente e segredos ─────────────────────────────────────────────────────────
+.env
+*.env.local
+
+# ─── Python ──────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+dist/
+build/
+.eggs/
+venv/
+env/
+.venv/
+*.egg
+pip-wheel-metadata/
+
+# ─── Node / Frontend ─────────────────────────────────────────────────────────────
+node_modules/
+frontend/dist/
+frontend/.vite/
+*.tsbuildinfo
+
+# ─── Build e artefatos de APK / distribuições ──────────────────────────────────
+mobile/dist/
+*.apk
+*.aab
+*.idsig
+*.jks
+*.keystore
+
+# ─── Cache de testes e lint ─────────────────────────────────────────────────────
+backend/.pytest_cache/
+backend/.ruff_cache/
+.pytest_cache/
+.ruff_cache/
+**/.pytest_cache/
+**/.ruff_cache/
+
+# ─── Dados pessoais e gerados automaticamente ────────────────────────────────────
+# Dados pessoais: ignora tudo em data/, exceto o que eu quiser versionar
+data/*
+!data/.gitkeep
+!data/atalhos.example.json
+!data/respostas.json
+
+# Backups, certificados e segredos
+_backup_dados/
+_backup_layout/
+certs/
+*.pem
+*.key
+
+# ─── Modelos de IA (OpenCV face recognition) ─────────────────────────────────────
+backend/models/
+*.onnx
+
+# ─── Logs ────────────────────────────────────────────────────────────────────────
+*.log
+logs/
+
+# ─── IDEs e editores ─────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ─── Áudio gerado pelo TTS (temporário) ──────────────────────────────────────────
+*.mp3
+*.wav
+backend/tts_output/
+
+# ─── Pastas temporárias de sincronização (Google Drive / OneDrive) ─────────────
+.tmp.driveupload/
+.tmp.drivedownload/

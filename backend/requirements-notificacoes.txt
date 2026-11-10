@@ -1,0 +1,9 @@
+# OPCIONAL (4.2): central de notificações do Windows. Só instale se for usar.
+#   backend\venv\Scripts\python.exe -m pip install -r backend\requirements-notificacoes.txt
+# Depois permita em Configurações do Windows > Privacidade e segurança > Notificações.
+winrt-runtime>=2.0
+winrt-Windows.Foundation>=2.0
+winrt-Windows.Foundation.Collections>=2.0
+winrt-Windows.ApplicationModel>=2.0
+winrt-Windows.UI.Notifications>=2.0
+winrt-Windows.UI.Notifications.Management>=2.0

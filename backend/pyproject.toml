@@ -1,0 +1,25 @@
+# Configuração de qualidade de código do backend (refatoração 4.2).
+# Uso:  pip install -r requirements-dev.txt
+#       ruff check .         (erros e imports sem uso)
+#       ruff format core routes services   (formatação dos módulos novos)
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+extend-exclude = ["venv", ".venv", "data", "logs"]
+
+[tool.ruff.lint]
+# F = erros reais (nomes indefinidos, imports sem uso); E9 = erros de sintaxe; W6 = avisos de depreciação
+select = ["F", "E9", "W6"]
+
+[tool.ruff.lint.per-file-ignores]
+# import opcional usado só para testar se o pacote bleak existe
+"modules/health.py" = ["F401"]
+# variáveis guardadas para uso futuro no briefing
+"modules/briefing.py" = ["F841"]
+
+[tool.ruff.format]
+quote-style = "double"
+line-ending = "auto"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

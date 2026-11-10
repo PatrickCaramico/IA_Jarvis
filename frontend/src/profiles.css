@@ -1,0 +1,90 @@
+/* V4.5: cadastro de pessoa nova (NewProfileScreen) e boas-vindas (ProfileWelcome). */
+.np-root { overflow-y: auto; }
+.np-card {
+  position: relative; z-index: 2;
+  width: min(92vw, 460px); box-sizing: border-box;
+  padding: 22px 24px 18px; border-radius: 16px;
+  color: #e6f7fb; font-family: "Rajdhani", system-ui, sans-serif;
+  background: linear-gradient(180deg, rgba(6, 26, 62, 0.9), rgba(3, 14, 38, 0.95));
+  border: 1px solid rgba(200, 235, 255, 0.3);
+  box-shadow: 0 14px 40px rgba(2, 10, 35, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+.np-head { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.np-eyebrow { font-family: "Orbitron", sans-serif; font-size: 0.58rem; letter-spacing: 0.22em; color: #22d3ee; }
+.np-head h1 { margin: 0; font-family: "Orbitron", sans-serif; font-size: 1.25rem; letter-spacing: 0.12em; color: #fff; }
+.np-progress { height: 4px; border-radius: 999px; background: rgba(255, 255, 255, 0.1); overflow: hidden; }
+.np-progress i { display: block; height: 100%; background: linear-gradient(90deg, #0ea5e9, #4fdcff); transition: width 300ms ease; }
+.np-body { display: flex; flex-direction: column; gap: 10px; font-size: 1rem; }
+.np-body p { margin: 0; line-height: 1.45; }
+.np-body b { color: #fff; }
+.np-label { font-family: "Orbitron", sans-serif; font-size: 0.56rem; letter-spacing: 0.18em; color: rgba(225, 242, 255, 0.75); margin-top: 4px; }
+.np-input {
+  width: 100%; box-sizing: border-box; padding: 11px 12px; border-radius: 10px;
+  background: rgba(0, 0, 0, 0.35); color: #fff; font-size: 1.05rem; font-family: inherit;
+  border: 1px solid rgba(200, 235, 255, 0.35);
+}
+.np-input:focus { outline: none; border-color: #4fdcff; box-shadow: 0 0 0 3px rgba(79, 220, 255, 0.25); }
+.np-pin { letter-spacing: 0.5em; font-family: "Orbitron", sans-serif; text-align: center; }
+.np-photo {
+  width: 220px; height: 220px; margin: 4px auto; border-radius: 50%; overflow: hidden;
+  display: grid; place-items: center; background: rgba(0, 0, 0, 0.4);
+  border: 2px solid rgba(79, 220, 255, 0.6); box-shadow: 0 0 30px rgba(79, 220, 255, 0.3);
+}
+.np-photo img, .np-photo video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+.np-photo img { transform: none; }
+.np-photo .np-muted { padding: 18px; text-align: center; }
+.np-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; margin-top: 4px; }
+.np-btn {
+  flex: 1 1 auto; min-height: 42px; padding: 0 16px; border-radius: 10px; cursor: pointer;
+  font-family: "Orbitron", sans-serif; font-size: 0.62rem; letter-spacing: 0.16em; font-weight: 700;
+  color: #fff; background: rgba(34, 211, 238, 0.2); border: 1px solid rgba(79, 220, 255, 0.75);
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.np-btn:hover:not(:disabled) { background: rgba(34, 211, 238, 0.35); }
+.np-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.np-btn:focus-visible, .pw-choice:focus-visible { outline: 2px solid #fbbf24; outline-offset: 2px; }
+.np-alt { background: transparent; border-color: rgba(200, 235, 255, 0.35); font-weight: 500; }
+.np-file { position: relative; }
+.np-muted { color: rgba(225, 242, 255, 0.72); font-size: 0.9rem; }
+.np-error { margin: 10px 0 0; padding: 8px 10px; border-radius: 8px; color: #fecaca; background: rgba(127, 29, 29, 0.35); border: 1px solid rgba(248, 113, 113, 0.5); }
+.np-foot { margin: 14px 0 0; font-size: 0.78rem; color: rgba(225, 242, 255, 0.55); text-align: center; }
+
+.pw-root {
+  position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; padding: 20px;
+  background: rgba(2, 10, 30, 0.6); backdrop-filter: blur(6px); overflow-y: auto;
+}
+.pw-row { display: flex; gap: 8px; }
+.pw-wrap { flex-wrap: wrap; }
+.pw-choice {
+  flex: 1 1 auto; min-height: 40px; padding: 0 12px; border-radius: 10px; cursor: pointer;
+  font-family: inherit; font-size: 0.98rem; color: rgba(230, 245, 255, 0.85);
+  background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(200, 235, 255, 0.28);
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+}
+.pw-choice.is-on { color: #fff; background: rgba(34, 211, 238, 0.25); border-color: #4fdcff; box-shadow: 0 0 12px rgba(79, 220, 255, 0.3); }
+.pw-check { display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
+.pw-check input { width: 18px; height: 18px; accent-color: #34d399; }
+.pw-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.pw-blue { background: #1fc2f5; } .pw-green { background: #22c55e; } .pw-purple { background: #a855f7; }
+.pw-orange { background: #f97316; } .pw-red { background: #ef4444; }
+
+/* V4.5: "repetir o briefing ou pular?" (canto inferior do centro, sem cobrir o orbe) */
+.bask-root {
+  position: fixed; left: 50%; bottom: 96px; transform: translateX(-50%); z-index: 85;
+  width: min(92vw, 440px); box-sizing: border-box; padding: 16px 18px;
+  display: flex; flex-direction: column; gap: 6px; border-radius: 14px;
+  color: #e6f7fb; font-family: "Rajdhani", system-ui, sans-serif;
+  background: linear-gradient(180deg, rgba(6, 26, 62, 0.94), rgba(3, 14, 38, 0.97));
+  border: 1px solid rgba(79, 220, 255, 0.55);
+  box-shadow: 0 14px 40px rgba(2, 10, 35, 0.55), 0 0 22px rgba(79, 220, 255, 0.2);
+  animation: bask-in 220ms ease-out;
+}
+@keyframes bask-in { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translateX(-50%); } }
+.bask-eyebrow { font-family: "Orbitron", sans-serif; font-size: 0.55rem; letter-spacing: 0.22em; color: #22d3ee; }
+.bask-root strong { font-family: "Orbitron", sans-serif; font-size: 0.95rem; letter-spacing: 0.06em; color: #fff; }
+.bask-root p { margin: 0; font-size: 0.95rem; color: rgba(225, 242, 255, 0.8); }
+.bask-actions { display: flex; gap: 8px; margin-top: 6px; }
+.bask-actions small { margin-left: 8px; font-size: 0.5rem; opacity: 0.65; }
+[data-mode="fan"] .bask-root { border-color: rgba(52, 211, 153, 0.6); }
+
+@media (prefers-reduced-motion: reduce) { .np-progress i { transition: none; } .bask-root { animation: none; } }

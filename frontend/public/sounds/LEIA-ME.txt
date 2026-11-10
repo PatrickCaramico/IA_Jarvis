@@ -1,0 +1,3 @@
+Som de abertura personalizado (Configurações > Bloqueio > Som de abertura = "Meu arquivo"):
+coloque aqui um arquivo chamado intro.mp3. Se ele não existir, o JARVIS toca o som padrão.
+Arquivos .mp3 ficam fora do Git (.gitignore).

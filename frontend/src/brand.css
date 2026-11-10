@@ -1,0 +1,98 @@
+/* ==========================================================
+   Branding Book 4.2 — tokens, tipografia e estados da interface.
+   Carregado por último (main.jsx): só acrescenta tokens e ajusta pontos específicos.
+   ========================================================== */
+:root {
+  /* Paleta (contraste medido sobre #05070D: ciano 11,1:1, âmbar 9,4:1, verde 7,9:1, vermelho 5,4:1) */
+  --j-core: #22d3ee;     /* Núcleo Ciano: principal, escuta */
+  --j-deep: #0e7490;     /* Ciano Profundo: brilhos e linhas; nunca em texto */
+  --j-amber: #f59e0b;    /* Âmbar Sentinela: Modo Sentinela, avisos, fala */
+  --j-green: #10b981;    /* Verde Confirmação */
+  --j-red: #ef4444;      /* Vermelho Crítico */
+  --j-text: #e6f7fb;     /* Texto principal */
+  --j-muted: #7fa7b5;    /* Texto secundário */
+  --j-panel: #0b1220;    /* Fundo de cartões e menus */
+  --j-abyss: #05070d;    /* Fundo geral */
+
+  /* Tipografia: títulos Orbitron, interface Rajdhani, texto longo Inter, dados JetBrains Mono */
+  --font-title: "Orbitron", "Rajdhani", system-ui, sans-serif;
+  --font-ui: "Rajdhani", system-ui, sans-serif;
+  --font-text: "Inter", "Segoe UI", system-ui, sans-serif;
+  --font-data: "JetBrains Mono", "Cascadia Mono", Consolas, monospace;
+
+  /* Movimento: transições entre 150 e 300 ms */
+  --j-fast: 150ms;
+  --j-normal: 240ms;
+}
+
+/* ---------- tipografia ---------- */
+.hl-msg { font-family: var(--font-text); letter-spacing: 0.005em; }
+.hl-msg b { font-family: var(--font-title); }
+.hl-clock,
+.lc-clock,
+.font-data { font-family: var(--font-data); font-variant-numeric: tabular-nums; letter-spacing: 0.04em; }
+
+/* ---------- logo ---------- */
+.hl-brand .jarvis-logo { color: var(--j-core); filter: drop-shadow(0 0 6px rgba(34, 211, 238, 0.55)); flex-shrink: 0; }
+.jarvis-logo-spin .jarvis-logo-ring1,
+.jarvis-logo-spin .jarvis-logo-ring2 { transform-box: view-box; transform-origin: 32px 32px; }
+.jarvis-logo-spin .jarvis-logo-ring1 { animation: j-spin 18s linear infinite; }
+.jarvis-logo-spin .jarvis-logo-ring2 { animation: j-spin 30s linear infinite reverse; }
+@keyframes j-spin { to { transform: rotate(360deg); } }
+
+/* ---------- estados do orbe central (Branding Book, seção 6) ---------- */
+.wo { --wo-c: var(--j-core); --wo-node: var(--j-core); color: var(--wo-c); transition: opacity var(--j-normal); }
+.wo svg { filter: drop-shadow(0 0 5px color-mix(in srgb, var(--wo-c) 75%, transparent)); transition: filter var(--j-normal); }
+.wo-nodes { color: var(--wo-node); }
+
+/* Repouso: brilho baixo */
+.wo-idle { opacity: 0.68; }
+.wo-idle svg { filter: drop-shadow(0 0 3px color-mix(in srgb, var(--j-deep) 80%, transparent)); }
+/* Ouvindo: ciano, brilho alto */
+.wo-listening { --k: 0.5; opacity: 1; }
+.wo-listening svg { filter: drop-shadow(0 0 10px color-mix(in srgb, var(--j-core) 90%, transparent)); }
+.wo-listening .wo-halo { animation-duration: 1.2s; }
+/* Processando: ciano, anéis rápidos (definido em hud-layout.css) */
+.wo-processing { opacity: 1; }
+/* Falando: âmbar no centro, ciano nas bordas */
+.wo-speaking { --wo-node: var(--j-amber); opacity: 1; }
+.wo-speaking .wo-halo { color: var(--j-amber); }
+/* Sucesso: um flash verde. Erro: vermelho com tremida curta */
+.wo.wo-flash-success { --wo-c: var(--j-green); --wo-node: var(--j-green); opacity: 1; }
+.wo.wo-flash-error { --wo-c: var(--j-red); --wo-node: var(--j-red); opacity: 1; animation: j-shake 0.3s ease-in-out 1; }
+@keyframes j-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
+}
+
+/* Etiqueta de estado da HUD (o estado nunca é indicado só pela cor) */
+.hl-state.speaking { color: var(--j-amber); }
+.hl-state.processing { color: var(--j-core); }
+
+@media (prefers-reduced-motion: reduce) {
+  .wo.wo-flash-error { animation: none; }
+  .jarvis-logo-spin .jarvis-logo-ring1,
+  .jarvis-logo-spin .jarvis-logo-ring2 { animation: none; }
+  .wo-wire, .wo-nodes, .wo-halo { animation: none !important; }
+}
+
+/* ---- V4.2.2: tela de boas-vindas com o logo Núcleo animado (WelcomeLogo.jsx) ---- */
+.wl-root { display: flex; flex-direction: column; align-items: center; gap: 22px; color: var(--j-core); }
+.wl-logo { overflow: visible; filter: drop-shadow(0 0 10px rgba(34, 211, 238, 0.55)); }
+.wl-ring, .wl-core, .wl-core-halo { transform-box: view-box; transform-origin: 32px 32px; }
+.wl-ring1 { animation: wl-ring-in 0.9s cubic-bezier(.2,.8,.2,1) both, j-spin 18s linear 0.9s infinite; }
+.wl-ring2 { animation: wl-ring-in-rev 1.1s cubic-bezier(.2,.8,.2,1) 0.1s both, j-spin 30s linear 1.2s infinite reverse; }
+.wl-core { animation: wl-core-in 0.6s ease-out 0.15s both; }
+.wl-core-halo { animation: wl-core-in 0.6s ease-out 0.25s both, wl-breathe 3.2s ease-in-out 1s infinite; }
+.wl-word { color: var(--j-text); filter: drop-shadow(0 0 6px rgba(34, 211, 238, 0.35)); }
+.wl-stroke { stroke-dasharray: 1; stroke-dashoffset: 1; animation: wl-draw 0.7s ease-out both; }
+@keyframes wl-ring-in { from { opacity: 0; transform: rotate(-140deg) scale(0.6); } to { opacity: 1; transform: rotate(0) scale(1); } }
+@keyframes wl-ring-in-rev { from { opacity: 0; transform: rotate(160deg) scale(1.25); } to { opacity: 1; transform: rotate(0) scale(1); } }
+@keyframes wl-core-in { from { opacity: 0; transform: scale(0.2); } to { opacity: 1; transform: scale(1); } }
+@keyframes wl-breathe { 50% { transform: scale(1.18); stroke-opacity: 0.15; } }
+@keyframes wl-draw { from { opacity: 0; } 15% { opacity: 1; } to { stroke-dashoffset: 0; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .wl-ring1, .wl-ring2, .wl-core, .wl-core-halo, .wl-stroke { animation: none; }
+  .wl-stroke { stroke-dasharray: none; stroke-dashoffset: 0; }
+}
