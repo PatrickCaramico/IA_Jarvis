@@ -357,8 +357,11 @@ a frase âmbar "Não reconheci você. Se é a sua primeira vez aqui, crie o seu 
 chips, e "＋ NOVA PESSOA" vira "＋ SOU NOVO: CRIAR PERFIL" em destaque, ao lado de "USAR PIN". Com o JARVIS do
 PC desligado, a central do site mostra, em âmbar, "O JARVIS DO SEU PC ESTÁ DESLIGADO", o botão principal
 "LIGAR O JARVIS" (atalho `jarvis://`, ativado uma vez pelo `Instalar-Botao-Ligar.bat`) e pisca "Aguardando o
-JARVIS responder…"; quando ele responde, segue sozinha. Abaixo, em letra menor: "O botão não abriu nada? No
-PC, rode uma vez o Instalar-Botao-Ligar.bat (ou ligue pelo Iniciar-JARVIS.bat)."
+JARVIS responder…"; quando ele responde, segue sozinha. Ao tocar, o botão vira "ABRINDO…"; se o atalho
+abriu, a linha muda para "Ligando o JARVIS… na primeira vez pode levar até 1 minuto". Se nada abriu em 2,5 s
+(atalho não instalado), aparece um quadro de borda âmbar tracejada: "O botão ainda não está ativado neste
+PC." e o passo a passo do Instalar-Botao-Ligar.bat. O botão nunca fica sem resposta. Em letra menor, sempre
+visível: "Já está ligado e não entra? O Chrome precisa permitir o acesso à rede local para este site...".
 
 **Pessoas.** "＋ NOVA PESSOA" é um chip como "MODO VISITANTE". O cadastro é um cartão de vidro sobre a
 planta: rótulo "NOVA PESSOA · ETAPA 1 / 3", título em Orbitron, barra de progresso ciano, foto num círculo

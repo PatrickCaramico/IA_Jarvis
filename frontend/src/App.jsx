@@ -67,6 +67,8 @@ export default function App() {
   const [screen, setScreen] = useState("boot");
   const [bootError, setBootError] = useState("");
   const [bootOffline, setBootOffline] = useState(false); // backend do PC desligado (sem resposta)
+  // Botão LIGAR O JARVIS (atalho jarvis://): "" | "trying" | "opening" | "missing"
+  const [launchState, setLaunchState] = useState("");
   const [lockPhase, setLockPhase] = useState("ready"); // ready | scanning | verified | failed
   const [lockMessage, setLockMessage] = useState("");
   const [name, setName] = useState("");
@@ -720,6 +722,24 @@ export default function App() {
       clearInterval(t);
     };
   }, [screen, bootError, bootOffline, boot]);
+
+  // O navegador não avisa se o atalho jarvis:// existe. Truque: quando ele existe, abre a pergunta
+  // "Abrir Iniciar JARVIS?" ou a janela do programa, e esta página perde o foco. Sem isso em ~2,5 s,
+  // o atalho não está instalado neste PC e a tela explica como instalar (em vez de "não acontecer nada").
+  const launchJarvis = useCallback(() => {
+    setLaunchState("trying");
+    let opened = false;
+    const onBlur = () => {
+      opened = true;
+      setLaunchState("opening");
+    };
+    window.addEventListener("blur", onBlur, { once: true });
+    window.location.href = "jarvis://iniciar";
+    setTimeout(() => {
+      window.removeEventListener("blur", onBlur);
+      if (!opened && document.hasFocus()) setLaunchState("missing");
+    }, 2500);
+  }, []);
 
   // ---- Cadastro da foto de perfil ----
   const saveProfile = async (nameValue, photo) => {
@@ -1799,12 +1819,22 @@ export default function App() {
               <p className="ls-hint" style={{ margin: "8px auto", maxWidth: "34rem" }}>
                 Toque em LIGAR O JARVIS e permita abrir o programa. Pode deixar esta página aberta: assim que ele responder, eu faço a verificação rápida do seu rosto e abro a sua central.
               </p>
-              <a href="jarvis://iniciar" className="ls-btn-main" style={{ marginTop: "12px", textDecoration: "none", alignSelf: "center" }}>
-                <span>LIGAR O JARVIS</span>
-              </a>
-              <p className="ls-hint ls-boot-wait" style={{ marginTop: "12px" }}>Aguardando o JARVIS responder…</p>
-              <p className="ls-hint" style={{ marginTop: "6px", opacity: 0.8, fontSize: "0.82rem", maxWidth: "34rem", marginInline: "auto" }}>
-                O botão não abriu nada? No PC, rode uma vez o <b>Instalar-Botao-Ligar.bat</b> (ou ligue pelo <b>Iniciar-JARVIS.bat</b>).
+              <button type="button" onClick={launchJarvis} disabled={launchState === "trying"} className="ls-btn-main" style={{ marginTop: "12px", alignSelf: "center" }}>
+                <span>{launchState === "trying" ? "ABRINDO…" : "LIGAR O JARVIS"}</span>
+              </button>
+              {launchState === "missing" ? (
+                <div className="ls-launch-missing" role="alert">
+                  <b>O botão ainda não está ativado neste PC.</b>
+                  <span>Na pasta do JARVIS, dê duplo clique em <b>Instalar-Botao-Ligar.bat</b> (só uma vez) e toque em LIGAR O JARVIS de novo. Ou ligue agora pelo <b>Iniciar-JARVIS.bat</b>: esta página entra sozinha.</span>
+                </div>
+              ) : (
+                <p className="ls-hint ls-boot-wait" style={{ marginTop: "12px" }}>
+                  {launchState === "opening" ? "Ligando o JARVIS… pode levar 1 ou 2 minutos." : "Aguardando o JARVIS responder…"}
+                </p>
+              )}
+              {/* Com o JARVIS ligado, o Chrome ainda pode barrar o site de falar com o PC (acesso à rede local) */}
+              <p className="ls-hint" style={{ marginTop: "8px", opacity: 0.8, fontSize: "0.8rem", maxWidth: "34rem", marginInline: "auto" }}>
+                Já está ligado e não entra? O Chrome precisa permitir o <b>acesso à rede local</b> para este site: clique no ícone ao lado do endereço › Acesso à rede local › Permitir, e recarregue.
               </p>
               <button type="button" onClick={boot} className="ls-chip" style={{ marginTop: "10px", alignSelf: "center" }}>TENTAR NOVAMENTE</button>
             </>
