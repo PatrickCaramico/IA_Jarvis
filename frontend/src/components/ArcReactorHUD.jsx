@@ -25,7 +25,7 @@ export default function ArcReactorHUD({
   photoUrl = null,
   tone = "default",
   fanMode = false,
-  fanShieldUrl = "/fan/palmeiras/palmeiras_shield.png",
+  fanShieldUrl = `${import.meta.env.BASE_URL}fan/palmeiras/palmeiras_shield.png`,
   liveFrame = null, // seção 16: { frame, box, phase, ... } — câmera ao vivo dentro do orbe
   className = "",
 }) {

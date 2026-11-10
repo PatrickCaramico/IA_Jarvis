@@ -1,6 +1,7 @@
-# Site de apresentação do JARVIS no Netlify (vitrine estática).
-# O JARVIS em si roda no PC do usuário; nada do backend é publicado aqui.
-# O script monta a pasta _site/ a partir de site/, das imagens de docs/ e da marca, e do Branding Book.
+# Site do JARVIS no Netlify: a vitrine (site/) e, em /app/, a própria central do JARVIS (frontend/).
+# A central publicada aqui é a mesma do PC e conversa com o backend que roda no PC (127.0.0.1:8000);
+# nada do backend nem dos dados é publicado aqui.
+# O script monta a pasta _site/ a partir de site/, das imagens de docs/, da marca, do Branding Book e do frontend.
 
 [build]
   command = "bash scripts/netlify/montar_site.sh"
@@ -18,9 +19,20 @@
   status = 302
 
 [[redirects]]
-  from = "/app"
+  from = "/android"
   to = "https://github.com/PatrickCaramico/IA_Jarvis/releases/latest"
   status = 302
+
+# A central do JARVIS: /app abre a central; a tela secundária (/app/display) também cai no index
+[[redirects]]
+  from = "/app"
+  to = "/app/"
+  status = 301
+
+[[redirects]]
+  from = "/app/*"
+  to = "/app/index.html"
+  status = 200
 
 # Segurança básica
 [[headers]]
@@ -29,10 +41,17 @@
     X-Content-Type-Options = "nosniff"
     X-Frame-Options = "DENY"
     Referrer-Policy = "strict-origin-when-cross-origin"
-    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    # Microfone para a central (/app/): voz, palmas e Sentinela. A câmera é do backend, no PC.
+    Permissions-Policy = "camera=(), microphone=(self), geolocation=()"
 
 # Imagens e ícones mudam pouco: cache de um dia
 [[headers]]
   for = "/assets/*"
   [headers.values]
     Cache-Control = "public, max-age=86400"
+
+# Arquivos da central com hash no nome: cache longo
+[[headers]]
+  for = "/app/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

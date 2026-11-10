@@ -1,8 +1,9 @@
 import { useState } from "react";
+import { publicUrl } from "../utils/api.js";
 
 export default function FanModeBackground({ teamInfo }) {
   const [imgError, setImgError] = useState(false);
-  const badgeUrl = teamInfo?.badge_url || "/fan/palmeiras/palmeiras_shield.png";
+  const badgeUrl = publicUrl(teamInfo?.badge_url || "/fan/palmeiras/palmeiras_shield.png");
 
   return (
     <div

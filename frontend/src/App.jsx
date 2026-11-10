@@ -33,7 +33,7 @@ import { buildDailySummary, shouldSpeakSummary } from "./utils/lockSummary.js";
 import { statusSentence } from "./utils/waterMath.js";
 import { subscribeNow } from "./hooks/useNow.js";
 import { soundManager } from "./utils/soundEffects.js";
-import { API_URL, api, hasMemoryToken, setJarvisToken } from "./utils/api.js";
+import { API_URL, BACKEND_ON_THIS_PC, api, hasMemoryToken, publicUrl, setJarvisToken } from "./utils/api.js";
 import { scheduleDailyUpdateCheck } from "./utils/updateCheck.js";
 import { applyAccessibility, applyBackground, applyFanMode, applyTheme } from "./utils/theme.js";
 import { IS_JARVIS_APP } from "./utils/device.js";
@@ -667,7 +667,7 @@ export default function App() {
       if (profile.has_photo) {
         // A tela de bloqueio visível significa central bloqueada também no backend.
         // Só no próprio PC: abrir o painel pelo celular (modo rede) não derruba a sessão do computador.
-        if (["localhost", "127.0.0.1", "::1", "[::1]"].includes(window.location.hostname)) {
+        if (BACKEND_ON_THIS_PC) {
           api("/api/access/lock", { method: "POST" }).then(setAccessInfo).catch(() => {});
         }
         loadPinStatus();
@@ -1084,7 +1084,7 @@ export default function App() {
     if (/\b(ativar|abrir|ligar|iniciar)\b.*\b(monitor\s+secundario|segundo\s+monitor|tela\s+secundaria|segunda\s+tela)\b/.test(normalized)) {
       setUserText(text);
       window.open(
-        `${window.location.origin}/?display=secondary`,
+        `${window.location.origin}${import.meta.env.BASE_URL}?display=secondary`,
         "jarvis-secondary-display",
         "width=1280,height=720,left=1920,top=0"
       );
@@ -2371,7 +2371,7 @@ export default function App() {
             <ArcReactorHUD
               state={listening ? "speaking" : jarvisState}
               fanMode={true}
-              fanShieldUrl="/fan/palmeiras/palmeiras_shield.png"
+              fanShieldUrl={publicUrl("/fan/palmeiras/palmeiras_shield.png")}
             />
           ) : (
             <WireOrb state={listening ? "listening" : jarvisState} flash={orbFlash} />

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Monta o site de apresentação do JARVIS em _site/ (usado pelo Netlify; também roda no Git Bash).
 # Junta: site/ (páginas), imagens de docs/linkedin/img, a marca de frontend/public/brand e o
-# Branding Book ilustrado (docs/branding-book.html). A versão vem de backend/version.py.
+# Branding Book ilustrado (docs/branding-book.html) e a central do JARVIS (frontend/, em _site/app/). A versão vem de backend/version.py.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -32,5 +32,16 @@ cp "$ROOT/docs/linkedin/img/planta-bloqueio-real.webp" \
 
 # Branding Book ilustrado (arquivo único, com as imagens embutidas)
 cp "$ROOT/docs/branding-book.html" "$OUT/branding-book.html"
+
+# A central do JARVIS (o mesmo frontend do PC) em /app/, falando com o backend do próprio PC
+# (http://127.0.0.1:8000). Pule com PULAR_CENTRAL=1 se só quiser mexer nas páginas.
+if [ "${PULAR_CENTRAL:-0}" != "1" ]; then
+  (
+    cd "$ROOT/frontend"
+    if [ ! -d node_modules ]; then npm ci --no-audit --no-fund; fi
+    # MSYS_NO_PATHCONV: no Git Bash do Windows, "/app/" não pode virar caminho de disco
+    MSYS_NO_PATHCONV=1 VITE_API_URL="http://127.0.0.1:8000" npx vite build --base=/app/ --outDir ../_site/app --emptyOutDir
+  )
+fi
 
 echo "Site montado em _site/ (JARVIS v$VERSAO)."

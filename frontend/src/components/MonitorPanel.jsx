@@ -70,7 +70,7 @@ export default function MonitorPanel({ onClose, onOpenWindow, onOpenSpotifyWindo
                   type="button"
                   onClick={() => {
                     window.open(
-                      `${window.location.origin}/?display=secondary&monitor=${screen.index}`,
+                      `${window.location.origin}${import.meta.env.BASE_URL}?display=secondary&monitor=${screen.index}`,
                       `jarvis-display-${screen.index}`,
                       `width=${screen.width || 1280},height=${screen.height || 720},left=${screen.left || 100},top=${screen.top || 100}`
                     );

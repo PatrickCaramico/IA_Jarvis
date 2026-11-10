@@ -111,7 +111,7 @@ export default function LockScreen({
       if (introSound === "off") return;
       if (introSound === "custom") {
         // Som do usuário em frontend/public/sounds/intro.mp3 (cai no padrão se não existir)
-        const audio = new Audio("/sounds/intro.mp3");
+        const audio = new Audio(`${import.meta.env.BASE_URL}sounds/intro.mp3`);
         audio.play().catch(() => soundManager.playSuccess());
       } else {
         soundManager.playSuccess();

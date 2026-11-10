@@ -66,8 +66,11 @@ WEATHER_CITY = os.getenv("WEATHER_CITY", "São Paulo").strip()
 # --- Personalização (usado se nenhum nome for cadastrado no perfil) ---
 USER_NAME = os.getenv("USER_NAME", "").strip()
 
-# --- CORS: só o frontend local pode chamar o backend (ele controla webcam e voz) ---
-CORS_ORIGINS = ["http://localhost:5173", "http://127.0.0.1:5173"] + [
+# --- CORS: só a central (local ou a publicada no site) pode chamar o backend (ele controla webcam e voz) ---
+# O site (botão "Abrir meu JARVIS") serve a mesma central em /app/, que fala com este backend em 127.0.0.1.
+# Pedidos vindos de outra máquina continuam barrados pelo middleware de segurança (modo rede + token).
+SITE_ORIGIN = os.getenv("JARVIS_SITE_ORIGIN", "https://projeto-jarvis-ia.netlify.app").strip()
+CORS_ORIGINS = ["http://localhost:5173", "http://127.0.0.1:5173"] + ([SITE_ORIGIN] if SITE_ORIGIN else []) + [
     o.strip() for o in os.getenv("EXTRA_CORS_ORIGINS", "").split(",") if o.strip()
 ]
 

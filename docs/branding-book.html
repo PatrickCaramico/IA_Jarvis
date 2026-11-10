@@ -295,7 +295,7 @@ td:first-child { font-weight: 600; white-space: nowrap; }
 /* ---------- entrada das páginas (a partir de um estado visível) ---------- */
 .spread { animation: open 900ms cubic-bezier(.2, .7, .2, 1) both; }
 /* V4.5 (desempenho): páginas longe da tela não são desenhadas, e as animações delas param */
-.spread { content-visibility: auto; contain-intrinsic-size: auto 900px; }
+.spread { content-visibility: auto; contain-intrinsic-block-size: auto 900px; } /* só a altura: a largura segue a tela (no celular, 900px de largura gerava rolagem lateral) */
 .spread.is-off *, .spread.is-off *::before, .spread.is-off *::after { animation-play-state: paused !important; }
 @keyframes open { from { transform: perspective(1400px) rotateX(4deg) translateY(10px); opacity: 0.6; } to { transform: none; opacity: 1; } }
 
@@ -312,6 +312,14 @@ td:first-child { font-weight: 600; white-space: nowrap; }
   .spec .aa { text-align: left; font-size: 3rem; }
   .state-card dl { grid-template-columns: 1fr; }
   .plates { grid-template-columns: 1fr 1fr; gap: 8px; }
+}
+/* Celular: nada passa da largura da tela (textos longos quebram, tabelas rolam por dentro) */
+@media (max-width: 600px) {
+  .page { padding: 22px 18px; gap: 14px; }
+  .mono, code, a { overflow-wrap: anywhere; }
+  table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  img, canvas, video { max-width: 100%; height: auto; }
+  .cover h1 span { letter-spacing: 0.24em; }
 }
 
 /* ---- V4.2.2: sons, kit de logo, histórico e créditos ---- */
@@ -1269,7 +1277,7 @@ td:first-child { font-weight: 600; white-space: nowrap; }
         <li><b>Escudos:</b> na faixa da central, no placar e no bloqueio, sempre do lado certo: mandante à esquerda. Vêm do próprio JARVIS, que guarda uma cópia, então aparecem até sem internet. Reserva: o escudo local do Palmeiras ou a inicial do adversário. Nunca um espaço vazio.</li>
         <li><b>Jogo que já passou:</b> o placar final fica até a meia-noite; no dia seguinte entra o próximo jogo e o Modo Torcedor sai sozinho com o aviso "Modo Torcedor desligado. Próximo jogo: …".</li>
         <li><b>Versão nova:</b> "Verificar atualizações" em Manutenção, só com borda; uma linha com o resultado, as notas e o link da Release. Sem internet, uma frase calma. No celular, "Atualização do JARVIS disponível". Nada é instalado sozinho.</li>
-        <li><b>Site (Netlify):</b> a vitrine pública na planta blueprint, com o orbe girando devagar, cartões de vidro, capturas em moldura de cantos ciano e o carimbo "FOLHA · SITE". O botão "ABRIR MEU JARVIS", com borda âmbar, leva à central do próprio PC. Deixa claro que é só a vitrine: os dados nunca passam por ele.</li>
+        <li><b>Site (Netlify):</b> a vitrine pública na planta blueprint, com o orbe girando devagar, cartões de vidro, capturas em moldura de cantos ciano e o carimbo "FOLHA · SITE". O botão "ABRIR MEU JARVIS", com borda âmbar, abre a mesma central do PC publicada no site (/app/), que conversa com o JARVIS ligado no computador. Deixa claro que é só a vitrine: os dados nunca passam por ele.</li>
         <li><b>Jogo de verdade:</b> com a agenda da ESPN em dia, o Google Notícias só confirma. Base, feminino e listas "Jogos de hoje" não contam. Em dia sem jogo, aparece o próximo, nunca um adversário antigo.</li>
       </ul>
       <p class="muted">No código: <span class="mono">SitesSettings.jsx</span>, <span class="mono">MaintenanceSettings.jsx</span>, <span class="mono">updateCheck.js</span>, <span class="mono">useFanMatch.js</span>, <span class="mono">FanMatchBanner.jsx</span>, <span class="mono">FanScoreWidget.jsx</span>, <span class="mono">FanLockPanel.jsx</span> e <span class="mono">/api/fan/logo</span>.</p>

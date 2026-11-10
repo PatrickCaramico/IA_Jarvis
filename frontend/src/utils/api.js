@@ -4,6 +4,15 @@ export const API_URL = import.meta.env.VITE_API_URL
   ?? `${window.location.protocol}//${window.location.hostname}:8000`;
 export const WS_URL = API_URL.replace(/^http/, "ws") + "/ws";
 
+// O backend roda nesta mesma máquina? (central aberta em localhost ou pelo site, falando com 127.0.0.1)
+export const BACKEND_ON_THIS_PC = ["localhost", "127.0.0.1", "[::1]", "::1"].includes(new URL(API_URL).hostname);
+
+// Arquivos de public/ (escudos, sons): respeitam a pasta onde a central foi publicada (/ no PC, /app/ no site).
+export const publicUrl = (path) =>
+  typeof path === "string" && path.startsWith("/") && !path.startsWith("//")
+    ? import.meta.env.BASE_URL.replace(/\/$/, "") + path
+    : path;
+
 function getStoredToken() {
   if (typeof window === "undefined") return "";
   const params = new URLSearchParams(window.location.search);

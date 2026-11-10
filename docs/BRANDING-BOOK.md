@@ -417,9 +417,12 @@ o orbe Núcleo girando devagar no topo (parado com "reduzir movimento"), "JARVIS
 ciano, cartões de vidro azul-marinho com ícone em círculo de contorno (ciano; âmbar para segurança; verde
 para água e para o Modo Torcedor), capturas em moldura com cantos ciano e, no rodapé, o carimbo
 "J.A.R.V.I.S. · FOLHA · SITE · REV. v5.0.0". Botão principal ciano cheio ("VER NO GITHUB"); os outros só
-com borda. Logo abaixo, num quadro de borda tracejada âmbar, o botão "ABRIR MEU JARVIS" (borda âmbar, o "olhe aqui" da Sentinela), que leva à central do próprio PC (`http://127.0.0.1:5173`) e explica que só funciona no computador onde o JARVIS está ligado. Tom: o mesmo da central, e a página deixa claro que é só a vitrine ("O JARVIS roda no seu PC:
+com borda. Logo abaixo, num quadro de borda tracejada âmbar, o botão "ABRIR MEU JARVIS" (borda âmbar, o "olhe aqui" da Sentinela), que abre a **mesma central do PC publicada no site** (`/app/`). Ela conversa com o JARVIS ligado no computador (backend em `127.0.0.1:8000`), então rosto, perfil, Modo Torcedor, rotina e agenda são os de sempre; na primeira vez, o Chrome pergunta se o site pode acessar a rede local (é o backend do próprio PC). Tom: o mesmo da central, e a página deixa claro que é só a vitrine ("O JARVIS roda no seu PC:
 voz, câmera, controle do sistema e os seus dados nunca passam por aqui."). A 404 diz "Procurei em toda a
 planta, senhor, e esta página não está aqui."
+
+**Branding Book no celular.** O livro abre inteiro na tela do celular: as páginas duplas viram uma
+coluna, tabelas largas rolam por dentro, textos longos quebram e nada cria rolagem lateral.
 
 **No código:** `site/index.html`, `site/404.html`, `netlify.toml`, `scripts/netlify/montar_site.sh`,
 `frontend/src/components/settings/SitesSettings.jsx`, `MaintenanceSettings.jsx`,

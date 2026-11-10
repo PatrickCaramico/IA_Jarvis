@@ -5,6 +5,7 @@ O código foi dividido por área (refatoração 4.2):
 - routes/: uma APIRouter por área (acesso, água, foco, integrações...).
 Este arquivo só configura o log, o middleware de segurança, o CORS e inclui as rotas.
 """
+import inspect
 import logging
 import secrets
 from contextlib import asynccontextmanager
@@ -92,12 +93,20 @@ async def security_middleware(request: Request, call_next):
 # O CORS é registrado DEPOIS do middleware de segurança para ficar por fora dele: assim as
 # respostas 401/403 (token, bloqueio, visitante) também levam os cabeçalhos CORS e o frontend
 # consegue ler o motivo, em vez de receber um erro de rede.
+# Central aberta pelo site (https) falando com 127.0.0.1: o Chrome pede licença de "rede local".
+# Starlette antigo não tem a opção; aí só a central local (localhost:5173) funciona.
+_PRIVATE_NETWORK = (
+    {"allow_private_network": True}
+    if "allow_private_network" in inspect.signature(CORSMiddleware.__init__).parameters
+    else {}
+)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
     allow_origin_regex=r"^https?://(192\.168\.\d+\.\d+|10\.\d+\.\d+|172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+):5173$",
     allow_methods=["*"],
     allow_headers=["*"],
+    **_PRIVATE_NETWORK,
 )
 
 

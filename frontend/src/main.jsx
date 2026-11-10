@@ -22,7 +22,7 @@ markDevice(); // V4.5: <html data-app="android"> dentro do app do celular
 // Carregados sob demanda (otimização 4.2: pacote inicial menor)
 const ScreensPopout = lazyComponent(() => import("./components/ScreensPopout.jsx"));
 
-const isPopout = window.location.pathname === "/display" || window.location.search.includes("display=secondary");
+const isPopout = window.location.pathname.endsWith("/display") || window.location.search.includes("display=secondary");
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>

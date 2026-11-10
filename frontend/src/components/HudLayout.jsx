@@ -700,7 +700,7 @@ export default function HudLayout({
     else if (id.includes("filme") || id.includes("media") || id.includes("serie")) targetTab = "media";
 
     window.open(
-      `${window.location.origin}/?display=secondary`,
+      `${window.location.origin}${import.meta.env.BASE_URL}?display=secondary`,
       "jarvis-secondary-display",
       "width=1280,height=720,left=1920,top=0"
     );
