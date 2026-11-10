@@ -355,8 +355,10 @@ Planta Funda, para a câmera ler bem), "JARVIS NO CELULAR" em Orbitron, "Escanei
 sem clicar. É alguém com perfil: entra sozinho na central dessa pessoa em cerca de 1,5 s. Não reconheceu:
 a frase âmbar "Não reconheci você. Se é a sua primeira vez aqui, crie o seu perfil..." aparece sobre os
 chips, e "＋ NOVA PESSOA" vira "＋ SOU NOVO: CRIAR PERFIL" em destaque, ao lado de "USAR PIN". Com o JARVIS do
-PC desligado, a central do site mostra, em âmbar, "O JARVIS DO SEU PC ESTÁ DESLIGADO", pede para ligar o
-`Iniciar-JARVIS.bat` e pisca "Aguardando o JARVIS responder…"; quando ele responde, segue sozinha.
+PC desligado, a central do site mostra, em âmbar, "O JARVIS DO SEU PC ESTÁ DESLIGADO", o botão principal
+"LIGAR O JARVIS" (atalho `jarvis://`, ativado uma vez pelo `Instalar-Botao-Ligar.bat`) e pisca "Aguardando o
+JARVIS responder…"; quando ele responde, segue sozinha. Abaixo, em letra menor: "O botão não abriu nada? No
+PC, rode uma vez o Instalar-Botao-Ligar.bat (ou ligue pelo Iniciar-JARVIS.bat)."
 
 **Pessoas.** "＋ NOVA PESSOA" é um chip como "MODO VISITANTE". O cadastro é um cartão de vidro sobre a
 planta: rótulo "NOVA PESSOA · ETAPA 1 / 3", título em Orbitron, barra de progresso ciano, foto num círculo

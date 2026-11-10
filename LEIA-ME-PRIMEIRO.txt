@@ -10,6 +10,7 @@ Esta pasta e o projeto completo e limpo. Tudo o que o JARVIS usa esta aqui:
   Iniciar-JARVIS-Dev.bat ..... modo desenvolvimento (recarrega o backend ao salvar)
   Status / Ver-Logs / Diagnostico-Backend / Backup-Dados / Empacotar-Projeto / Atualizar-Frontend
   Iniciar-Palmas / Parar-Palmas / Instalar-Palmas-no-Windows / Remover-Palmas-do-Windows
+  Instalar-Botao-Ligar / Remover-Botao-Ligar ... botao LIGAR O JARVIS da central do site (atalho jarvis://)
 
   backend\   servidor Python (FastAPI)
   frontend\  interface React (Vite + Tailwind)

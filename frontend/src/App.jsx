@@ -1793,13 +1793,20 @@ export default function App() {
         <div className="ls-status-box">
           {bootError && bootOffline && BACKEND_ON_THIS_PC && !IS_JARVIS_APP ? (
             <>
-              {/* Central aberta pelo site com o JARVIS do PC desligado: espera ele ligar e entra sozinha */}
+              {/* Central aberta pelo site com o JARVIS do PC desligado: liga pelo atalho jarvis://
+                  (Instalar-Botao-Ligar.bat), espera ele responder e entra sozinha */}
               <div className="ls-title is-amber">O JARVIS DO SEU PC ESTÁ DESLIGADO</div>
               <p className="ls-hint" style={{ margin: "8px auto", maxWidth: "34rem" }}>
-                Ligue o JARVIS no computador (<b>Iniciar-JARVIS.bat</b>). Pode deixar esta página aberta: assim que ele responder, eu faço a verificação rápida do seu rosto e abro a sua central.
+                Toque em LIGAR O JARVIS e permita abrir o programa. Pode deixar esta página aberta: assim que ele responder, eu faço a verificação rápida do seu rosto e abro a sua central.
               </p>
-              <p className="ls-hint ls-boot-wait" style={{ marginTop: "10px" }}>Aguardando o JARVIS responder…</p>
-              <button type="button" onClick={boot} className="ls-chip" style={{ marginTop: "12px", alignSelf: "center" }}>TENTAR NOVAMENTE</button>
+              <a href="jarvis://iniciar" className="ls-btn-main" style={{ marginTop: "12px", textDecoration: "none", alignSelf: "center" }}>
+                <span>LIGAR O JARVIS</span>
+              </a>
+              <p className="ls-hint ls-boot-wait" style={{ marginTop: "12px" }}>Aguardando o JARVIS responder…</p>
+              <p className="ls-hint" style={{ marginTop: "6px", opacity: 0.8, fontSize: "0.82rem", maxWidth: "34rem", marginInline: "auto" }}>
+                O botão não abriu nada? No PC, rode uma vez o <b>Instalar-Botao-Ligar.bat</b> (ou ligue pelo <b>Iniciar-JARVIS.bat</b>).
+              </p>
+              <button type="button" onClick={boot} className="ls-chip" style={{ marginTop: "10px", alignSelf: "center" }}>TENTAR NOVAMENTE</button>
             </>
           ) : bootError ? (
             <>

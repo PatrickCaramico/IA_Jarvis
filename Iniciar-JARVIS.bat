@@ -14,6 +14,10 @@ if /i "%~1"=="wake" (
   set "WAKE=1"
   set "OPEN_URL=http://127.0.0.1:5173/?wake=clap"
 )
+rem Parametro "site" (botao LIGAR O JARVIS da central do site, via Instalar-Botao-Ligar.bat):
+rem liga tudo, mas nao abre aba nova; a central do site ja aberta reconecta sozinha.
+set "FROM_SITE="
+if /i "%~1"=="site" set "FROM_SITE=1"
 
 echo.
 echo  ==============================================
@@ -116,7 +120,7 @@ if defined USE_VITE (
 
 rem Abre o painel assim que backend e frontend responderem (ate 60 s), sem espera fixa.
 powershell -NoProfile -Command "$d=(Get-Date).AddSeconds(60); while((Get-Date) -lt $d){ try { $null=Invoke-WebRequest -UseBasicParsing -TimeoutSec 2 'http://127.0.0.1:8000/api/health'; $t=New-Object Net.Sockets.TcpClient('127.0.0.1',5173); $t.Close(); exit 0 } catch { Start-Sleep -Milliseconds 250 } }; exit 1"
-start "" "%OPEN_URL%"
+if not defined FROM_SITE start "" "%OPEN_URL%"
 
 echo.
 echo  ==============================================
