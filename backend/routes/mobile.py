@@ -13,6 +13,7 @@ existem com o modo rede ligado (Iniciar-JARVIS-Rede.bat).
 """
 
 import asyncio
+import json
 import secrets
 from html import escape
 from pathlib import Path
@@ -92,7 +93,29 @@ async def mobile_page(request: Request) -> HTMLResponse:
     host = request.url.hostname or local_ip()
     open_intent = f"intent://setup?host={quote(host)}#Intent;scheme=jarvis;package={PACKAGE};end"
     open_deep = f"jarvis://setup?host={quote(host)}"
-    body = download + (
+    # V5.1.1: app já instalado? O QR abre o app (que se atualiza sozinho). Sem o app, o mesmo botão baixa o APK.
+    base = f"http://{host}:8000"
+    open_or_download = (
+        f"intent://open?host={quote(host)}#Intent;scheme=jarvis;package={PACKAGE};"
+        f"S.browser_fallback_url={quote(base + '/api/mobile/app.apk', safe='')};end"
+    )
+    # Tentativa automática ao abrir a página: sem o app, volta para esta página (?app=0) sem baixar nada.
+    auto_open = (
+        f"intent://open?host={quote(host)}#Intent;scheme=jarvis;package={PACKAGE};"
+        f"S.browser_fallback_url={quote(base + '/api/mobile?app=0', safe='')};end"
+    )
+    tried = request.query_params.get("app") == "0"
+    quick = (
+        '<div class="c"><h2>JÁ TEM O APP NO CELULAR?</h2>'
+        f'<a class="btn" href="{escape(open_or_download)}">ABRIR O JARVIS</a>'
+        '<p class="m">Abre o app direto. Se o PC tiver uma versão nova, <b>o app se atualiza sozinho</b>: '
+        'não precisa baixar de novo. Sem o app instalado, este botão baixa o JARVIS.apk.</p></div>'
+    ) if apk_available() else ""
+    auto = "" if tried or not apk_available() else (
+        "<script>if(/Android/i.test(navigator.userAgent)){setTimeout(function(){location.href="
+        f"{json.dumps(auto_open)};}},300);}}</script>"
+    )
+    body = quick + download + (
         '<div class="c"><h2>2 · ABRIR E ENTRAR</h2>'
         f'<a class="btn" href="{escape(open_intent)}">ABRIR O JARVIS</a>'
         f'<a class="btn alt" href="{escape(open_deep)}">Não abriu? Tentar de outro jeito</a>'
@@ -100,7 +123,7 @@ async def mobile_page(request: Request) -> HTMLResponse:
         f'(<b>{escape(host)}</b>): é só digitar o <b>PIN</b> do perfil principal.</p>'
         '<p class="m">A chave de acesso fica só no seu celular. Nada vai para a internet: funciona na mesma Wi-Fi do PC.</p></div>'
     )
-    return HTMLResponse(_PAGE.format(title="JARVIS no celular", sub="CENTRAL PESSOAL NO CELULAR", body=body))
+    return HTMLResponse(_PAGE.format(title="JARVIS no celular", sub="CENTRAL PESSOAL NO CELULAR", body=body + auto))
 
 
 @router.get("/api/mobile/app.apk")

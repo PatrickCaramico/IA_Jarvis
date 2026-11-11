@@ -2,6 +2,12 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 5.1.1 — 11 de novembro de 2026
+
+- **App Android se atualiza sozinho:** quando o PC tem versão nova, o app baixa o APK do PC e se instala pelo instalador do Android (`PackageInstaller`), sem abrir o navegador. Na primeira vez, o Android pede "permitir instalar apps" para o JARVIS (uma vez só) e confirma a troca; no Android 12 ou mais novo, depois que o próprio JARVIS instalou uma versão, as próximas entram sem perguntar. Confere ao conectar e ao voltar para o app (no máximo a cada 30 min).
+- **QR com o app instalado:** a página do QR (`/api/mobile`) tenta abrir o app sozinha e tem o botão "ABRIR O JARVIS" no topo: com o app, abre (e ele se atualiza); sem o app, o mesmo botão baixa o JARVIS.apk. Novo link `jarvis://open?host=IP` (já pareado: abre a central; sem pareamento: tela do PIN).
+- **IP do PC mudou:** o roteador pode trocar o IP do PC (ex.: de .7 para .5) e o app ficava procurando o endereço antigo. Escanear o QR agora corrige: o app troca só o endereço, mantém a chave e reconecta ("Endereço do PC atualizado para …").
+
 ## 5.1.0 — 11 de novembro de 2026
 
 Na web e por voz. Inclui tudo de 10 de novembro (abaixo) e mais:

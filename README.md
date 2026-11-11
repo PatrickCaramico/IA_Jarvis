@@ -104,7 +104,7 @@ Depois de uma atualização no GitHub, toque em **⟳ ATUALIZAR** na tela de blo
 
 **Esqueci o PIN:** no teclado do PIN (ou em Configurações › Bloqueio), "Esqueci o PIN" confirma o seu rosto e libera um PIN novo. Sem câmera, rode o `Redefinir-PIN.bat`.
 
-**Celular:** com o JARVIS ligado, abra no navegador do celular `http://<IP do PC>:8000/api/mobile` (mesma Wi-Fi), baixe e instale o `JARVIS.apk` e conecte com o endereço do PC e o seu PIN.
+**Celular:** com o JARVIS ligado, abra no navegador do celular `http://<IP do PC>:8000/api/mobile` (mesma Wi-Fi), baixe e instale o `JARVIS.apk` e conecte com o endereço do PC e o seu PIN. Com o app 5.1.1 ou mais novo instalado, o QR abre o app direto e ele se atualiza sozinho quando o PC tiver versão nova.
 
 ## App Android
 

@@ -1,6 +1,6 @@
 # JARVIS — Comandos do dia a dia
 
-**Versão do projeto:** 5.1.0 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
+**Versão do projeto:** 5.1.1 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
 
 > Montado a partir do código do projeto. Se algum comando não responder como descrito, me avise que eu ajusto o guia.
 > Para a lista técnica de rotas, veja [API.md](API.md); para o `.env`, [CONFIGURACAO.md](CONFIGURACAO.md).
@@ -210,7 +210,7 @@ Mostra o Palmeiras e o jogo atual/próximo, com escudos, notícias e grito de to
 
 ### Atualizações
 
-**V5.1:** na tela de bloqueio, o botão **⟳ ATUALIZAR** baixa a versão nova do GitHub, avisa por voz ("Senhor, estou atualizando os meus sistemas") e reinicia sozinho; a central volta já na versão nova. Em **Configurações > Manutenção**, use **Verificar atualizações** para consultar a release mais recente. A checagem automática é diária e em segundo plano; o PC não baixa nem instala atualizações sozinho. No Android, um aviso aparece quando o PC tem um APK mais novo; o download e a instalação são confirmados por você.
+**V5.1:** na tela de bloqueio, o botão **⟳ ATUALIZAR** baixa a versão nova do GitHub, avisa por voz ("Senhor, estou atualizando os meus sistemas") e reinicia sozinho; a central volta já na versão nova. Em **Configurações > Manutenção**, use **Verificar atualizações** para consultar a release mais recente. A checagem automática é diária e em segundo plano; o PC não baixa nem instala atualizações sozinho. No Android (5.1.1+), o app se atualiza sozinho quando o PC tem um APK mais novo: na primeira vez o Android pede para permitir instalar apps para o JARVIS e confirma a troca; no Android 12 ou mais novo, as próximas entram sem perguntar. Escanear o QR com o app instalado abre o app em vez de baixar de novo.
 
 ### Lembretes de Água e Hidratação
 

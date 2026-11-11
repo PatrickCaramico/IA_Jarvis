@@ -1,4 +1,4 @@
-# Branding Book do JARVIS (v1.9, atualizado na V5.1 em 11/11/2026: na web e por voz, alarmes e "Esqueci o PIN")
+# Branding Book do JARVIS (v1.9, atualizado na V5.1.1 em 11/11/2026: na web e por voz, alarmes, "Esqueci o PIN" e app que se atualiza sozinho)
 
 Versão aprovada do Branding Book proposto no plano da 4.2. Há também uma versão ilustrada e animada: abra `docs/branding-book.html` no navegador. Tudo aqui já está aplicado no projeto;
 no fim de cada seção há onde isso vive no código.
@@ -60,7 +60,7 @@ nos módulos do backend.
 | --- | --- |
 | Assistente | JARVIS (o nome da IA pode ser trocado em Configurações) |
 | Módulo de escuta contínua | **Modo Sentinela** (mantido; as siglas propostas não foram adotadas) |
-| Versão exibida na central | `v5.1.0` (sem referências a marcas de terceiros, como "Stark") |
+| Versão exibida na central | `v5.1.1` (sem referências a marcas de terceiros, como "Stark") |
 | Lista de sites abertos por voz | **Meus Sites** (Configurações > Meus Sites) |
 | Resumo da manhã | **Briefing** (disparado por "bom dia") |
 | Resumo da noite | **Fechamento do dia** (disparado por "boa noite") |
@@ -450,6 +450,15 @@ ROSTO…" enquanto lê); confirmado, o campo do PIN atual some e o botão vira "
 confirmado vale 3 minutos e uma troca só. Sem câmera: `Redefinir-PIN.bat` no PC, que pede "SIM" e guarda
 uma cópia.
 
+**App que se atualiza sozinho (V5.1.1).** Escanear o QR com o app já instalado abre o app, não o download:
+a página do QR tenta abrir sozinha e traz no topo o cartão "JÁ TEM O APP NO CELULAR?" com o botão ciano
+"ABRIR O JARVIS" ("Se o PC tiver uma versão nova, o app se atualiza sozinho: não precisa baixar de novo.").
+No app, a atualização é um aviso curto do Android ("Atualizando o JARVIS para a versão 5.1.1…"), nunca uma
+ida ao navegador. Na primeira vez, um diálogo nativo "Atualizar o JARVIS sozinho" pede, uma vez só,
+"permitir instalar apps desconhecidos" (botões "Permitir" e "Agora não"); depois, o Android confirma a troca
+na tela dele. Falhou: "Não consegui baixar a atualização. Abrindo o download." (volta ao jeito antigo). Se o roteador
+trocou o IP do PC, escanear o QR corrige sozinho, com o aviso curto "Endereço do PC atualizado para 192.168.15.5.".
+
 ### Meus Sites, escudos e atualização (V5)
 
 **Meus Sites.** Nova aba em Configurações, no mesmo vidro azul das outras. Título "MEUS SITES" em
@@ -482,7 +491,7 @@ o PC tem um APK mais novo. Nada é baixado ou instalado sozinho.
 o orbe Núcleo girando devagar no topo (parado com "reduzir movimento"), "JARVIS" em Orbitron com brilho
 ciano, cartões de vidro azul-marinho com ícone em círculo de contorno (ciano; âmbar para segurança; verde
 para água e para o Modo Torcedor), capturas em moldura com cantos ciano e, no rodapé, o carimbo
-"J.A.R.V.I.S. · FOLHA · SITE · REV. v5.1.0" (a versão vem de `backend/version.py`). Botão principal ciano cheio ("VER NO GITHUB"); os outros só
+"J.A.R.V.I.S. · FOLHA · SITE · REV. v5.1.1" (a versão vem de `backend/version.py`). Botão principal ciano cheio ("VER NO GITHUB"); os outros só
 com borda. Logo abaixo, num quadro de borda tracejada âmbar, o botão "ABRIR MEU JARVIS" (borda âmbar, o "olhe aqui" da Sentinela), que abre a **mesma central do PC publicada no site** (`/app/`). Ela conversa com o JARVIS ligado no computador (backend em `127.0.0.1:8000`), então rosto, perfil, Modo Torcedor, rotina e agenda são os de sempre; na primeira vez, o Chrome pergunta se o site pode acessar a rede local (é o backend do próprio PC). Tom: o mesmo da central, e a página deixa claro que é só a vitrine ("O JARVIS roda no seu PC:
 voz, câmera, controle do sistema e os seus dados nunca passam por aqui."). A 404 diz "Procurei em toda a
 planta, senhor, e esta página não está aqui."

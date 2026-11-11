@@ -46,6 +46,10 @@ public class MainActivity extends Activity {
     private static final int REQ_MIC_SPEECH = 9;
 
     static volatile boolean visible = false;
+    // V5.1.1: atualização automática (o app baixa o APK do PC e se instala pelo PackageInstaller)
+    static volatile boolean updateInProgress = false;
+    private volatile long lastUpdateCheck = 0;
+    private volatile String pendingUpdateHost = null; // esperando a permissão "instalar apps"
 
     private WebView web;
     private SharedPreferences prefs;
@@ -129,6 +133,11 @@ public class MainActivity extends Activity {
     protected void onResume() {
         super.onResume();
         visible = true;
+        // V5.1.1: voltou da tela "permitir instalar apps" ou reabriu o app: confere de novo se há versão nova
+        String url = prefs.getString(KEY_URL, "");
+        if (isHttp(url) && System.currentTimeMillis() - lastUpdateCheck > (pendingUpdateHost != null ? 0 : 30 * 60 * 1000L)) {
+            checkForUpdate(url);
+        }
     }
 
     @Override
@@ -158,6 +167,24 @@ public class MainActivity extends Activity {
                 connect(url);
                 return true;
             }
+        }
+        // V5.1.1: jarvis://open?host=IP (QR do PC com o app já instalado): abre o JARVIS já pareado
+        // (e ele se atualiza sozinho, se o PC tiver versão nova); sem pareamento, cai na tela do PIN.
+        if ("open".equals(uri.getHost())) {
+            String host = uri.getQueryParameter("host");
+            Uri saved = savedUri();
+            boolean validHost = host != null && host.matches("[\\w.-]+");
+            if (saved != null && validHost && !host.equals(saved.getHost())) {
+                // O roteador trocou o IP do PC: troca só o endereço, mantém a chave e reconecta
+                int port = saved.getPort();
+                connect(saved.buildUpon().encodedAuthority(host + (port > 0 ? ":" + port : "")).build().toString());
+                Toast.makeText(this, "Endereço do PC atualizado para " + host + ".", Toast.LENGTH_SHORT).show();
+            } else if (saved != null) {
+                loadSavedOrSetup();
+            } else {
+                web.loadUrl(SETUP + (host != null && host.matches("[\\w.-]+") ? "#host=" + host : ""));
+            }
+            return true;
         }
         // V4.5: jarvis://setup?host=IP (botão "ABRIR O JARVIS" da página de download): pede só o PIN
         if ("setup".equals(uri.getHost())) {
@@ -254,7 +281,8 @@ public class MainActivity extends Activity {
     private void checkForUpdate(String appUrl) {
         Uri paired = Uri.parse(appUrl);
         String host = paired.getHost();
-        if (!isHttp(appUrl) || host == null || host.isEmpty()) return;
+        if (!isHttp(appUrl) || host == null || host.isEmpty() || updateInProgress) return;
+        lastUpdateCheck = System.currentTimeMillis();
 
         new Thread(() -> {
             try {
@@ -281,7 +309,9 @@ public class MainActivity extends Activity {
                 String pcVersion = info.optString("version", "");
                 String phoneVersion = installedVersion();
                 if (info.optBoolean("available") && compareVersions(pcVersion, phoneVersion) > 0) {
-                    runOnUiThread(() -> showUpdateDialog(host, pcVersion, phoneVersion));
+                    runOnUiThread(() -> startSelfUpdate(host, pcVersion));
+                } else {
+                    pendingUpdateHost = null;
                 }
             } catch (Exception ignored) {
                 // Sem conexão ou sem APK novo: não interrompe a abertura do JARVIS.
@@ -289,14 +319,91 @@ public class MainActivity extends Activity {
         }, "jarvis-update-check").start();
     }
 
-    private void showUpdateDialog(String host, String pcVersion, String phoneVersion) {
-        if (isFinishing()) return;
-        new AlertDialog.Builder(this)
-                .setTitle("Atualização do JARVIS disponível")
-                .setMessage("O PC tem a versão " + pcVersion + ". A versão instalada é " + phoneVersion + ".")
-                .setPositiveButton("Baixar APK", (dialog, which) -> downloadApk(host))
-                .setNegativeButton("Agora não", null)
-                .show();
+    /**
+     * V5.1.1: atualização automática. O app baixa o APK novo do PC e se instala pelo PackageInstaller.
+     * - Na primeira vez, o Android pede "permitir instalar apps" para o JARVIS (uma vez só) e confirma a troca.
+     * - Android 12+: depois que o próprio JARVIS instalou uma versão, as próximas entram sem perguntar.
+     */
+    private void startSelfUpdate(String host, String pcVersion) {
+        if (isFinishing() || updateInProgress) return;
+        if (Build.VERSION.SDK_INT >= 26 && !getPackageManager().canRequestPackageInstalls()) {
+            if (host.equals(pendingUpdateHost)) return; // já pediu a permissão nesta abertura
+            pendingUpdateHost = host;
+            new AlertDialog.Builder(this)
+                    .setTitle("Atualizar o JARVIS sozinho")
+                    .setMessage("O PC tem a versão " + pcVersion + ". Para o JARVIS se atualizar sozinho daqui para frente, "
+                            + "permita uma vez \"instalar apps desconhecidos\" para ele.")
+                    .setPositiveButton("Permitir", (d, w) -> {
+                        try {
+                            startActivity(new Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                                    Uri.parse("package:" + getPackageName())));
+                        } catch (Exception e) {
+                            downloadApk(host);
+                        }
+                    })
+                    .setNegativeButton("Agora não", null)
+                    .show();
+            return;
+        }
+        pendingUpdateHost = null;
+        updateInProgress = true;
+        Toast.makeText(this, "Atualizando o JARVIS para a versão " + pcVersion + "…", Toast.LENGTH_LONG).show();
+        new Thread(() -> {
+            try {
+                java.io.File apk = new java.io.File(getCacheDir(), "jarvis-update.apk");
+                java.net.HttpURLConnection c = (java.net.HttpURLConnection)
+                        new java.net.URL("http://" + host + ":8000/api/mobile/app.apk").openConnection();
+                c.setConnectTimeout(8000);
+                c.setReadTimeout(30000);
+                if (c.getResponseCode() != 200) throw new java.io.IOException("HTTP " + c.getResponseCode());
+                try (java.io.InputStream in = c.getInputStream();
+                     java.io.OutputStream out = new java.io.FileOutputStream(apk)) {
+                    byte[] buf = new byte[16384];
+                    int n;
+                    while ((n = in.read(buf)) > 0) out.write(buf, 0, n);
+                } finally {
+                    c.disconnect();
+                }
+                installApk(apk);
+            } catch (Exception e) {
+                updateInProgress = false;
+                runOnUiThread(() -> {
+                    Toast.makeText(this, "Não consegui baixar a atualização. Abrindo o download.", Toast.LENGTH_LONG).show();
+                    downloadApk(host);
+                });
+            }
+        }, "jarvis-self-update").start();
+    }
+
+    private void installApk(java.io.File apk) throws java.io.IOException {
+        android.content.pm.PackageInstaller installer = getPackageManager().getPackageInstaller();
+        android.content.pm.PackageInstaller.SessionParams params = new android.content.pm.PackageInstaller.SessionParams(
+                android.content.pm.PackageInstaller.SessionParams.MODE_FULL_INSTALL);
+        params.setAppPackageName(getPackageName());
+        if (Build.VERSION.SDK_INT >= 31) {
+            params.setRequireUserAction(android.content.pm.PackageInstaller.SessionParams.USER_ACTION_NOT_REQUIRED);
+        }
+        int sessionId = installer.createSession(params);
+        android.content.pm.PackageInstaller.Session session = installer.openSession(sessionId);
+        try {
+            try (java.io.OutputStream out = session.openWrite("jarvis.apk", 0, apk.length());
+                 java.io.InputStream in = new java.io.FileInputStream(apk)) {
+                byte[] buf = new byte[16384];
+                int n;
+                while ((n = in.read(buf)) > 0) out.write(buf, 0, n);
+                session.fsync(out);
+            }
+            int flags = android.app.PendingIntent.FLAG_UPDATE_CURRENT
+                    | (Build.VERSION.SDK_INT >= 31 ? android.app.PendingIntent.FLAG_MUTABLE : 0);
+            android.app.PendingIntent done = android.app.PendingIntent.getBroadcast(
+                    this, sessionId, new Intent(this, InstallReceiver.class), flags);
+            session.commit(done.getIntentSender());
+        } catch (java.io.IOException | RuntimeException e) {
+            session.abandon();
+            throw e;
+        } finally {
+            session.close();
+        }
     }
 
     private void downloadApk(String host) {

@@ -127,3 +127,28 @@ def test_pair_page_opens_app_with_token(monkeypatch):
     access.reset_for_tests(access.LOCKED)
     # Com a central bloqueada, o pareamento não abre (só quem entrou no PC pareia)
     assert _client("192.168.0.50").get(f"/api/mobile/pair?token={runtime.ACCESS_TOKEN}").status_code == 403
+
+
+def test_qr_abre_o_app_instalado_e_so_baixa_sem_ele(monkeypatch):
+    """V5.1.1: a página do QR tenta abrir o app (que se atualiza sozinho); sem o app, baixa o APK."""
+    from fastapi.testclient import TestClient
+
+    import main
+    from routes import mobile
+
+    class FakeApk:
+        def exists(self):
+            return True
+
+        def stat(self):
+            class S:
+                st_size = 74596
+            return S()
+
+    monkeypatch.setattr(mobile, "APK_PATH", FakeApk())
+    client = TestClient(main.app, base_url="http://192.168.15.7:8000")
+    html = client.get("/api/mobile").text
+    assert "intent://open?host=192.168.15.7#Intent;scheme=jarvis;package=com.patrick.jarvis;" in html
+    assert "S.browser_fallback_url=http%3A%2F%2F192.168.15.7%3A8000%2Fapi%2Fmobile%2Fapp.apk" in html
+    assert "o app se atualiza sozinho" in html and "<script>" in html
+    assert "<script>" not in client.get("/api/mobile?app=0").text  # sem o app: não tenta de novo

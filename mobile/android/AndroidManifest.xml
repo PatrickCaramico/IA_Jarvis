@@ -17,6 +17,9 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- V5.1.1: o app baixa a versão nova do PC e se atualiza sozinho (o Android pede permitir uma vez) -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <uses-permission android:name="android.permission.UPDATE_PACKAGES_WITHOUT_USER_ACTION" />
 
     <!-- Android 11+: para enxergar o reconhecimento de voz do Google -->
     <queries>
@@ -58,6 +61,11 @@
             android:name=".NotifyService"
             android:exported="false"
             android:foregroundServiceType="dataSync" />
+
+        <!-- V5.1.1: resultado da atualização automática (pede confirmação quando o Android exige) -->
+        <receiver
+            android:name=".InstallReceiver"
+            android:exported="false" />
 
         <receiver
             android:name=".BootReceiver"
