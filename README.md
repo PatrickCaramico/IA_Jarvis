@@ -98,6 +98,10 @@ Na primeira execução, o script prepara o ambiente Python e instala as dependê
 
 A mesma central também abre pelo site, no botão **Abrir meu JARVIS** (`https://projeto-jarvis-ia.netlify.app/app/`), e conversa com o JARVIS ligado no PC. Para o site conseguir ligar o JARVIS quando ele estiver desligado (botão **LIGAR O JARVIS**), rode uma vez o `Instalar-Botao-Ligar.bat`: ele cria o atalho `jarvis://` só para o seu usuário do Windows, que roda o `Iniciar-JARVIS.bat` sem abrir aba nova. O navegador pergunta antes de abrir. Para desfazer, use `Remover-Botao-Ligar.bat`.
 
+Depois de uma atualização no GitHub, toque em **⟳ ATUALIZAR** na tela de bloqueio: o JARVIS baixa a versão nova, avisa por voz e reinicia sozinho.
+
+**Celular:** com o JARVIS ligado, abra no navegador do celular `http://<IP do PC>:8000/api/mobile` (mesma Wi-Fi), baixe e instale o `JARVIS.apk` e conecte com o endereço do PC e o seu PIN.
+
 ## App Android
 
 Baixe `JARVIS-<versão>.apk` na [página de Releases](https://github.com/PatrickCaramico/IA_Jarvis/releases/latest) ou inicie o JARVIS em modo de rede e escaneie o QR da Sentinela. O celular e o PC precisam estar na mesma rede Wi-Fi; o pareamento é feito com o PIN do perfil principal.

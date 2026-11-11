@@ -28,7 +28,7 @@ import useSpeechRecognition from "./hooks/useSpeechRecognition.js";
 import useClapDetector from "./hooks/useClapDetector.js";
 import useSentinelListener from "./hooks/useSentinelListener.js";
 import { setPrefs as setPrefsStore } from "./utils/prefsStore.js";
-import { effectiveWakeWords } from "./utils/wakeWords.js";
+import { effectiveWakeWords, stripWake } from "./utils/wakeWords.js";
 import { buildDailySummary, shouldSpeakSummary } from "./utils/lockSummary.js";
 import { statusSentence } from "./utils/waterMath.js";
 import { subscribeNow } from "./hooks/useNow.js";
@@ -69,6 +69,8 @@ export default function App() {
   const [bootOffline, setBootOffline] = useState(false); // backend do PC desligado (sem resposta)
   // Botão LIGAR O JARVIS (atalho jarvis://): "" | "trying" | "opening" | "missing"
   const [launchState, setLaunchState] = useState("");
+  // Botão ATUALIZAR: null | { message } enquanto baixa a versão nova e reinicia
+  const [updating, setUpdating] = useState(null);
   const [lockPhase, setLockPhase] = useState("ready"); // ready | scanning | verified | failed
   const [lockMessage, setLockMessage] = useState("");
   const [name, setName] = useState("");
@@ -203,6 +205,7 @@ export default function App() {
   const pendingRequestRef = useRef(pendingRequest);
   pendingRequestRef.current = pendingRequest;
   const wakeHandledRef = useRef(false);
+  const lastVoiceRef = useRef(false); // o último pedido veio por voz? (conversa contínua)
   // Verificação rápida ao abrir: rosto reconhecido entra sozinho na central (sem clicar em ENTRAR)
   const quickEnterRef = useRef(false);
   const recheckTimerRef = useRef(null);
@@ -740,6 +743,50 @@ export default function App() {
       window.removeEventListener("blur", onBlur);
       if (!opened && document.hasFocus()) setLaunchState("missing");
     }, 2500);
+  }, []);
+
+  // Botão ATUALIZAR (tela de bloqueio): baixa a versão nova, o JARVIS avisa por voz e reinicia.
+  // A tela espera o backend novo subir (boot_id diferente) e recarrega a página com a versão nova.
+  const updateJarvis = useCallback(async () => {
+    setUpdating({ message: "Baixando a versão mais nova…" });
+    setScreen("boot");
+    let res;
+    try {
+      res = await api("/api/system/update", { method: "POST", body: JSON.stringify({ confirm: true }) });
+    } catch (err) {
+      setUpdating(null);
+      setLockMessage(err.message);
+      setScreen("lock");
+      return;
+    }
+    if (res.status !== "restarting") {
+      setUpdating(null);
+      setLockPhase("failed");
+      setLockMessage(res.message || "Não consegui atualizar.");
+      setScreen("lock");
+      return;
+    }
+    setUpdating({
+      message: res.changed ? `Versão nova baixada (${res.after}). Reiniciando os sistemas…` : "Já estava na versão mais nova. Reiniciando os sistemas…",
+    });
+    const oldBoot = res.boot_id;
+    const started = Date.now();
+    const poll = setInterval(async () => {
+      try {
+        const r = await fetch(`${API_URL}/api/health`, { cache: "no-store" });
+        const h = await r.json();
+        if (h.boot_id && h.boot_id !== oldBoot) {
+          clearInterval(poll);
+          window.location.reload(); // pega também a interface nova
+        }
+      } catch {
+        // reiniciando: o backend some por alguns segundos
+      }
+      if (Date.now() - started > 4 * 60 * 1000) {
+        clearInterval(poll);
+        setUpdating({ message: "Está demorando mais que o normal. Se não voltar, abra o Iniciar-JARVIS.bat no PC.", slow: true });
+      }
+    }, 2000);
   }, []);
 
   // ---- Cadastro da foto de perfil ----
@@ -1412,7 +1459,10 @@ export default function App() {
 
   // ---- Microfone (barra de espaço liga/desliga) ----
   const { listening, interim, start, stop, cancel: cancelMic, supported } = useSpeechRecognition({
-    onFinal: (text) => (screenRef.current === "guest" ? guestSend(text) : send(text)),
+    onFinal: (text) => {
+      lastVoiceRef.current = true; // pedido de voz: a conversa contínua vale para a resposta dele
+      return screenRef.current === "guest" ? guestSend(text) : send(text);
+    },
     onError: setError,
     deviceId: microphoneId,
   });
@@ -1633,6 +1683,35 @@ export default function App() {
     verify({ trigger: "wake" });
   }, [verify]);
 
+  // Como a Alexa: com a central aberta, "Jarvis, ..." funciona sem tocar no microfone.
+  // Pausa enquanto o JARVIS pensa ou fala (não escuta a própria voz) e enquanto o microfone manual está ligado.
+  const central = useSentinelListener({
+    enabled: !IS_JARVIS_APP && screen === "main" && appPrefs.hands_free_enabled !== false,
+    paused: jarvisState !== "idle" || listening,
+    wakeWords,
+    onWake: () => soundManager.playListening(),
+    onCommand: (_rest, original) => {
+      const text = stripWake(original, wakeWords);
+      if (!text) return;
+      lastVoiceRef.current = true;
+      send(text);
+    },
+  });
+
+  // Conversa contínua: terminou de responder um pedido de voz -> fica 8 s ouvindo a próxima pergunta
+  const prevStateRef = useRef(jarvisState);
+  useEffect(() => {
+    const was = prevStateRef.current;
+    prevStateRef.current = jarvisState;
+    if (jarvisState !== "idle" || was === "idle") return;
+    if (!lastVoiceRef.current) return;
+    lastVoiceRef.current = false;
+    if (screen === "main" && appPrefs.follow_up_enabled !== false && appPrefs.hands_free_enabled !== false && !IS_JARVIS_APP) {
+      central.keepAwake();
+      soundManager.playListening();
+    }
+  }, [jarvisState, screen, appPrefs.follow_up_enabled, appPrefs.hands_free_enabled, central]);
+
   const sentinel = useSentinelListener({
     enabled: !IS_JARVIS_APP && sentinelOn && (lockPhase === "ready" || lockPhase === "failed") && !sentinelMuted && !sentinelCooldown,
     paused: jarvisState !== "idle" || faceScan.status === "scanning",
@@ -1812,7 +1891,13 @@ export default function App() {
         <p className="ls-subbrand" style={{ textAlign: "center" }}>CENTRAL PESSOAL · v{APP_VERSION}</p>
 
         <div className="ls-status-box">
-          {bootError && bootOffline && BACKEND_ON_THIS_PC && !IS_JARVIS_APP ? (
+          {updating ? (
+            <>
+              <div className="ls-title is-amber">ATUALIZANDO O JARVIS</div>
+              <p className="ls-hint" style={{ margin: "8px auto", maxWidth: "34rem" }}>{updating.message}</p>
+              {!updating.slow && <p className="ls-hint ls-boot-wait" style={{ marginTop: "10px" }}>Volto em instantes e faço a verificação do seu rosto…</p>}
+            </>
+          ) : bootError && bootOffline && BACKEND_ON_THIS_PC && !IS_JARVIS_APP ? (
             <>
               {/* Central aberta pelo site com o JARVIS do PC desligado: liga pelo atalho jarvis://
                   (Instalar-Botao-Ligar.bat), espera ele responder e entra sozinha */}
@@ -1931,6 +2016,7 @@ export default function App() {
           guestEnabled={Boolean(appPrefs.lock_guest_enabled)}
           onGuest={enterGuest}
           onNewProfile={IS_JARVIS_APP ? null : () => setScreen("newprofile")}
+          onUpdate={BACKEND_ON_THIS_PC && !IS_JARVIS_APP ? updateJarvis : null}
           phoneApp={IS_JARVIS_APP}
           fanToggle={{
             enabled: fanModeEnabled,
@@ -2005,7 +2091,8 @@ export default function App() {
   }
 
   const busy = jarvisState !== "idle";
-  const stateLabel = listening ? "Ouvindo" : STATE_LABEL[jarvisState];
+  const heardAwake = central.phase === "awake" && jarvisState === "idle"; // "Jarvis" ouvido: esperando o pedido
+  const stateLabel = listening || heardAwake ? "Ouvindo" : STATE_LABEL[jarvisState];
   const showConversation = listening || busy || Boolean(userText || response || error);
   const sessionSeconds = Math.floor(sessionElapsed / 1000);
   const sessionClock = [Math.floor(sessionSeconds / 3600), Math.floor((sessionSeconds % 3600) / 60), sessionSeconds % 60]
@@ -2446,12 +2533,12 @@ export default function App() {
         orbSlot={
           fanModeEnabled ? (
             <ArcReactorHUD
-              state={listening ? "speaking" : jarvisState}
+              state={listening || heardAwake ? "speaking" : jarvisState}
               fanMode={true}
               fanShieldUrl={publicUrl("/fan/palmeiras/palmeiras_shield.png")}
             />
           ) : (
-            <WireOrb state={listening ? "listening" : jarvisState} flash={orbFlash} />
+            <WireOrb state={listening || heardAwake ? "listening" : jarvisState} flash={orbFlash} />
           )
         }
         commandSlot={<CommandBar onSend={(text) => send(text)} disabled={busy} listening={listening} onToggleMic={toggleMic} />}

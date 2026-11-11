@@ -112,6 +112,8 @@ class PrefsRequest(BaseModel):
     lock_guest_enabled: bool | None = None
     # Modo Sentinela
     sentinel_enabled: bool | None = None
+    hands_free_enabled: bool | None = None  # "Jarvis, ..." com a central aberta
+    follow_up_enabled: bool | None = None   # conversa contínua
     sentinel_wake_words: list[str] | None = None
     sentinel_show_clock: bool | None = None
     sentinel_night_dim: bool | None = None
@@ -184,10 +186,10 @@ async def update_prefs(req: PrefsRequest) -> dict:
         "formal",
     }:
         raise HTTPException(status_code=400, detail="Modo de personalidade inválido.")
-    if "search_mode" in patch and patch["search_mode"] not in {"ask", "api", "browser"}:
+    if "search_mode" in patch and patch["search_mode"] not in prefs.SEARCH_MODES:
         raise HTTPException(
             status_code=400,
-            detail="search_mode inválido. Use 'ask', 'api' ou 'browser'.",
+            detail="search_mode inválido. Use 'auto', 'ask', 'api' ou 'browser'.",
         )
     if "default_search_mode" in patch and patch["default_search_mode"] not in {
         "api",

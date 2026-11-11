@@ -96,6 +96,7 @@ export default function LockScreen({
   silent = false,
   fanToggle = null, // V4.4: { enabled, busy, onToggle } — botão do Modo Torcedor ao lado do carimbo
   onNewProfile = null, // V4.5: "＋ NOVA PESSOA" (perfil próprio: rosto, PIN e preferências)
+  onUpdate = null, // botão ATUALIZAR: baixa a versão nova e reinicia (só no próprio PC)
   phoneApp = false, // V4.5: dentro do app do celular (o rosto usaria a webcam do PC: entra pelo PIN)
 }) {
   const scanning = phase === "scanning";
@@ -167,6 +168,12 @@ export default function LockScreen({
         <button type="button" className={`ls-chip ${unknownFace ? "is-strong" : ""}`} onClick={(e) => { e.stopPropagation(); onNewProfile(); }}
           title="Criar o perfil de uma pessoa nova neste PC">
           {unknownFace ? "＋ SOU NOVO: CRIAR PERFIL" : "＋ NOVA PESSOA"}
+        </button>
+      )}
+      {onUpdate && (phase === "ready" || phase === "failed") && (
+        <button type="button" className="ls-chip" onClick={(e) => { e.stopPropagation(); onUpdate(); }}
+          title="Baixar a versão mais nova do JARVIS e reiniciar">
+          ⟳ ATUALIZAR
         </button>
       )}
     </div>

@@ -78,6 +78,7 @@ function Demo() {
     silent
     fanToggle={{ enabled: fan, busy: false, onToggle: toggle }}
     onNewProfile={() => {}}
+    onUpdate={() => {}}
     cards={{ api: fan ? fanApi : baseApi, list: fan ? ["clock", "weather"] : [], fanModeEnabled: fan }}
     mic={sentinelOn ? null : { muted: true, onToggle: () => {} }}
     sentinel={sentinelOn ? {

@@ -29,7 +29,9 @@ seu próprio PC, com seus dados protegidos atrás do seu rosto.
 | Sempre | Nunca |
 | --- | --- |
 | Formal e cordial, trata por "senhor" (ou pelo nome, se configurado) | Gírias pesadas, emojis ou excesso de exclamações |
-| Frases curtas; a resposta vem primeiro, o detalhe depois | Parágrafos longos para algo que cabe numa frase |
+| Frases curtas; a resposta vem primeiro, o detalhe depois (1 a 3 frases faladas) | Parágrafos longos para algo que cabe numa frase |
+| Educado como um assistente de voz: "Claro, senhor.", "Com prazer.", agradece quando agradecem | Responder seco ou ignorar um "obrigado" |
+| Quando pesquisou na internet, diz a fonte em poucas palavras ("segundo o ge") | Dar notícia sem dizer de onde veio |
 | Humor seco e sutil, no máximo uma tirada por resposta | Piadas em momentos de erro, alerta ou bloqueio |
 | Assume o erro com calma e oferece o próximo passo | Culpar o usuário ou dar desculpas técnicas |
 | Pergunta antes de ações irreversíveis | Agir sozinho em arquivos, compras ou mensagens |
@@ -358,7 +360,8 @@ Planta Funda, para a câmera ler bem), "JARVIS NO CELULAR" em Orbitron, "Escanei
 
 **Verificação rápida ao abrir.** Ao abrir a central (pelo site ou no PC), o JARVIS já lê o rosto uma vez,
 sem clicar. Enquanto a webcam abre (2 a 6 s), a linha embaixo do orbe pisca "LIGANDO A CÂMERA…"; depois,
-o vídeo corre liso dentro do orbe (até 15 quadros por segundo). É alguém com perfil: entra sozinho na central dessa pessoa em cerca de 1,5 s. Não reconheceu:
+o vídeo corre liso dentro do orbe (até 15 quadros por segundo). Ele tenta por até 15 s depois que a
+câmera abre e para assim que reconhece. É alguém com perfil: entra sozinho na central dessa pessoa em cerca de 1,5 s. Não reconheceu:
 a frase âmbar "Não reconheci você. Se é a sua primeira vez aqui, crie o seu perfil..." aparece sobre os
 chips, e "＋ NOVA PESSOA" vira "＋ SOU NOVO: CRIAR PERFIL" em destaque, ao lado de "USAR PIN". Com o JARVIS do
 PC desligado, a central do site mostra, em âmbar, "O JARVIS DO SEU PC ESTÁ DESLIGADO", o botão principal
@@ -401,6 +404,29 @@ O âmbar do foco é o mesmo Âmbar Sentinela: "olhe aqui". Cada pessoa tem as pr
 
 **No código:** `mobile/android/`, `backend/routes/mobile.py`, `frontend/src/components/MobileAppQr.jsx`,
 `NewProfileScreen.jsx`, `ProfileWelcome.jsx`, `frontend/src/profiles.css` e `frontend/src/accessibility.css`.
+
+### Como a Alexa: voz, pesquisa e atualização
+
+**"Jarvis" com a central aberta.** Além da tela de bloqueio, a central também escuta a palavra de
+ativação: "Jarvis, que horas são?" funciona sem tocar no microfone. Ao ouvir só "Jarvis", toca o som de
+"ouvindo" e o orbe passa ao estado **OUVINDO** (ciano, brilho alto) por 8 s, à espera do pedido. Enquanto o
+JARVIS pensa ou fala, a escuta pausa (ele não ouve a própria voz). **Conversa contínua:** depois de
+responder a um pedido de voz, o som de "ouvindo" toca de novo e o orbe fica em OUVINDO por 8 s para a
+próxima pergunta, sem repetir "Jarvis". As duas coisas têm chave em Configurações > Bloqueio ("Ouvir
+“Jarvis” com a central aberta" e "Conversa contínua").
+
+**Pesquisa automática.** Modo de pesquisa padrão "Automático, como a Alexa": pergunta factual ("quem
+ganhou o jogo ontem?") é respondida na hora pela IA com busca no Google, sem abrir o navegador e sem a
+pergunta "API ou navegador?". A resposta cita a fonte e as fontes aparecem no card, como na pesquisa
+profunda.
+
+**Botão ATUALIZAR.** Na tela de bloqueio, chip só com borda "⟳ ATUALIZAR", ao lado de "＋ NOVA PESSOA"
+(só no próprio PC; no app do celular não aparece). Ao tocar, a tela de abertura mostra, em âmbar,
+"ATUALIZANDO O JARVIS", a linha "Versão nova baixada (abc123). Reiniciando os sistemas…" (ou "Já estava na
+versão mais nova…") e pisca "Volto em instantes e faço a verificação do seu rosto…". A voz diz "Senhor,
+estou atualizando os meus sistemas. Volto em instantes." Quando ele volta, a página recarrega com a
+interface nova e faz a verificação rápida. Se o GitHub recusar (mudanças locais na pasta), nada muda e a
+tela de bloqueio mostra o motivo em vermelho.
 
 ### Meus Sites, escudos e atualização (V5)
 
@@ -469,6 +495,7 @@ central completa, que agora conversa em cards.
 | **4.4 · a calma** | 04 e 05/11/2026 | Central em espera só com o orbe, tela limpa no briefing e cabeçalho em três zonas. Depois, a **planta blueprint**, o reator em destaque, a abertura mais rápida e o Modo Torcedor com jogo de verdade (ESPN + Google Notícias, sem IA), ligando sozinho e comemorando os gols. |
 | **4.5 · a casa** | 05/11/2026 | JARVIS no celular (app Android com QR na Sentinela), uma central por pessoa (rosto + PIN, dados separados) e acessibilidade (texto maior, alto contraste, menos movimento). |
 | **5.0 · o lançamento** | 09/11/2026 | Projeto no GitHub, com testes automáticos e o app Android nas Releases. **Meus Sites** (qualquer site por voz, com apelidos), escudos do Modo Torcedor sempre visíveis, jogo antigo que sai da tela no dia seguinte e aviso de versão nova no PC e no celular. |
+| **Como a Alexa** | 10/11/2026 | Central aberta pelo site, verificação rápida do rosto, botão LIGAR O JARVIS, "Jarvis" também com a central aberta, conversa contínua, pesquisa automática no Google pela IA, respostas curtas e educadas, botão ATUALIZAR no bloqueio e app Android 5.0.0 servido pelo PC. |
 
 O que atravessou todas as versões: tudo roda no PC do dono, o rosto é a chave, a voz é em
 português e o reator (depois Núcleo) fica no centro da tela.

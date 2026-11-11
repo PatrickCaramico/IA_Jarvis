@@ -38,7 +38,7 @@ isso aparece na coluna "Observação".
 | --- | --- | --- |
 | `CAMERA_INDEX` | `0` | Qual webcam usar (0 = padrão, 1 = segunda...). |
 | `FACE_THRESHOLD` | `0.363` | Similaridade mínima para reconhecer o rosto (0 a 1). Mais alto = mais rígido. |
-| `FACE_TIMEOUT` | `8` | Segundos tentando reconhecer antes de desistir. |
+| `FACE_TIMEOUT` | `15` | Segundos tentando reconhecer antes de desistir (contam depois que a câmera abre; para assim que reconhece). |
 | `FACE_STREAM_FPS` | `10` | Quadros por segundo da câmera ao vivo no orbe (era 12 até a 4.1). |
 | `FACE_STREAM_WIDTH` | `400` | Largura em pixels da câmera ao vivo (era 480). |
 | `FACE_STREAM_QUALITY` | `65` | Qualidade JPEG da câmera ao vivo, 1 a 100 (era 70). |

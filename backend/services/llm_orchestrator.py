@@ -52,9 +52,12 @@ SYSTEM_PROMPT = (
     "Você é J.A.R.V.I.S., o assistente pessoal do usuário: um mordomo digital competente, discreto e leal. "
     "Fale sempre em português do Brasil, com tom formal e cordial. Trate o usuário por 'senhor', sem "
     "repetir o tratamento em todas as frases. "
-    "Suas respostas são LIDAS EM VOZ ALTA: frases curtas, a resposta primeiro e o detalhe depois, no máximo "
-    "4 frases (só se alongue se o usuário pedir detalhes), sem listas, sem markdown, sem emojis e sem "
-    "excesso de exclamações. Humor seco e sutil é bem-vindo, no máximo uma tirada por resposta e nunca "
+    "Suas respostas são LIDAS EM VOZ ALTA, como um assistente de voz: a resposta primeiro, em 1 a 3 frases "
+    "curtas (só se alongue se o usuário pedir detalhes), sem listas, sem markdown, sem emojis e sem "
+    "excesso de exclamações. Seja educado e caloroso: comece com uma confirmação breve e natural quando "
+    "fizer sentido ('Claro, senhor.', 'Certo.', 'Com prazer.') e agradeça quando o usuário agradecer. "
+    "Quando a resposta vier de uma pesquisa na internet, diga a fonte em poucas palavras ('segundo o ge', "
+    "'de acordo com a CNN Brasil') e, se a informação puder ter mudado, diga de quando ela é. Humor seco e sutil é bem-vindo, no máximo uma tirada por resposta e nunca "
     "em erros, alertas ou assuntos sérios. Nunca faça o usuário se sentir burro. "
     "Quando algo der errado, assuma com calma e diga o próximo passo, sem desculpas técnicas. "
     "Antes de qualquer ação irreversível, pergunte. "
@@ -330,6 +333,10 @@ def _call_anthropic(prompt: str, frame_b64: Optional[str], history: list[dict]) 
 def _call_llm(prompt: str, frame_b64: Optional[str], history: list[dict], deep: bool = False) -> str:
     provider, personality = prefs.get_llm_config()
     prompt = f"{PERSONALITY_PROMPTS.get(personality, PERSONALITY_PROMPTS['direto'])}\n{prompt}"
+    # Pesquisa na internet (modo automático ou profunda): a busca do Google está ligada só no Gemini.
+    # Com outro provedor escolhido, a pergunta que precisa de pesquisa vai para o Gemini, se houver chave.
+    if deep and provider != "gemini" and settings.GEMINI_API_KEY:
+        return _call_gemini(prompt, frame_b64, history, deep=True)
     if provider == "anthropic":
         return _call_anthropic(prompt, frame_b64, history)
     if provider == "openai":
@@ -355,8 +362,12 @@ async def generate_jarvis_response(
     history: Optional[list[dict]] = None,
     routine: bool = False,
     deep: bool = False,
+    web: bool = False,
 ) -> str:
     """Executa o pipeline e devolve o texto do JARVIS.
+
+    - web=True (modo automático, como a Alexa): a IA pesquisa no Google antes de responder, sem gastar
+      a cota da pesquisa profunda.
 
     - routine=True: rotina completa (câmera + notícias), usada pelo botão "Bom Dia".
     - routine=False: conversa; só usa câmera/notícias se o pedido mencionar (ex.: "notícias de hoje").
@@ -405,7 +416,7 @@ async def generate_jarvis_response(
 
     await notify("llm", "active")
     try:
-        text = await asyncio.to_thread(_call_llm, prompt, frame, history, deep)
+        text = await asyncio.to_thread(_call_llm, prompt, frame, history, deep or web)
     except Exception:
         await notify("llm", "error")
         raise

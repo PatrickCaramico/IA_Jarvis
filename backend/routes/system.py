@@ -7,7 +7,7 @@ import secrets
 from fastapi import HTTPException, Request, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
 from config import settings
-from modules import face, tools, prefs, event_log
+from modules import face, tools, prefs, event_log, self_update
 from modules import access
 from modules import tts as tts_module
 from services.llm_orchestrator import get_quota_cooldown
@@ -35,6 +35,7 @@ async def health() -> dict:
     return {
         "status": "ok",
         "version": VERSION,
+        "boot_id": self_update.BOOT_ID,  # muda a cada início: a central sabe quando a atualização subiu
         "provider": provider,
         "personality": personality,
         "busy": session.busy,
@@ -49,6 +50,46 @@ async def health() -> dict:
             "backend": True,
         },
     }
+
+
+_LOOPBACK = {"127.0.0.1", "::1", "localhost", "testclient"}
+UPDATE_SPEECH = "Senhor, estou atualizando os meus sistemas. Volto em instantes."
+UPDATE_SPEECH_SAME = "Senhor, já estou na versão mais nova. Vou reiniciar os meus sistemas mesmo assim."
+
+
+class UpdateRequest(BaseModel):
+    confirm: bool = False
+
+
+@router.post("/api/system/update")
+async def system_update(req: UpdateRequest, request: Request) -> dict:
+    """Botão ATUALIZAR (tela de bloqueio): baixa a versão nova, avisa por voz e reinicia.
+
+    Só no próprio PC e só pela central: pedido de outra máquina, de outro site ou sem JSON é recusado.
+    """
+    client = request.client.host if request.client else ""
+    if client not in _LOOPBACK:
+        raise HTTPException(status_code=403, detail="A atualização só pode ser pedida no próprio PC.")
+    origin = request.headers.get("origin")
+    if origin and origin not in settings.CORS_ORIGINS:
+        raise HTTPException(status_code=403, detail="Origem não autorizada.")
+    if "application/json" not in request.headers.get("content-type", "") or not req.confirm:
+        raise HTTPException(status_code=400, detail="Confirme a atualização.")
+
+    result = await asyncio.to_thread(self_update.pull)
+    if not result["ok"]:
+        return {"status": "error", **result}
+
+    async def speak_and_restart() -> None:
+        try:
+            await speech.say_quietly(UPDATE_SPEECH if result["changed"] else UPDATE_SPEECH_SAME)
+        except Exception:  # noqa: BLE001 - sem voz, reinicia do mesmo jeito
+            log.warning("Não consegui falar o aviso de atualização", exc_info=True)
+        if not self_update.restart():
+            await runtime.manager.broadcast({"type": "error", "message": "Não consegui reiniciar sozinho. Use o Iniciar-JARVIS.bat."})
+
+    runtime.track(speak_and_restart())
+    return {"status": "restarting", "boot_id": self_update.BOOT_ID, **result}
 
 
 @router.get("/api/auth/token")

@@ -138,5 +138,11 @@ export default function useSentinelListener({ enabled, paused = false, wakeWords
     };
   }, [enabled, paused, goSleep]);
 
-  return { status, phase, interim, supported: Boolean(SR), goSleep };
+  // Conversa contínua: depois de responder, fica atento de novo (sem precisar da palavra de ativação)
+  const keepAwake = useCallback((ms = AWAKE_WINDOW_MS) => {
+    awakeUntilRef.current = Date.now() + ms;
+    setPhase("awake");
+  }, []);
+
+  return { status, phase, interim, supported: Boolean(SR), goSleep, keepAwake };
 }

@@ -33,6 +33,23 @@ export function matchWake(text, wakeWords) {
   return { matched: false, wake: "", rest: norm };
 }
 
+/**
+ * Tira a palavra de ativação do começo do texto ORIGINAL (com acentos e maiúsculas):
+ * "Jarvis, que horas são?" -> "que horas são?". Sem a palavra no começo, devolve o texto como veio.
+ */
+export function stripWake(text, wakeWords) {
+  const original = String(text || "").trim();
+  const { matched, wake } = matchWake(original, wakeWords || []);
+  if (!matched) return original;
+  const tokens = original.split(/\s+/);
+  for (let i = 1; i <= tokens.length; i += 1) {
+    if (normalizeSpeech(tokens.slice(0, i).join(" ")) === wake) {
+      return tokens.slice(i).join(" ").replace(/^[\s,.;:!?-]+/, "");
+    }
+  }
+  return original;
+}
+
 // V4.2.2: frases de liberar a central. Com o microfone ligado (P ou clique), vão direto para o
 // escaneamento do rosto, com ou sem a palavra de ativação na frente. Nada roda depois de entrar.
 // A mesma regra fica em backend/modules/sentinel.py (_UNLOCK_ONLY); os testes conferem as duas.

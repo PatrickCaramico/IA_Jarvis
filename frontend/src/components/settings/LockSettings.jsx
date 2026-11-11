@@ -169,6 +169,18 @@ export default function LockSettings({ api, prefs, onPatch }) {
           checked={prefs.sentinel_enabled}
           onChange={(v) => onPatch({ sentinel_enabled: v })}
         />
+        <Toggle
+          label="Ouvir “Jarvis” com a central aberta"
+          hint="Como a Alexa: diga “Jarvis, que horas são?” sem tocar no microfone. O microfone do navegador fica ligado enquanto a central está aberta e pausa enquanto o JARVIS fala."
+          checked={prefs.hands_free_enabled !== false}
+          onChange={(v) => onPatch({ hands_free_enabled: v })}
+        />
+        <Toggle
+          label="Conversa contínua"
+          hint="Depois de responder a um pedido de voz, o JARVIS fica 8 segundos ouvindo a próxima pergunta, sem precisar dizer “Jarvis” de novo."
+          checked={prefs.follow_up_enabled !== false}
+          onChange={(v) => onPatch({ follow_up_enabled: v })}
+        />
         <label className="block text-xs font-['Orbitron'] text-cyan-200 pt-1">Palavras de ativação (separadas por vírgula)</label>
         <input value={wakeText} onChange={(e) => setWakeText(e.target.value)}
           onBlur={() => {

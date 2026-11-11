@@ -40,7 +40,7 @@ export default function SettingsPanel({ api, onClose, onPrefsChange, onOpenMicro
   const [shortcutError, setShortcutError] = useState("");
   const [provider, setProvider] = useState("gemini");
   const [personality, setPersonality] = useState("direto");
-  const [searchMode, setSearchMode] = useState("browser");
+  const [searchMode, setSearchMode] = useState("auto");
   const [deepSearchAllowed, setDeepSearchAllowed] = useState(false);
   const [deepSearchLimit, setDeepSearchLimit] = useState(5);
 
@@ -83,7 +83,7 @@ export default function SettingsPanel({ api, onClose, onPrefsChange, onOpenMicro
     setSelectedCamera(data.camera_index ?? 0);
     setProvider(data.llm_provider ?? "gemini");
     setPersonality(data.personality_mode ?? "direto");
-    setSearchMode(data.search_mode ?? "browser");
+    setSearchMode(data.search_mode ?? "auto");
     setDeepSearchAllowed(Boolean(data.deep_search_allowed));
     setDeepSearchLimit(Number(data.deep_search_daily_limit ?? 5));
     setFanModeEnabled(Boolean(data.fan_mode_enabled));
@@ -373,14 +373,15 @@ export default function SettingsPanel({ api, onClose, onPrefsChange, onOpenMicro
               <div className="flex items-center justify-between">
                 <div>
                   <label className="block text-xs font-['Orbitron'] text-cyan-300 font-semibold">MODO DE PESQUISA</label>
-                  <span className="text-[10px] text-cyan-400/60 font-mono">Pesquisa no navegador não consome cota de API.</span>
+                  <span className="text-[10px] text-cyan-400/60 font-mono">Automático: responde na hora, pesquisando no Google pela IA. Navegador não consome cota de API.</span>
                 </div>
                 <select
                   value={searchMode}
                   onChange={(e) => setSearchMode(e.target.value)}
                   className="rounded border border-cyan-500/30 bg-black/60 p-1.5 text-xs text-cyan-100 font-mono"
                 >
-                  <option value="browser">Navegador (Padrão)</option>
+                  <option value="auto">Automático, como a Alexa (Padrão)</option>
+                  <option value="browser">Navegador</option>
                   <option value="ask">Perguntar sempre</option>
                   <option value="api">API Direta</option>
                 </select>

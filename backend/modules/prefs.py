@@ -22,7 +22,7 @@ _DEFAULTS: dict[str, Any] = {
     "camera_index": 0,            # índice da webcam (0 = padrão)
     "llm_provider": "openai",     # provedor usado nas próximas conversas
     "personality_mode": "direto", # direto | descontraido | formal
-    "search_mode": "browser",     # "browser" | "ask" | "api"
+    "search_mode": "auto",        # "auto" (como a Alexa: IA + busca no Google) | "browser" | "ask" | "api"
     "default_search_mode": "browser", # modo padrão caso expire timeout (10s)
     "deep_search_allowed": False, # trava geral: pesquisa profunda com IA (Gemini+web) desativada por padrão
     "deep_search_daily_limit": 5, # limite diário máximo de pesquisas profundas
@@ -50,6 +50,8 @@ _DEFAULTS: dict[str, Any] = {
     "lock_guest_enabled": False,          # botão "Modo visitante" na tela de bloqueio
     # --- Modo Sentinela ---
     "sentinel_enabled": False,            # tela de bloqueio em modo sentinela (escuta palavra de ativação)
+    "hands_free_enabled": True,           # como a Alexa: "Jarvis, ..." também com a central aberta
+    "follow_up_enabled": True,            # conversa contínua: depois de responder, ouve a próxima pergunta
     "sentinel_wake_words": ["jarvis", "ei jarvis", "ta acordado"],
     "sentinel_show_clock": True,          # relógio e data discretos na tela bloqueada
     "sentinel_night_dim": True,           # orbe mais escuro e voz mais baixa à noite
@@ -101,6 +103,7 @@ def validate_patch(patch: dict[str, Any]) -> Optional[str]:
     bools = (
         "clap_wake_enabled", "clap_auto_enter", "clap_relock_on_fail", "lock_presence_check",
         "lock_save_failed_photo", "lock_backend_enforce", "lock_guest_enabled", "sentinel_enabled", "sentinel_show_clock",
+        "hands_free_enabled", "follow_up_enabled",
         "sentinel_night_dim", "water_sound", "water_pace_hint", "screen_assist_enabled",
         "routine_suggestions_enabled", "notifications_enabled", "notifications_read_content",
     )
@@ -285,9 +288,13 @@ def delete_shortcut(name: str) -> bool:
     return True
 
 
+# "auto": pergunta factual é respondida pela IA com busca no Google (sem abrir navegador, sem perguntar)
+SEARCH_MODES = {"auto", "ask", "api", "browser"}
+
+
 def get_search_mode() -> str:
-    mode = str(_load().get("search_mode", "ask")).lower()
-    return mode if mode in {"ask", "api", "browser"} else "ask"
+    mode = str(_load().get("search_mode", "auto")).lower()
+    return mode if mode in SEARCH_MODES else "auto"
 
 
 def get_default_search_mode() -> str:
@@ -296,7 +303,7 @@ def get_default_search_mode() -> str:
 
 
 def set_search_mode(mode: str) -> None:
-    if mode in {"ask", "api", "browser"}:
+    if mode in SEARCH_MODES:
         p = _load()
         p["search_mode"] = mode
         _save(p)

@@ -443,6 +443,7 @@ async def handle_turn(message: str, routine: bool, force_deep: bool = False) -> 
         force_deep = True
         message = f"pesquisa profunda sobre {target_theme}"
 
+    web_search = False  # modo automático: a IA pesquisa no Google antes de responder
     # 3) Funções locais (só executa se não for force_deep)
     if not force_deep:
         try:
@@ -470,6 +471,14 @@ async def handle_turn(message: str, routine: bool, force_deep: bool = False) -> 
 
         current_search_mode = prefs.get_search_mode()
 
+        # 4a) Modo automático (como a Alexa): pergunta factual vai para a IA com busca no Google,
+        # sem abrir o navegador, sem perguntar e sem gastar a cota da pesquisa profunda.
+        if current_search_mode == "auto" and tools.is_factual_query(message):
+            web_search = True
+            session.last_search_query = re.sub(
+                r"^(?:jarvis[\s,]+)?(?:por favor[\s,]+)?", "", message, flags=re.I
+            ).strip(" .!?") or message
+
         # 4) Pergunta factual direcionada ao navegador por padrão (sem gastar cota de API)
         if current_search_mode == "browser" and tools.is_factual_query(message):
             clean_q = re.sub(r"^(?:jarvis[\s,]+)?(?:por favor[\s,]+)?", "", message, flags=re.I).strip(" .!?")
@@ -485,7 +494,7 @@ async def handle_turn(message: str, routine: bool, force_deep: bool = False) -> 
         if not search_query and tools.is_factual_query(message):
             search_query = re.sub(r"^(?:jarvis[\s,]+)?(?:por favor[\s,]+)?", "", message, flags=re.I).strip(" .!?")
 
-        if search_query and current_search_mode == "ask":
+        if search_query and current_search_mode == "ask":  # no "auto" a pesquisa segue direto para a IA
             prompt_reply = "Como prefere realizar esta pesquisa, senhor? Pela API do Gemini ou no navegador local?"
             prompt_cards = [
                 {
@@ -541,6 +550,7 @@ async def handle_turn(message: str, routine: bool, force_deep: bool = False) -> 
             history=list(session.history),
             routine=routine,
             deep=force_deep,
+            web=web_search,
         )
     except Exception as exc:  # noqa: BLE001
         stop.set()

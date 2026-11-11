@@ -4,6 +4,14 @@ Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
 ## 10 de novembro de 2026
 
+- **Como a Alexa:** "Jarvis, ..." também funciona com a central aberta (antes só no bloqueio), com conversa contínua: depois de responder a um pedido de voz, ele fica 8 s ouvindo a próxima pergunta. Chaves em Configurações > Bloqueio (`hands_free_enabled`, `follow_up_enabled`).
+- **Pesquisa automática:** novo modo de pesquisa "Automático, como a Alexa" (`search_mode: auto`, agora o padrão): perguntas factuais vão para a IA com busca no Google, sem abrir o navegador, sem perguntar "API ou navegador?" e sem gastar a cota da pesquisa profunda. Com outro provedor escolhido, essas perguntas vão para o Gemini.
+- **Respostas de assistente:** 1 a 3 frases faladas, educadas ("Claro, senhor."), citando a fonte quando vierem de pesquisa.
+- **Botão ATUALIZAR na tela de bloqueio:** baixa a versão nova do GitHub (`git pull --ff-only`), avisa por voz e reinicia pelo `Iniciar-JARVIS.bat site`; a página recarrega sozinha quando o backend novo sobe (`boot_id` no `/api/health`). Só aceita pedidos do próprio PC e da própria central.
+- **App Android 5.0.0:** gerado e servido pelo PC em `/api/mobile` (o app 4.5 antigo só aceitava o link com a chave; o novo conecta com endereço + PIN).
+
+- **Mais tempo para reconhecer:** a verificação facial tenta por até 15 s (era 8), contados depois que a webcam abre; para assim que reconhece. Ajustável por `FACE_TIMEOUT`.
+
 - **Briefing com a pauta desde o início:** o backend manda todos os cards já no `briefing_start` (`plan`); durante a saudação a tela mostra a pauta inteira, e em cada assunto o card dele vira o destaque, com os próximos apagados embaixo.
 - **Câmera sem travar na verificação:** o vídeo ao vivo e a análise do rosto rodam separados (antes o vídeo esperava cada detecção, ~155 ms). A detecção usa uma cópia de 320 px e o OpenCV fica em 1 núcleo durante a verificação: com todos os núcleos ele derrubava a webcam de 23 para 3 a 10 fps. Vídeo ao vivo a 15 fps (era 10) e aviso "LIGANDO A CÂMERA…" enquanto a webcam abre (2 a 6 s, pelo driver).
 

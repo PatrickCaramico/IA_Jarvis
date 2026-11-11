@@ -143,6 +143,7 @@ _PUBLIC_EXACT = {
     ("POST", "/api/profiles"),        # criar pessoa nova pelo bloqueio (exige o PIN do dono, se houver)
     ("GET", "/api/water"),            # cartão "água de hoje" da tela de bloqueio
     ("POST", "/api/health/biometrics"),  # recebimento do relógio (Android Sync) não pode quebrar
+    ("POST", "/api/system/update"),   # botão ATUALIZAR do bloqueio (a rota aceita só o próprio PC)
 }
 _PUBLIC_PREFIX = (
     ("GET", "/api/integrations/google-calendar/callback"),  # o estado OAuth já protege
