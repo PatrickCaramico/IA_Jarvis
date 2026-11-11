@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { RECONNECT_EVENT } from "../../hooks/useJarvisSocket.js";
 
 const GRACE_MS = 3000;     // quedas curtas (reinício do backend) não mostram o aviso
 const BACK_MS = 2500;      // "Conexão restabelecida" fica na tela por um instante
@@ -33,7 +34,13 @@ export default function OfflineBanner({ connected, active = true }) {
       {back ? (
         <span>Conexão restabelecida. Tudo certo, senhor.</span>
       ) : (
-        <span>Perdi o contato com o servidor do JARVIS. Tentando reconectar sozinho…</span>
+        <>
+          <span>Perdi o contato com o JARVIS do PC. Tentando reconectar sozinho…</span>
+          {/* V5.2: não precisa esperar a próxima tentativa */}
+          <button type="button" className="j-offline-retry" onClick={() => window.dispatchEvent(new Event(RECONNECT_EVENT))}>
+            RECONECTAR
+          </button>
+        </>
       )}
     </div>
   );

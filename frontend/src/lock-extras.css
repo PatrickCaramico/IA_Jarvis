@@ -418,3 +418,23 @@
 .ls-mic-toggle.on { color: #e6f7fb; border-color: rgba(16, 185, 129, 0.5); }
 .ls-mic-toggle.on .dot { background: #10b981; box-shadow: 0 0 6px #10b981; }
 .ls-mic-toggle .ls-key-badge, .snt-mic .ls-key-badge { font-size: 0.55rem; padding: 1px 6px; }
+
+/* V5.2: tela de "PC desligado" mais curta — passos numerados, botões lado a lado, ajuda recolhida */
+.ls-boot-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px; margin-top: 14px; }
+.ls-boot-actions .ls-btn-main { margin: 0; }
+.ls-boot-steps {
+  display: grid; gap: 8px; max-width: 30rem; margin: 10px auto 0; padding: 0; list-style: none; counter-reset: boot;
+  text-align: left; font-size: 0.92rem; line-height: 1.4; color: rgba(225, 242, 255, 0.85);
+}
+.ls-boot-steps li { counter-increment: boot; display: grid; grid-template-columns: 26px 1fr; gap: 10px; align-items: start; }
+.ls-boot-steps li::before {
+  content: counter(boot); display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%;
+  border: 1px solid rgba(94, 234, 212, 0.7); color: #5eead4; font-family: "Orbitron", sans-serif; font-size: 0.7rem;
+}
+.ls-boot-steps b { color: #fff; }
+.ls-boot-help { max-width: 30rem; margin: 14px auto 0; font-size: 0.82rem; color: rgba(225, 242, 255, 0.72); text-align: center; }
+.ls-boot-help summary { cursor: pointer; list-style: none; letter-spacing: 0.08em; text-decoration: underline dotted; text-underline-offset: 3px; }
+.ls-boot-help summary::-webkit-details-marker { display: none; }
+.ls-boot-help[open] summary { color: #fff; margin-bottom: 6px; }
+.ls-boot-help p { margin: 6px 0 0; line-height: 1.45; }
+.ls-boot-help b { color: #fff; }

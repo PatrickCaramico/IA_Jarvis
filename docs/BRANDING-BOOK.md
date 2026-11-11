@@ -1,4 +1,4 @@
-# Branding Book do JARVIS (v1.9, atualizado na V5.1.1 em 11/11/2026: na web e por voz, alarmes, "Esqueci o PIN" e app que se atualiza sozinho)
+# Branding Book do JARVIS (v1.10, atualizado na V5.2.0 em 11/11/2026: entrada direta para quem já usa, reconexão sozinha e central enxuta no celular)
 
 Versão aprovada do Branding Book proposto no plano da 4.2. Há também uma versão ilustrada e animada: abra `docs/branding-book.html` no navegador. Tudo aqui já está aplicado no projeto;
 no fim de cada seção há onde isso vive no código.
@@ -60,7 +60,7 @@ nos módulos do backend.
 | --- | --- |
 | Assistente | JARVIS (o nome da IA pode ser trocado em Configurações) |
 | Módulo de escuta contínua | **Modo Sentinela** (mantido; as siglas propostas não foram adotadas) |
-| Versão exibida na central | `v5.1.1` (sem referências a marcas de terceiros, como "Stark") |
+| Versão exibida na central | `v5.2.0` (sem referências a marcas de terceiros, como "Stark") |
 | Lista de sites abertos por voz | **Meus Sites** (Configurações > Meus Sites) |
 | Resumo da manhã | **Briefing** (disparado por "bom dia") |
 | Resumo da noite | **Fechamento do dia** (disparado por "boa noite") |
@@ -364,7 +364,7 @@ o vídeo corre liso dentro do orbe (até 15 quadros por segundo). Ele tenta por 
 câmera abre e para assim que reconhece. É alguém com perfil: entra sozinho na central dessa pessoa em cerca de 1,5 s. Não reconheceu:
 a frase âmbar "Não reconheci você. Se é a sua primeira vez aqui, crie o seu perfil..." aparece sobre os
 chips, e "＋ NOVA PESSOA" vira "＋ SOU NOVO: CRIAR PERFIL" em destaque, ao lado de "USAR PIN". Com o JARVIS do
-PC desligado, a central do site mostra, em âmbar, "O JARVIS DO SEU PC ESTÁ DESLIGADO", o botão principal
+PC desligado, a central do site mostrava (até a 5.1), em âmbar, "O JARVIS DO SEU PC ESTÁ DESLIGADO" (na V5.2: veja "Entrada direta e reconexão"), o botão principal
 "LIGAR O JARVIS" (atalho `jarvis://`, ativado uma vez pelo `Instalar-Botao-Ligar.bat`) e pisca "Aguardando o
 JARVIS responder…"; quando ele responde, segue sozinha. Ao tocar, o botão vira "ABRINDO…"; se o atalho
 abriu, a linha muda para "Ligando o JARVIS… na primeira vez pode levar até 1 minuto". Se nada abriu em 2,5 s
@@ -459,6 +459,32 @@ ida ao navegador. Na primeira vez, um diálogo nativo "Atualizar o JARVIS sozinh
 na tela dele. Falhou: "Não consegui baixar a atualização. Abrindo o download." (volta ao jeito antigo). Se o roteador
 trocou o IP do PC, escanear o QR corrige sozinho, com o aviso curto "Endereço do PC atualizado para 192.168.15.5.".
 
+**Entrada direta e reconexão (V5.2).** O navegador lembra que a pessoa já entrou (só a hora da última entrada).
+Reabrir a central (F5, nova aba, site) até 12 h depois, com o JARVIS do PC ainda liberado, vai **direto para a
+central**, sem bloqueio, sem verificação e sem "Em que posso ajudar?" de novo; bloqueado ou visitante, segue o
+caminho normal. Com o PC desligado, quem já usa o JARVIS não vê mais o manual: título em **ciano** (não âmbar)
+"RECONECTANDO AO SEU JARVIS", a linha piscando "Assim que o JARVIS do PC responder, eu entro sozinho.", os botões
+"LIGAR O JARVIS" (principal) e "TENTAR AGORA" (chip) lado a lado e a ajuda recolhida num link pontilhado "Não está
+entrando?". Na primeira vez, título âmbar "VAMOS LIGAR O SEU JARVIS" com três passos numerados em círculos
+turquesa (Toque em LIGAR O JARVIS · Deixe esta página aberta · Da próxima vez eu entro sozinho) e "Já está ligado
+e não entra?" recolhido. A página confere o PC a cada 2 s (5 s depois de 2 min) e na hora em que a aba volta ao
+foco ou a rede volta. Se o botão LIGAR já funcionou neste navegador, nunca mais aparece "não está ativado".
+Na central, a faixa âmbar de queda ganha o chip "RECONECTAR"; a conexão tenta de novo em 1, 2, 4, 8 e 10 s,
+na hora quando a rede/aba volta, e derruba sozinha uma conexão parada (sem "pong" em 45 s).
+
+**App Android sem pedir o PIN de novo (V5.2).** PC fora do ar com o celular já pareado: no lugar do formulário,
+um cartão com anel ciano girando, "RECONECTANDO AO SEU PC", contagem "Tento de novo em 5 s (tentativa 2)." e os
+botões "TENTAR AGORA" e o link "Parear de novo ou trocar de PC". Tenta sozinho em 3, 5, 8, 12, 20 e 30 s, na hora
+em que a Wi-Fi volta e quando o app volta para a frente.
+
+**Central no celular (V5.2).** Cabeçalho em uma linha que acompanha a rolagem (☰, Núcleo, nome, SAIR e avatar;
+sem o relógio, que o celular já mostra; abaixo de 360 px some o nome). Estado e orbe menores; as frases "DIGA"
+viram uma faixa única que rola com o dedo, com as pontas esmaecidas. O **Canal Ativo sobe para logo abaixo do
+orbe**; depois vêm clima e os demais painéis, cada um entrando com um leve deslize de baixo para cima (desligado
+com "menos movimento"). Somem no celular os controles de desktop: RECOLHER, ⠿ arrastar e ⧉ segunda tela. Botões
+de toque com pelo menos 40 px e campo de texto em 16 px (sem zoom ao tocar). A faixa de queda ocupa a largura,
+abaixo da barra de status.
+
 ### Meus Sites, escudos e atualização (V5)
 
 **Meus Sites.** Nova aba em Configurações, no mesmo vidro azul das outras. Título "MEUS SITES" em
@@ -491,7 +517,7 @@ o PC tem um APK mais novo. Nada é baixado ou instalado sozinho.
 o orbe Núcleo girando devagar no topo (parado com "reduzir movimento"), "JARVIS" em Orbitron com brilho
 ciano, cartões de vidro azul-marinho com ícone em círculo de contorno (ciano; âmbar para segurança; verde
 para água e para o Modo Torcedor), capturas em moldura com cantos ciano e, no rodapé, o carimbo
-"J.A.R.V.I.S. · FOLHA · SITE · REV. v5.1.1" (a versão vem de `backend/version.py`). Botão principal ciano cheio ("VER NO GITHUB"); os outros só
+"J.A.R.V.I.S. · FOLHA · SITE · REV. v5.2.0" (a versão vem de `backend/version.py`). Botão principal ciano cheio ("VER NO GITHUB"); os outros só
 com borda. Logo abaixo, num quadro de borda tracejada âmbar, o botão "ABRIR MEU JARVIS" (borda âmbar, o "olhe aqui" da Sentinela), que abre a **mesma central do PC publicada no site** (`/app/`). Ela conversa com o JARVIS ligado no computador (backend em `127.0.0.1:8000`), então rosto, perfil, Modo Torcedor, rotina e agenda são os de sempre; na primeira vez, o Chrome pergunta se o site pode acessar a rede local (é o backend do próprio PC). Tom: o mesmo da central, e a página deixa claro que é só a vitrine ("O JARVIS roda no seu PC:
 voz, câmera, controle do sistema e os seus dados nunca passam por aqui."). A 404 diz "Procurei em toda a
 planta, senhor, e esta página não está aqui."
@@ -527,6 +553,7 @@ central completa, que agora conversa em cards.
 | **4.5 · a casa** | 05/11/2026 | JARVIS no celular (app Android com QR na Sentinela), uma central por pessoa (rosto + PIN, dados separados) e acessibilidade (texto maior, alto contraste, menos movimento). |
 | **5.0 · o lançamento** | 09/11/2026 | Projeto no GitHub, com testes automáticos e o app Android nas Releases. **Meus Sites** (qualquer site por voz, com apelidos), escudos do Modo Torcedor sempre visíveis, jogo antigo que sai da tela no dia seguinte e aviso de versão nova no PC e no celular. |
 | **5.1 · na web e por voz** | 10 e 11/11/2026 | Central aberta pelo site, verificação rápida do rosto, botões LIGAR O JARVIS e ATUALIZAR, câmera lisa, pauta do briefing desde a saudação, "Jarvis" também com a central aberta, conversa contínua, pesquisa automática no Google pela IA, respostas curtas e educadas, **alarmes**, lembretes com horários naturais, **"Esqueci o PIN"**, app Android 5.x servido pelo PC e este livro legível no celular. |
+| **5.2 · direto ao ponto** | 11/11/2026 | Quem já entrou abre a central direto, tela curta de "reconectando" com o PC desligado, conexão que se refaz sozinha (site e app Android, sem pedir o PIN de novo) e central enxuta no celular, com o Canal Ativo logo abaixo do orbe. |
 
 O que atravessou todas as versões: tudo roda no PC do dono, o rosto é a chave, a voz é em
 português e o reator (depois Núcleo) fica no centro da tela.

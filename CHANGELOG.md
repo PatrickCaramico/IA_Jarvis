@@ -2,6 +2,15 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 5.2.0 — 11 de novembro de 2026
+
+- **Entrada direta para quem já usa:** o navegador lembra a última entrada (`utils/session.js`). Reabrir a central até 12 h depois, com o JARVIS do PC ainda liberado, vai direto para a central (sem bloqueio, sem nova verificação e sem repetir a saudação). Bloqueado ou visitante: caminho normal.
+- **Tela de PC desligado mais curta:** quem já entrou vê só "RECONECTANDO AO SEU JARVIS", com LIGAR O JARVIS, TENTAR AGORA e a ajuda recolhida; na primeira vez, três passos numerados. Confere o PC a cada 2 s (5 s depois de 2 min) e na hora em que a aba/rede volta; a busca do perfil desiste em 10 s em vez de travar. Se o botão LIGAR já funcionou neste navegador, não aparece mais "não está ativado".
+- **Conexão mais firme:** o WebSocket tenta de novo em 1, 2, 4, 8 e 10 s (com sorteio), reconecta na hora quando a rede, a aba ou a tela do celular voltam, derruba conexões paradas (sem "pong" em 45 s) e ignora mensagem quebrada. A faixa de queda ganhou o botão "RECONECTAR".
+- **App Android reconecta sozinho:** já pareado e com o PC fora do ar, mostra "RECONECTANDO AO SEU PC" com contagem e tenta de novo em 3–30 s, quando a Wi-Fi volta e quando o app volta para a frente — sem pedir o PIN de novo ("Parear de novo ou trocar de PC" continua a um toque). Chega no celular pelo APK 5.2.0 (o app se atualiza sozinho pelo PC).
+- **Central no celular:** cabeçalho em uma linha que acompanha a rolagem, orbe menor, frases "DIGA" numa faixa que rola para o lado, Canal Ativo logo abaixo do orbe, painéis entrando com deslize e sem os controles de desktop (recolher, arrastar, 2ª tela).
+- Dev: `hud-demo.html` abre a central sem backend (`?offline=1`, `?new=1`) para conferir o visual.
+
 ## 5.1.1 — 11 de novembro de 2026
 
 - **App Android se atualiza sozinho:** quando o PC tem versão nova, o app baixa o APK do PC e se instala pelo instalador do Android (`PackageInstaller`), sem abrir o navegador. Na primeira vez, o Android pede "permitir instalar apps" para o JARVIS (uma vez só) e confirma a troca; no Android 12 ou mais novo, depois que o próprio JARVIS instalou uma versão, as próximas entram sem perguntar. Confere ao conectar e ao voltar para o app (no máximo a cada 30 min).

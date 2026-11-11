@@ -7,9 +7,13 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.net.ConnectivityManager;
+import android.net.Network;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
@@ -57,6 +61,16 @@ public class MainActivity extends Activity {
     private volatile String currentUrl = "";
     private SpeechRecognizer recognizer;
 
+    // V5.2: PC fora do ar com o celular já pareado: tenta de novo sozinho (3 s, 5 s, 8 s… até 30 s),
+    // na hora em que a Wi-Fi volta e quando o app volta para a frente. Não pede o PIN de novo.
+    private static final int[] RETRY_SECONDS = {3, 5, 8, 12, 20, 30};
+    private final Handler retryHandler = new Handler(Looper.getMainLooper());
+    private final Runnable retryRunnable = this::retrySaved;
+    private int retryAttempt = 0;
+    private volatile boolean mainFrameFailed = false;
+    private boolean offlineScreen = false;
+    private ConnectivityManager.NetworkCallback networkCallback;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -86,6 +100,17 @@ public class MainActivity extends Activity {
             @Override
             public void onPageStarted(WebView view, String url, android.graphics.Bitmap favicon) {
                 currentUrl = url;
+                if (isHttp(url)) mainFrameFailed = false;
+            }
+
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                // A central do PC abriu de verdade: zera as tentativas
+                if (isHttp(url) && !mainFrameFailed) {
+                    retryAttempt = 0;
+                    offlineScreen = false;
+                    retryHandler.removeCallbacks(retryRunnable);
+                }
             }
 
             @Override
@@ -106,8 +131,19 @@ public class MainActivity extends Activity {
             @Override
             public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
                 if (request.isForMainFrame() && !request.getUrl().toString().startsWith(SETUP)) {
+                    mainFrameFailed = true;
                     String h = savedHostValue();
-                    view.loadUrl(SETUP + "#erro" + (h.isEmpty() ? "" : "&host=" + h));
+                    if (savedUri() != null) {
+                        // Já pareado: tela "reconectando" e nova tentativa sozinha
+                        int wait = RETRY_SECONDS[Math.min(retryAttempt, RETRY_SECONDS.length - 1)];
+                        retryAttempt++;
+                        offlineScreen = true;
+                        view.loadUrl(SETUP + "#offline&wait=" + wait + "&n=" + retryAttempt + (h.isEmpty() ? "" : "&host=" + h));
+                        retryHandler.removeCallbacks(retryRunnable);
+                        retryHandler.postDelayed(retryRunnable, wait * 1000L);
+                    } else {
+                        view.loadUrl(SETUP + "#erro" + (h.isEmpty() ? "" : "&host=" + h));
+                    }
                 }
             }
         });
@@ -127,12 +163,48 @@ public class MainActivity extends Activity {
 
         if (!handleIntent(getIntent())) loadSavedOrSetup();
         if (savedUri() != null && prefs.getBoolean(NotifyService.KEY_ENABLED, true)) enableNotifications(false);
+        watchNetwork();
+    }
+
+    // ------------------------------------------------------------------ reconexão (V5.2)
+    /** Nova tentativa com o endereço salvo, só se a tela "reconectando" estiver aberta. */
+    private void retrySaved() {
+        retryHandler.removeCallbacks(retryRunnable);
+        if (!offlineScreen || savedUri() == null) return;
+        web.loadUrl(prefs.getString(KEY_URL, ""));
+    }
+
+    /** Wi-Fi voltou (ou trocou de rede): tenta na hora em vez de esperar o próximo intervalo. */
+    private void watchNetwork() {
+        try {
+            ConnectivityManager cm = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
+            if (cm == null) return;
+            networkCallback = new ConnectivityManager.NetworkCallback() {
+                @Override
+                public void onAvailable(Network network) {
+                    retryHandler.postDelayed(() -> {
+                        if (offlineScreen) {
+                            retryAttempt = 0;
+                            retrySaved();
+                        }
+                    }, 1500); // dá tempo de a rede pegar o IP
+                }
+            };
+            cm.registerDefaultNetworkCallback(networkCallback);
+        } catch (Exception ignored) {
+            // sem permissão ou aparelho antigo: as tentativas por tempo continuam valendo
+        }
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         visible = true;
+        // V5.2: voltou para o app com a tela "reconectando": tenta na hora
+        if (offlineScreen) {
+            retryAttempt = 0;
+            retrySaved();
+        }
         // V5.1.1: voltou da tela "permitir instalar apps" ou reabriu o app: confere de novo se há versão nova
         String url = prefs.getString(KEY_URL, "");
         if (isHttp(url) && System.currentTimeMillis() - lastUpdateCheck > (pendingUpdateHost != null ? 0 : 30 * 60 * 1000L)) {
@@ -559,7 +631,11 @@ public class MainActivity extends Activity {
                     else if (which == 1) {
                         if (notificationsOn()) disableNotifications();
                         else enableNotifications(true);
-                    } else if (which == 2) web.loadUrl(SETUP);
+                    } else if (which == 2) {
+                        offlineScreen = false;
+                        retryHandler.removeCallbacks(retryRunnable);
+                        web.loadUrl(SETUP);
+                    }
                     else finish();
                 })
                 .show();
@@ -584,7 +660,20 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface
         public void retry() {
-            if (fromSetup()) runOnUiThread(MainActivity.this::loadSavedOrSetup);
+            if (fromSetup()) runOnUiThread(() -> {
+                retryAttempt = 0;
+                retryHandler.removeCallbacks(retryRunnable);
+                loadSavedOrSetup();
+            });
+        }
+
+        /** "Parear de novo / trocar de PC": para as tentativas automáticas e mostra o formulário. */
+        @JavascriptInterface
+        public void stopRetry() {
+            if (fromSetup()) runOnUiThread(() -> {
+                offlineScreen = false;
+                retryHandler.removeCallbacks(retryRunnable);
+            });
         }
 
         @JavascriptInterface
@@ -644,6 +733,13 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        retryHandler.removeCallbacksAndMessages(null);
+        if (networkCallback != null) {
+            try {
+                ((ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE)).unregisterNetworkCallback(networkCallback);
+            } catch (Exception ignored) {
+            }
+        }
         if (recognizer != null) recognizer.destroy();
         if (web != null) {
             web.setVisibility(View.GONE);

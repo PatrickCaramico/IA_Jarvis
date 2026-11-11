@@ -9,6 +9,8 @@
    cabeçalho, faixa do jogo, orbe, clima + Canal Ativo, painéis; microfone fixo embaixo. */
 @media (max-width: 760px) {
   html, body, #root { overflow: auto; height: auto; min-height: 100%; }
+  /* V5.2: só a página rola (não body/#root), senão o cabeçalho fixo (sticky) não acompanha */
+  body, #root { overflow: visible; }
   .hl-root {
     grid-template-columns: minmax(0, 1fr) !important;
     grid-template-rows: auto !important;
@@ -46,4 +48,76 @@
   .ls-container .lc-wrap { display: flex; flex-direction: column; width: 100%; }
   .ls-phone-pin { font-size: 0.8rem; padding: 14px 24px; }
   .bp-corner { right: 12px; bottom: 14px; }
+}
+
+/* ==========================================================
+   V5.2: central no celular mais enxuta e dinâmica
+   - cabeçalho em uma linha só (sem sobrepor marca, relógio e SAIR)
+   - orbe e estado menores; frases "DIGA" numa faixa que rola para o lado
+   - o Canal Ativo (conversa) sobe para logo abaixo do orbe; depois clima e painéis
+   - sem os botões de desktop (recolher coluna, arrastar e mandar para a 2ª tela)
+   ========================================================== */
+@media (max-width: 760px) {
+  .hl-top {
+    display: flex !important; align-items: center; justify-content: space-between; gap: 8px;
+    position: sticky; top: env(safe-area-inset-top); z-index: 30;
+    padding: 6px 8px !important; backdrop-filter: blur(8px);
+  }
+  .hl-top .hl-brand { gap: 8px; min-width: 0; flex: 1 1 auto; overflow: hidden; }
+  .hl-top .hl-brand-name strong { font-size: 0.95rem; letter-spacing: 0.12em; overflow: hidden; text-overflow: ellipsis; }
+  .hl-top-right { display: flex; align-items: center; gap: 6px; flex: none; }
+  .hl-top .hl-clockbox { display: none; } /* o celular já mostra a hora na barra de cima */
+  .hl-top-right .hl-btn-power { padding: 8px 10px; font-size: 0.7rem; }
+  .hl-icon-btn { width: 40px; height: 40px; } /* alvo de toque confortável */
+
+  .hl-center { gap: 6px; }
+  .hl-state { font-size: 0.95rem; letter-spacing: 0.35em; margin-top: 0; }
+  .hl-ticks { width: 160px; margin-top: 4px; }
+  .hl-orb { height: min(52vw, 230px); }
+  .hl-quote .motivation-card { font-size: 0.95rem; }
+
+  /* Frases "DIGA": uma linha que rola com o dedo, com respiro nas pontas */
+  .hl-center .bf-hints {
+    flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; max-width: 100%;
+    padding: 2px 4px 6px; scroll-snap-type: x proximity; scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 12px, #000 calc(100% - 18px), transparent);
+            mask-image: linear-gradient(90deg, transparent, #000 12px, #000 calc(100% - 18px), transparent);
+  }
+  .hl-center .bf-hints::-webkit-scrollbar { display: none; }
+  .hl-center .bf-hint { flex: none; scroll-snap-align: start; padding: 7px 12px; }
+  .hl-center .bf-hints-label { flex: none; }
+
+  /* As colunas deixam de existir: cada painel vira um item da rolagem, na ordem que importa no celular */
+  .hl-left, .hl-right { display: contents !important; }
+  .hl-left > div:first-child, .hl-right > div:first-child { display: none !important; } /* RECOLHER / título da coluna */
+  .hl-root > .hl-center { order: 2; }
+  .hl-panel.hl-channel { order: 3; }
+  .hl-root .hl-panel, .hl-root .hl-right > *, .hl-root .hl-left > * { order: 4; }
+  .hl-root .hl-panel.hl-channel { order: 3; }
+  .hl-panel { animation: hl-mobile-in 0.35s ease-out both; }
+  .hl-panel-head { cursor: default !important; }
+  .hl-panel-head > span > span:first-child, .hl-panel-head button { display: none; } /* ⠿ arrastar e ⧉ 2ª tela */
+
+  /* Conversa: rolagem própria e campo de texto que não dá zoom ao tocar */
+  .hl-channel .hl-messages { max-height: 46vh; overscroll-behavior: contain; }
+  .hl-channel input, .hl-channel textarea { font-size: 16px; }
+
+  .hl-bottom { backdrop-filter: blur(10px); }
+  .hl-mic { transition: transform 120ms ease; }
+  .hl-mic:active { transform: scale(0.94); }
+}
+@media (max-width: 360px) {
+  .hl-top .hl-brand-name { display: none; }
+}
+@keyframes hl-mobile-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .hl-panel { animation: none !important; }
+}
+
+/* V5.2: tela de "PC desligado" no celular: botões empilhados e largos */
+@media (max-width: 520px) {
+  .ls-boot-actions { flex-direction: column; align-items: stretch; width: 100%; max-width: 320px; margin-inline: auto; }
+  .ls-boot-actions .ls-btn-main, .ls-boot-actions .ls-chip { width: 100%; justify-content: center; text-align: center; }
+  .ls-boot-steps { font-size: 0.88rem; padding-inline: 4px; }
+  .ls-container .ls-title { font-size: 0.95rem; letter-spacing: 0.14em; text-align: center; }
 }

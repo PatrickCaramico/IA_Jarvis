@@ -41,6 +41,16 @@
 .j-offline.is-back .j-offline-dot { background: var(--j-green, #10b981); animation: none; }
 @keyframes j-offline-in { from { opacity: 0; transform: translate(-50%, -8px); } to { opacity: 1; transform: translate(-50%, 0); } }
 @keyframes j-offline-pulse { 50% { opacity: 0.35; } }
+.j-offline-retry {
+  flex: none; padding: 4px 10px; border-radius: 999px; border: 1px solid rgba(253, 230, 138, 0.7);
+  background: rgba(245, 158, 11, 0.15); color: #fff; font: inherit; font-size: 11px; letter-spacing: 0.08em; cursor: pointer;
+}
+.j-offline-retry:hover { background: rgba(245, 158, 11, 0.3); }
+@media (max-width: 760px) {
+  /* No celular a faixa ocupa a largura e fica abaixo da barra de status */
+  .j-offline { top: calc(6px + env(safe-area-inset-top)); width: calc(100vw - 20px); border-radius: 14px; font-size: 12px; padding: 8px 12px; }
+  .j-offline > span:not(.j-offline-dot) { flex: 1; min-width: 0; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   .j-skel-bar { animation: none; background: rgba(34, 211, 238, 0.14); }

@@ -43,7 +43,8 @@ export function setJarvisToken(token) {
 }
 
 // Chamada JSON ao backend, com mensagens de erro em português.
-export async function api(path, options = {}) {
+// options.timeout (ms, V5.2): desiste se o backend não responder a tempo (conta como desligado, sem status).
+export async function api(path, { timeout, ...options } = {}) {
   let res;
   const token = getJarvisToken();
   const headers = {
@@ -56,13 +57,18 @@ export async function api(path, options = {}) {
     headers["X-Jarvis-Token"] = token;
   }
 
+  const ctrl = timeout ? new AbortController() : null;
+  const timer = ctrl ? setTimeout(() => ctrl.abort(), timeout) : null;
   try {
     res = await fetch(`${API_URL}${path}`, {
       ...options,
       headers,
+      ...(ctrl ? { signal: ctrl.signal } : {}),
     });
   } catch {
     throw new Error(`Não consegui falar com o backend em ${API_URL}. Ele está rodando?`);
+  } finally {
+    if (timer) clearTimeout(timer);
   }
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {

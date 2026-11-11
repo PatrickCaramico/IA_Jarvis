@@ -38,6 +38,13 @@
   .msg { display: none; margin-top: 12px; padding: 10px 12px; border-radius: 10px; font-size: .9rem; }
   .msg.err { display: block; color: #fecaca; background: rgba(127,29,29,.35); border: 1px solid rgba(248,113,113,.5); }
   .msg.ok { display: block; color: #bbf7d0; background: rgba(6,78,59,.4); border: 1px solid rgba(52,211,153,.5); }
+  .reconnect { text-align: center; }
+  .reconnect .ring { width: 54px; height: 54px; margin: 4px auto 14px; border-radius: 50%; border: 3px solid rgba(79,220,255,.25);
+    border-top-color: var(--core); animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .reconnect .ring { animation: none; } }
+  .linkbtn { background: none; border: 0; color: var(--muted); text-decoration: underline; font-weight: 500; letter-spacing: .04em; margin-top: 8px; padding: 8px; }
+  .hidden { display: none; }
   .stamp { margin: 26px auto 0; width: fit-content; border: 1px solid rgba(220,240,255,.45); font-size: .6rem; letter-spacing: .16em; }
   .stamp div { padding: 5px 10px; } .stamp div + div { border-top: 1px solid rgba(220,240,255,.3); color: var(--muted); }
 </style>
@@ -47,6 +54,16 @@
     <div class="orb" aria-hidden="true"></div>
     <h1>JARVIS</h1>
     <div class="sub">CENTRAL PESSOAL NO CELULAR</div>
+  </div>
+
+  <!-- V5.2: já pareado e o PC não respondeu: reconecta sozinho, sem pedir o PIN de novo -->
+  <div class="card reconnect hidden" id="rc" role="status" aria-live="polite">
+    <div class="ring" aria-hidden="true"></div>
+    <h2>RECONECTANDO AO SEU PC</h2>
+    <p class="muted" id="rcText">O JARVIS do PC ainda não respondeu. Tento de novo sozinho.</p>
+    <button id="rcNow" type="button">TENTAR AGORA</button>
+    <button id="rcPair" type="button" class="linkbtn">Parear de novo ou trocar de PC</button>
+    <p class="muted" style="font-size:.78rem;margin-top:10px">Confira se o PC está com o JARVIS aberto e se o celular está na mesma Wi-Fi.</p>
   </div>
 
   <form class="card" id="f">
@@ -60,7 +77,7 @@
     <div id="msg" class="msg" role="status"></div>
   </form>
 
-  <p class="muted" style="text-align:center">O endereço aparece no PC, no botão <b>📱 CELULAR</b> da tela de bloqueio.<br>A chave fica só neste celular.</p>
+  <p class="muted" id="foot" style="text-align:center">O endereço aparece no PC, no botão <b>📱 CELULAR</b> da tela de bloqueio.<br>A chave fica só neste celular.</p>
   <div class="stamp" aria-hidden="true"><div>J.A.R.V.I.S. · APP ANDROID</div><div id="rev">REV. v4.5</div></div>
 
 <script>
@@ -75,7 +92,34 @@
     document.getElementById("title").textContent = "NÃO ACHEI O JARVIS DO PC";
     show("Confira se o PC está com o JARVIS aberto (Iniciar-JARVIS.bat) e se o celular está na mesma Wi-Fi.", false);
   }
-  if (hostEl.value) pinEl.focus(); else hostEl.focus();
+  var rc = document.getElementById("rc"), form = document.getElementById("f"), foot = document.getElementById("foot");
+  function showForm() {
+    rc.classList.add("hidden"); form.classList.remove("hidden"); foot.classList.remove("hidden");
+    if (hostEl.value) pinEl.focus(); else hostEl.focus();
+  }
+  if (params.get("offline") !== null) {
+    form.classList.add("hidden"); foot.classList.add("hidden"); rc.classList.remove("hidden");
+    var left = parseInt(params.get("wait") || "5", 10), n = parseInt(params.get("n") || "1", 10), rcText = document.getElementById("rcText");
+    var tick = function () {
+      rcText.textContent = left > 0
+        ? "O JARVIS do PC ainda não respondeu. Tento de novo em " + left + " s" + (n > 1 ? " (tentativa " + n + ")." : ".")
+        : "Tentando agora…";
+      left -= 1;
+    };
+    tick();
+    var countdown = setInterval(function () { if (left < 0) clearInterval(countdown); else tick(); }, 1000);
+    document.getElementById("rcNow").addEventListener("click", function () {
+      clearInterval(countdown); rcText.textContent = "Tentando agora…";
+      try { JarvisApp.retry(); } catch (e) {}
+    });
+    document.getElementById("rcPair").addEventListener("click", function () {
+      clearInterval(countdown);
+      try { JarvisApp.stopRetry(); } catch (e) {}
+      showForm();
+    });
+  } else {
+    showForm();
+  }
   // Resposta do app (Java) ao pareamento
   window.__pairResult = function (ok, text) {
     go.disabled = false; go.textContent = "ENTRAR";

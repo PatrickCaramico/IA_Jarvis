@@ -47,6 +47,7 @@ import OfflineBanner from "./components/ui/OfflineBanner.jsx";
 import WelcomeLogo from "./components/WelcomeLogo.jsx";
 import { APP_VERSION } from "./utils/version.js";
 import { tabTitle } from "./utils/tabTitle.js";
+import { canResumeSession, hasLoggedBefore, launcherWorks, markLauncherWorks, rememberLogin } from "./utils/session.js";
 import GodsEye from "./godseye/GodsEye.jsx";
 
 // Carregados sob demanda (otimização 4.2: pacote inicial menor)
@@ -255,6 +256,7 @@ export default function App() {
   const connectedRef = useRef(false);
   const busyRef = useRef(false);
   const bootedRef = useRef(false);
+  const enterMainRef = useRef(() => {}); // boot() vem antes de enterMain no arquivo
   const photoUrl = `${API_URL}/api/profile/photo?v=${photoVersion}`;
 
   useEffect(() => {
@@ -677,10 +679,18 @@ export default function App() {
       window.history.replaceState({}, "", `${window.location.pathname}${clean}${window.location.hash}`);
     }
     try {
-      const profile = await api("/api/profile");
+      const profile = await api("/api/profile", { timeout: 10_000 });
       setName(profile.name ?? "");
       setHasPhoto(Boolean(profile.has_photo));
       if (profile.access) setAccessInfo(profile.access);
+      // V5.2: já entrou aqui há pouco e o JARVIS do PC continua liberado (F5, nova aba, site):
+      // reabre direto na central, sem bloqueio nem verificação de novo. O backend é quem decide.
+      if (profile.has_photo && !wake && canResumeSession(profile.access)) {
+        wakeHandledRef.current = true;
+        loadPinStatus();
+        enterMainRef.current(undefined, { resume: true });
+        return;
+      }
       if (profile.has_photo) {
         // A tela de bloqueio visível significa central bloqueada também no backend.
         // Só no próprio PC: abrir o painel pelo celular (modo rede) não derruba a sessão do computador.
@@ -714,24 +724,53 @@ export default function App() {
     boot();
   }, [boot]);
 
-  // Backend do PC desligado: confere a cada 2 s e, quando ele responder, continua sozinho (sem piscar a tela)
+  // Backend do PC desligado: confere sozinho e, quando ele responder, continua (sem piscar a tela).
+  // V5.2: a cada 2 s no começo e a cada 5 s depois de 2 min; confere NA HORA quando a aba volta ao foco,
+  // quando a rede volta ou quando o celular/PC acorda (é quando o usuário acabou de ligar o JARVIS).
   useEffect(() => {
     if (screen !== "boot" || !bootError || !bootOffline) return undefined;
     let alive = true;
-    const t = setInterval(async () => {
+    let timer;
+    let checking = false;
+    const started = Date.now();
+    const check = async () => {
+      if (!alive || checking) return;
+      checking = true;
       try {
-        const res = await fetch(`${API_URL}/api/health`, { cache: "no-store" });
+        const ctrl = new AbortController();
+        const abort = setTimeout(() => ctrl.abort(), 4000);
+        const res = await fetch(`${API_URL}/api/health`, { cache: "no-store", signal: ctrl.signal });
+        clearTimeout(abort);
         if (res.ok && alive) {
-          clearInterval(t);
+          alive = false;
+          clearTimeout(timer);
           boot();
+          return;
         }
       } catch {
         // ainda desligado
+      } finally {
+        checking = false;
       }
-    }, 2000);
+      if (alive) schedule();
+    };
+    const schedule = () => {
+      clearTimeout(timer);
+      timer = setTimeout(check, Date.now() - started > 120_000 ? 5000 : 2000);
+    };
+    const now = () => {
+      if (document.visibilityState === "visible") check();
+    };
+    schedule();
+    window.addEventListener("focus", now);
+    window.addEventListener("online", now);
+    document.addEventListener("visibilitychange", now);
     return () => {
       alive = false;
-      clearInterval(t);
+      clearTimeout(timer);
+      window.removeEventListener("focus", now);
+      window.removeEventListener("online", now);
+      document.removeEventListener("visibilitychange", now);
     };
   }, [screen, bootError, bootOffline, boot]);
 
@@ -743,13 +782,15 @@ export default function App() {
     let opened = false;
     const onBlur = () => {
       opened = true;
+      markLauncherWorks(); // V5.2: o atalho existe aqui; da próxima vez não mostra o "não está ativado"
       setLaunchState("opening");
     };
     window.addEventListener("blur", onBlur, { once: true });
     window.location.href = "jarvis://iniciar";
     setTimeout(() => {
       window.removeEventListener("blur", onBlur);
-      if (!opened && document.hasFocus()) setLaunchState("missing");
+      // Atalho já usado antes com "sempre permitir": o Chrome abre sem perder o foco, então não é "faltando"
+      if (!opened && document.hasFocus()) setLaunchState(launcherWorks() ? "opening" : "missing");
     }, 2500);
   }, []);
 
@@ -835,10 +876,12 @@ export default function App() {
 
   // ---- Entrar na tela principal ----
   // options.skipSummary: usado quando há um pedido pendente do Modo Sentinela (executa direto).
+  // options.resume (V5.2): reabrindo uma sessão ainda liberada — sem "Em que posso ajudar?" nem resumo.
   const enterMain = useCallback(async (selectedMicrophoneId = microphoneId, options = {}) => {
     setMicrophoneId(selectedMicrophoneId);
     if (selectedMicrophoneId) localStorage.setItem("jarvis.microphone.id", selectedMicrophoneId);
-    api("/api/enter", { method: "POST" }).catch(() => {});
+    rememberLogin();
+    if (!options.resume) api("/api/enter", { method: "POST" }).catch(() => {});
     setSteps({});
     setResponse("");
     setError("");
@@ -861,7 +904,7 @@ export default function App() {
     const startIntroMusic = () => {
       if (!prefsNow.silent_mode) api("/api/lock/intro-music", { method: "POST" }).catch(() => {});
     };
-    if (options.skipSummary) return;
+    if (options.skipSummary || options.resume) return;
 
     const timeNow = new Date();
     const todayStr = new Intl.DateTimeFormat("pt-BR", {
@@ -940,6 +983,7 @@ export default function App() {
       .then(startIntroMusic)
       .catch(() => {});
   }, [microphoneId, loadPrefs]);
+  enterMainRef.current = enterMain;
 
   useEffect(() => {
     if (!sessionStartedAt) return undefined;
@@ -1949,6 +1993,7 @@ export default function App() {
 
   // ================= Telas =================
   if (screen === "boot") {
+    const returningUser = hasLoggedBefore();
     return (
       <div className="ls-container">
         <div className="ls-bracket ls-bracket-tl" aria-hidden="true" />
@@ -1976,32 +2021,60 @@ export default function App() {
               <p className="ls-hint" style={{ margin: "8px auto", maxWidth: "34rem" }}>{updating.message}</p>
               {!updating.slow && <p className="ls-hint ls-boot-wait" style={{ marginTop: "10px" }}>Volto em instantes e faço a verificação do seu rosto…</p>}
             </>
+          ) : bootError && bootOffline && BACKEND_ON_THIS_PC && !IS_JARVIS_APP && returningUser ? (
+            <>
+              {/* V5.2: quem já usa o JARVIS aqui não vê o manual: só "reconectando", e entra sozinho */}
+              <div className="ls-title">RECONECTANDO AO SEU JARVIS</div>
+              <p className="ls-hint ls-boot-wait" style={{ margin: "6px auto 0" }}>
+                {launchState === "opening" ? "Ligando o JARVIS do PC… pode levar 1 ou 2 minutos." : "Assim que o JARVIS do PC responder, eu entro sozinho."}
+              </p>
+              <div className="ls-boot-actions">
+                <button type="button" onClick={launchJarvis} disabled={launchState === "trying"} className="ls-btn-main">
+                  <span>{launchState === "trying" ? "ABRINDO…" : "LIGAR O JARVIS"}</span>
+                </button>
+                <button type="button" onClick={boot} className="ls-chip">TENTAR AGORA</button>
+              </div>
+              {launchState === "missing" && (
+                <div className="ls-launch-missing" role="alert">
+                  <b>O botão LIGAR não está ativado neste PC.</b>
+                  <span>Dê duplo clique em <b>Instalar-Botao-Ligar.bat</b> (só uma vez) ou ligue pelo <b>Iniciar-JARVIS.bat</b>.</span>
+                </div>
+              )}
+              <details className="ls-boot-help">
+                <summary>Não está entrando?</summary>
+                <p>Com o JARVIS ligado, o Chrome pode barrar este site de falar com o PC: clique no ícone ao lado do endereço › <b>Acesso à rede local</b> › Permitir, e recarregue.</p>
+                <p>O botão LIGAR precisa do <b>Instalar-Botao-Ligar.bat</b> rodado uma vez neste PC.</p>
+              </details>
+            </>
           ) : bootError && bootOffline && BACKEND_ON_THIS_PC && !IS_JARVIS_APP ? (
             <>
-              {/* Central aberta pelo site com o JARVIS do PC desligado: liga pelo atalho jarvis://
-                  (Instalar-Botao-Ligar.bat), espera ele responder e entra sozinha */}
-              <div className="ls-title is-amber">O JARVIS DO SEU PC ESTÁ DESLIGADO</div>
-              <p className="ls-hint" style={{ margin: "8px auto", maxWidth: "34rem" }}>
-                Toque em LIGAR O JARVIS e permita abrir o programa. Pode deixar esta página aberta: assim que ele responder, eu faço a verificação rápida do seu rosto e abro a sua central.
-              </p>
-              <button type="button" onClick={launchJarvis} disabled={launchState === "trying"} className="ls-btn-main" style={{ marginTop: "12px", alignSelf: "center" }}>
-                <span>{launchState === "trying" ? "ABRINDO…" : "LIGAR O JARVIS"}</span>
-              </button>
+              {/* Primeira vez neste navegador: passo a passo curto para ligar o JARVIS do PC */}
+              <div className="ls-title is-amber">VAMOS LIGAR O SEU JARVIS</div>
+              <ol className="ls-boot-steps">
+                <li><span><b>Toque em LIGAR O JARVIS</b> e permita abrir o programa.</span></li>
+                <li><span><b>Deixe esta página aberta.</b> Quando ele responder, eu verifico seu rosto e abro a central.</span></li>
+                <li><span><b>Da próxima vez</b> eu já reconheço este navegador e entro sozinho.</span></li>
+              </ol>
+              <div className="ls-boot-actions">
+                <button type="button" onClick={launchJarvis} disabled={launchState === "trying"} className="ls-btn-main">
+                  <span>{launchState === "trying" ? "ABRINDO…" : "LIGAR O JARVIS"}</span>
+                </button>
+                <button type="button" onClick={boot} className="ls-chip">TENTAR AGORA</button>
+              </div>
               {launchState === "missing" ? (
                 <div className="ls-launch-missing" role="alert">
                   <b>O botão ainda não está ativado neste PC.</b>
                   <span>Na pasta do JARVIS, dê duplo clique em <b>Instalar-Botao-Ligar.bat</b> (só uma vez) e toque em LIGAR O JARVIS de novo. Ou ligue agora pelo <b>Iniciar-JARVIS.bat</b>: esta página entra sozinha.</span>
                 </div>
               ) : (
-                <p className="ls-hint ls-boot-wait" style={{ marginTop: "12px" }}>
+                <p className="ls-hint ls-boot-wait" style={{ marginTop: "4px" }}>
                   {launchState === "opening" ? "Ligando o JARVIS… pode levar 1 ou 2 minutos." : "Aguardando o JARVIS responder…"}
                 </p>
               )}
-              {/* Com o JARVIS ligado, o Chrome ainda pode barrar o site de falar com o PC (acesso à rede local) */}
-              <p className="ls-hint" style={{ marginTop: "8px", opacity: 0.8, fontSize: "0.8rem", maxWidth: "34rem", marginInline: "auto" }}>
-                Já está ligado e não entra? O Chrome precisa permitir o <b>acesso à rede local</b> para este site: clique no ícone ao lado do endereço › Acesso à rede local › Permitir, e recarregue.
-              </p>
-              <button type="button" onClick={boot} className="ls-chip" style={{ marginTop: "10px", alignSelf: "center" }}>TENTAR NOVAMENTE</button>
+              <details className="ls-boot-help">
+                <summary>Já está ligado e não entra?</summary>
+                <p>O Chrome precisa permitir o <b>acesso à rede local</b> para este site: clique no ícone ao lado do endereço › Acesso à rede local › Permitir, e recarregue.</p>
+              </details>
             </>
           ) : bootError ? (
             <>
