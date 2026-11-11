@@ -32,7 +32,13 @@
 .bf-focus-area > .bf-card.is-wide { width: min(560px, 94%); box-shadow: 0 0 40px rgba(34, 211, 238, 0.3); }
 /* cards já falados: fileira centralizada embaixo do card atual (o mais antigo à esquerda) */
 .bf-trail { display: flex; justify-content: center; gap: 10px; max-width: 100%; overflow: hidden; }
-.bf-trail > .bf-card { flex: 0 0 200px; animation: bf-trail-in var(--j-normal) ease-out; }
+/* na saudação, sem card em destaque, a pauta toda quebra em linhas e ocupa o centro */
+.bf-stage.is-opening .bf-trail { flex-wrap: wrap; }
+.bf-trail-item { flex: 0 0 200px; display: flex; animation: bf-trail-in var(--j-normal) ease-out; transition: opacity var(--j-normal), filter var(--j-normal); }
+.bf-trail-item > .bf-card { width: 100%; }
+/* pauta: os próximos assuntos ficam apagados até a vez deles; na saudação, a pauta toda acesa */
+.bf-trail-item.is-next { opacity: 0.45; filter: saturate(0.6); }
+.bf-stage.is-opening .bf-trail-item.is-next { opacity: 0.9; filter: none; }
 @keyframes bf-trail-in { from { opacity: 0; transform: translateY(-16px) scale(0.92); } }
 
 /* ---------- abertura e abas ---------- */
@@ -460,12 +466,12 @@
 }
 
 @media (max-width: 900px) {
-  .bf-trail > .bf-card:nth-last-child(n + 3) { display: none; }
+  .bf-trail-item.is-done:nth-last-child(n + 3), .bf-trail-item.is-next:nth-child(n + 4) { display: none; }
   .bf-stage.is-done > .bf-readiness { display: none; }
   .bf-weather-body { grid-template-columns: 1fr; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .bf-card.is-entering, .bf-trail > .bf-card, .bf-caption, .bf-identity, .bf-identity::before { animation: none; }
+  .bf-card.is-entering, .bf-trail-item, .bf-caption, .bf-identity, .bf-identity::before { animation: none; }
   .bf-tab.is-active .bf-tab-bar b { animation: none; width: 100%; }
   .bf-bar i, .bf-tab, .bf-slot-open { transition: none; }
 }

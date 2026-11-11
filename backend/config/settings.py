@@ -45,7 +45,7 @@ CAMERA_INDEX = int(os.getenv("CAMERA_INDEX", "0"))
 FACE_THRESHOLD = float(os.getenv("FACE_THRESHOLD", "0.363"))  # similaridade mínima (cosseno)
 FACE_TIMEOUT = float(os.getenv("FACE_TIMEOUT", "8"))          # segundos tentando reconhecer
 # Câmera ao vivo durante a verificação (seção 16): limite de quadros, largura e qualidade do JPEG
-FACE_STREAM_FPS = float(os.getenv("FACE_STREAM_FPS", "10"))  # 4.2: era 12
+FACE_STREAM_FPS = float(os.getenv("FACE_STREAM_FPS", "15"))  # vídeo e análise separados: 15 fps sem travar (4.2: era 10)
 FACE_STREAM_WIDTH = int(os.getenv("FACE_STREAM_WIDTH", "400"))  # 4.2: era 480
 FACE_STREAM_QUALITY = int(os.getenv("FACE_STREAM_QUALITY", "65"))  # 4.2: era 70
 

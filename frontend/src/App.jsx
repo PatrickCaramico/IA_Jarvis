@@ -452,7 +452,8 @@ export default function App() {
           opening_sub: msg.opening_sub,
           speech: msg.text || "",
           index: -1,
-          total: 0,
+          total: msg.total || 0,
+          plan: msg.plan || [], // pauta inteira desde a saudação
           current: null,
           cards: [],
         });

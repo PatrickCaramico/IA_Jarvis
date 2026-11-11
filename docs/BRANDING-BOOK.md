@@ -214,6 +214,11 @@ enquanto ele fala. O mesmo palco serve ao "boa noite" e às telas por assunto.
 por vez (clima, agenda, e-mails, notícias por tema, saúde) → recomendação do dia → **EM ESPERA**, com
 os cards numa fileira até o usuário fechar (✕).
 
+**Pauta desde a saudação.** A tela nunca fica vazia enquanto ele fala: já na saudação, todos os cards
+do briefing aparecem acesos no centro, quebrando em linhas. Quando ele começa um assunto, o card dele
+vira o destaque grande e os demais formam uma fileira embaixo: os já falados acesos e os próximos
+apagados (45% de opacidade, menos cor), que acendem na vez de cada um.
+
 **Anatomia do card** (igual em todos): ícone num quadrado arredondado, **rótulo** em JetBrains Mono
 maiúscula com ponto separador ("PANORAMA · CLIMA"), **título** em Inter branco, conteúdo e **rodapé**
 mono com a procedência ("Open-Meteo · 07:42", "Triagem do briefing · somente itens verificados").
@@ -352,7 +357,8 @@ Planta Funda, para a câmera ler bem), "JARVIS NO CELULAR" em Orbitron, "Escanei
 "ANDROID · v4.5 · mesma Wi-Fi". Só aparece no modo rede. Nunca leva a chave de acesso.
 
 **Verificação rápida ao abrir.** Ao abrir a central (pelo site ou no PC), o JARVIS já lê o rosto uma vez,
-sem clicar. É alguém com perfil: entra sozinho na central dessa pessoa em cerca de 1,5 s. Não reconheceu:
+sem clicar. Enquanto a webcam abre (2 a 6 s), a linha embaixo do orbe pisca "LIGANDO A CÂMERA…"; depois,
+o vídeo corre liso dentro do orbe (até 15 quadros por segundo). É alguém com perfil: entra sozinho na central dessa pessoa em cerca de 1,5 s. Não reconheceu:
 a frase âmbar "Não reconheci você. Se é a sua primeira vez aqui, crie o seu perfil..." aparece sobre os
 chips, e "＋ NOVA PESSOA" vira "＋ SOU NOVO: CRIAR PERFIL" em destaque, ao lado de "USAR PIN". Com o JARVIS do
 PC desligado, a central do site mostra, em âmbar, "O JARVIS DO SEU PC ESTÁ DESLIGADO", o botão principal

@@ -4,6 +4,9 @@ Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
 ## 10 de novembro de 2026
 
+- **Briefing com a pauta desde o início:** o backend manda todos os cards já no `briefing_start` (`plan`); durante a saudação a tela mostra a pauta inteira, e em cada assunto o card dele vira o destaque, com os próximos apagados embaixo.
+- **Câmera sem travar na verificação:** o vídeo ao vivo e a análise do rosto rodam separados (antes o vídeo esperava cada detecção, ~155 ms). A detecção usa uma cópia de 320 px e o OpenCV fica em 1 núcleo durante a verificação: com todos os núcleos ele derrubava a webcam de 23 para 3 a 10 fps. Vídeo ao vivo a 15 fps (era 10) e aviso "LIGANDO A CÂMERA…" enquanto a webcam abre (2 a 6 s, pelo driver).
+
 - **Verificação rápida ao abrir:** a central já lê o rosto ao abrir; quem tem perfil entra sozinho na própria central, e rosto não reconhecido destaca "＋ SOU NOVO: CRIAR PERFIL" (o PIN continua disponível). No app do celular segue pelo PIN.
 - **Botão LIGAR O JARVIS:** com o JARVIS desligado, a central do site oferece "LIGAR O JARVIS". Ele usa o atalho `jarvis://`, criado só para o seu usuário pelo `Instalar-Botao-Ligar.bat` (desfaz com `Remover-Botao-Ligar.bat`), que roda o `Iniciar-JARVIS.bat site`: liga tudo sem abrir aba nova, e a central já aberta entra sozinha.
 - **Botão sem resposta:** se o atalho `jarvis://` não está instalado, o navegador ignorava o clique em silêncio. Agora, quando nada abre em 2,5 s, a tela mostra "O botão ainda não está ativado neste PC" e o passo a passo do instalador. A tela também lembra de permitir o "acesso à rede local" no Chrome, que, se bloqueado, parece o JARVIS desligado.

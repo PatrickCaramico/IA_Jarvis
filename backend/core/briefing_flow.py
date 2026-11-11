@@ -1,7 +1,8 @@
 """V4.3: briefing do "bom dia" (e fechamento do "boa noite") em etapas, com um card por assunto.
 
 Sequência enviada pelo WebSocket:
-  briefing_start {mode, title, tabs, greeting, opening, opening_sub, text}
+  briefing_start {mode, title, tabs, greeting, opening, opening_sub, text, total, plan}
+                 (plan = todos os cards já no início: a tela mostra a pauta desde a saudação)
   briefing_step  {index, total, tab, progress, card, text}   (um por assunto, antes da fala dele)
   briefing_end   {cards, readiness, closing}
   response       {text: closing, cards: [{type: "briefing", ...}]}  (fica no Canal Ativo)
@@ -80,6 +81,8 @@ async def run_sequence(message: str, turn: int, data: dict, max_history: int) ->
             "opening": data["opening"],
             "opening_sub": data["opening_sub"],
             "text": opening_text,
+            "total": len(segments),
+            "plan": [seg["card"] for seg in segments],
         })
         if opening_text:
             await _say_or_skip(opening_text)

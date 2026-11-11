@@ -163,11 +163,15 @@ export default function BriefingStage({ briefing, onClose, onSkip, onSay }) {
   if (!briefing) return null;
   if (briefing.phase === "done") return <DoneRow briefing={briefing} onClose={onClose} onSay={onSay} />;
 
-  const { tabs = [], activeTab, index = -1, total = 0, progress, current, cards = [], speech } = briefing;
+  const { tabs = [], activeTab, index = -1, total = 0, progress, current, cards = [], speech, plan = [] } = briefing;
   const tabIdx = tabs.findIndex((t) => t.id === activeTab);
-  const earlier = cards.slice(0, -1);
+  // Pauta: com o plano (backend novo), todos os assuntos aparecem desde a saudação; os já falados
+  // ficam acesos e os próximos, apagados, até a vez de cada um. Sem plano, como antes (só os falados).
+  const trail = plan.length
+    ? plan.map((c, i) => ({ card: c, state: i < index ? "is-done" : i === index ? null : "is-next" })).filter((t) => t.state)
+    : cards.slice(0, -1).map((c) => ({ card: c, state: "is-done" }));
   return (
-    <div className="bf-stage is-running" aria-live="polite">
+    <div className={`bf-stage is-running${index < 0 ? " is-opening" : ""}`} aria-live="polite">
       <div className="bf-head">
         <div className="bf-opening">
           <strong>{briefing.opening}</strong>
@@ -192,9 +196,13 @@ export default function BriefingStage({ briefing, onClose, onSkip, onSay }) {
           formam uma fileira logo abaixo dele */}
       <div className="bf-focus-area">
         {current && <BriefingCard key={index} card={current} entering wide />}
-        {earlier.length > 0 && (
-          <div className="bf-trail" aria-label="Assuntos já falados">
-            {earlier.map((c, i) => <BriefingCard key={i} card={c} mini />)}
+        {trail.length > 0 && (
+          <div className="bf-trail" aria-label={plan.length ? "Pauta do briefing" : "Assuntos já falados"}>
+            {trail.map((t, i) => (
+              <div key={`${i}-${t.state}`} className={`bf-trail-item ${t.state}`}>
+                <BriefingCard card={t.card} mini />
+              </div>
+            ))}
           </div>
         )}
       </div>

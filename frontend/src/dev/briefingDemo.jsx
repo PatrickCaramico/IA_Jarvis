@@ -83,7 +83,8 @@ function Demo() {
       await wait(900);
       const opening = "Bom dia. Hoje é quarta-feira, 4 de novembro. Revisei o que já está consolidado e nada exige interromper a sua manhã.";
       setBriefing({ phase: "running", mode: "morning", title: "BRIEFING", tabs: TABS, greeting: "Bom dia.",
-        opening: "Sem desvios relevantes", opening_sub: "dados consolidados desde ontem", index: -1, total: 0, current: null, cards: [], speech: opening });
+        opening: "Sem desvios relevantes", opening_sub: "dados consolidados desde ontem", index: -1, total: SEGMENTS.length,
+        plan: SEGMENTS.map((seg) => seg.card), current: null, cards: [], speech: opening });
       setResponse(opening);
       await say(opening);
       for (let i = 0; i < SEGMENTS.length && alive; i += 1) {

@@ -242,6 +242,9 @@ def test_sequence_broadcasts_one_step_per_card(offline, monkeypatch):
     steps = [e for e in events if e["type"] == "briefing_step"]
     assert all(s["text"] == seg["speech"] for s, seg in zip(steps, data["segments"]))
     assert events[0]["text"].startswith("Bom dia")
+    # a pauta inteira já chega no início, antes da saudação ser falada
+    assert events[0]["plan"] == [seg["card"] for seg in data["segments"]]
+    assert events[0]["total"] == len(data["segments"])
     assert not briefing_flow.active()
 
 

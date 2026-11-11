@@ -6,6 +6,7 @@ com a webcam acontecem no seu computador. Só o download inicial dos modelos usa
 import json
 import logging
 import tempfile
+import threading
 import time
 from pathlib import Path
 from typing import Callable, Optional
@@ -108,6 +109,25 @@ def _faces(img: np.ndarray) -> list:
     _detector.setInputSize((w, h))
     _, faces = _detector.detect(img)
     return [] if faces is None else list(faces)
+
+
+# Detecção numa cópia reduzida: na webcam de 640 px, 155 ms por quadro caem para ~50 ms.
+# As coordenadas voltam para a imagem original, onde o alinhamento e a comparação acontecem.
+DETECT_WIDTH = 320
+
+
+def _detect(img: np.ndarray) -> list:
+    h, w = img.shape[:2]
+    if w <= DETECT_WIDTH:
+        return _faces(img)
+    scale = DETECT_WIDTH / w
+    small = cv2.resize(img, (DETECT_WIDTH, max(1, int(round(h * scale)))), interpolation=cv2.INTER_AREA)
+    out = []
+    for f in _faces(small):
+        f = np.array(f, dtype=np.float32)
+        f[:14] /= scale  # caixa (4) + 5 pontos do rosto (10); o último valor é a confiança
+        out.append(f)
+    return out
 
 
 def _embedding(img: np.ndarray) -> tuple[Optional[np.ndarray], int]:
@@ -219,9 +239,6 @@ def verify_against_profile(
 
     min_interval = 1.0 / max(1.0, float(settings.FACE_STREAM_FPS))
     last_emit = 0.0
-    last_frame = None
-    last_box = None
-    compare_every = 1  # sobe para 2 ou 3 se a comparação for pesada (vídeo fluido)
 
     def emit(frame, box, saw, score, phase, force=False):
         nonlocal last_emit
@@ -239,49 +256,96 @@ def verify_against_profile(
         except Exception:  # noqa: BLE001 - a transmissão nunca derruba a verificação
             log.debug("Falha ao entregar quadro ao vivo", exc_info=True)
 
-    cap = open_camera()
-    best, saw_face, frames, faced = -1.0, False, 0, 0
+    # Vídeo e análise separados (antes, o vídeo só andava depois de cada detecção e travava):
+    # - esta thread lê a câmera e manda o vídeo no ritmo de FACE_STREAM_FPS;
+    # - a thread de análise pega sempre o quadro mais novo, detecta e compara.
+    lock = threading.Lock()
+    fresh = threading.Event()
+    stop = threading.Event()
+    state: dict = {"frame": None, "seq": 0, "box": None, "saw": False, "best": -1.0, "phase": "searching",
+                   "hit": None, "error": None}
+
+    def analyze() -> None:
+        done_seq = 0
+        try:
+            while not stop.is_set():
+                if not fresh.wait(0.1):
+                    continue
+                fresh.clear()
+                with lock:
+                    frame, seq = state["frame"], state["seq"]
+                if frame is None or seq <= 5 or seq == done_seq:  # 5 primeiros: aquecimento da câmera
+                    continue
+                done_seq = seq
+                h, w = frame.shape[:2]
+                face = _largest_face(_detect(frame))
+                if face is None:
+                    with lock:
+                        state["box"] = None
+                        state["phase"] = "searching"
+                    continue
+                box = _norm_box(face, w, h)
+                with lock:
+                    state["saw"] = True
+                    state["box"] = box
+                    state["phase"] = "comparing"
+                aligned = _recognizer.alignCrop(frame, face)
+                emb = _recognizer.feature(aligned).copy()
+                score, who = max(
+                    (float(_recognizer.match(r, emb, cv2.FaceRecognizerSF_FR_COSINE)), pid) for pid, r in references
+                )
+                with lock:
+                    state["best"] = max(state["best"], score)
+                if score >= settings.FACE_THRESHOLD:
+                    with lock:
+                        state["hit"] = (score, who, frame, box)
+                    stop.set()
+                    return
+        except Exception as exc:  # noqa: BLE001 - devolvido para quem chamou, abaixo
+            state["error"] = exc
+            stop.set()
+
+    # Com todos os núcleos, as redes do OpenCV sufocavam a leitura da webcam (de 23 para 3 a 10 fps
+    # medidos). Com 1 núcleo durante a verificação, a câmera segue a ~29 fps e a análise continua.
+    threads_before = cv2.getNumThreads()
+    cv2.setNumThreads(1)
+    try:
+        cap = open_camera()
+    except Exception:
+        cv2.setNumThreads(threads_before)
+        raise
+    worker = threading.Thread(target=analyze, name="jarvis-face-analise", daemon=True)
+    worker.start()
+    last_frame = None
     deadline = time.monotonic() + timeout
     try:
-        while time.monotonic() < deadline:
+        while time.monotonic() < deadline and not stop.is_set():
             ok, frame = cap.read()
             if not ok:
                 continue
-            frames += 1
             last_frame = frame
-            if frames <= 5:  # aquecimento da câmera
-                emit(frame, None, False, best, "searching")
-                continue
-            h, w = frame.shape[:2]
-            face = _largest_face(_faces(frame))
-            if face is None:
-                last_box = None
-                emit(frame, None, saw_face, best, "searching")
-                continue
-            saw_face = True
-            faced += 1
-            last_box = _norm_box(face, w, h)
-            if on_frame is not None and faced % compare_every != 0:
-                emit(frame, last_box, True, best, "comparing")
-                continue
-            started = time.monotonic()
-            aligned = _recognizer.alignCrop(frame, face)
-            emb = _recognizer.feature(aligned).copy()
-            score, who = max(
-                (float(_recognizer.match(r, emb, cv2.FaceRecognizerSF_FR_COSINE)), pid) for pid, r in references
-            )
-            took = time.monotonic() - started
-            compare_every = 1 if took < 0.05 else 2 if took < 0.1 else 3
-            best = max(best, score)
-            if score >= settings.FACE_THRESHOLD:
-                log.info("Rosto reconhecido (similaridade %.3f, perfil %s).", score, who or "ativo")
-                emit(frame, last_box, True, score, "verified", force=True)
-                return {"verified": True, "saw_face": True, "score": score, "profile_id": who}
-            emit(frame, last_box, True, best, "comparing")
+            with lock:
+                state["frame"] = frame
+                state["seq"] += 1
+                box, saw, best, phase = state["box"], state["saw"], state["best"], state["phase"]
+            fresh.set()
+            emit(frame, box, saw, best, phase)
     finally:
+        stop.set()
+        worker.join(timeout=2.0)
         cap.release()
+        cv2.setNumThreads(threads_before)
 
-    emit(last_frame, last_box, saw_face, best, "failed", force=True)
+    if state["error"] is not None:
+        raise state["error"]
+    if state["hit"] is not None:
+        score, who, frame, box = state["hit"]
+        log.info("Rosto reconhecido (similaridade %.3f, perfil %s).", score, who or "ativo")
+        emit(frame, box, True, score, "verified", force=True)
+        return {"verified": True, "saw_face": True, "score": score, "profile_id": who}
+
+    best, saw_face = state["best"], state["saw"]
+    emit(last_frame, state["box"], saw_face, best, "failed", force=True)
     log.info("Rosto não reconhecido (melhor similaridade %.3f).", best)
     return {"verified": False, "saw_face": saw_face, "score": best, "profile_id": None}
 
@@ -301,7 +365,7 @@ def detect_presence(timeout: float = 1.2) -> bool:
             frames += 1
             if frames <= 3:
                 continue
-            if _faces(frame):
+            if _detect(frame):
                 return True
     finally:
         cap.release()

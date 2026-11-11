@@ -66,7 +66,15 @@ export default function FaceScanOverlay({ scan, variant = "panel", recheck = fal
 
 // Informações abaixo do orbe na tela de bloqueio (o vídeo fica dentro do orbe).
 export function FaceScanStatus({ scan }) {
-  if (!scan || !scan.frame) return null;
+  if (!scan) return null;
+  // A webcam leva de 2 a 6 s para abrir (driver do Windows): avisa em vez de parecer travado
+  if (!scan.frame) {
+    return scan.status === "scanning" ? (
+      <div className="fs-status fs-phase-searching">
+        <div className="fs-meter-label ls-boot-wait" role="status">LIGANDO A CÂMERA…</div>
+      </div>
+    ) : null;
+  }
   const phase = scan.phase || "searching";
   const pct = similarityPct(scan.score, scan.threshold);
   const live = phase === "searching" || phase === "comparing";
