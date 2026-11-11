@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 from typing import Awaitable, Callable, Optional
 
 from config import settings
+from modules import when
 
 log = logging.getLogger("jarvis.reminders")
 _REMINDERS_PATH = settings.DATA_DIR / "lembretes.json"
@@ -35,6 +36,13 @@ def _save_reminders(rems: list[dict]) -> None:
     _REMINDERS_PATH.write_text(json.dumps(rems, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
+def when_norm(text: str) -> str:
+    """Texto sem acentos e em minúsculas (para achar o lembrete pelo assunto)."""
+    import unicodedata
+
+    return "".join(c for c in unicodedata.normalize("NFD", str(text or "").lower()) if unicodedata.category(c) != "Mn")
+
+
 def get_reminders(only_pending: bool = True) -> list[dict]:
     rems = _load_reminders()
     if only_pending:
@@ -42,7 +50,8 @@ def get_reminders(only_pending: bool = True) -> list[dict]:
     return rems
 
 
-def add_reminder(texto: str, data_hora: datetime, recorrencia: Optional[str] = None) -> dict:
+def add_reminder(texto: str, data_hora: datetime, recorrencia: Optional[str] = None,
+                 dias: Optional[list[int]] = None) -> dict:
     rems = _load_reminders()
     new_id = (max((r.get("id", 0) for r in rems), default=0)) + 1
     rem = {
@@ -50,6 +59,7 @@ def add_reminder(texto: str, data_hora: datetime, recorrencia: Optional[str] = N
         "texto": texto.strip(),
         "data_hora": data_hora.strftime("%Y-%m-%d %H:%M"),
         "recorrencia": recorrencia,
+        "dias": sorted(dias) if dias else [],  # V5.1: repetição em dias da semana (0 = segunda)
         "disparado": False,
         "criado_em": datetime.now().strftime("%Y-%m-%d %H:%M"),
     }
@@ -111,7 +121,14 @@ async def check_pending_reminders() -> None:
             try:
                 alvo = datetime.strptime(r["data_hora"], "%Y-%m-%d %H:%M")
                 if agora >= alvo:
-                    if r.get("recorrencia") == "diaria":
+                    if r.get("recorrencia") == "semanal" and r.get("dias"):
+                        # V5.1: reagenda para o próximo dia da semana escolhido
+                        r["data_hora"] = when.next_on_days(
+                            alvo.hour, alvo.minute, r["dias"], max(agora, alvo)
+                        ).strftime("%Y-%m-%d %H:%M")
+                        r["ultimo_disparo"] = agora.strftime("%Y-%m-%d %H:%M")
+                        r["disparado"] = False
+                    elif r.get("recorrencia") == "diaria":
                         # Reagenda lembrete diário para o dia seguinte
                         novo_alvo = alvo + timedelta(days=1)
                         while novo_alvo <= agora:
@@ -148,63 +165,79 @@ async def reminder_worker_loop() -> None:
         await asyncio.sleep(5)
 
 
-def _parse_datetime(norm: str) -> tuple[Optional[datetime], str, Optional[str]]:
-    agora = datetime.now()
-    alvo = agora
-    clean = norm
+def _parse_datetime(norm: str) -> tuple[Optional[datetime], str, Optional[str], list[int]]:
+    """V5.1: o mesmo entendimento de horários dos alarmes (modules/when.py).
 
-    # Recorrência diária ("todo dia às 8h", "todos os dias", "diariamente")
-    is_daily = bool(re.search(r"\b(?:todo\s+dia|todos\s+os\s+dias|diariamente)\b", clean))
-    if is_daily:
-        recorrencia = "diaria"
-        clean = re.sub(r"\b(?:todo\s+dia|todos\s+os\s+dias|diariamente)\b", " ", clean)
+    Devolve (quando, texto que sobrou, recorrência "diaria" | "semanal" | None, dias da semana).
+    """
+    w = when.parse(norm)
+    rest = w.rest.strip()
+    if w.at is None:
+        return None, rest, None, []
+    if w.days and sorted(w.days) == list(range(7)):
+        return w.at, rest, "diaria", []
+    if w.days:
+        return w.at, rest, "semanal", sorted(w.days)
+    return w.at, rest, None, []
+
+
+def _describe(r: dict) -> str:
+    at = datetime.strptime(r["data_hora"], "%Y-%m-%d %H:%M")
+    if r.get("recorrencia") == "diaria":
+        return when.describe(at, list(range(7)))
+    if r.get("recorrencia") == "semanal" and r.get("dias"):
+        return when.describe(at, r["dias"])
+    return when.describe(at)
+
+
+def _list_reply() -> str:
+    pending = get_reminders(only_pending=True)
+    if not pending:
+        return "Você não tem nenhum lembrete agendado no momento."
+    itens = [f"{r['texto']}, {_describe(r)}" for r in pending[:5]]
+    return f"Você tem {len(pending)} {'lembrete' if len(pending) == 1 else 'lembretes'}: " + "; ".join(itens) + "."
+
+
+_CANCEL = re.compile(r"\b(?:apague|apagar|apaga|cancela|cancele|cancelar|limpar|limpe|remova|remove|tira|tire|exclua|exclui)\b")
+
+
+def _cancel_reply(norm: str) -> str:
+    """Cancela todos ("apaga todos os lembretes") ou um só, pelo assunto ou pela hora."""
+    pending = get_reminders(only_pending=True)
+    if not pending:
+        return "Você não tinha lembretes pendentes."
+    if re.search(r"\btod[oa]s?\b", norm):
+        count = clear_reminders()
+        return f"Apaguei {count} {'lembrete' if count == 1 else 'lembretes'} pendentes."
+    alvo = re.sub(r"^.*?\blembretes?\b\s*(?:d[eoa]s?\s+|para\s+|pra\s+|sobre\s+)?", "", norm).strip()
+    w = when.parse(alvo)
+    if w.at is not None:
+        options = {f"{w.at.hour:02d}:{w.at.minute:02d}", f"{(w.at.hour + 12) % 24:02d}:{w.at.minute:02d}"}
+        match = [r for r in pending if r["data_hora"].split(" ")[1] in options]
     else:
-        recorrencia = None
-
-    # Relativo a minutos ou horas
-    min_match = re.search(r"\bdaqui\s+(?:a\s+)?(\d+)\s+minutos?\b|\bem\s+(\d+)\s+minutos?\b", clean)
-    if min_match:
-        m = int(min_match.group(1) or min_match.group(2))
-        alvo = agora + timedelta(minutes=m)
-        clean = re.sub(r"\b(?:daqui\s+(?:a\s+)?|em\s+)\d+\s+minutos?\b", " ", clean)
-        return alvo, clean.strip(), recorrencia
-
-    # Amanhã
-    is_tomorrow = "amanha" in clean
-    if is_tomorrow:
-        alvo = agora + timedelta(days=1)
-        clean = re.sub(r"\bamanha\b", " ", clean)
-
-    # Horário: "as 14 e 30", "as 15 horas", "as 18h", "as 9"
-    time_match = re.search(r"\bas\s+(\d{1,2})(?::(\d{2})|(?:\s+e\s+(\d{1,2}))|\s*horas?|\s*h)?\b", clean)
-    if time_match:
-        hora = int(time_match.group(1))
-        minuto = int(time_match.group(2) or time_match.group(3) or 0)
-        alvo = alvo.replace(hour=hora, minute=minuto, second=0, microsecond=0)
-        if not is_tomorrow and alvo < agora:
-            alvo += timedelta(days=1)
-        clean = re.sub(r"\bas\s+\d{1,2}(?::\d{2}|\s+e\s+\d{1,2}|\s*horas?|\s*h)?\b", " ", clean)
-        return alvo, clean.strip(), recorrencia
-
-    return None, clean.strip(), recorrencia
+        words = [p for p in alvo.split() if len(p) > 2]
+        match = [r for r in pending if words and all(p in when_norm(r["texto"]) for p in words)]
+        if not words and len(pending) == 1:
+            match = pending
+    if len(match) == 1:
+        delete_reminder(match[0]["id"])
+        return f"Lembrete \"{match[0]['texto']}\" cancelado."
+    if len(match) > 1:
+        for r in match:
+            delete_reminder(r["id"])
+        return f"Cancelei {len(match)} lembretes."
+    return "Qual lembrete, senhor? " + _list_reply()
 
 
 async def handle_voice(message: str, norm: str, words: int, name: str) -> Optional[str]:
     # Checar se pede lista de lembretes
-    if any(q in norm for q in ("quais sao meus lembretes", "meus lembretes", "lista de lembretes", "ver lembretes")):
-        pending = get_reminders(only_pending=True)
-        if not pending:
-            return "Você não tem nenhum lembrete agendado no momento."
-        itens = [
-            f"{r['texto']} para as {r['data_hora'].split(' ')[1]}" + (" (diário)" if r.get("recorrencia") == "diaria" else "")
-            for r in pending[:5]
-        ]
-        return f"Você tem {len(pending)} {'lembrete' if len(pending) == 1 else 'lembretes'}: " + "; ".join(itens) + "."
+    if any(q in norm for q in ("quais sao meus lembretes", "meus lembretes", "lista de lembretes", "ver lembretes",
+                               "quais lembretes", "tenho algum lembrete", "tenho lembrete")):
+        return _list_reply()
 
-    # Apagar lembretes
-    if re.search(r"\b(?:apague|apagar|cancela|cancelar|limpar)\b", norm) and "lembrete" in norm:
-        count = clear_reminders()
-        return f"Apaguei {count} lembretes pendentes." if count else "Você não tinha lembretes pendentes."
+    # Apagar lembretes (todos ou um só)
+    if _CANCEL.search(norm) and "lembrete" in norm:
+        return _cancel_reply(norm)
 
     # Adiar lembrete ("adie 10 minutos", "adiar 10 minutos", "adia por 15 minutos")
     postpone_match = re.search(r"\b(?:adie|adiar|adia)\b(?:\s+por)?(?:\s+(?:mais|de))?\s+(\d+)\s+minutos?\b", norm)
@@ -218,19 +251,17 @@ async def handle_voice(message: str, norm: str, words: int, name: str) -> Option
 
     # Criar lembrete com data/hora e recorrência
     if any(w in norm for w in ("me lembre", "me lembra", "lembre me", "criar lembrete", "agendar lembrete", "lembrete")):
-        data_hora, texto, recorrencia = _parse_datetime(norm)
+        data_hora, texto, recorrencia, dias = _parse_datetime(norm)
         if data_hora:
-            # Limpa conectores do texto
-            texto = re.sub(r"^(?:de|que|para|pra|em|sobre)\s+", "", texto)
-            texto = re.sub(r"\b(?:me\s+lembre|me\s+lembra|lembre\s+me|lembrete)\b", "", texto).strip()
+            # Tira o pedido ("me lembra", "jarvis", "por favor") e os conectores que sobram nas pontas
+            texto = re.sub(r"\b(?:jarvis|por\s+favor|me\s+lembre|me\s+lembra|lembre\s+me|criar|crie|cria|agendar|agende|"
+                           r"um|novo|lembrete)\b", " ", texto)
             texto = re.sub(r"\s+", " ", texto).strip()
+            texto = re.sub(r"^(?:(?:de|que|para|pra|em|sobre|do|da)\s+)+", "", texto)
+            texto = re.sub(r"(?:\s+(?:de|que|para|pra|em|e|no|na))+$", "", texto).strip()
             if not texto:
                 texto = "compromisso agendado"
-            add_reminder(texto, data_hora, recorrencia=recorrencia)
-            hora_str = data_hora.strftime("%H:%M")
-            if recorrencia == "diaria":
-                return f"Combinado. Lembrete recorrente agendado para todos os dias às {hora_str}: {texto}."
-            dia_str = "amanhã" if data_hora.date() > datetime.now().date() else "hoje"
-            return f"Combinado. Criei um lembrete para {dia_str} às {hora_str}: {texto}."
+            rem = add_reminder(texto, data_hora, recorrencia=recorrencia, dias=dias)
+            return f"Combinado. Vou te lembrar {_describe(rem)}: {texto}."
 
     return None

@@ -20,6 +20,7 @@ import FanNewsWidget from "./components/FanNewsWidget.jsx";
 import FanScoreWidget from "./components/FanScoreWidget.jsx";
 import FanGoalOverlay from "./components/FanGoalOverlay.jsx";
 import NewProfileScreen from "./components/NewProfileScreen.jsx";
+import AlarmOverlay from "./components/AlarmOverlay.jsx";
 import ProfileWelcome from "./components/ProfileWelcome.jsx";
 import WaterWidget from "./components/WaterWidget.jsx";
 import FaceRecheckPanel from "./components/FaceRecheckPanel.jsx";
@@ -69,6 +70,10 @@ export default function App() {
   const [bootOffline, setBootOffline] = useState(false); // backend do PC desligado (sem resposta)
   // Botão LIGAR O JARVIS (atalho jarvis://): "" | "trying" | "opening" | "missing"
   const [launchState, setLaunchState] = useState("");
+  // V5.1: alarme tocando (evento "alarm" do backend): { id, hora, rotulo, snooze_minutes } ou null
+  const [alarm, setAlarm] = useState(null);
+  const alarmRef = useRef(null);
+  alarmRef.current = alarm;
   // Botão ATUALIZAR: null | { message } enquanto baixa a versão nova e reinicia
   const [updating, setUpdating] = useState(null);
   const [lockPhase, setLockPhase] = useState("ready"); // ready | scanning | verified | failed
@@ -444,6 +449,9 @@ export default function App() {
             : b));
         }
         break;
+      case "alarm":
+        setAlarm(msg.state === "ringing" ? { id: msg.id, hora: msg.hora, rotulo: msg.rotulo, snooze_minutes: msg.snooze_minutes } : null);
+        break;
       case "briefing_start":
         setBriefing({
           phase: "running",
@@ -789,6 +797,23 @@ export default function App() {
     }, 2000);
   }, []);
 
+  // V5.1: alarme. Ao abrir (ou reconectar), confere se já tem um tocando; os botões chamam o backend.
+  useEffect(() => {
+    if (screen === "boot") return;
+    api("/api/alarms/ringing")
+      .then((r) => setAlarm((cur) => (r.ringing ? cur || { hora: r.hora, rotulo: "", snooze_minutes: r.snooze_minutes } : null)))
+      .catch(() => {});
+  }, [screen]);
+  const stopAlarm = useCallback(() => {
+    setAlarm(null);
+    api("/api/alarms/stop", { method: "POST" }).catch(() => {});
+  }, []);
+  const snoozeAlarm = useCallback(() => {
+    setAlarm(null);
+    api("/api/alarms/snooze", { method: "POST" }).catch(() => {});
+  }, []);
+  const alarmOverlay = <AlarmOverlay alarm={alarm} onStop={stopAlarm} onSnooze={snoozeAlarm} />;
+
   // ---- Cadastro da foto de perfil ----
   const saveProfile = async (nameValue, photo) => {
     setSaving(true);
@@ -945,6 +970,7 @@ export default function App() {
     if (screen !== "lock" || lockPhase !== "verified") return undefined;
     const pending = pendingRequestRef.current;
     if (!appPrefs.clap_auto_enter && !pending && !quickEnterRef.current) return undefined;
+    if (pinResetRef.current) return undefined; // "Esqueci o PIN": espera o PIN novo antes de entrar
     setAutoEntering(true);
     const t = setTimeout(() => {
       setPendingRequest(null);
@@ -960,6 +986,58 @@ export default function App() {
     setPinState((cur) => ({ ...cur, message: "", busy: false }));
     setLockPhase("pin");
   }, [loadPinStatus]);
+
+  // V5.1 "Esqueci o PIN" na tela de bloqueio: lê o rosto; se for a pessoa, pede o PIN novo duas vezes,
+  // salva (rota /api/auth/pin/reset, que só aceita logo depois do rosto confirmado) e entra.
+  // pinReset: null | { step: "scan" } | { step: "new" } | { step: "confirm", first }
+  const [pinReset, setPinReset] = useState(null);
+  const pinResetRef = useRef(null);
+  pinResetRef.current = pinReset;
+  const forgotPin = useCallback(() => {
+    setPinReset({ step: "scan" });
+    setPinState((cur) => ({ ...cur, message: "", busy: false }));
+    setLockPhase("ready");
+    verify();
+  }, [verify]);
+  useEffect(() => {
+    if (pinReset?.step !== "scan") return;
+    if (lockPhase === "verified") {
+      setPinReset({ step: "new" });
+      setPinState({ busy: false, message: "Rosto confirmado. Digite o PIN novo (4 a 8 números).", lockedUntil: null });
+      setLockPhase("pin");
+    } else if (lockPhase === "failed") {
+      setPinReset(null);
+    }
+  }, [pinReset, lockPhase]);
+  const submitNewPin = useCallback(async (pin) => {
+    const flow = pinResetRef.current;
+    if (!flow) return;
+    if (!/^\d{4,8}$/.test(pin)) {
+      setPinState((cur) => ({ ...cur, message: "O PIN tem de 4 a 8 números." }));
+      return;
+    }
+    if (flow.step === "new") {
+      setPinReset({ step: "confirm", first: pin });
+      setPinState((cur) => ({ ...cur, message: "Digite o PIN novo mais uma vez para confirmar." }));
+      return;
+    }
+    if (pin !== flow.first) {
+      setPinReset({ step: "new" });
+      setPinState((cur) => ({ ...cur, message: "Os dois não bateram. Digite o PIN novo de novo." }));
+      return;
+    }
+    setPinState((cur) => ({ ...cur, busy: true }));
+    try {
+      const res = await api("/api/auth/pin/reset", { method: "POST", body: JSON.stringify({ new_pin: pin }) });
+      setPinReset(null);
+      setPinState({ busy: false, message: "", lockedUntil: null });
+      setLockMessage(res.weak ? "PIN novo salvo. Dica: evite PINs fáceis como 1234." : "PIN novo salvo.");
+      setLockPhase("verified");
+    } catch (err) {
+      setPinReset(null);
+      setPinState({ busy: false, message: err.message, lockedUntil: null });
+    }
+  }, []);
 
   const submitPin = useCallback(async (pin) => {
     setPinState((cur) => ({ ...cur, busy: true, message: "" }));
@@ -1562,6 +1640,7 @@ export default function App() {
         }
         return;
       }
+      if (alarmRef.current) return; // alarme tocando: ENTER/ESC/S ficam com o cartão do alarme
       if (e.code !== "Space" || e.repeat) return;
       const tag = e.target?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA") return; // deixa digitar espaços normalmente
@@ -1994,6 +2073,7 @@ export default function App() {
   if (screen === "lock") {
     return (
       <>
+        {alarmOverlay}
         <LockScreen
           photoUrl={lockPhase === "verified" || (accessInfo && accessInfo.effective === "unlocked" && lockPhase !== "ready" && lockPhase !== "pin") ? photoUrl : null}
           phase={lockPhase}
@@ -2012,7 +2092,20 @@ export default function App() {
           hasPin={hasPin}
           failCount={failCount}
           onUsePin={openPin}
-          pin={{ onSubmit: submitPin, onCancel: () => setLockPhase("ready"), busy: pinState.busy, message: pinState.message, lockedUntil: pinState.lockedUntil }}
+          pin={pinReset ? {
+            onSubmit: submitNewPin,
+            onCancel: () => { setPinReset(null); setLockPhase("ready"); },
+            busy: pinState.busy,
+            message: pinState.message,
+            lockedUntil: null,
+          } : {
+            onSubmit: submitPin,
+            onCancel: () => setLockPhase("ready"),
+            busy: pinState.busy,
+            message: pinState.message,
+            lockedUntil: pinState.lockedUntil,
+            onForgot: BACKEND_ON_THIS_PC && !IS_JARVIS_APP ? forgotPin : null,
+          }}
           guestEnabled={Boolean(appPrefs.lock_guest_enabled)}
           onGuest={enterGuest}
           onNewProfile={IS_JARVIS_APP ? null : () => setScreen("newprofile")}
@@ -2102,6 +2195,7 @@ export default function App() {
   return (
     <>
       <OfflineBanner connected={connected} />
+      {alarmOverlay}
       {showOnboarding && (
         <Onboarding
           aiName={aiName}

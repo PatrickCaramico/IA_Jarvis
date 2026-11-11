@@ -17,6 +17,7 @@ from modules import (
     fan_mode,
     sports_provider,
     water,
+    alarms,
 )
 from modules import access, lock_log, sentinel
 from services.llm_orchestrator import (
@@ -89,6 +90,13 @@ async def handle_turn(message: str, routine: bool, force_deep: bool = False) -> 
     message = message.strip()
     if not message:
         raise HTTPException(status_code=400, detail="Mensagem vazia.")
+    # V5.1: alarme tocando: "parar" / "soneca" valem até com a central bloqueada
+    if alarms.is_ringing():
+        alarm_reply = await alarms.handle_ringing_voice(quick_replies._norm(message))
+        if alarm_reply:
+            await runtime.manager.broadcast({"type": "response", "text": alarm_reply, "cards": [], "local": True})
+            runtime.track(speech.speak(alarm_reply))
+            return {"status": "ok", "response": alarm_reply, "cards": [], "source": "alarm"}
     if access.is_restricted():
         return await handle_restricted_turn(message)
     event_log.add("command", message)

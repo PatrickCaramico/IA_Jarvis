@@ -9,7 +9,7 @@ const CARD_LABELS = [
   ["water", "Água de hoje"],
 ];
 
-const RESULT_TEXT = { ok: "liberado", fail: "falhou", locked_out: "PIN bloqueado", enter: "entrou", exit: "saiu", lock: "bloqueou" };
+const RESULT_TEXT = { ok: "liberado", fail: "falhou", locked_out: "PIN bloqueado", enter: "entrou", exit: "saiu", lock: "bloqueou", pin_reset: "PIN redefinido" };
 const METHOD_TEXT = { face: "rosto", pin: "PIN", clap: "palmas", wake: "palmas (JARVIS fechado)", guest: "visitante", auto: "bloqueio", voice: "voz" };
 
 // Aba "Bloqueio" (seção 17 e Modo Sentinela).
@@ -19,6 +19,8 @@ export default function LockSettings({ api, prefs, onPatch }) {
   const [newPin, setNewPin] = useState("");
   const [confirmPin, setConfirmPin] = useState("");
   const [pinMsg, setPinMsg] = useState(null);
+  // V5.1 "Esqueci o PIN": "" | "scanning" (lendo o rosto) | "ready" (rosto confirmado: PIN novo sem o atual)
+  const [resetMode, setResetMode] = useState("");
   const [log, setLog] = useState([]);
   const [showLog, setShowLog] = useState(false);
   const [wakeText, setWakeText] = useState((prefs.sentinel_wake_words || []).join(", "));
@@ -31,15 +33,37 @@ export default function LockSettings({ api, prefs, onPatch }) {
   useEffect(() => { loadPin(); }, [loadPin]);
   useEffect(() => { if (showLog) loadLog(); }, [showLog, loadLog]);
 
+  const forgotPin = async () => {
+    setPinMsg({ ok: "Olhe para a câmera do PC…" });
+    setResetMode("scanning");
+    try {
+      const res = await api("/api/auth/verify", { method: "POST", body: JSON.stringify({ mode: "recheck", trigger: "button" }) });
+      if (res.verified) {
+        setResetMode("ready");
+        setCurrentPin("");
+        setPinMsg({ ok: "Rosto confirmado. Crie o PIN novo nos próximos 3 minutos." });
+      } else {
+        setResetMode("");
+        setPinMsg({ error: "Não reconheci o rosto. Tente de novo com luz de frente, ou rode o Redefinir-PIN.bat no PC." });
+      }
+    } catch (err) {
+      setResetMode("");
+      setPinMsg({ error: err.message });
+    }
+  };
+
   const savePin = async () => {
     setPinMsg(null);
     if (!/^\d{4,8}$/.test(newPin)) return setPinMsg({ error: "O PIN deve ter de 4 a 8 dígitos." });
     if (newPin !== confirmPin) return setPinMsg({ error: "A confirmação não confere." });
     try {
-      const res = await api("/api/auth/pin/set", {
-        method: "POST",
-        body: JSON.stringify({ new_pin: newPin, current_pin: pinStatus?.has_pin ? currentPin : null }),
-      });
+      const res = resetMode === "ready"
+        ? await api("/api/auth/pin/reset", { method: "POST", body: JSON.stringify({ new_pin: newPin }) })
+        : await api("/api/auth/pin/set", {
+          method: "POST",
+          body: JSON.stringify({ new_pin: newPin, current_pin: pinStatus?.has_pin ? currentPin : null }),
+        });
+      setResetMode("");
       setPinMsg({ ok: res.weak ? "PIN salvo. Atenção: PIN fraco (ex.: 1234) reduz a segurança." : "PIN salvo." });
       setCurrentPin(""); setNewPin(""); setConfirmPin("");
       loadPin();
@@ -84,9 +108,16 @@ export default function LockSettings({ api, prefs, onPatch }) {
           {pinStatus?.has_pin ? "PIN cadastrado." : "Nenhum PIN cadastrado."}
           {pinStatus?.locked_until ? " Bloqueado temporariamente por excesso de tentativas." : ""}
         </div>
-        {pinStatus?.has_pin && (
-          <input type="password" inputMode="numeric" maxLength={8} value={currentPin} onChange={(e) => setCurrentPin(e.target.value.replace(/\D/g, ""))}
-            placeholder="PIN atual" className={inputCls} aria-label="PIN atual" />
+        {pinStatus?.has_pin && resetMode !== "ready" && (
+          <div className="flex gap-2">
+            <input type="password" inputMode="numeric" maxLength={8} value={currentPin} onChange={(e) => setCurrentPin(e.target.value.replace(/\D/g, ""))}
+              placeholder="PIN atual" className={inputCls} aria-label="PIN atual" />
+            <button type="button" onClick={forgotPin} disabled={resetMode === "scanning"}
+              className="shrink-0 rounded border border-amber-400/60 bg-amber-500/10 px-2 py-1.5 text-[11px] font-['Orbitron'] text-amber-200 disabled:opacity-50"
+              title="Confirme o rosto e crie um PIN novo sem o atual">
+              {resetMode === "scanning" ? "LENDO O ROSTO…" : "ESQUECI O PIN"}
+            </button>
+          </div>
         )}
         <div className="grid grid-cols-2 gap-2">
           <input type="password" inputMode="numeric" maxLength={8} value={newPin} onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ""))}
@@ -96,9 +127,9 @@ export default function LockSettings({ api, prefs, onPatch }) {
         </div>
         <div className="flex gap-2">
           <button type="button" onClick={savePin} className="flex-1 rounded border border-cyan-400/60 bg-cyan-500/20 py-1.5 text-[11px] font-['Orbitron'] text-cyan-100">
-            {pinStatus?.has_pin ? "TROCAR PIN" : "CRIAR PIN"}
+            {resetMode === "ready" ? "CRIAR PIN NOVO" : pinStatus?.has_pin ? "TROCAR PIN" : "CRIAR PIN"}
           </button>
-          {pinStatus?.has_pin && (
+          {pinStatus?.has_pin && resetMode !== "ready" && (
             <button type="button" onClick={removePin} className="rounded border border-rose-500/50 bg-rose-950/30 px-3 py-1.5 text-[11px] font-['Orbitron'] text-rose-200">
               REMOVER
             </button>
@@ -106,6 +137,7 @@ export default function LockSettings({ api, prefs, onPatch }) {
         </div>
         <SaveStatus status={pinMsg} />
         <Note tone="warn">O PIN dá o mesmo acesso do rosto. Evite PINs fracos como 1234. 5 erros bloqueiam o PIN por 5 min (dobra a cada novo bloqueio, até 30 min).</Note>
+        <Note>Esqueceu? “Esqueci o PIN” confirma o seu rosto pela câmera do PC e libera um PIN novo sem o atual. Sem câmera, rode o Redefinir-PIN.bat na pasta do JARVIS.</Note>
       </Section>
 
       <Section title="AO ENTRAR">

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import useNow from "../hooks/useNow.js";
 
 // Teclado numérico do PIN de reserva (seção 17.1). Aceita também o teclado físico.
-export default function PinPad({ onSubmit, onCancel, busy = false, message = "", lockedUntil = null }) {
+export default function PinPad({ onSubmit, onCancel, busy = false, message = "", lockedUntil = null, onForgot = null, title = "" }) {
   const [pin, setPin] = useState("");
   const now = useNow(Boolean(lockedUntil)).getTime();
   const locked = lockedUntil && lockedUntil * 1000 > now;
@@ -77,6 +77,9 @@ export default function PinPad({ onSubmit, onCancel, busy = false, message = "",
           </button>
         ))}
       </div>
+      {onForgot && (
+        <button type="button" className="pp-cancel pp-forgot" onClick={onForgot}>Esqueci o PIN</button>
+      )}
       <button type="button" className="pp-cancel" onClick={onCancel}>Voltar ao escaneamento facial</button>
     </div>
   );

@@ -5,6 +5,7 @@ import LockScreen from "../components/LockScreen.jsx";
 import FanGoalOverlay from "../components/FanGoalOverlay.jsx";
 import NewProfileScreen from "../components/NewProfileScreen.jsx";
 import ProfileWelcome from "../components/ProfileWelcome.jsx";
+import AlarmOverlay from "../components/AlarmOverlay.jsx";
 import "../profiles.css";
 import "../accessibility.css";
 import "../index.css";
@@ -13,6 +14,7 @@ import "../lock-extras.css";
 import "../brand.css";
 import "../feedback.css";
 import "../blueprint.css";
+import "../alarm.css";
 import { applyFanMode, initialAccessibility } from "../utils/theme.js";
 
 initialAccessibility();
@@ -68,6 +70,9 @@ function Demo() {
   if (q.get("screen") === "welcome") return <ProfileWelcome api={baseApi} name="Maria" onDone={() => {}} />;
   return (
   <>
+  {q.has("alarme") && (
+    <AlarmOverlay alarm={{ hora: "07:00", rotulo: q.get("alarme") || "", snooze_minutes: 9 }} onStop={() => {}} onSnooze={() => {}} />
+  )}
   {q.get("goal") && <FanGoalOverlay event={{ kind: q.get("goal"), match: demoMatch }} onDone={() => {}} />}
   <LockScreen
     phase={phase}

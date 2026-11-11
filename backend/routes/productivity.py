@@ -4,7 +4,7 @@ import asyncio
 from datetime import datetime
 from fastapi import HTTPException
 from pydantic import BaseModel
-from modules import prefs, tasks, reminders, focus, briefing, memory, event_log, notifications, protocols, routine, triggers, tools
+from modules import prefs, tasks, reminders, focus, briefing, memory, event_log, notifications, protocols, routine, triggers, tools, alarms
 from fastapi import APIRouter
 
 router = APIRouter()
@@ -123,6 +123,37 @@ async def mark_task_complete(task_id: int) -> dict:
 async def remove_task(task_id: int) -> dict:
     if not tasks.delete_task(task_id):
         raise HTTPException(status_code=404, detail="Tarefa não encontrada.")
+    return {"status": "ok"}
+
+
+# ---------------------------------------------------------------- V5.1: alarmes
+@router.get("/api/alarms")
+async def list_alarms() -> dict:
+    return {"alarms": [{**a, "descricao": alarms.describe(a)} for a in alarms.list_alarms()], "ringing": alarms.ringing_info()}
+
+
+@router.get("/api/alarms/ringing")
+async def alarm_ringing() -> dict:
+    """Pública (bloqueio): só diz se está tocando e a hora, sem o rótulo."""
+    info = alarms.ringing_info()
+    return {"ringing": bool(info), "hora": info["hora"] if info else None, "snooze_minutes": alarms.SNOOZE_MINUTES}
+
+
+@router.post("/api/alarms/stop")
+async def alarm_stop() -> dict:
+    return {"stopped": bool(await alarms.stop())}
+
+
+@router.post("/api/alarms/snooze")
+async def alarm_snooze() -> dict:
+    at = await alarms.snooze()
+    return {"snoozed": bool(at), "at": at.strftime("%H:%M") if at else None}
+
+
+@router.delete("/api/alarms/{alarm_id}")
+async def alarm_delete(alarm_id: int) -> dict:
+    if not alarms.delete_alarm(alarm_id):
+        raise HTTPException(status_code=404, detail="Alarme não encontrado.")
     return {"status": "ok"}
 
 

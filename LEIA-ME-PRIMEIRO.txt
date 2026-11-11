@@ -11,6 +11,7 @@ Esta pasta e o projeto completo e limpo. Tudo o que o JARVIS usa esta aqui:
   Status / Ver-Logs / Diagnostico-Backend / Backup-Dados / Empacotar-Projeto / Atualizar-Frontend
   Iniciar-Palmas / Parar-Palmas / Instalar-Palmas-no-Windows / Remover-Palmas-do-Windows
   Instalar-Botao-Ligar / Remover-Botao-Ligar ... botao LIGAR O JARVIS da central do site (atalho jarvis://)
+  Redefinir-PIN ............. ultimo recurso se esqueceu o PIN e a camera nao funciona (V5.1)
 
   backend\   servidor Python (FastAPI)
   frontend\  interface React (Vite + Tailwind)

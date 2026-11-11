@@ -144,6 +144,9 @@ _PUBLIC_EXACT = {
     ("GET", "/api/water"),            # cartão "água de hoje" da tela de bloqueio
     ("POST", "/api/health/biometrics"),  # recebimento do relógio (Android Sync) não pode quebrar
     ("POST", "/api/system/update"),   # botão ATUALIZAR do bloqueio (a rota aceita só o próprio PC)
+    ("GET", "/api/alarms/ringing"),   # V5.1: alarme tocando (sem o rótulo)
+    ("POST", "/api/alarms/stop"),     # PARAR e SONECA funcionam com a central bloqueada
+    ("POST", "/api/alarms/snooze"),
 }
 _PUBLIC_PREFIX = (
     ("GET", "/api/integrations/google-calendar/callback"),  # o estado OAuth já protege

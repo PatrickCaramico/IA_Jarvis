@@ -100,6 +100,10 @@ A mesma central também abre pelo site, no botão **Abrir meu JARVIS** (`https:/
 
 Depois de uma atualização no GitHub, toque em **⟳ ATUALIZAR** na tela de bloqueio: o JARVIS baixa a versão nova, avisa por voz e reinicia sozinho.
 
+**Alarmes e lembretes por voz (V5.1):** "Jarvis, me acorda às 7", "alarme de segunda a sexta às 6 e meia", "me lembra toda terça às 19 de levar o lixo". Tocando, diga "Jarvis, parar" ou "soneca". Lista completa em `docs/COMANDOS.md`.
+
+**Esqueci o PIN:** no teclado do PIN (ou em Configurações › Bloqueio), "Esqueci o PIN" confirma o seu rosto e libera um PIN novo. Sem câmera, rode o `Redefinir-PIN.bat`.
+
 **Celular:** com o JARVIS ligado, abra no navegador do celular `http://<IP do PC>:8000/api/mobile` (mesma Wi-Fi), baixe e instale o `JARVIS.apk` e conecte com o endereço do PC e o seu PIN.
 
 ## App Android

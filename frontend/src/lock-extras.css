@@ -156,6 +156,7 @@
 .pp-grid button:disabled { opacity: 0.4; cursor: not-allowed; }
 .pp-grid .pp-ok { border-color: #5eead4; color: #5eead4; font-size: 0.8rem; }
 .pp-cancel { background: none; border: none; color: rgba(201, 246, 255, 0.6); text-decoration: underline; cursor: pointer; font-family: "Rajdhani", sans-serif; }
+.pp-forgot { color: #fcd34d; } /* V5.1: "Esqueci o PIN" em âmbar (olhe aqui) */
 
 /* ---------- Modo Sentinela ---------- */
 .ls-sentinel { gap: 14px; padding-bottom: 64px; }

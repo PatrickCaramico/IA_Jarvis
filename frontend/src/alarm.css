@@ -1,0 +1,93 @@
+/* V5.1: alarme tocando. Âmbar = "olhe aqui" (Branding Book); PARAR ciano cheio, SONECA só borda. */
+.alarm-back {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(2, 6, 14, 0.72);
+  backdrop-filter: blur(6px);
+  animation: alarm-in 240ms ease-out both;
+}
+.alarm-card {
+  position: relative;
+  width: min(440px, 100%);
+  padding: 30px 26px 22px;
+  border-radius: 22px;
+  border: 1px solid rgba(245, 158, 11, 0.65);
+  background: linear-gradient(160deg, rgba(11, 18, 32, 0.96), rgba(5, 7, 13, 0.96));
+  box-shadow: 0 0 60px rgba(245, 158, 11, 0.28), inset 0 0 40px rgba(245, 158, 11, 0.06);
+  text-align: center;
+  overflow: hidden;
+}
+.alarm-rings { position: absolute; inset: 0; pointer-events: none; }
+.alarm-rings i {
+  position: absolute;
+  left: 50%;
+  top: 34%;
+  width: 180px;
+  height: 180px;
+  margin: -90px 0 0 -90px;
+  border-radius: 50%;
+  border: 2px solid rgba(245, 158, 11, 0.5);
+  animation: alarm-ring 1.8s ease-out infinite;
+}
+.alarm-rings i:nth-child(2) { animation-delay: 0.6s; }
+.alarm-rings i:nth-child(3) { animation-delay: 1.2s; }
+.alarm-eyebrow {
+  position: relative;
+  font-family: var(--font-data, monospace);
+  font-size: 13px;
+  letter-spacing: 0.32em;
+  color: var(--j-amber, #f59e0b);
+}
+.alarm-time {
+  position: relative;
+  font-family: var(--font-data, monospace);
+  font-variant-numeric: tabular-nums;
+  font-size: clamp(56px, 16vw, 84px);
+  line-height: 1.05;
+  color: var(--j-text, #e6f7fb);
+  text-shadow: 0 0 24px rgba(245, 158, 11, 0.5);
+  margin: 6px 0 2px;
+  animation: alarm-pulse 1s ease-in-out infinite;
+}
+.alarm-label {
+  position: relative;
+  font-family: var(--font-text, sans-serif);
+  font-size: 17px;
+  color: #fde68a;
+  margin-bottom: 4px;
+}
+.alarm-actions { position: relative; display: grid; gap: 10px; margin-top: 18px; }
+.alarm-stop, .alarm-snooze {
+  min-height: 52px;
+  border-radius: 14px;
+  font-family: var(--font-title, sans-serif);
+  font-size: 16px;
+  letter-spacing: 0.18em;
+  cursor: pointer;
+  transition: background var(--j-fast, 150ms), transform var(--j-fast, 150ms);
+}
+.alarm-stop { border: 0; background: var(--j-core, #22d3ee); color: #04141a; font-weight: 700; }
+.alarm-stop:hover { background: #67e8f9; }
+.alarm-snooze { border: 1px solid rgba(245, 158, 11, 0.7); background: transparent; color: #fcd34d; }
+.alarm-snooze:hover { background: rgba(245, 158, 11, 0.12); }
+.alarm-stop:active, .alarm-snooze:active { transform: translateY(1px); }
+.alarm-hint {
+  position: relative;
+  margin: 14px 0 0;
+  font-family: var(--font-data, monospace);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--j-muted, #7fa7b5);
+}
+.alarm-keys { opacity: 0.7; }
+@media (hover: none) { .alarm-keys { display: none; } } /* celular: sem teclado, sem atalhos */
+@keyframes alarm-in { from { opacity: 0; } }
+@keyframes alarm-ring { from { transform: scale(0.5); opacity: 0.9; } to { transform: scale(2.2); opacity: 0; } }
+@keyframes alarm-pulse { 50% { opacity: 0.72; } }
+@media (prefers-reduced-motion: reduce) {
+  .alarm-rings i, .alarm-time, .alarm-back { animation: none; }
+}

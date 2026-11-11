@@ -12,6 +12,7 @@ _WRITABLE = (
     ("lock_pin", "PIN_PATH", "lock_pin.json"),
     ("water", "DATA_FILE", "water_log.json"),
     ("reminders", "_REMINDERS_PATH", "lembretes.json"),
+    ("alarms", "_PATH", "alarmes.json"),
     ("tasks", "_TASKS_PATH", "tarefas.json"),
     ("routine", "DATA_PATH", "rotina.json"),
     ("deep_search_quota", "_QUOTA_FILE", "deep_search_usage.json"),

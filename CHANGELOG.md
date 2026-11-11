@@ -2,6 +2,17 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 5.1.0 — 11 de novembro de 2026
+
+Na web e por voz. Inclui tudo de 10 de novembro (abaixo) e mais:
+
+- **Alarmes por voz, como a Alexa** (`modules/alarms.py`): "me acorda às 7", "alarme de segunda a sexta às 6 e meia", "quais são meus alarmes?", "cancela o alarme das 7". Tocando: bipes no PC, a hora falada a cada 25 s e um cartão com PARAR e SONECA (9 min) na central e no bloqueio; "Jarvis, parar" e "soneca" valem até com a central bloqueada (sem mostrar o nome do alarme). Desliga sozinho em 10 min; alarme perdido com o PC desligado não toca atrasado. Guardados em `data/alarmes.json`, um por pessoa.
+- **Horários falados** (`modules/when.py`): "às 6 e meia", "às 7 da noite", "meio-dia", "sexta às 10", "dia 15 às 9", "daqui a uma hora e meia", "de segunda a sexta", "fim de semana". Usado por alarmes e lembretes.
+- **Lembretes:** horários naturais, repetição por dia da semana ("toda terça às 19") e cancelar um só ("cancela o lembrete do dentista"); antes, cancelar apagava todos.
+- **Esqueci o PIN:** no teclado do PIN e em Configurações › Bloqueio. Confirma o rosto e libera um PIN novo sem o atual por 3 minutos (`POST /api/auth/pin/reset`, só no próprio PC). Sem câmera, `Redefinir-PIN.bat`.
+- **Branding Book v1.9:** capítulo XVI "Na web e por voz" com prancha nova, capa e histórico até a 5.1, linha do tempo com 14 versões.
+- Versão 5.1.0 em `backend/version.py` e `frontend/src/utils/version.js`.
+
 ## 10 de novembro de 2026
 
 - **Como a Alexa:** "Jarvis, ..." também funciona com a central aberta (antes só no bloqueio), com conversa contínua: depois de responder a um pedido de voz, ele fica 8 s ouvindo a próxima pergunta. Chaves em Configurações > Bloqueio (`hands_free_enabled`, `follow_up_enabled`).

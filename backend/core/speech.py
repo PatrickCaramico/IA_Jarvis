@@ -4,7 +4,7 @@ import logging
 import asyncio
 from datetime import datetime
 from config import settings
-from modules import tools, prefs, reminders, focus
+from modules import tools, prefs, reminders, focus, alarms
 from modules import access, sentinel
 from modules import tts as tts_module
 from modules.tts import generate_and_play_speech
@@ -120,6 +120,10 @@ tools.set_announcer(announce)
 
 
 reminders.set_announcer(announce)
+
+
+# V5.1: alarmes avisam a tela e falam a hora; com a central bloqueada, sem o rótulo
+alarms.configure(broadcast=runtime.manager.broadcast, speak=say_quietly, is_restricted=access.is_restricted)
 
 
 focus.set_focus_announcer(announce)

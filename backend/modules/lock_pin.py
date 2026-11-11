@@ -109,6 +109,27 @@ def set_pin(new_pin: str, current_pin: Optional[str] = None) -> dict[str, Any]:
     return status()
 
 
+def reset_pin(new_pin: str) -> dict[str, Any]:
+    """V5.1 "Esqueci o PIN": troca sem o PIN atual. Quem chama já confirmou o rosto (routes/access.py)."""
+    validate_format(new_pin)
+    with _io_lock:
+        salt = secrets.token_bytes(16)
+        params = dict(_SCRYPT)
+        _save({
+            "algo": "scrypt",
+            "salt": salt.hex(),
+            "params": params,
+            "hash": _hash(new_pin, salt, params).hex(),
+            "failures": 0,
+            "lockouts": 0,
+            "locked_until": 0,
+            "updated_at": time.time(),
+            "reset_by": "face",
+        })
+    log.info("PIN redefinido pelo rosto.")
+    return status()
+
+
 def clear_pin(current_pin: str) -> dict[str, Any]:
     with _io_lock:
         data = _load()

@@ -1,4 +1,4 @@
-# Branding Book do JARVIS (v1.8, atualizado na V5 em 09/11/2026: Meus Sites, escudos do Modo Torcedor e aviso de atualização)
+# Branding Book do JARVIS (v1.9, atualizado na V5.1 em 11/11/2026: na web e por voz, alarmes e "Esqueci o PIN")
 
 Versão aprovada do Branding Book proposto no plano da 4.2. Há também uma versão ilustrada e animada: abra `docs/branding-book.html` no navegador. Tudo aqui já está aplicado no projeto;
 no fim de cada seção há onde isso vive no código.
@@ -60,7 +60,7 @@ nos módulos do backend.
 | --- | --- |
 | Assistente | JARVIS (o nome da IA pode ser trocado em Configurações) |
 | Módulo de escuta contínua | **Modo Sentinela** (mantido; as siglas propostas não foram adotadas) |
-| Versão exibida na central | `v5.0.0` (sem referências a marcas de terceiros, como "Stark") |
+| Versão exibida na central | `v5.1.0` (sem referências a marcas de terceiros, como "Stark") |
 | Lista de sites abertos por voz | **Meus Sites** (Configurações > Meus Sites) |
 | Resumo da manhã | **Briefing** (disparado por "bom dia") |
 | Resumo da noite | **Fechamento do dia** (disparado por "boa noite") |
@@ -405,7 +405,7 @@ O âmbar do foco é o mesmo Âmbar Sentinela: "olhe aqui". Cada pessoa tem as pr
 **No código:** `mobile/android/`, `backend/routes/mobile.py`, `frontend/src/components/MobileAppQr.jsx`,
 `NewProfileScreen.jsx`, `ProfileWelcome.jsx`, `frontend/src/profiles.css` e `frontend/src/accessibility.css`.
 
-### Como a Alexa: voz, pesquisa e atualização
+### Como a Alexa: voz, pesquisa, alarmes e atualização (V5.1)
 
 **"Jarvis" com a central aberta.** Além da tela de bloqueio, a central também escuta a palavra de
 ativação: "Jarvis, que horas são?" funciona sem tocar no microfone. Ao ouvir só "Jarvis", toca o som de
@@ -427,6 +427,28 @@ versão mais nova…") e pisca "Volto em instantes e faço a verificação do se
 estou atualizando os meus sistemas. Volto em instantes." Quando ele volta, a página recarrega com a
 interface nova e faz a verificação rápida. Se o GitHub recusar (mudanças locais na pasta), nada muda e a
 tela de bloqueio mostra o motivo em vermelho.
+
+**Alarmes (V5.1).** Por voz: "Jarvis, me acorda às 7", "alarme de segunda a sexta às 6 e meia", "quais são
+meus alarmes?", "cancela o alarme das 7". Sem horário, ele pergunta "Para que horas, senhor?". Na hora, um
+**cartão de vidro com borda âmbar** cobre a tela (central ou bloqueio), com anéis âmbar que se expandem
+devagar, "⏰ ALARME" em JetBrains Mono espaçada, a hora grande (JetBrains Mono, branco com brilho âmbar,
+pulsando), o nome do alarme em âmbar claro, **PARAR** em ciano cheio e **SONECA · 9 MIN** só com borda
+âmbar, e a dica "Diga “Jarvis, parar” ou “soneca”." (no PC também "ENTER: parar · S: soneca"). O PC toca
+três bipes curtos a cada 1,4 s e, a cada 25 s, a voz diz a hora ("Senhor, são 7 horas."). Sem resposta,
+desliga sozinho em 10 minutos. Com a central bloqueada, o nome do alarme não aparece nem é falado.
+
+**Lembretes (V5.1).** Entendem horários do jeito que se fala: "às 7 da noite", "às 6 e meia", "meio-dia",
+"sexta às 10", "dia 15 às 9", "daqui a 2 horas", "toda terça às 19". A resposta confirma no mesmo tom:
+"Combinado. Vou te lembrar amanhã às 15:00: ligar para o dentista." "Cancela o lembrete do dentista"
+apaga só aquele; "apaga todos os lembretes", todos.
+
+**Esqueci o PIN (V5.1).** No teclado do PIN, um link em âmbar "Esqueci o PIN" (abaixo das teclas, acima de
+"Voltar ao escaneamento facial"). Ele lê o rosto; se for a pessoa, o mesmo teclado pede "Digite o PIN
+novo" e depois "Digite o PIN novo mais uma vez para confirmar", salva e entra ("PIN novo salvo."). Em
+Configurações › Bloqueio, ao lado de "PIN atual", o botão âmbar só com borda "ESQUECI O PIN" ("LENDO O
+ROSTO…" enquanto lê); confirmado, o campo do PIN atual some e o botão vira "CRIAR PIN NOVO". O rosto
+confirmado vale 3 minutos e uma troca só. Sem câmera: `Redefinir-PIN.bat` no PC, que pede "SIM" e guarda
+uma cópia.
 
 ### Meus Sites, escudos e atualização (V5)
 
@@ -460,7 +482,7 @@ o PC tem um APK mais novo. Nada é baixado ou instalado sozinho.
 o orbe Núcleo girando devagar no topo (parado com "reduzir movimento"), "JARVIS" em Orbitron com brilho
 ciano, cartões de vidro azul-marinho com ícone em círculo de contorno (ciano; âmbar para segurança; verde
 para água e para o Modo Torcedor), capturas em moldura com cantos ciano e, no rodapé, o carimbo
-"J.A.R.V.I.S. · FOLHA · SITE · REV. v5.0.0". Botão principal ciano cheio ("VER NO GITHUB"); os outros só
+"J.A.R.V.I.S. · FOLHA · SITE · REV. v5.1.0" (a versão vem de `backend/version.py`). Botão principal ciano cheio ("VER NO GITHUB"); os outros só
 com borda. Logo abaixo, num quadro de borda tracejada âmbar, o botão "ABRIR MEU JARVIS" (borda âmbar, o "olhe aqui" da Sentinela), que abre a **mesma central do PC publicada no site** (`/app/`). Ela conversa com o JARVIS ligado no computador (backend em `127.0.0.1:8000`), então rosto, perfil, Modo Torcedor, rotina e agenda são os de sempre; na primeira vez, o Chrome pergunta se o site pode acessar a rede local (é o backend do próprio PC). Tom: o mesmo da central, e a página deixa claro que é só a vitrine ("O JARVIS roda no seu PC:
 voz, câmera, controle do sistema e os seus dados nunca passam por aqui."). A 404 diz "Procurei em toda a
 planta, senhor, e esta página não está aqui."
@@ -495,7 +517,7 @@ central completa, que agora conversa em cards.
 | **4.4 · a calma** | 04 e 05/11/2026 | Central em espera só com o orbe, tela limpa no briefing e cabeçalho em três zonas. Depois, a **planta blueprint**, o reator em destaque, a abertura mais rápida e o Modo Torcedor com jogo de verdade (ESPN + Google Notícias, sem IA), ligando sozinho e comemorando os gols. |
 | **4.5 · a casa** | 05/11/2026 | JARVIS no celular (app Android com QR na Sentinela), uma central por pessoa (rosto + PIN, dados separados) e acessibilidade (texto maior, alto contraste, menos movimento). |
 | **5.0 · o lançamento** | 09/11/2026 | Projeto no GitHub, com testes automáticos e o app Android nas Releases. **Meus Sites** (qualquer site por voz, com apelidos), escudos do Modo Torcedor sempre visíveis, jogo antigo que sai da tela no dia seguinte e aviso de versão nova no PC e no celular. |
-| **Como a Alexa** | 10/11/2026 | Central aberta pelo site, verificação rápida do rosto, botão LIGAR O JARVIS, "Jarvis" também com a central aberta, conversa contínua, pesquisa automática no Google pela IA, respostas curtas e educadas, botão ATUALIZAR no bloqueio e app Android 5.0.0 servido pelo PC. |
+| **5.1 · na web e por voz** | 10 e 11/11/2026 | Central aberta pelo site, verificação rápida do rosto, botões LIGAR O JARVIS e ATUALIZAR, câmera lisa, pauta do briefing desde a saudação, "Jarvis" também com a central aberta, conversa contínua, pesquisa automática no Google pela IA, respostas curtas e educadas, **alarmes**, lembretes com horários naturais, **"Esqueci o PIN"**, app Android 5.x servido pelo PC e este livro legível no celular. |
 
 O que atravessou todas as versões: tudo roda no PC do dono, o rosto é a chave, a voz é em
 português e o reator (depois Núcleo) fica no centro da tela.

@@ -16,7 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from config import settings
-from modules import access, reminders, tts
+from modules import access, alarms, reminders, tts
 
 # Configuração de logging em console e arquivo rotativo
 _file_handler = RotatingFileHandler(
@@ -42,6 +42,7 @@ from version import VERSION  # noqa: E402
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     runtime.track_service(reminders.reminder_worker_loop())
+    runtime.track_service(alarms.worker_loop())  # V5.1: alarmes (despertador)
     runtime.track_service(watchers.fan_watcher_loop())
     runtime.track_service(watchers.water_watcher_loop())
     runtime.track_service(watchers.triggers_watcher_loop())

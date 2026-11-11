@@ -10,6 +10,7 @@ import "./briefing.css";
 import "./blueprint.css";
 import "./profiles.css";
 import "./accessibility.css";
+import "./alarm.css";
 import lazyComponent from "./utils/lazyComponent.jsx";
 import { initialAccessibility, initialBackground } from "./utils/theme.js";
 import { markDevice } from "./utils/device.js";

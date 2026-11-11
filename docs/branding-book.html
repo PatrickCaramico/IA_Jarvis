@@ -331,6 +331,7 @@ td:first-child { font-weight: 600; white-space: nowrap; }
 #snd-ripple.go { animation: ripple 0.6s ease-out 1; }
 @keyframes ripple { from { opacity: .9; r: 34px; } to { opacity: 0; r: 120px; } }
 .kit-spin { transform-box: view-box; transform-origin: 82px 269px; animation: spin 24s linear infinite; }
+.spin-slow { transform-box: fill-box; transform-origin: center; animation: spin 18s linear infinite; } /* V5.1: anel da verificação rápida */
 .wm-draw path { stroke-dasharray: 1; stroke-dashoffset: 1; animation: wmdraw 7s ease-in-out infinite; }
 .wm-draw path:nth-child(2) { animation-delay: .12s; } .wm-draw path:nth-child(3) { animation-delay: .24s; }
 .wm-draw path:nth-child(4) { animation-delay: .36s; } .wm-draw path:nth-child(5) { animation-delay: .48s; }
@@ -428,6 +429,7 @@ td:first-child { font-weight: 600; white-space: nowrap; }
         <li><a href="#planta">Planta</a></li>
         <li><a href="#casa">Casa</a></li>
         <li><a href="#lancamento">V5</a></li>
+        <li><a href="#web51">V5.1</a></li>
         <li><a href="#historia">História</a></li>
         <li><a href="#galeria">Galeria</a></li>
       </ol>
@@ -456,8 +458,8 @@ td:first-child { font-weight: 600; white-space: nowrap; }
       <div class="folio"><span>capa</span></div>
     </div>
     <div class="page">
-      <span class="stamp">✓ ATUALIZADO NA V4.4 · 05/11/2026</span>
-      <h1 id="t-capa">JARVIS<span>BRANDING BOOK · V1.7</span></h1>
+      <span class="stamp">✓ ATUALIZADO NA V5.1 · 11/11/2026</span>
+      <h1 id="t-capa">JARVIS<span>BRANDING BOOK · V1.9</span></h1>
       <p class="lead">Um mordomo digital competente, discreto e leal, com humor seco na medida certa. Este livro reúne como o JARVIS fala, como ele se parece e como ele se comporta na tela.</p>
       <ol class="contents" aria-label="Sumário">
         <li><a href="#identidade"><span class="n">I</span>Identidade e nomes<span class="pg">p. 02</span></a></li>
@@ -475,10 +477,11 @@ td:first-child { font-weight: 600; white-space: nowrap; }
         <li><a href="#planta"><span class="n">XIII</span>Planta e Modo Torcedor<span class="pg">p. 26</span></a></li>
         <li><a href="#casa"><span class="n">XIV</span>Celular, pessoas e acessibilidade<span class="pg">p. 28</span></a></li>
         <li><a href="#lancamento"><span class="n">XV</span>Meus Sites, escudos e atualização<span class="pg">p. 30</span></a></li>
-        <li><a href="#historia"><span class="n">XVI</span>Histórico de versões<span class="pg">p. 32</span></a></li>
-        <li><a href="#galeria"><span class="n">XVII</span>Galeria das versões<span class="pg">p. 34</span></a></li>
+        <li><a href="#web51"><span class="n">XVI</span>Na web e por voz<span class="pg">p. 32</span></a></li>
+        <li><a href="#historia"><span class="n">XVII</span>Histórico de versões<span class="pg">p. 34</span></a></li>
+        <li><a href="#galeria"><span class="n">XVIII</span>Galeria das versões<span class="pg">p. 36</span></a></li>
       </ol>
-      <div class="folio"><span>JARVIS · v4.4</span><span>p. 01</span></div>
+      <div class="folio"><span>JARVIS · v5.1</span><span>p. 01</span></div>
     </div>
   </section>
 
@@ -603,6 +606,8 @@ td:first-child { font-weight: 600; white-space: nowrap; }
             <li>Humor seco, no máximo uma tirada por resposta</li>
             <li>Assume o erro com calma e dá o próximo passo</li>
             <li>Pergunta antes de ações irreversíveis</li>
+            <li>Educado como assistente de voz: “Claro, senhor.”, agradece quando agradecem</li>
+            <li>Diz a fonte quando pesquisou (“segundo o ge”)</li>
           </ul>
         </div>
         <div class="n">
@@ -613,6 +618,7 @@ td:first-child { font-weight: 600; white-space: nowrap; }
             <li>Piadas em erros, alertas ou bloqueio</li>
             <li>Culpar o usuário ou dar desculpas técnicas</li>
             <li>Agir sozinho em arquivos, compras ou mensagens</li>
+            <li>Responder seco ou ignorar um “obrigado”</li>
           </ul>
         </div>
       </div>
@@ -1289,23 +1295,113 @@ td:first-child { font-weight: 600; white-space: nowrap; }
     </div>
   </section>
 
-  <!-- ===================== XVI. HISTÓRICO ===================== -->
-  <section class="spread" id="historia" aria-labelledby="t-hist">
+  <!-- ===================== XVI. NA WEB E POR VOZ (V5.1) ===================== -->
+  <section class="spread" id="web51" aria-labelledby="t-v51">
     <div class="page plate">
-      <svg class="illus" viewBox="0 0 400 400" role="img" aria-label="Linha do tempo das versões do JARVIS, de 29 de setembro a 4 de novembro de 2026">
-        <line x1="92" y1="24" x2="92" y2="374" stroke="var(--line)" stroke-width="2" />
-        <line class="tl-path" pathLength="100" x1="92" y1="24" x2="92" y2="374" stroke="var(--core)" stroke-width="2" />
-        <g class="tl-item" style="animation-delay:0.00s"><circle cx="92" cy="24" r="7" fill="var(--deep)" /><text class="svg-title" x="112" y="28">V1</text><text class="svg-small" x="228" y="22">29/09</text><text class="svg-small" x="228" y="36" style="fill:var(--text);letter-spacing:.5px;font-size:11px">o primeiro núcleo</text></g><g class="tl-item" style="animation-delay:0.15s"><circle cx="92" cy="59" r="7" fill="var(--deep)" /><text class="svg-title" x="112" y="63">ATUAL. 1·2</text><text class="svg-small" x="228" y="57">30/09</text><text class="svg-small" x="228" y="71" style="fill:var(--text);letter-spacing:.5px;font-size:11px">respostas rápidas</text></g><g class="tl-item" style="animation-delay:0.30s"><circle cx="92" cy="94" r="7" fill="var(--deep)" /><text class="svg-title" x="112" y="98">V2.1</text><text class="svg-small" x="228" y="92">01/10</text><text class="svg-small" x="228" y="106" style="fill:var(--text);letter-spacing:.5px;font-size:11px">o dia a dia</text></g><g class="tl-item" style="animation-delay:0.45s"><circle cx="92" cy="129" r="7" fill="var(--deep)" /><text class="svg-title" x="112" y="133">V2.2</text><text class="svg-small" x="228" y="127">07/10</text><text class="svg-small" x="228" y="141" style="fill:var(--text);letter-spacing:.5px;font-size:11px">conectado</text></g><g class="tl-item" style="animation-delay:0.60s"><circle cx="92" cy="164" r="7" fill="var(--deep)" /><text class="svg-title" x="112" y="168">V3</text><text class="svg-small" x="228" y="162">13–20/10</text><text class="svg-small" x="228" y="176" style="fill:var(--text);letter-spacing:.5px;font-size:11px">a central de comando</text></g><g class="tl-item" style="animation-delay:0.75s"><circle cx="92" cy="199" r="7" fill="var(--deep)" /><text class="svg-title" x="112" y="203">V4.0</text><text class="svg-small" x="228" y="197">28/10</text><text class="svg-small" x="228" y="211" style="fill:var(--text);letter-spacing:.5px;font-size:11px">as Telas</text></g><g class="tl-item" style="animation-delay:0.90s"><circle cx="92" cy="234" r="7" fill="var(--amber)" /><text class="svg-title" x="112" y="238">4.1</text><text class="svg-small" x="228" y="232">29/10</text><text class="svg-small" x="228" y="246" style="fill:var(--text);letter-spacing:.5px;font-size:11px">o guardião</text></g><g class="tl-item" style="animation-delay:1.05s"><circle cx="92" cy="269" r="7" fill="var(--core)" /><text class="svg-title" x="112" y="273">4.2</text><text class="svg-small" x="228" y="267">30/10</text><text class="svg-small" x="228" y="281" style="fill:var(--text);letter-spacing:.5px;font-size:11px">a identidade</text></g><g class="tl-item" style="animation-delay:1.20s"><circle cx="92" cy="304" r="7" fill="var(--core)" /><text class="svg-title" x="112" y="308">4.2.2</text><text class="svg-small" x="228" y="302">30/10</text><text class="svg-small" x="228" y="316" style="fill:var(--text);letter-spacing:.5px;font-size:11px">os detalhes</text></g><g class="tl-item" style="animation-delay:1.35s"><circle cx="92" cy="339" r="7" fill="var(--core)" /><text class="svg-title" x="112" y="343">4.3</text><text class="svg-small" x="228" y="337">04/11</text><text class="svg-small" x="228" y="351" style="fill:var(--text);letter-spacing:.5px;font-size:11px">o briefing</text></g><g class="tl-item" style="animation-delay:1.50s"><circle cx="92" cy="374" r="10" fill="var(--core)" class="breathe" /><text class="svg-title" x="112" y="378" style="fill:var(--core)">4.4</text><text class="svg-small" x="228" y="372">04/11</text><text class="svg-small" x="228" y="386" style="fill:var(--text);letter-spacing:.5px;font-size:11px">a calma</text></g>
-        <text class="svg-small" x="20" y="28" style="fill:var(--muted)">set</text>
-        <text class="svg-small" x="20" y="98" style="fill:var(--muted)">out</text><text class="svg-small" x="20" y="343" style="fill:var(--muted)">nov</text>
+      <svg class="illus" viewBox="0 0 400 400" role="img" aria-label="V5.1: tela de bloqueio que não reconheceu o rosto com os chips Sou novo e Atualizar, cartão do alarme das 7 com Parar e Soneca, conversa por voz criando o alarme e a tela Atualizando o JARVIS">
+        <defs>
+          <pattern id="v51-fine" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M10 0H0V10" fill="none" stroke="rgba(190,225,255,.10)" stroke-width=".6" /></pattern>
+          <radialGradient id="v51-paper" cx="50%" cy="40%" r="75%"><stop offset="0" stop-color="#2362B8" /><stop offset=".6" stop-color="#174A95" /><stop offset="1" stop-color="#0D3170" /></radialGradient>
+          <radialGradient id="v51-core" r="50%"><stop offset="0" stop-color="#fff" /><stop offset=".35" stop-color="#c9f6ff" /><stop offset=".75" stop-color="#4fdcff" /><stop offset="1" stop-color="#0a9fd6" /></radialGradient>
+        </defs>
+        <rect x="8" y="8" width="384" height="384" rx="10" fill="url(#v51-paper)" />
+        <rect x="8" y="8" width="384" height="384" rx="10" fill="url(#v51-fine)" />
+
+        <!-- A. bloqueio: rosto não reconhecido -->
+        <g transform="translate(24 24)">
+          <rect width="170" height="160" rx="8" fill="#04163a" fill-opacity=".85" stroke="rgba(200,235,255,.4)" />
+          <text x="85" y="16" text-anchor="middle" style="font:600 5px var(--font-data);letter-spacing:1.4px;fill:rgba(230,245,255,.7)">VERIFICAÇÃO RÁPIDA</text>
+          <circle cx="85" cy="52" r="24" fill="none" stroke="#22d3ee" stroke-width="2" stroke-dasharray="10 5" class="spin-slow" />
+          <circle cx="85" cy="52" r="12" fill="url(#v51-core)" />
+          <text x="85" y="94" text-anchor="middle" style="font:600 6px var(--font-ui);fill:#fcd34d">Não reconheci você.</text>
+          <text x="85" y="104" text-anchor="middle" style="font:500 5px var(--font-ui);fill:rgba(253,230,138,.85)">Se é a sua primeira vez, crie o seu perfil.</text>
+          <rect x="12" y="114" width="146" height="16" rx="8" fill="rgba(245,158,11,.18)" stroke="#f59e0b" />
+          <text x="85" y="125" text-anchor="middle" style="font:700 5.5px var(--font-title);letter-spacing:.8px;fill:#fde68a">＋ SOU NOVO: CRIAR PERFIL</text>
+          <rect x="12" y="136" width="70" height="15" rx="7.5" fill="none" stroke="rgba(79,220,255,.7)" />
+          <text x="47" y="146.5" text-anchor="middle" style="font:600 5.5px var(--font-title);letter-spacing:.6px;fill:#bdf3ff">⌨ USAR PIN</text>
+          <rect x="88" y="136" width="70" height="15" rx="7.5" fill="none" stroke="rgba(79,220,255,.7)" />
+          <text x="123" y="146.5" text-anchor="middle" style="font:600 5.5px var(--font-title);letter-spacing:.6px;fill:#bdf3ff">⟳ ATUALIZAR</text>
+        </g>
+
+        <!-- B. alarme tocando -->
+        <g transform="translate(206 24)">
+          <rect width="170" height="160" rx="12" fill="#05070d" fill-opacity=".92" stroke="#f59e0b" stroke-opacity=".8" />
+          <circle cx="85" cy="58" r="34" fill="none" stroke="rgba(245,158,11,.35)" stroke-width="1.5" class="breathe" />
+          <text x="85" y="24" text-anchor="middle" style="font:600 6px var(--font-data);letter-spacing:2.4px;fill:#f59e0b">⏰ ALARME</text>
+          <text x="85" y="72" text-anchor="middle" style="font:600 30px var(--font-data);fill:#e6f7fb">07:00</text>
+          <text x="85" y="88" text-anchor="middle" style="font:500 6.5px var(--font-text);fill:#fde68a">Academia</text>
+          <rect x="16" y="100" width="138" height="20" rx="7" fill="#22d3ee" />
+          <text x="85" y="113.5" text-anchor="middle" style="font:700 7px var(--font-title);letter-spacing:1.6px;fill:#04141a">PARAR</text>
+          <rect x="16" y="126" width="138" height="20" rx="7" fill="none" stroke="rgba(245,158,11,.75)" />
+          <text x="85" y="139.5" text-anchor="middle" style="font:600 6.5px var(--font-title);letter-spacing:1.4px;fill:#fcd34d">SONECA · 9 MIN</text>
+        </g>
+
+        <!-- C. por voz, como a Alexa -->
+        <g transform="translate(24 196)">
+          <rect width="352" height="92" rx="8" fill="#04163a" fill-opacity=".85" stroke="rgba(200,235,255,.4)" />
+          <circle cx="26" cy="46" r="15" fill="none" stroke="#22d3ee" stroke-width="1.5" />
+          <circle cx="26" cy="46" r="6" fill="url(#v51-core)" />
+          <text x="26" y="72" text-anchor="middle" style="font:600 4.5px var(--font-data);letter-spacing:1px;fill:#22d3ee">OUVINDO</text>
+          <rect x="52" y="12" width="176" height="22" rx="11" fill="rgba(34,211,238,.12)" stroke="rgba(79,220,255,.6)" />
+          <text x="62" y="26" style="font:500 6.5px var(--font-text);fill:#e6f7fb">“Jarvis, me acorda amanhã às 7.”</text>
+          <rect x="88" y="40" width="252" height="22" rx="11" fill="#0b1220" stroke="rgba(200,235,255,.35)" />
+          <text x="98" y="54" style="font:500 6.5px var(--font-text);fill:#c6dfe7">Claro, senhor. Alarme definido para amanhã às 07:00.</text>
+          <text x="52" y="80" style="font:500 5.5px var(--font-ui);fill:rgba(230,245,255,.75)">Depois da resposta, mais 8 s ouvindo: dá para seguir conversando sem dizer “Jarvis”.</text>
+        </g>
+
+        <!-- D. atualizar e esqueci o PIN -->
+        <g transform="translate(24 300)">
+          <rect width="352" height="76" rx="8" fill="#04163a" fill-opacity=".85" stroke="rgba(200,235,255,.4)" />
+          <text x="14" y="20" style="font:700 7.5px var(--font-title);letter-spacing:1.6px;fill:#fbbf24">ATUALIZANDO O JARVIS</text>
+          <text x="14" y="33" style="font:500 5.8px var(--font-text);fill:rgba(230,245,255,.85)">Versão nova baixada. Reiniciando os sistemas…</text>
+          <text x="14" y="45" style="font:500 5.5px var(--font-text);fill:rgba(230,245,255,.6)">“Senhor, estou atualizando os meus sistemas. Volto em instantes.”</text>
+          <rect x="14" y="54" width="96" height="15" rx="7.5" fill="none" stroke="#f59e0b" stroke-opacity=".8" />
+          <text x="62" y="64.5" text-anchor="middle" style="font:600 5.5px var(--font-ui);fill:#fcd34d">Esqueci o PIN</text>
+          <rect x="226" y="10" width="112" height="22" rx="11" fill="none" stroke="#22d3ee" />
+          <text x="282" y="24.5" text-anchor="middle" style="font:700 6px var(--font-title);letter-spacing:1px;fill:#bdf3ff">LIGAR O JARVIS</text>
+          <text x="282" y="46" text-anchor="middle" style="font:500 5px var(--font-ui);fill:rgba(230,245,255,.65)">pelo site, com o atalho jarvis://</text>
+        </g>
       </svg>
-      <p class="caption">Prancha XVII · <b>pouco mais de um mês de JARVIS</b></p>
+      <p class="caption">Prancha XVII · <b>na web e por voz</b></p>
       <div class="folio"><span>p. 32</span></div>
     </div>
     <div class="page">
-      <span class="eyebrow">Capítulo XVI</span>
+      <span class="eyebrow">Capítulo XVI · V5.1</span>
+      <h2 id="t-v51">Na web e por voz</h2>
+      <p class="lead">A central abre pelo site, reconhece quem chegou e atende por voz como a Alexa: pesquisa sozinha, acorda você e lembra do que importa.</p>
+      <ul class="rules">
+        <li><b>Central pelo site:</b> "ABRIR MEU JARVIS" abre a mesma central do PC em /app/. Com o JARVIS desligado, a abertura avisa em âmbar "O JARVIS DO SEU PC ESTÁ DESLIGADO", oferece "LIGAR O JARVIS" (atalho jarvis://) e entra sozinha quando ele responde. Se o atalho não existe, um quadro âmbar tracejado explica como instalar: o botão nunca fica sem resposta.</li>
+        <li><b>Verificação rápida:</b> ao abrir, o rosto é lido sem clique ("LIGANDO A CÂMERA…" enquanto a webcam abre; depois o vídeo corre liso no orbe). É você: entra direto. Não reconheceu: frase âmbar e "＋ SOU NOVO: CRIAR PERFIL" em destaque.</li>
+        <li><b>Briefing:</b> a pauta inteira aparece já na saudação; o assunto falado vira o destaque e os próximos ficam apagados embaixo, acendendo na vez de cada um.</li>
+        <li><b>Como a Alexa:</b> "Jarvis, ..." também com a central aberta (o orbe vai a OUVINDO por 8 s ao ouvir o nome) e conversa contínua depois de cada resposta de voz. Perguntas factuais são pesquisadas no Google pela IA, sem abrir navegador nem perguntar; a resposta tem 1 a 3 frases e cita a fonte.</li>
+        <li><b>Alarmes:</b> "me acorda às 7", "de segunda a sexta às 6 e meia". Tocando, um cartão de vidro com borda âmbar, anéis que se expandem, a hora grande em JetBrains Mono, PARAR em ciano cheio e SONECA só com borda; bipes no PC e a voz "Senhor, são 7 horas." a cada 25 s. Com a central bloqueada, sem o nome do alarme.</li>
+        <li><b>Lembretes:</b> entendem "às 7 da noite", "sexta às 10", "dia 15 às 9", "daqui a 2 horas" e repetições ("toda terça"); "cancela o lembrete do dentista" apaga só aquele.</li>
+        <li><b>Esqueci o PIN:</b> link em âmbar no teclado do PIN. Lê o rosto; se for você, pede o PIN novo duas vezes e entra. Também em Configurações › Bloqueio. Sem câmera, o Redefinir-PIN.bat no PC.</li>
+        <li><b>ATUALIZAR:</b> chip só com borda no bloqueio. A abertura mostra "ATUALIZANDO O JARVIS" em âmbar, a voz avisa e a página volta sozinha na versão nova.</li>
+        <li><b>No celular:</b> app 5.x conecta com endereço + PIN; este Branding Book abre inteiro na tela do celular, sem rolagem lateral.</li>
+      </ul>
+      <p class="muted">No código: <span class="mono">modules/when.py</span>, <span class="mono">alarms.py</span>, <span class="mono">reminders.py</span>, <span class="mono">self_update.py</span>, <span class="mono">AlarmOverlay.jsx</span>, <span class="mono">alarm.css</span>, <span class="mono">LockSettings.jsx</span>, <span class="mono">PinPad.jsx</span>, <span class="mono">useSentinelListener.js</span> e <span class="mono">/api/alarms</span>, <span class="mono">/api/auth/pin/reset</span>, <span class="mono">/api/system/update</span>.</p>
+      <div class="folio"><span>V5.1</span><span>p. 33</span></div>
+    </div>
+  </section>
+
+  <!-- ===================== XVII. HISTÓRICO ===================== -->
+  <section class="spread" id="historia" aria-labelledby="t-hist">
+    <div class="page plate">
+      <svg class="illus" viewBox="0 0 400 400" role="img" aria-label="Linha do tempo das versões do JARVIS, de 29 de setembro a 11 de novembro de 2026">
+        <line x1="92" y1="24" x2="92" y2="374" stroke="var(--line)" stroke-width="2" />
+        <line class="tl-path" pathLength="100" x1="92" y1="24" x2="92" y2="374" stroke="var(--core)" stroke-width="2" />
+        <g class="tl-item" style="animation-delay:0.00s"><circle cx="92" cy="24.0" r="6" fill="var(--deep)" /><text class="svg-title" x="112" y="28.0">V1</text><text class="svg-small" x="228" y="20.0">29/09</text><text class="svg-small" x="228" y="33.0" style="fill:var(--text);letter-spacing:.5px;font-size:10px">o primeiro núcleo</text></g><g class="tl-item" style="animation-delay:0.12s"><circle cx="92" cy="50.9" r="6" fill="var(--deep)" /><text class="svg-title" x="112" y="54.9">ATUAL. 1·2</text><text class="svg-small" x="228" y="46.9">30/09</text><text class="svg-small" x="228" y="59.9" style="fill:var(--text);letter-spacing:.5px;font-size:10px">respostas rápidas</text></g><g class="tl-item" style="animation-delay:0.24s"><circle cx="92" cy="77.8" r="6" fill="var(--deep)" /><text class="svg-title" x="112" y="81.8">V2.1</text><text class="svg-small" x="228" y="73.8">01/10</text><text class="svg-small" x="228" y="86.8" style="fill:var(--text);letter-spacing:.5px;font-size:10px">o dia a dia</text></g><g class="tl-item" style="animation-delay:0.36s"><circle cx="92" cy="104.8" r="6" fill="var(--deep)" /><text class="svg-title" x="112" y="108.8">V2.2</text><text class="svg-small" x="228" y="100.8">07/10</text><text class="svg-small" x="228" y="113.8" style="fill:var(--text);letter-spacing:.5px;font-size:10px">conectado</text></g><g class="tl-item" style="animation-delay:0.48s"><circle cx="92" cy="131.7" r="6" fill="var(--deep)" /><text class="svg-title" x="112" y="135.7">V3</text><text class="svg-small" x="228" y="127.69999999999999">13–20/10</text><text class="svg-small" x="228" y="140.7" style="fill:var(--text);letter-spacing:.5px;font-size:10px">a central de comando</text></g><g class="tl-item" style="animation-delay:0.60s"><circle cx="92" cy="158.6" r="6" fill="var(--deep)" /><text class="svg-title" x="112" y="162.6">V4.0</text><text class="svg-small" x="228" y="154.6">28/10</text><text class="svg-small" x="228" y="167.6" style="fill:var(--text);letter-spacing:.5px;font-size:10px">as Telas</text></g><g class="tl-item" style="animation-delay:0.72s"><circle cx="92" cy="185.5" r="6" fill="var(--amber)" /><text class="svg-title" x="112" y="189.5">4.1</text><text class="svg-small" x="228" y="181.5">29/10</text><text class="svg-small" x="228" y="194.5" style="fill:var(--text);letter-spacing:.5px;font-size:10px">o guardião</text></g><g class="tl-item" style="animation-delay:0.84s"><circle cx="92" cy="212.5" r="6" fill="var(--core)" /><text class="svg-title" x="112" y="216.5">4.2</text><text class="svg-small" x="228" y="208.5">30/10</text><text class="svg-small" x="228" y="221.5" style="fill:var(--text);letter-spacing:.5px;font-size:10px">a identidade</text></g><g class="tl-item" style="animation-delay:0.96s"><circle cx="92" cy="239.4" r="6" fill="var(--core)" /><text class="svg-title" x="112" y="243.4">4.2.2</text><text class="svg-small" x="228" y="235.4">30/10</text><text class="svg-small" x="228" y="248.4" style="fill:var(--text);letter-spacing:.5px;font-size:10px">os detalhes</text></g><g class="tl-item" style="animation-delay:1.08s"><circle cx="92" cy="266.3" r="6" fill="var(--core)" /><text class="svg-title" x="112" y="270.3">4.3</text><text class="svg-small" x="228" y="262.3">04/11</text><text class="svg-small" x="228" y="275.3" style="fill:var(--text);letter-spacing:.5px;font-size:10px">o briefing</text></g><g class="tl-item" style="animation-delay:1.20s"><circle cx="92" cy="293.2" r="6" fill="var(--core)" /><text class="svg-title" x="112" y="297.2">4.4</text><text class="svg-small" x="228" y="289.2">04/11</text><text class="svg-small" x="228" y="302.2" style="fill:var(--text);letter-spacing:.5px;font-size:10px">a calma</text></g><g class="tl-item" style="animation-delay:1.32s"><circle cx="92" cy="320.2" r="6" fill="var(--core)" /><text class="svg-title" x="112" y="324.2">4.5</text><text class="svg-small" x="228" y="316.2">05/11</text><text class="svg-small" x="228" y="329.2" style="fill:var(--text);letter-spacing:.5px;font-size:10px">a casa</text></g><g class="tl-item" style="animation-delay:1.44s"><circle cx="92" cy="347.1" r="6" fill="var(--core)" /><text class="svg-title" x="112" y="351.1">5.0</text><text class="svg-small" x="228" y="343.1">09/11</text><text class="svg-small" x="228" y="356.1" style="fill:var(--text);letter-spacing:.5px;font-size:10px">o lançamento</text></g><g class="tl-item" style="animation-delay:1.56s"><circle cx="92" cy="374.0" r="10" fill="var(--core)" class="breathe" /><text class="svg-title" x="112" y="378.0" style="fill:var(--core)">5.1</text><text class="svg-small" x="228" y="370.0">11/11</text><text class="svg-small" x="228" y="383.0" style="fill:var(--text);letter-spacing:.5px;font-size:10px">na web e por voz</text></g>
+        <text class="svg-small" x="20" y="28" style="fill:var(--muted)">set</text>
+        <text class="svg-small" x="20" y="81.8" style="fill:var(--muted)">out</text><text class="svg-small" x="20" y="270.3" style="fill:var(--muted)">nov</text>
+      </svg>
+      <p class="caption">Prancha XVIII · <b>pouco mais de um mês de JARVIS</b></p>
+      <div class="folio"><span>p. 34</span></div>
+    </div>
+    <div class="page">
+      <span class="eyebrow">Capítulo XVII</span>
       <h2 id="t-hist">Histórico de versões</h2>
-      <p class="lead">Em pouco mais de um mês, um protótipo com rosto e voz virou uma central completa, que agora conversa em cards.</p>
+      <p class="lead">Em pouco mais de um mês, um protótipo com rosto e voz virou uma central completa, que abre pelo site e atende por voz como a Alexa.</p>
       <dl class="history">
         <dt>V1 · 29–30/09</dt><dd>FastAPI e React, voz em português, IA (Gemini, OpenAI ou Anthropic), rosto, tela de bloqueio e o primeiro reator.</dd>
         <dt>Atual. 1 e 2 · 30/09</dt><dd>Respostas instantâneas sem IA e o widget "Sobre mim".</dd>
@@ -1320,17 +1416,18 @@ td:first-child { font-weight: 600; white-space: nowrap; }
         <dt>4.4 · 04–05/11</dt><dd>A calma: central em espera só com o orbe, tela limpa no briefing e cabeçalho em três zonas. Depois, a planta blueprint, o reator em destaque, a abertura mais rápida e o Modo Torcedor com jogo de verdade, sem IA.</dd>
         <dt>4.5 · 05/11</dt><dd>A casa: JARVIS no celular (app Android com QR na Sentinela), uma central por pessoa (rosto + PIN) e acessibilidade.</dd>
         <dt>5.0 · 09/11</dt><dd>O lançamento: projeto no GitHub com testes automáticos e o app nas Releases, Meus Sites, escudos sempre visíveis, jogo antigo que sai da tela e aviso de versão nova.</dd>
+        <dt>5.1 · 10–11/11</dt><dd>Na web e por voz: central aberta pelo site, verificação rápida do rosto, LIGAR e ATUALIZAR, câmera lisa, pauta do briefing desde a saudação, "Jarvis" com a central aberta, conversa contínua, pesquisa automática, alarmes, lembretes com horários naturais e "Esqueci o PIN".</dd>
       </dl>
       <div class="credit">
         <svg width="34" height="34" aria-hidden="true" style="color:var(--core)"><use href="#nucleo" /></svg>
         <p>Escrito e desenvolvido por <b>Patrick Souza</b></p>
       </div>
-      <p class="colophon">Branding Book v1.8 · atualizado em 09/11/2026<br>Aplicado na central do JARVIS v5.0.0<br>Fontes do histórico: pastas Fase testes, JARVIS e JARVIS_V3_Original</p>
-      <div class="folio"><span>Histórico</span><span>p. 33</span></div>
+      <p class="colophon">Branding Book v1.9 · atualizado em 11/11/2026<br>Aplicado na central do JARVIS v5.1.0<br>Fontes do histórico: pastas Fase testes, JARVIS e JARVIS_V3_Original</p>
+      <div class="folio"><span>Histórico</span><span>p. 35</span></div>
     </div>
   </section>
 
-  <!-- ===================== XIV. GALERIA ===================== -->
+  <!-- ===================== XVIII. GALERIA ===================== -->
   <section class="spread" id="galeria" aria-labelledby="t-gal">
     <div class="page plate">
       <figure class="monitor">
@@ -1342,16 +1439,16 @@ td:first-child { font-weight: 600; white-space: nowrap; }
         <button type="button" data-kind="lock" style="--c:var(--amber)"><i></i>Bloqueio</button>
         <button type="button" data-kind="main" style="--c:var(--core)"><i></i>Central</button>
       </div>
-      <p class="caption">Prancha XVIII · <b>as telas de cada época</b></p>
-      <div class="folio"><span>p. 34</span></div>
+      <p class="caption">Prancha XIX · <b>as telas de cada época</b></p>
+      <div class="folio"><span>p. 36</span></div>
     </div>
     <div class="page">
-      <span class="eyebrow">Capítulo XVII</span>
+      <span class="eyebrow">Capítulo XVIII</span>
       <h2 id="t-gal">Galeria das versões</h2>
       <p class="lead">O mesmo reator no centro, do primeiro dia até a central de hoje.</p>
       <div class="g-grid"><button type="button" class="g-thumb" data-i="0" aria-label="Ver V1 em tamanho grande"><img alt=""><span><b>V1</b> · 29/09</span></button><button type="button" class="g-thumb" data-i="1" aria-label="Ver V2.1 em tamanho grande"><img alt=""><span><b>V2.1</b> · 01/10</span></button><button type="button" class="g-thumb" data-i="2" aria-label="Ver V2.2 em tamanho grande"><img alt=""><span><b>V2.2</b> · 07/10</span></button><button type="button" class="g-thumb" data-i="3" aria-label="Ver V3 em tamanho grande"><img alt=""><span><b>V3</b> · 20/10</span></button><button type="button" class="g-thumb" data-i="4" aria-label="Ver V4.0 em tamanho grande"><img alt=""><span><b>V4.0</b> · 28/10</span></button><button type="button" class="g-thumb" data-i="5" aria-label="Ver 4.1 em tamanho grande"><img alt=""><span><b>4.1</b> · 29/10</span></button></div>
       <p class="muted">Fotos tiradas abrindo o código de cada pasta num navegador de teste, com dados de exemplo e sem o backend original. As fontes aparecem trocadas por Inter, e o selo "OFFLINE" das versões mais novas vem desse teste.</p>
-      <div class="folio"><span>Galeria</span><span>p. 35</span></div>
+      <div class="folio"><span>Galeria</span><span>p. 37</span></div>
     </div>
   </section>
   <dialog class="lightbox" id="g-box" aria-label="Foto ampliada"><img id="g-box-img" alt=""><p id="g-box-cap"></p><button type="button" id="g-box-close" aria-label="Fechar">×</button></dialog>

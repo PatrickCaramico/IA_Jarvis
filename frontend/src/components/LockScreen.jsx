@@ -135,7 +135,8 @@ export default function LockScreen({
 
   // ---------------------------------------------------------------- PIN
   const pinBlock = phase === "pin" && pin ? (
-    <PinPad onSubmit={pin.onSubmit} onCancel={pin.onCancel} busy={pin.busy} message={pin.message} lockedUntil={pin.lockedUntil} />
+    <PinPad onSubmit={pin.onSubmit} onCancel={pin.onCancel} busy={pin.busy} message={pin.message} lockedUntil={pin.lockedUntil}
+      onForgot={pin.onForgot} title={pin.title} />
   ) : null;
 
   const phoneEntry = phoneApp && (phase === "ready" || phase === "failed");

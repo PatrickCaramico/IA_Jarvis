@@ -41,6 +41,7 @@ PERSONAL_FILES: tuple[tuple[str, str, str], ...] = (
     ("memory", "_PATH", "memoria.json"),
     ("tasks", "_TASKS_PATH", "tarefas.json"),
     ("reminders", "_REMINDERS_PATH", "lembretes.json"),
+    ("alarms", "_PATH", "alarmes.json"),
     ("routine", "DATA_PATH", "rotina.json"),
     ("tools", "_NOTES_PATH", "anotacoes.json"),
     ("tools", "_SHORTCUTS_PATH", "atalhos.json"),

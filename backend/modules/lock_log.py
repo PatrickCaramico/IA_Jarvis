@@ -27,7 +27,7 @@ MAX_INTRUDER_FILES = 20
 INTRUDER_MAX_AGE_S = 30 * 24 * 3600
 
 METHODS = {"face", "pin", "clap", "wake", "guest", "auto", "voice"}
-RESULTS = {"ok", "fail", "locked_out", "enter", "exit", "lock"}
+RESULTS = {"ok", "fail", "locked_out", "enter", "exit", "lock", "pin_reset"}  # pin_reset: V5.1
 
 _io_lock = threading.Lock()
 

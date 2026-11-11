@@ -19,7 +19,7 @@ class TestRemindersDateTime(unittest.TestCase):
 
     def test_parse_daily_recurrence(self):
         """Testa agendamento com recorrência diária: 'todo dia às 8h'."""
-        alvo, clean, recorrencia = _parse_datetime("todo dia as 8h")
+        alvo, clean, recorrencia, _dias = _parse_datetime("todo dia as 8h")
         self.assertIsNotNone(alvo)
         self.assertEqual(alvo.hour, 8)
         self.assertEqual(alvo.minute, 0)
@@ -28,9 +28,9 @@ class TestRemindersDateTime(unittest.TestCase):
     def test_parse_relative_minutes(self):
         """Testa parsing relativo: 'daqui a 15 minutos'."""
         agora = datetime.now()
-        alvo, clean, recorrencia = _parse_datetime("daqui a 15 minutos tomar agua")
+        alvo, clean, recorrencia, _dias = _parse_datetime("daqui a 15 minutos tomar agua")
         self.assertIsNotNone(alvo)
-        self.assertAlmostEqual((alvo - agora).total_seconds(), 900, delta=10)
+        self.assertAlmostEqual((alvo - agora).total_seconds(), 900, delta=70)  # V5.1: arredonda para o minuto seguinte
         self.assertIsNone(recorrencia)
 
     def test_postpone_reminder(self):

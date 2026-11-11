@@ -1,6 +1,6 @@
 # JARVIS — Comandos do dia a dia
 
-**Versão do projeto:** 5.0.0 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
+**Versão do projeto:** 5.1.0 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
 
 > Montado a partir do código do projeto. Se algum comando não responder como descrito, me avise que eu ajusto o guia.
 > Para a lista técnica de rotas, veja [API.md](API.md); para o `.env`, [CONFIGURACAO.md](CONFIGURACAO.md).
@@ -108,10 +108,26 @@ Palmeiras", "como está o tempo em Recife".
 | "Adiciona comprar pão" | Cria tarefa. |
 | "Quais são minhas tarefas?" | Lista as pendentes. |
 | "Completar tarefa 1" / "Apaga a tarefa 2" | Conclui ou remove. |
-| "Lembrete: reunião amanhã às 14 horas" | Cria lembrete com data e hora. |
-| "Quais são meus lembretes?" / "Cancele o lembrete 1" | Lista ou remove. |
+| "Me lembra de ligar para o dentista amanhã às 3 da tarde" | Cria lembrete com data e hora (V5.1 entende "às 6 e meia", "às 7 da noite", "meio-dia", "sexta às 10", "dia 15 às 9", "daqui a 2 horas"). |
+| "Me lembra toda terça às 19 de levar o lixo" / "Todo dia às 8 tomar o remédio" | Lembrete que repete (dias da semana ou todo dia). |
+| "Quais são meus lembretes?" | Lista os pendentes. |
+| "Cancela o lembrete do dentista" / "Cancela o lembrete das 15h" / "Apaga todos os lembretes" | Remove um só (pelo assunto ou pela hora) ou todos. |
 | "Anote: reunião com cliente na sexta" | Salva anotação. |
 | "O que eu anotei?" / "O que anotei sobre reunião?" | Lê ou busca anotações. |
+
+### Alarmes (V5.1, como a Alexa)
+
+| Exemplo | O que faz |
+| --- | --- |
+| "Jarvis, me acorda às 7" / "Alarme amanhã às 6 e meia" | Alarme único. Sem horário ("me acorda"), ele pergunta "Para que horas, senhor?". |
+| "Alarme de segunda a sexta às 6" / "Alarme todo dia às 7" / "Alarme no fim de semana às 9" | Alarme que repete. |
+| "Alarme às 16 para a reunião" | Alarme com nome (o nome não aparece com a central bloqueada). |
+| "Quais são meus alarmes?" | Lista os próximos. |
+| "Cancela o alarme das 7" / "Apaga todos os alarmes" | Remove um ou todos. |
+| Tocando: "Jarvis, parar" / "Já acordei" | Desliga (vale até com a central bloqueada). Ou o botão PARAR (ENTER). |
+| Tocando: "Soneca" / "Mais 5 minutos" | Adia 9 minutos (ou o tempo dito). Ou o botão SONECA (tecla S). |
+
+O alarme toca bipes no PC e, a cada 25 s, fala a hora ("Senhor, são 7 horas."). Sem resposta, desliga sozinho depois de 10 minutos. Se o PC estava desligado na hora, ele não toca atrasado (mais de 30 min).
 
 ### Timers e foco
 
@@ -194,7 +210,7 @@ Mostra o Palmeiras e o jogo atual/próximo, com escudos, notícias e grito de to
 
 ### Atualizações
 
-Em **Configurações > Manutenção**, use **Verificar atualizações** para consultar a release mais recente. A checagem automática é diária e em segundo plano; o PC não baixa nem instala atualizações sozinho. No Android, um aviso aparece quando o PC tem um APK mais novo; o download e a instalação são confirmados por você.
+**V5.1:** na tela de bloqueio, o botão **⟳ ATUALIZAR** baixa a versão nova do GitHub, avisa por voz ("Senhor, estou atualizando os meus sistemas") e reinicia sozinho; a central volta já na versão nova. Em **Configurações > Manutenção**, use **Verificar atualizações** para consultar a release mais recente. A checagem automática é diária e em segundo plano; o PC não baixa nem instala atualizações sozinho. No Android, um aviso aparece quando o PC tem um APK mais novo; o download e a instalação são confirmados por você.
 
 ### Lembretes de Água e Hidratação
 
@@ -224,6 +240,7 @@ ouvindo a palavra de ativação mesmo bloqueado.
 | "Bloqueia a tela" | Bloqueia o **Windows** (diferente de bloquear a central). |
 
 - **PIN:** se o rosto falhar, use o teclado na tela. 5 erros travam por 5 minutos.
+- **Esqueci o PIN (V5.1):** no teclado do PIN, "Esqueci o PIN" lê o seu rosto e, se for você, pede o PIN novo duas vezes. Também em Configurações > Bloqueio > ESQUECI O PIN. Sem câmera, rode o `Redefinir-PIN.bat` (apaga o PIN do dono, com cópia em `data\lock_pin.antigo.json`).
 - **Modo visitante** (se ligado em Configurações > Bloqueio): relógio, clima, música e perguntas públicas, sem acesso a nada pessoal. Sair exige rosto ou PIN.
 - **Bloqueio por ausência:** depois do tempo escolhido sem uso, avisa "Bloqueando em 30 s" e bloqueia (mexa o mouse para cancelar).
 

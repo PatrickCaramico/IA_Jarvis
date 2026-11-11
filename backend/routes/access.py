@@ -5,7 +5,7 @@ import asyncio
 import base64
 import time
 from typing import Any, Optional
-from fastapi import HTTPException
+from fastapi import HTTPException, Request
 from pydantic import BaseModel
 from config import settings
 from modules import face, prefs, spotify, sports_provider, water
@@ -128,6 +128,7 @@ async def auth_verify(req: Optional[VerifyRequest] = None) -> dict:
         )
         failures_note = ""
         if result["verified"]:
+            session.face_ok_at = time.monotonic()  # V5.1: libera "Esqueci o PIN" por alguns minutos
             if mode == "login":
                 access.unlock(method)
                 failures = lock_log.failures_before_last_success()
@@ -179,6 +180,13 @@ class PinSetRequest(BaseModel):
 
 class PinDeleteRequest(BaseModel):
     current_pin: str
+
+
+class PinResetRequest(BaseModel):
+    new_pin: str
+
+
+PIN_RESET_WINDOW_S = 180  # o rosto confirmado vale por 3 minutos para criar o PIN novo
 
 
 @router.get("/api/access")
@@ -252,6 +260,27 @@ async def pin_set(req: PinSetRequest) -> dict:
         st = await asyncio.to_thread(lock_pin.set_pin, req.new_pin, req.current_pin)
     except lock_pin.PinError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {**st, "weak": lock_pin.is_weak(req.new_pin)}
+
+
+@router.post("/api/auth/pin/reset")
+async def pin_reset(req: PinResetRequest, request: Request) -> dict:
+    """V5.1 "Esqueci o PIN": cria um PIN novo sem o atual, logo depois de confirmar o rosto.
+
+    Só no próprio PC (o rosto é lido pela webcam dele) e só até 3 min depois da confirmação.
+    Vale para a pessoa ativa (o rosto escolheu o perfil).
+    """
+    client = request.client.host if request.client else ""
+    if client not in {"127.0.0.1", "::1", "localhost", "testclient"}:
+        raise HTTPException(status_code=403, detail="Redefinir o PIN só pode ser feito no próprio PC.")
+    if not session.face_ok_at or time.monotonic() - session.face_ok_at > PIN_RESET_WINDOW_S:
+        raise HTTPException(status_code=403, detail="Confirme o seu rosto primeiro (botão Esqueci o PIN).")
+    try:
+        st = await asyncio.to_thread(lock_pin.reset_pin, req.new_pin)
+    except lock_pin.PinError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    session.face_ok_at = 0.0  # uma redefinição por confirmação
+    lock_log.add("face", "pin_reset")
     return {**st, "weak": lock_pin.is_weak(req.new_pin)}
 
 
