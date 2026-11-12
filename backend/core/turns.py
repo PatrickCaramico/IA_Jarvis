@@ -413,7 +413,7 @@ async def handle_turn(message: str, routine: bool, force_deep: bool = False) -> 
     # V4.3: "bom dia" (ou a rotina do botão) dispara o briefing em etapas, um card por assunto;
     # "boa noite" dispara o fechamento do dia no mesmo formato.
     # Vem antes das respostas instantâneas; frases longas ("bom dia, abre o spotify") seguem o fluxo normal.
-    mode = "morning" if routine else (briefing.request_mode(norm_cmd) if len(norm_cmd.split()) <= 6 else None)
+    mode = briefing.routine_mode() if routine else (briefing.request_mode(norm_cmd) if len(norm_cmd.split()) <= 6 else None)
     if mode and not force_deep:
         await runtime.manager.broadcast({"type": "reset"})
         await runtime.manager.broadcast({"type": "state", "state": "processing"})
@@ -423,8 +423,7 @@ async def handle_turn(message: str, routine: bool, force_deep: bool = False) -> 
             log.exception("Falha ao montar o briefing em etapas")
             if mode.startswith("topic:"):
                 return await finish_local("Não consegui montar essa tela agora, senhor.")
-            fallback = briefing.generate_evening_briefing if mode == "evening" else briefing.generate_daily_briefing
-            return await finish_local(await fallback())
+            return await finish_local(await briefing.text_for(mode)())
 
     # 1) Respostas instantâneas (cumprimentos, "quem te criou?", hora...)
     quick = quick_replies.match(message, name)

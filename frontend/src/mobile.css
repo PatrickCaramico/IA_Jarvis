@@ -184,3 +184,10 @@
 
 /* V6.0: no celular a lista de compras vem logo depois da conversa */
 @media (max-width: 760px) { .hl-root .hl-panel.hl-shop { order: 3; } }
+
+/* V6.5: TELAS + NOTÍCIAS no rodapé do celular sem encostar no microfone */
+@media (max-width: 520px) {
+  .hl-bottom .hl-btns { gap: 4px; }
+  .hl-bottom .hl-btns .hl-btn { padding: 6px 8px; font-size: 0.6rem; letter-spacing: 0.06em; }
+  .hl-bottom .hl-muted { font-size: 0.55rem; text-align: right; }
+}

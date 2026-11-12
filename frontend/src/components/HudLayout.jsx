@@ -17,6 +17,7 @@ import { startPolling } from "../hooks/usePolling.js";
 import useNow from "../hooks/useNow.js";
 import lazyComponent from "../utils/lazyComponent.jsx";
 import JarvisLogo from "./JarvisLogo.jsx";
+import NewsWindow from "./NewsWindow.jsx";
 
 // Carregados sob demanda (otimização 4.2: pacote inicial menor)
 const ScreensOverlay = lazyComponent(() => import("./ScreensOverlay.jsx"));
@@ -754,6 +755,13 @@ export default function HudLayout({
 }) {
   const [clock, todayLabel] = useBrasiliaClock();
   const [screensOpen, setScreensOpen] = useState(false);
+  // V6.5: janela de notícias (botão NOTÍCIAS e toque no aviso de notícia do celular)
+  const [newsOpen, setNewsOpen] = useState(false);
+  useEffect(() => {
+    const open = () => setNewsOpen(true);
+    window.addEventListener("jarvis-open-news", open);
+    return () => window.removeEventListener("jarvis-open-news", open);
+  }, []);
   const [leftOpen, setLeftOpen] = useState(true);
   const [booting, setBooting] = useState(true);
   // V4.3: durante o briefing e as telas por assunto a central fica limpa (classe hl-briefing):
@@ -1108,7 +1116,10 @@ export default function HudLayout({
 
       {/* ===== Barra inferior ===== */}
       <footer className="hl-bottom">
-        <button type="button" className="hl-btn" onClick={() => onOpenScreens ? onOpenScreens("command") : setScreensOpen(true)}>TELAS</button>
+        <span className="hl-btns">
+          <button type="button" className="hl-btn" onClick={() => onOpenScreens ? onOpenScreens("command") : setScreensOpen(true)}>TELAS</button>
+          <button type="button" className="hl-btn" onClick={() => setNewsOpen(true)}>NOTÍCIAS</button>
+        </span>
         <button
           type="button"
           className={`hl-mic ${listening ? "live" : ""}`}
@@ -1124,6 +1135,7 @@ export default function HudLayout({
         <span className="hl-muted">NUVEM · IA {services.ai === true ? "ONLINE" : "OFFLINE"}</span>
       </footer>
 
+      {newsOpen && <NewsWindow api={api} onClose={() => setNewsOpen(false)} />}
       {(screensOpen || Boolean(screensTab)) && (
         <ScreensOverlay
           api={api}

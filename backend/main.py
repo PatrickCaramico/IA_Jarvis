@@ -47,6 +47,7 @@ async def lifespan(app: FastAPI):
     runtime.track_service(watchers.water_watcher_loop())
     runtime.track_service(watchers.triggers_watcher_loop())
     runtime.track_service(watchers.notifications_watcher_loop())
+    runtime.track_service(watchers.news_watcher_loop())  # V6.5: notícias novas no celular
     runtime.track(tts.preload())  # V4.4: voz carrega depois que o servidor já está no ar
     yield
     for task in list(runtime.service_tasks):

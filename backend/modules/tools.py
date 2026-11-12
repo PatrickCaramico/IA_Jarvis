@@ -1504,13 +1504,11 @@ async def _h_briefing(message: str, norm: str, words: int, name: str) -> Optiona
     mode = briefing.request_mode(norm)
     if mode and mode.startswith("topic:"):
         return None  # telas por assunto só abrem pela frase curta (core/turns.py)
-    greeting_only = norm.startswith(("bom dia", "boa noite")) and not any(
+    greeting_only = norm.startswith(("bom dia", "boa tarde", "boa noite")) and not any(
         w in norm for w in ("resumo", "meu dia", "o dia", "pendente", "tarefa", "amanha", "briefing"))
     if mode is None or greeting_only:
         return None
-    if mode == "evening":
-        return await briefing.generate_evening_briefing()
-    return await briefing.generate_daily_briefing()
+    return await briefing.text_for(mode)()
 
 
 async def _h_logs(message: str, norm: str, words: int, name: str) -> Optional[str]:

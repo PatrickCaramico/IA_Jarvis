@@ -544,6 +544,7 @@
   font-size: 0.68rem;
 }
 .hl-bottom .hl-btn { justify-self: start; }
+.hl-bottom .hl-btns { justify-self: start; display: flex; gap: 6px; } /* V6.5: TELAS + NOTÍCIAS */
 .hl-bottom .hl-muted { justify-self: end; }
 .hl-mic {
   width: 50px;

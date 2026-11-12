@@ -15,6 +15,7 @@ const HIDDEN_KEY = "jarvis_briefing_hidden";
 // Frases curtas que abrem as telas (mesma lista de backend/modules/briefing_topics.py)
 export const VOICE_HINTS = [
   { say: "bom dia", icon: "☀" },
+  { say: "boa tarde", icon: "◐" }, // V6.5
   { say: "boa noite", icon: "☾" },
   { say: "notícias", icon: "◉" },
   { say: "notificações", icon: "◔" },
@@ -36,7 +37,14 @@ export function VoiceHints({ onSay, exclude = [], compact = false }) {
           key={h.say}
           type="button"
           className="bf-hint"
-          onClick={() => onSay && onSay(h.say)}
+          onClick={() => {
+            // V6.5: tocar em "notícias" abre a janela de notícias (falar "notícias" continua lendo o resumo)
+            if (h.say === "notícias") {
+              window.dispatchEvent(new CustomEvent("jarvis-open-news"));
+              return;
+            }
+            if (onSay) onSay(h.say);
+          }}
           title={`Fale "${h.say}" ou clique`}
           disabled={!onSay}
         >

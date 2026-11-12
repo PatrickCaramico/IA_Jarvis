@@ -198,6 +198,26 @@ async def water_watcher_loop() -> None:
             await asyncio.sleep(60)
 
 
+async def news_watcher_loop() -> None:
+    """V6.5: manchetes novas dos temas do briefing viram aviso no celular (sem falar no PC)."""
+    from modules import news_alerts
+
+    await asyncio.sleep(120)
+    while True:
+        try:
+            found = await asyncio.to_thread(news_alerts.check_once)
+            for theme, item in found:
+                title, body = news_alerts.notice_text(theme, item)
+                runtime.notify("news", title, body)
+            if found:
+                log.info("Notícias novas para o celular: %d", len(found))
+        except asyncio.CancelledError:
+            break
+        except Exception as exc:  # noqa: BLE001
+            log.warning("Erro em news_watcher_loop: %s", exc)
+        await asyncio.sleep(news_alerts.EVERY_SECONDS)
+
+
 TRIGGER_LOCKED_TEXT = "Tenho um aviso novo, senhor. Libere a central para ver os detalhes."
 
 

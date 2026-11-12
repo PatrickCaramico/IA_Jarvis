@@ -79,6 +79,7 @@ class PrefsRequest(BaseModel):
     voice_style: str | None = None  # V6.1
     briefing_news_themes: list[dict] | None = None  # V6.2
     voice_listener_enabled: bool | None = None  # V6.3: ouvido offline
+    news_notify_enabled: bool | None = None  # V6.5: notícias no celular
     ai_name: str | None = None
     color_theme: str | None = None
     background_style: str | None = None

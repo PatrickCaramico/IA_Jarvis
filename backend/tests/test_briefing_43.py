@@ -102,7 +102,7 @@ def test_morning_triggers():
     ("fechar o dia", "evening"),
     ("bom dia", "morning"),
     ("como esta meu dia", "morning"),
-    ("boa tarde", None),
+    ("boa tarde", "afternoon"),  # V6.5: resumo da tarde
 ])
 def test_request_mode(phrase, mode):
     assert briefing.request_mode(phrase) == mode

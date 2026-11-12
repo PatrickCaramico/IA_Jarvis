@@ -69,7 +69,7 @@ async def run_sequence(message: str, turn: int, data: dict, max_history: int) ->
     """Fala o briefing parte a parte. Libera o JARVIS (busy) ao terminar ou cancelar."""
     global _skip
     _skip = asyncio.Event()
-    if data.get("mode") in ("morning", "evening"):
+    if data.get("mode") in ("morning", "afternoon", "evening"):
         try:  # V5.4: "bom dia" pedido por voz também conta: a próxima entrada não repete o briefing
             from modules import entry_greeting
 
@@ -151,8 +151,7 @@ async def start(message: str, turn: int, max_history: int, mode: str = "morning"
 
         data = await briefing_topics.build(mode.split(":", 1)[1])
     else:
-        build = briefing.build_evening_briefing if mode == "evening" else briefing.build_morning_briefing
-        data = await build()
+        data = await briefing.build_for(mode)()
     if speech.canceled(turn):
         session.busy = False
         return {"status": "canceled"}

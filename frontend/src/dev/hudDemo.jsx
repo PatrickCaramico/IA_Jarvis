@@ -38,6 +38,17 @@ const DATA = {
   "/api/tasks": { tasks: [] },
   "/api/notifications": { items: [] },
   "/api/health": { status: "ok" },
+  // V6.5: janela de notícias
+  "/api/briefing/news-themes": { items: [
+    { title: "Tecnologia", query: "tecnologia", count: 1 },
+    { title: "Marvel", query: "Marvel", count: 3 },
+    { title: "Política", query: "política Brasil", count: 1 },
+  ] },
+  "/api/news/search": { items: [
+    { title: "Marvel confirma data do próximo filme dos Vingadores - Omelete", source: "Omelete", link: "#", published: new Date(Date.now() - 25 * 60000).toISOString() },
+    { title: "Nova série da Marvel ganha trailer com cenas inéditas - G1", source: "G1", link: "#", published: new Date(Date.now() - 3 * 3600000).toISOString() },
+    { title: "Bilheteria: filme do Quarteto Fantástico passa de US$ 500 milhões", source: "Terra", link: "#", published: new Date(Date.now() - 26 * 3600000).toISOString() },
+  ] },
   "/api/shopping": { items: [
     { id: 1, texto: "Leite", comprado: false }, { id: 2, texto: "Pão", comprado: false }, { id: 3, texto: "Café", comprado: true },
   ] },

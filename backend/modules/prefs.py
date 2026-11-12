@@ -43,6 +43,7 @@ _DEFAULTS: dict[str, Any] = {
     "voice_style": "natural",             # V6.1: natural | grave | classica | thalita | andrew
     "briefing_news_themes": [],           # V6.2: temas de notícias do "bom dia" ([] = padrões, com Marvel)
     "voice_listener_enabled": True,       # V6.3: ouvido offline ("Jarvis, ..." sem o navegador)
+    "news_notify_enabled": True,          # V6.5: manchetes novas dos temas viram aviso no celular
     "calendar_ics_url": "",               # V5.6: endereço secreto iCal do Google Agenda (alternativa ao OAuth)
     "countdowns": [],                     # V5.6: contagens regressivas na tela [{id, title, target, all_day}]                 # V5.4: briefing/pergunta do dia já feitos (vale para todos os aparelhos)
     "lock_cards": ["clock", "weather", "spotify"],   # cartões visíveis na tela de bloqueio

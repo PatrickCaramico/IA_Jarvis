@@ -111,14 +111,23 @@ def is_evening_request(norm: str) -> bool:
     return any(q in norm for q in EVENING_TRIGGERS)
 
 
+# V6.5: resumo da tarde
+AFTERNOON_TRIGGERS = ("boa tarde", "resumo da tarde", "briefing da tarde", "como esta minha tarde", "minha tarde")
+
+
+def is_afternoon_request(norm: str) -> bool:
+    return not is_evening_request(norm) and any(q in norm for q in AFTERNOON_TRIGGERS)
+
+
 def is_morning_request(norm: str) -> bool:
-    return not is_evening_request(norm) and any(q in norm for q in MORNING_TRIGGERS)
+    return (not is_evening_request(norm) and not is_afternoon_request(norm)
+            and any(q in norm for q in MORNING_TRIGGERS))
 
 
 def request_mode(norm: str, hour: int | None = None) -> str | None:
-    """Qual tela o pedido quer: morning, evening, topic:<assunto> ou None.
+    """Qual tela o pedido quer: morning, afternoon, evening, topic:<assunto> ou None.
 
-    "resumo" e "briefing" sozinhos dependem da hora (a partir das 18h, o fechamento).
+    "resumo" e "briefing" sozinhos dependem da hora (12h a 18h, a tarde; a partir das 18h, o fechamento).
     As telas por assunto ("notícias", "agenda"...) ficam em modules/briefing_topics.py.
     """
     from modules import briefing_topics
@@ -128,11 +137,13 @@ def request_mode(norm: str, hour: int | None = None) -> str | None:
         return f"topic:{topic}"
     if is_evening_request(norm):
         return "evening"
+    if is_afternoon_request(norm):
+        return "afternoon"
     if is_morning_request(norm):
         return "morning"
     if norm in ("resumo", "briefing"):
         hour = datetime.now().hour if hour is None else hour
-        return "evening" if hour >= 18 else "morning"
+        return "evening" if hour >= 18 else "afternoon" if hour >= 12 else "morning"
     return None
 
 
@@ -1004,3 +1015,140 @@ async def _simple_evening_briefing() -> str:
         "Tenha uma ótima noite e bom descanso!"
     ]
     return " ".join([p for p in partes if p]).strip()
+
+
+# ---------------------------------------------------------------------- V6.5: "boa tarde"
+AFTERNOON_TABS = [
+    {"id": "agenda", "label": "Resto do dia"},
+    {"id": "tarefas", "label": "Tarefas"},
+    {"id": "clima", "label": "Clima"},
+    {"id": "agua", "label": "Água"},
+    {"id": "email", "label": "E-mails"},
+    {"id": "noticias", "label": "Notícias"},
+]
+
+
+def _afternoon_closing(ahead: list[dict], pending: int, rain) -> str:
+    parts = []
+    if ahead:
+        parts.append(f"O próximo compromisso é {ahead[0]['title']}, às {ahead[0]['time']}.")
+    if pending:
+        parts.append("Se der, vale riscar mais uma tarefa antes do fim do expediente.")
+    if isinstance(rain, (int, float)) and rain >= 50:
+        parts.append("E leve o guarda-chuva na volta.")
+    return " ".join(parts) or "A tarde está tranquila. Qualquer coisa, é só chamar."
+
+
+async def build_afternoon_briefing() -> dict:
+    """V6.5: resumo da tarde ("boa tarde"): o que falta do dia, tarefas, clima, água, e-mails e notícias.
+
+    Mesmo formato dos outros briefings (segmentos com cards), mais curto que o "bom dia".
+    """
+    now = datetime.now()
+    user_name = face.get_name()
+    nome_str = f", {user_name}" if user_name else ""
+
+    async def safe(fn, *args, default=None):
+        try:
+            return await asyncio.to_thread(fn, *args)
+        except Exception as exc:  # noqa: BLE001
+            log.warning("Resumo da tarde: falha em %s: %s", getattr(fn, "__name__", fn), exc)
+            return default
+
+    from modules.tools import _fetch_weather
+
+    def calendar_events() -> list[dict]:
+        return calendar_hub.upcoming_events(days=1, limit=15) if calendar_hub.connected() else []
+
+    def news_for(theme: dict) -> list[dict]:
+        limit = max(3, int(theme.get("count") or 1) + 3)
+        if theme.get("topic"):
+            return news_radar.fetch_news_by_category(theme["topic"], limit=limit)
+        return news_radar.fetch_news_by_query(theme["query"], limit=limit)
+
+    themes = news_themes()
+    weather_res, events, tri, *news_lists = await asyncio.gather(
+        safe(_fetch_weather, settings.WEATHER_CITY),
+        safe(calendar_events, default=[]),
+        safe(email_triage.triage, default={"connected": False}),
+        *(safe(news_for, t, default=[]) for t in themes),
+    )
+
+    segments = []
+    agenda_seg = _agenda_segment(now, events or [], when="hoje")
+    agenda_seg["card"]["label"] = "AGENDA · RESTO DO DIA"
+    segments.append(agenda_seg)
+    pending_list = tasks.get_tasks(include_completed=False)
+    if pending_list:
+        tasks_seg = _tasks_segment(pending_list)
+        tasks_seg["speech"] = tasks_seg["speech"].replace("Ficaram", "Ainda falta" if len(pending_list) == 1 else "Ainda faltam", 1)
+        tasks_seg["progress"] = "Conferindo o que falta fazer..."
+        segments.append(tasks_seg)
+    weather_seg = _weather_segment(weather_res)
+    if weather_seg:
+        segments.append(weather_seg)
+    water_seg = _water_segment()
+    if water_seg:
+        segments.append(water_seg)
+    email_seg = _email_segment(tri or {"connected": False})
+    if (tri or {}).get("connected"):
+        segments.append(email_seg)
+    for theme, items in zip(themes, news_lists):
+        seg = _news_segment(theme, items or [])
+        if seg:
+            segments.append(seg)
+
+    greeting = f"Boa tarde{nome_str}. Aqui está o resumo da tarde de {_date_line(now)}."
+    ahead = [i for i in agenda_seg["card"]["items"]
+             if ":" in i["time"] and (_minutes_until(now, i["time"]) or 0) >= 0]
+    pending = len(pending_list)
+    if not ahead and not pending:
+        opening, opening_sub = "Tarde livre", "nada marcado e nenhuma tarefa pendente"
+        opening_speech = "A tarde está livre: nada marcado e nenhuma tarefa pendente."
+    else:
+        opening = "Resumo da tarde"
+        opening_sub = (f"{len(ahead)} compromisso{'s' if len(ahead) != 1 else ''} pela frente · "
+                       f"{pending} tarefa{'s' if pending != 1 else ''}")
+        opening_speech = ""
+    rain = weather_seg["card"].get("rain_probability") if weather_seg else None
+    closing = _afternoon_closing(ahead, pending, rain)
+
+    speech = " ".join(p for p in [greeting, opening_speech, *(s["speech"] for s in segments), closing] if p)
+    used_tabs = {s["tab"] for s in segments}
+    return {
+        "mode": "afternoon",
+        "title": "RESUMO DA TARDE",
+        "greeting": greeting,
+        "opening": opening,
+        "opening_sub": opening_sub,
+        "opening_speech": opening_speech,
+        "segments": segments,
+        "readiness": None,
+        "closing": closing,
+        "tabs": [t for t in AFTERNOON_TABS if t["id"] in used_tabs],
+        "speech": speech,
+    }
+
+
+async def generate_afternoon_briefing() -> str:
+    """Texto corrido do resumo da tarde (telas sem a sequência de cards)."""
+    try:
+        return (await build_afternoon_briefing())["speech"]
+    except Exception as exc:  # noqa: BLE001
+        log.warning("Resumo da tarde em segmentos falhou, usando o resumo simples: %s", exc)
+        return await _simple_daily_briefing()
+
+
+def routine_mode(hour: int | None = None) -> str:
+    """V6.5: o briefing da entrada/rotina acompanha a hora: de 12h às 18h, o resumo da tarde."""
+    hour = datetime.now().hour if hour is None else hour
+    return "afternoon" if 12 <= hour < 18 else "morning"
+
+
+def build_for(mode: str):
+    """Construtor do briefing de cada modo (morning | afternoon | evening)."""
+    return {"evening": build_evening_briefing, "afternoon": build_afternoon_briefing}.get(mode, build_morning_briefing)
+
+
+def text_for(mode: str):
+    return {"evening": generate_evening_briefing, "afternoon": generate_afternoon_briefing}.get(mode, generate_daily_briefing)

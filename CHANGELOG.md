@@ -2,6 +2,13 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 6.5.0 — 12 de novembro de 2026
+
+- **"Boa tarde":** resumo da tarde em etapas (`build_afternoon_briefing`, título RESUMO DA TARDE): o que falta da agenda de hoje, tarefas pendentes ("Ainda faltam…"), clima, água, e-mails (se conectados) e as notícias dos seus temas, com um fechamento ("O próximo compromisso é…"). "Resumo da tarde", "minha tarde" e "resumo" sozinho entre 12h e 18h também abrem. A entrada na central entre 12h e 18h faz o resumo da tarde (antes era o "bom dia" com "Boa tarde" na saudação). Atalho "boa tarde" ◐ na faixa DIGA.
+- **Janela de notícias:** botão NOTÍCIAS no rodapé (ou tocar em "notícias" na faixa DIGA) abre a janela com os temas do briefing em abas, busca de outro assunto (`GET /api/news/search?q=`) e manchetes com fonte e "há X min"; tocar abre a matéria.
+- **Notícias no celular:** a cada 45 min (fora das 22h às 7h), manchetes novas dos temas viram aviso no app (`modules/news_alerts.py`, `news_watcher_loop`, tipo `news`), no máximo 2 por tema por rodada e nunca a mesma duas vezes; na primeira vez só memoriza. Não fala no PC. Tocar no aviso abre a janela de notícias (`jarvis://news`). Liga/desliga na própria janela (`news_notify_enabled`).
+- **App de longe:** os avisos e a atualização do app também passam pelo túnel quando o app foi pareado por ele (`PcAddress`). APK 6.5.0.
+
 ## 6.4.1 — 12 de novembro de 2026
 
 - **App de longe pelo túnel:** o link de pareamento (`/api/mobile/pair?token=…`) aberto pelo túnel da Cloudflare leva o app ao site (Netlify) já falando com o PC pelo túnel (`?api=https://….trycloudflare.com`), e o botão de baixar o APK leva a chave (o APK passa pelo túnel). Só endereços `*.trycloudflare.com`; um Host forjado volta ao caminho de casa. Em casa, pareie de novo pelo QR ou pelo PIN. Teste em `test_tunnel_63.py`.

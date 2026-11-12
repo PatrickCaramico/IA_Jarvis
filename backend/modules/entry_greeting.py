@@ -52,7 +52,9 @@ def _save(st: dict) -> None:
 
 
 def briefing_command(now: datetime) -> str:
-    return "boa noite" if now.hour >= 18 or now.hour < 4 else "bom dia"
+    if now.hour >= 18 or now.hour < 4:
+        return "boa noite"
+    return "boa tarde" if now.hour >= 12 else "bom dia"  # V6.5: resumo da tarde
 
 
 def briefing_pending(now: Optional[datetime] = None) -> bool:

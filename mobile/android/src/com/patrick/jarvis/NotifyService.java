@@ -109,9 +109,9 @@ public class NotifyService extends Service {
         if (saved.isEmpty()) return null;
         Uri u = Uri.parse(saved);
         String token = u.getQueryParameter("token");
-        if (u.getHost() == null || token == null) return null;
-        return u.getScheme() + "://" + u.getHost() + ":8000/api/mobile/notifications?since=" + since
-                + "&token=" + Uri.encode(token);
+        String base = PcAddress.base(u); // V6.5: Wi-Fi de casa (IP:8000) ou túnel (https)
+        if (base == null || token == null) return null;
+        return base + "/api/mobile/notifications?since=" + since + "&token=" + Uri.encode(token);
     }
 
     private void check() throws Exception {
@@ -143,14 +143,16 @@ public class NotifyService extends Service {
         if (items != null && since >= 0) {
             for (int i = 0; i < items.length(); i++) {
                 JSONObject n = items.getJSONObject(i);
-                if (!MainActivity.visible) show(n.optString("title", "JARVIS"), n.optString("body", ""));
+                if (!MainActivity.visible) show(n.optString("title", "JARVIS"), n.optString("body", ""), n.optString("kind", ""));
             }
         }
         prefs.edit().putLong(KEY_SINCE, latest).apply();
     }
 
-    private void show(String title, String body) {
+    private void show(String title, String body, String kind) {
         Intent open = new Intent(this, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        // V6.5: aviso de notícia abre a janela de notícias
+        if ("news".equals(kind)) open.setAction(Intent.ACTION_VIEW).setData(Uri.parse("jarvis://news"));
         PendingIntent pi = PendingIntent.getActivity(this, 0, open, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
         Notification.Builder b = Build.VERSION.SDK_INT >= 26 ? new Notification.Builder(this, CH_ALERTS) : new Notification.Builder(this);
         b.setSmallIcon(R.mipmap.ic_launcher)

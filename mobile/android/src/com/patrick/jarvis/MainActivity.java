@@ -445,6 +445,12 @@ public class MainActivity extends Activity {
             if (!isHttp(currentUrl)) loadSavedOrSetup();
             return true;
         }
+        // V6.5: tocou no aviso de notícia: abre a janela de notícias
+        if ("news".equals(uri.getHost()) && savedUri() != null) {
+            queueJs(event("jarvis-open-news", null));
+            if (!isHttp(currentUrl)) loadSavedOrSetup();
+            return true;
+        }
         if ("say".equals(uri.getHost()) && savedUri() != null) {
             String text = uri.getQueryParameter("text");
             if (text != null && !text.trim().isEmpty() && text.length() <= 300) {
@@ -600,12 +606,12 @@ public class MainActivity extends Activity {
 
     private void checkForUpdate(String appUrl, boolean manual) {
         Uri paired = Uri.parse(appUrl);
-        String host = paired.getHost();
+        String base = PcAddress.base(paired); // V6.5: Wi-Fi de casa ou túnel
         if (updateInProgress) {
             reportUpdate(manual, "updating", "A atualização já está em andamento.");
             return;
         }
-        if (!isHttp(appUrl) || host == null || host.isEmpty()) {
+        if (!isHttp(appUrl) || base == null) {
             reportUpdate(manual, "error", "Este celular ainda não está conectado a um PC.");
             return;
         }
@@ -614,7 +620,7 @@ public class MainActivity extends Activity {
         new Thread(() -> {
             try {
                 java.net.HttpURLConnection connection = (java.net.HttpURLConnection)
-                        new java.net.URL("http://" + host + ":8000/api/mobile/info").openConnection();
+                        new java.net.URL(base + "/api/mobile/info").openConnection();
                 connection.setConnectTimeout(5000);
                 connection.setReadTimeout(7000);
                 connection.setRequestMethod("GET");
@@ -640,7 +646,8 @@ public class MainActivity extends Activity {
                 String phoneVersion = installedVersion();
                 if (info.optBoolean("available") && compareVersions(pcVersion, phoneVersion) > 0) {
                     reportUpdate(manual, "updating", "Atualizando o app para a versão " + pcVersion + "…");
-                    runOnUiThread(() -> startSelfUpdate(host, pcVersion));
+                    String apkUrl = base + "/api/mobile/app.apk" + PcAddress.tokenQuery(paired);
+                    runOnUiThread(() -> startSelfUpdate(apkUrl, pcVersion));
                 } else {
                     pendingUpdateHost = null;
                     reportUpdate(manual, "latest", "O app já está na versão mais nova (" + phoneVersion + ").");
@@ -657,11 +664,11 @@ public class MainActivity extends Activity {
      * - Na primeira vez, o Android pede "permitir instalar apps" para o JARVIS (uma vez só) e confirma a troca.
      * - Android 12+: depois que o próprio JARVIS instalou uma versão, as próximas entram sem perguntar.
      */
-    private void startSelfUpdate(String host, String pcVersion) {
+    private void startSelfUpdate(String apkUrl, String pcVersion) {
         if (isFinishing() || updateInProgress) return;
         if (Build.VERSION.SDK_INT >= 26 && !getPackageManager().canRequestPackageInstalls()) {
-            if (host.equals(pendingUpdateHost)) return; // já pediu a permissão nesta abertura
-            pendingUpdateHost = host;
+            if (apkUrl.equals(pendingUpdateHost)) return; // já pediu a permissão nesta abertura
+            pendingUpdateHost = apkUrl;
             new AlertDialog.Builder(this)
                     .setTitle("Atualizar o JARVIS sozinho")
                     .setMessage("O PC tem a versão " + pcVersion + ". Para o JARVIS se atualizar sozinho daqui para frente, "
@@ -671,7 +678,7 @@ public class MainActivity extends Activity {
                             startActivity(new Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
                                     Uri.parse("package:" + getPackageName())));
                         } catch (Exception e) {
-                            downloadApk(host);
+                            downloadApk(apkUrl);
                         }
                     })
                     .setNegativeButton("Agora não", null)
@@ -685,7 +692,7 @@ public class MainActivity extends Activity {
             try {
                 java.io.File apk = new java.io.File(getCacheDir(), "jarvis-update.apk");
                 java.net.HttpURLConnection c = (java.net.HttpURLConnection)
-                        new java.net.URL("http://" + host + ":8000/api/mobile/app.apk").openConnection();
+                        new java.net.URL(apkUrl).openConnection();
                 c.setConnectTimeout(8000);
                 c.setReadTimeout(30000);
                 if (c.getResponseCode() != 200) throw new java.io.IOException("HTTP " + c.getResponseCode());
@@ -756,9 +763,9 @@ public class MainActivity extends Activity {
         }
     }
 
-    private void downloadApk(String host) {
+    private void downloadApk(String apkUrl) {
         try {
-            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("http://" + host + ":8000/api/mobile/app.apk"));
+            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(apkUrl));
             intent.addCategory(Intent.CATEGORY_BROWSABLE);
             startActivity(intent);
         } catch (Exception ignored) {

@@ -146,7 +146,7 @@ NOTIFY_FEED: collections.deque[dict] = collections.deque(maxlen=50)
 
 
 def notify(kind: str, title: str, body: str) -> dict:
-    """Guarda um aviso para o celular. kind: reminder | water | trigger | fan."""
+    """Guarda um aviso para o celular. kind: reminder | water | trigger | fan | news."""
     item = {"id": next(_notify_ids), "ts": time.time(), "kind": kind, "title": title, "body": (body or "").strip()}
     NOTIFY_FEED.append(item)
     return item

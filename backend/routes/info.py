@@ -27,6 +27,20 @@ async def get_news(category: str = "tecnologia", limit: int = 8) -> dict:
     return {"category": category, "items": items}
 
 
+@router.get("/api/news/search")
+async def search_news(q: str, limit: int = 10) -> dict:
+    """V6.5: janela de notícias: manchetes de um tema livre (Google Notícias, sem IA)."""
+    q = (q or "").strip()[:80]
+    if not q:
+        raise HTTPException(status_code=400, detail="Diga um tema para buscar.")
+    try:
+        items = await asyncio.to_thread(news_radar.fetch_news_by_query, q, max(1, min(limit, 20)))
+    except Exception as exc:  # noqa: BLE001
+        log.warning("Busca de notícias falhou (%s): %s", q, exc)
+        raise HTTPException(status_code=502, detail="Não consegui carregar as notícias agora.") from exc
+    return {"query": q, "items": items}
+
+
 class VolumeRequest(BaseModel):
     level: int
 
