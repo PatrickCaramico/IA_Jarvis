@@ -12,6 +12,7 @@ Pedir "bom dia" por voz também conta como briefing feito.
 from __future__ import annotations
 
 import random
+import time
 from datetime import datetime
 from typing import Optional
 
@@ -25,6 +26,12 @@ QUICK_WELCOMES = [
     "Pronto quando o senhor estiver.",
 ]
 ASK_TEXT = "Bem-vindo de volta, senhor. Quer que eu repita o briefing de hoje ou prefere pular?"
+
+# V5.6.2: duas telas entrando juntas (aba antiga que reconectou + aba nova do Iniciar-JARVIS.bat, ou PC e
+# celular) recebiam cada uma a sua fala: a primeira o briefing, a segunda "quer que eu repita?". Agora, uma
+# entrada nos últimos SAME_ENTRY_SECONDS conta como a MESMA entrada: a segunda tela entra em silêncio.
+SAME_ENTRY_SECONDS = 120
+_last_decision_at = 0.0
 
 
 def _today(now: datetime) -> str:
@@ -56,10 +63,16 @@ def mark_briefed(now: Optional[datetime] = None) -> None:
 
 def decide(now: Optional[datetime] = None, rng: Optional[random.Random] = None) -> dict:
     """{"action": "briefing"|"ask"|"greet"|"none", "command"?, "text"?} e já registra a decisão."""
+    global _last_decision_at
     now = now or datetime.now()
     mode = prefs._load().get("lock_daily_summary") or "first_login"
     st = _state(now)
     command = briefing_command(now)
+
+    tick = time.monotonic()
+    if _last_decision_at and tick - _last_decision_at < SAME_ENTRY_SECONDS:
+        return {"action": "none"}  # outra tela acabou de entrar: esta fica em silêncio
+    _last_decision_at = tick
 
     if mode == "always" or (mode != "off" and not st["briefed"]):
         st["briefed"] = True

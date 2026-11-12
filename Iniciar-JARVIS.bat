@@ -130,7 +130,15 @@ if defined USE_VITE (
 
 rem Abre o painel assim que backend e frontend responderem (ate 60 s), sem espera fixa.
 powershell -NoProfile -Command "$d=(Get-Date).AddSeconds(60); while((Get-Date) -lt $d){ try { $null=Invoke-WebRequest -UseBasicParsing -TimeoutSec 2 'http://127.0.0.1:8000/api/health'; $t=New-Object Net.Sockets.TcpClient('127.0.0.1',5173); $t.Close(); exit 0 } catch { Start-Sleep -Milliseconds 250 } }; exit 1"
-if not defined FROM_SITE start "" "%OPEN_URL%"
+rem V5.6.2: se uma aba do JARVIS ja estava aberta, ela reconecta sozinha em poucos segundos; nesse caso
+rem nao abre outra (duas abas entrando juntas falavam duas vezes). Palmas (wake) sempre abrem.
+set "TAB_OPEN="
+if not defined WAKE if not defined FROM_SITE (
+  powershell -NoProfile -Command "$d=(Get-Date).AddSeconds(8); while((Get-Date) -lt $d){ try { $s=Invoke-RestMethod -TimeoutSec 2 'http://127.0.0.1:8000/api/lock/status'; if($s.devices -gt 0){ exit 0 } } catch {}; Start-Sleep -Milliseconds 500 }; exit 1"
+  if not errorlevel 1 set "TAB_OPEN=1"
+)
+if defined TAB_OPEN echo  [OK] A central ja estava aberta numa aba: ela reconectou sozinha.
+if not defined FROM_SITE if not defined TAB_OPEN start "" "%OPEN_URL%"
 
 echo.
 echo  ==============================================

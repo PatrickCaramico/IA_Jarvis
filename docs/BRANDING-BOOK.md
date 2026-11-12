@@ -60,7 +60,7 @@ nos módulos do backend.
 | --- | --- |
 | Assistente | JARVIS (o nome da IA pode ser trocado em Configurações) |
 | Módulo de escuta contínua | **Modo Sentinela** (mantido; as siglas propostas não foram adotadas) |
-| Versão exibida na central | `v5.6.1` (sem referências a marcas de terceiros, como "Stark") |
+| Versão exibida na central | `v5.6.2` (sem referências a marcas de terceiros, como "Stark") |
 | Lista de sites abertos por voz | **Meus Sites** (Configurações > Meus Sites) |
 | Resumo da manhã | **Briefing** (disparado por "bom dia") |
 | Resumo da noite | **Fechamento do dia** (disparado por "boa noite") |
@@ -515,6 +515,9 @@ que eu repita o briefing de hoje ou prefere pular?" UMA vez; depois, só uma sau
 anterior ("Bem-vindo de volta, senhor.", "De volta à central, senhor. Ao seu dispor.", "Sistemas prontos,
 senhor. Em que posso ajudar?", "Tudo em ordem por aqui, senhor.", "Pronto quando o senhor estiver.").
 O "Em que posso ajudar?" da entrada saiu (falava junto). Pedir "bom dia" por voz também conta.
+**V5.6.2:** duas telas entrando juntas (a aba que já estava aberta e a nova do Iniciar-JARVIS.bat, ou PC e
+celular) contam como UMA entrada: só a primeira fala, a outra entra em silêncio. E o Iniciar-JARVIS.bat não
+abre outra aba se a central já estava aberta (ela reconecta sozinha).
 
 **Central sempre pelo site (V5.4).** O `Iniciar-JARVIS.bat` e as palmas abrem a central no endereço do site
 (projeto-jarvis-ia.netlify.app/app/), o mesmo em qualquer aparelho; o endereço local (127.0.0.1:5173) fica
@@ -597,7 +600,7 @@ o PC tem um APK mais novo. Nada é baixado ou instalado sozinho.
 o orbe Núcleo girando devagar no topo (parado com "reduzir movimento"), "JARVIS" em Orbitron com brilho
 ciano, cartões de vidro azul-marinho com ícone em círculo de contorno (ciano; âmbar para segurança; verde
 para água e para o Modo Torcedor), capturas em moldura com cantos ciano e, no rodapé, o carimbo
-"J.A.R.V.I.S. · FOLHA · SITE · REV. v5.6.1" (a versão vem de `backend/version.py`). Botão principal ciano cheio ("VER NO GITHUB"); os outros só
+"J.A.R.V.I.S. · FOLHA · SITE · REV. v5.6.2" (a versão vem de `backend/version.py`). Botão principal ciano cheio ("VER NO GITHUB"); os outros só
 com borda. Logo abaixo, num quadro de borda tracejada âmbar, o botão "ABRIR MEU JARVIS" (borda âmbar, o "olhe aqui" da Sentinela), que abre a **mesma central do PC publicada no site** (`/app/`). Ela conversa com o JARVIS ligado no computador (backend em `127.0.0.1:8000`), então rosto, perfil, Modo Torcedor, rotina e agenda são os de sempre; na primeira vez, o Chrome pergunta se o site pode acessar a rede local (é o backend do próprio PC). Tom: o mesmo da central, e a página deixa claro que é só a vitrine ("O JARVIS roda no seu PC:
 voz, câmera, controle do sistema e os seus dados nunca passam por aqui."). A 404 diz "Procurei em toda a
 planta, senhor, e esta página não está aqui."
