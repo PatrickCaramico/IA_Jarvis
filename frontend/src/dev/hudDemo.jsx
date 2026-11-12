@@ -2,6 +2,7 @@
 // ?offline=1 mostra a tela de "PC desligado"; ?new=1 finge que é a 1ª vez neste navegador.
 const q = new URLSearchParams(window.location.search);
 const offline = q.get("offline") === "1";
+if (q.get("phone") === "1") window.__JARVIS_DEMO_PHONE__ = true; // mostra a barra do celular
 
 try {
   if (q.get("new") === "1") localStorage.removeItem("jarvis.lastLogin");

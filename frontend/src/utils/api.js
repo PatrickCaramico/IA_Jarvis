@@ -5,7 +5,8 @@ export const API_URL = import.meta.env.VITE_API_URL
 export const WS_URL = API_URL.replace(/^http/, "ws") + "/ws";
 
 // O backend roda nesta mesma máquina? (central aberta em localhost ou pelo site, falando com 127.0.0.1)
-export const BACKEND_ON_THIS_PC = ["localhost", "127.0.0.1", "[::1]", "::1"].includes(new URL(API_URL).hostname);
+export const BACKEND_ON_THIS_PC = ["localhost", "127.0.0.1", "[::1]", "::1"].includes(new URL(API_URL).hostname)
+  && !(typeof window !== "undefined" && window.__JARVIS_DEMO_PHONE__); // só a demo (hud-demo.html?phone=1) finge ser celular
 
 // Arquivos de public/ (escudos, sons): respeitam a pasta onde a central foi publicada (/ no PC, /app/ no site).
 export const publicUrl = (path) =>
@@ -29,6 +30,41 @@ function getStoredToken() {
 
 let currentJarvisToken = getStoredToken();
 
+// V5.7: identidade desta aba/aparelho. O PC manda a voz da resposta para quem pediu (celular) em vez
+// de tocar na caixa de som dele. Fora do PC, a preferência "voz neste aparelho" decide (padrão: sim).
+const CLIENT_KEY = "jarvis.client_id";
+export function clientId() {
+  try {
+    let id = sessionStorage.getItem(CLIENT_KEY);
+    if (!id) {
+      id = `c${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36)}`;
+      sessionStorage.setItem(CLIENT_KEY, id);
+    }
+    return id;
+  } catch {
+    return "csemarmazenamento";
+  }
+}
+const VOICE_KEY = "jarvis.voice.here";
+export function voiceHere() {
+  if (BACKEND_ON_THIS_PC) return false; // no próprio PC a voz já sai na caixa dele
+  try {
+    return localStorage.getItem(VOICE_KEY) !== "0";
+  } catch {
+    return true;
+  }
+}
+export function setVoiceHere(on) {
+  try {
+    localStorage.setItem(VOICE_KEY, on ? "1" : "0");
+  } catch {
+    /* sem armazenamento: vale só agora */
+  }
+}
+function voiceHeaders() {
+  return { "X-Jarvis-Client": clientId(), "X-Jarvis-Device": BACKEND_ON_THIS_PC ? "web" : voiceHere() ? "app" : "pc" };
+}
+
 export function getJarvisToken() {
   return currentJarvisToken || sessionStorage.getItem("jarvis_token") || "";
 }
@@ -48,6 +84,7 @@ export async function api(path, { timeout, ...options } = {}) {
   let res;
   const token = getJarvisToken();
   const headers = {
+    ...voiceHeaders(),
     ...(options.headers || {}),
   };
   if (options.body && !headers["Content-Type"]) {

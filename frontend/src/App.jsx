@@ -34,7 +34,8 @@ import { buildDailySummary, shouldSpeakSummary } from "./utils/lockSummary.js";
 import { statusSentence } from "./utils/waterMath.js";
 import { subscribeNow } from "./hooks/useNow.js";
 import { soundManager } from "./utils/soundEffects.js";
-import { API_URL, BACKEND_ON_THIS_PC, api, getJarvisToken, hasMemoryToken, publicUrl, setJarvisToken } from "./utils/api.js";
+import { API_URL, BACKEND_ON_THIS_PC, api, clientId, getJarvisToken, hasMemoryToken, publicUrl, setJarvisToken } from "./utils/api.js";
+import { enqueueHere } from "./utils/speakHere.js";
 import { scheduleDailyUpdateCheck } from "./utils/updateCheck.js";
 import { applyAccessibility, applyBackground, applyFanMode, applyTheme } from "./utils/theme.js";
 import { IS_JARVIS_APP } from "./utils/device.js";
@@ -499,6 +500,10 @@ export default function App() {
           readiness: msg.readiness,
           closing: msg.closing,
         }));
+        break;
+      case "speak_on_device":
+        // V5.7: a resposta a um pedido DESTE aparelho: a voz toca aqui (o PC ficou em silêncio)
+        if (msg.client_id && msg.client_id === clientId() && msg.text) enqueueHere(msg.text);
         break;
       case "countdowns":
         setCountdowns(Array.isArray(msg.items) ? msg.items : []); // V5.6: widget de contagem regressiva

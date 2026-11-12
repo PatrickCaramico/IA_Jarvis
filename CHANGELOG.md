@@ -2,6 +2,16 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 5.7.0 — 11 de novembro de 2026
+
+Uma voz só, e o celular com atalhos.
+
+- **A voz sai no aparelho que pediu:** a central manda em cada pedido quem ela é (`X-Jarvis-Client`, `X-Jarvis-Device`); o middleware guarda o destino (`core/voice_route.py`) e `speech.speak` manda a fala para aquele aparelho (evento `speak_on_device`, que toca o MP3 de `/api/tts` em fila) em vez da caixa do PC. Pedido no PC continua falando no PC. Vale para o briefing e as saudações de entrada; alarmes e lembretes continuam no PC. Antes, a resposta tocava no PC e no celular ao mesmo tempo.
+- **Escolha no celular:** "🔊 VOZ NESTE APARELHO / 🖥 VOZ NO PC" na barra do chat (substitui o alto-falante da 5.5). No próprio PC a barra some.
+- **Falar no PC:** "📢 FALAR NO PC" no celular: o PC lê em voz alta o que você digitar (`POST /api/speak/pc`).
+- **Atalhos rápidos no celular:** Bom dia, +250 ml de água, Tarefas, Alarmes, Clima, Pausar música e Bloquear PC (com confirmação).
+- Testes em `backend/tests/test_voice_57.py`.
+
 ## 5.6.3 — 11 de novembro de 2026
 
 - **Coluna esquerda do bloqueio mais completa:** embaixo do SISTEMAS, o Spotify (tocando, conectado sem música ou "Não conectado", em vez de sumir) e o cartão HOJE (nascer e pôr do sol, umidade, vento, luz do dia que resta e quanto do dia já passou, com a semana do ano). O clima de `/api/weather` passou a trazer `sunrise`, `sunset`, `humidity` e `wind`.

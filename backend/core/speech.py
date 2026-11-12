@@ -53,9 +53,19 @@ async def speak(text: str, release_busy: bool = True, idle_after: bool = True) -
     async def on_start() -> None:
         await runtime.manager.broadcast({"type": "state", "state": "speaking"})
 
+    from core import voice_route
+
+    device = voice_route.current()
     session.speaking += 1
     try:
-        await generate_and_play_speech(text, on_playback_start=on_start)
+        if device:
+            # V5.7: pedido do celular: a voz toca SÓ nele (ele busca o MP3 em /api/tts); o PC fica quieto.
+            # Espera o tempo aproximado da fala para o briefing em etapas manter o ritmo.
+            await on_start()
+            await runtime.manager.broadcast({"type": "speak_on_device", "client_id": device, "text": text})
+            await asyncio.sleep(voice_route.estimate_seconds(text))
+        else:
+            await generate_and_play_speech(text, on_playback_start=on_start)
         await runtime.manager.broadcast({"type": "step", "step": "tts", "status": "done"})
     except asyncio.CancelledError:
         raise  # cancelado pelo usuário: o /api/cancel já cuidou do estado da tela

@@ -1,6 +1,7 @@
 import NowPlaying from "./NowPlaying.jsx";
 import CountdownWidget from "./CountdownWidget.jsx";
-import { onSpeakingChange, setSpeakerOn, speakerOn, speakHere, stopHere } from "../utils/speakHere.js";
+import { clearQueue, onSpeakingChange, speakHere, stopHere } from "../utils/speakHere.js";
+import { BACKEND_ON_THIS_PC, setVoiceHere, voiceHere } from "../utils/api.js";
 import { IS_JARVIS_APP, appNotificationsEnabled, setAppNotifications } from "../utils/device.js";
 import { APP_VERSION } from "../utils/version.js";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -154,7 +155,7 @@ function SpeakButton({ id, text }) {
       type="button"
       className={`hl-speak${speaking ? " is-on" : ""}${failed ? " is-err" : ""}`}
       onClick={() => {
-        if (speaking) { stopHere(); return; }
+        if (speaking) { clearQueue(); stopHere(); return; }
         setFailed(false);
         speakHere(text, id).catch(() => setFailed(true));
       }}
@@ -166,46 +167,102 @@ function SpeakButton({ id, text }) {
   );
 }
 
-// V5.5: barra do chat: alto-falante (lê as respostas novas sozinho, neste aparelho) e, no app, avisos.
-function ChatTools() {
-  const [speaker, setSpeaker] = useState(speakerOn);
+// V5.7: atalhos do celular: um toque manda o pedido (ou faz o PC falar o que você digitar)
+const PHONE_ACTIONS = [
+  { icon: "☀", label: "Bom dia", say: "bom dia" },
+  { icon: "💧", label: "+250 ml", say: "bebi 250 ml de água" },
+  { icon: "☑", label: "Tarefas", say: "quais são minhas tarefas" },
+  { icon: "⏰", label: "Alarmes", say: "quais são meus alarmes" },
+  { icon: "☁", label: "Clima", say: "como está o clima" },
+  { icon: "⏸", label: "Pausar música", say: "pausar a música no spotify" },
+  { icon: "🔒", label: "Bloquear PC", say: "bloquear a tela", confirm: "Bloquear a tela do computador?" },
+];
+
+// V5.5/5.7: barra do chat. Fora do PC: onde a voz sai (neste aparelho ou no PC), avisos do app,
+// atalhos rápidos e "falar no PC". No próprio PC a voz já sai na caixa dele: a barra some.
+function ChatTools({ api, onCommand }) {
+  const [here, setHere] = useState(voiceHere);
   const [notif, setNotif] = useState(() => (IS_JARVIS_APP ? appNotificationsEnabled() : false));
-  useEffect(() => {
-    const onSpeaker = () => setSpeaker(speakerOn());
-    window.addEventListener("jarvis_speaker_change", onSpeaker);
-    return () => window.removeEventListener("jarvis_speaker_change", onSpeaker);
-  }, []);
+  const [pcMsg, setPcMsg] = useState(null); // null | "" (digitando) | texto
+  const [sent, setSent] = useState("");
+  if (BACKEND_ON_THIS_PC) return null;
+
+  const sayOnPc = async () => {
+    const text = (pcMsg || "").trim();
+    if (!text) return;
+    try {
+      await api("/api/speak/pc", { method: "POST", body: JSON.stringify({ text }) });
+      setSent("Falado no PC.");
+    } catch {
+      setSent("Não consegui falar no PC.");
+    }
+    setPcMsg(null);
+    setTimeout(() => setSent(""), 2500);
+  };
+
   return (
-    <div className="hl-chat-tools" role="toolbar" aria-label="Opções do chat">
-      <button
-        type="button"
-        className={`hl-chat-tool${speaker ? " is-on" : ""}`}
-        aria-pressed={speaker}
-        onClick={() => {
-          const next = !speaker;
-          setSpeakerOn(next);
-          setSpeaker(next);
-          if (!next) stopHere();
-          window.dispatchEvent(new Event("jarvis_speaker_change"));
-        }}
-        title="Ler as respostas em voz alta neste aparelho"
-      >
-        {speaker ? "🔊" : "🔈"} ALTO-FALANTE {speaker ? "LIGADO" : "DESLIGADO"}
-      </button>
-      {IS_JARVIS_APP && (
+    <div className="hl-chat-tools-wrap">
+      <div className="hl-chat-tools" role="toolbar" aria-label="Opções do chat">
         <button
           type="button"
-          className={`hl-chat-tool${notif ? " is-on" : ""}`}
-          aria-pressed={notif}
+          className={`hl-chat-tool${here ? " is-on" : ""}`}
+          aria-pressed={here}
           onClick={() => {
-            const next = !notif;
-            setAppNotifications(next);
-            setNotif(next);
+            const next = !here;
+            setVoiceHere(next);
+            setHere(next);
+            if (!next) { clearQueue(); stopHere(); }
           }}
-          title="Avisos do JARVIS na barra do celular (lembretes, água, alarmes, jogo)"
+          title="Onde a voz do JARVIS sai quando você pede por aqui"
         >
-          📳 AVISOS {notif ? "LIGADOS" : "DESLIGADOS"}
+          {here ? "🔊 VOZ NESTE APARELHO" : "🖥 VOZ NO PC"}
         </button>
+        {IS_JARVIS_APP && (
+          <button
+            type="button"
+            className={`hl-chat-tool${notif ? " is-on" : ""}`}
+            aria-pressed={notif}
+            onClick={() => {
+              const next = !notif;
+              setAppNotifications(next);
+              setNotif(next);
+            }}
+            title="Avisos do JARVIS na barra do celular (lembretes, água, alarmes, jogo)"
+          >
+            📳 AVISOS {notif ? "LIGADOS" : "DESLIGADOS"}
+          </button>
+        )}
+        <button type="button" className="hl-chat-tool" onClick={() => setPcMsg(pcMsg === null ? "" : null)} title="O PC fala em voz alta o que você digitar">
+          📢 FALAR NO PC
+        </button>
+      </div>
+      {pcMsg !== null && (
+        <div className="hl-pc-say">
+          <input
+            value={pcMsg}
+            onChange={(e) => setPcMsg(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") sayOnPc(); }}
+            placeholder="O que o PC deve falar? (ex.: O jantar está pronto!)"
+            maxLength={300}
+            autoFocus
+          />
+          <button type="button" className="hl-chat-tool is-on" onClick={sayOnPc} disabled={!pcMsg.trim()}>FALAR</button>
+        </div>
+      )}
+      {sent && <p className="hl-pc-sent" role="status">{sent}</p>}
+      {onCommand && (
+        <div className="hl-quick" aria-label="Atalhos rápidos">
+          {PHONE_ACTIONS.map((a) => (
+            <button
+              key={a.say}
+              type="button"
+              className="hl-quick-btn"
+              onClick={() => { if (!a.confirm || window.confirm(a.confirm)) onCommand(a.say); }}
+            >
+              <i aria-hidden="true">{a.icon}</i>{a.label}
+            </button>
+          ))}
+        </div>
       )}
     </div>
   );
@@ -738,16 +795,7 @@ export default function HudLayout({
 
   const bars = useSpectrum(jarvisState, listening);
   const log = useConversationLog(userText, response, error, responseCards);
-  // V5.5: alto-falante do chat ligado: cada resposta NOVA do JARVIS é lida neste aparelho
-  const spokenRef = useRef(null);
-  useEffect(() => {
-    const last = log[log.length - 1];
-    if (!last || last.role !== "jarvis" || last.old || !last.text) return;
-    if (spokenRef.current === null) { spokenRef.current = last.id; return; } // não lê o que já estava na tela
-    if (spokenRef.current === last.id) return;
-    spokenRef.current = last.id;
-    if (speakerOn()) speakHere(last.text, last.id).catch(() => {});
-  }, [log]);
+  // V5.7: a voz das respostas vem do PC para o aparelho que pediu (evento speak_on_device, App.jsx)
 
   // V4.2.2: a coluna direita (Clima e Canal Ativo) recolhe após 3 min sem conversa, como a esquerda.
   // V4.4: reabre só quando VOCÊ fala ou envia um pedido (não a cada fala do JARVIS) e nunca durante
@@ -1020,7 +1068,7 @@ export default function HudLayout({
         <WeatherPanel api={api} onMoveToSecondary={handleMoveToSecondary} />
         <NowPlaying api={api} variant="hud" controls />
         <Panel id="chat" title="JARVIS · CANAL ATIVO" tag={busy ? "OCUPADO" : "PRONTO"} className="hl-channel" onMoveToSecondary={handleMoveToSecondary}>
-          <ChatTools />
+          <ChatTools api={api} onCommand={onCommand} />
           <div className="hl-messages" ref={listRef} aria-live="polite" aria-label="Conversa">
             {log.length === 0 && !listening && (
               <p className="hl-msg hl-muted">Digite abaixo ou aperte a barra de espaço para falar.</p>

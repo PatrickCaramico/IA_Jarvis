@@ -88,7 +88,15 @@ async def security_middleware(request: Request, call_next):
     if not access.is_allowed(request.method, request.url.path):
         return JSONResponse(status_code=403, content=access.denial_detail())
 
-    return await call_next(request)
+    # V5.7: a voz da resposta sai no aparelho que pediu (celular) e não na caixa do PC
+    from core import voice_route
+
+    token_ctx = voice_route.set_target(voice_route.target_for(
+        request.headers.get("X-Jarvis-Client", ""), request.headers.get("X-Jarvis-Device", ""), is_local))
+    try:
+        return await call_next(request)
+    finally:
+        voice_route.reset(token_ctx)
 
 
 # O CORS é registrado DEPOIS do middleware de segurança para ficar por fora dele: assim as

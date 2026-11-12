@@ -1,4 +1,4 @@
-# Branding Book do JARVIS (v1.16, atualizado na V5.6.1 em 11/11/2026: cartão SISTEMAS no bloqueio; agenda dos próximos dias e contagem regressiva; celular com voz, foto e aparelhos conectados; entrada sem repetição, janela do perfil e QR que abre o app; entrada direta para quem já usa, reconexão sozinha e central enxuta no celular)
+# Branding Book do JARVIS (v1.17, atualizado na V5.7.0 em 11/11/2026: voz no aparelho que pediu e atalhos do celular; agenda dos próximos dias e contagem regressiva; celular com voz, foto e aparelhos conectados; entrada sem repetição, janela do perfil e QR que abre o app; entrada direta para quem já usa, reconexão sozinha e central enxuta no celular)
 
 Versão aprovada do Branding Book proposto no plano da 4.2. Há também uma versão ilustrada e animada: abra `docs/branding-book.html` no navegador. Tudo aqui já está aplicado no projeto;
 no fim de cada seção há onde isso vive no código.
@@ -60,7 +60,7 @@ nos módulos do backend.
 | --- | --- |
 | Assistente | JARVIS (o nome da IA pode ser trocado em Configurações) |
 | Módulo de escuta contínua | **Modo Sentinela** (mantido; as siglas propostas não foram adotadas) |
-| Versão exibida na central | `v5.6.3` (sem referências a marcas de terceiros, como "Stark") |
+| Versão exibida na central | `v5.7.0` (sem referências a marcas de terceiros, como "Stark") |
 | Lista de sites abertos por voz | **Meus Sites** (Configurações > Meus Sites) |
 | Resumo da manhã | **Briefing** (disparado por "bom dia") |
 | Resumo da noite | **Fechamento do dia** (disparado por "boa noite") |
@@ -574,6 +574,18 @@ cartão **HOJE · SEMANA 46**: nascer (☀ âmbar) e pôr do sol (☾ lilás) em
 do dia" (quanto falta para o sol se pôr, só de dia) e a barra de quanto do dia já passou. O clima fica sozinho à
 direita.
 
+**Voz no aparelho certo e atalhos do celular (V5.7).**
+- **Uma voz só:** pedido feito no celular fala SÓ no celular (o PC fica em silêncio); pedido feito no PC fala
+  no PC. Vale também para o briefing e as saudações de entrada. Avisos sem pedido (alarmes, lembretes, água)
+  continuam no PC.
+- **Barra do chat fora do PC** (no próprio PC ela some): pílula "🔊 VOZ NESTE APARELHO" (turquesa) / "🖥 VOZ NO PC"
+  para escolher onde a resposta fala; "📳 AVISOS" (só no app); "📢 FALAR NO PC" abre um campo ("O que o PC deve
+  falar? (ex.: O jantar está pronto!)") e o botão FALAR: o PC lê em voz alta ("Falado no PC." em verde).
+- **Atalhos rápidos:** fileira que rola para o lado, botões de canto arredondado (12 px) com ícone e texto:
+  ☀ Bom dia · 💧 +250 ml · ☑ Tarefas · ⏰ Alarmes · ☁ Clima · ⏸ Pausar música · 🔒 Bloquear PC (este pede
+  confirmação). Um toque manda o pedido como se você tivesse falado.
+- O 🔊 de cada resposta continua lendo aquela resposta no aparelho.
+
 ### Meus Sites, escudos e atualização (V5)
 
 **Meus Sites.** Nova aba em Configurações, no mesmo vidro azul das outras. Título "MEUS SITES" em
@@ -606,7 +618,7 @@ o PC tem um APK mais novo. Nada é baixado ou instalado sozinho.
 o orbe Núcleo girando devagar no topo (parado com "reduzir movimento"), "JARVIS" em Orbitron com brilho
 ciano, cartões de vidro azul-marinho com ícone em círculo de contorno (ciano; âmbar para segurança; verde
 para água e para o Modo Torcedor), capturas em moldura com cantos ciano e, no rodapé, o carimbo
-"J.A.R.V.I.S. · FOLHA · SITE · REV. v5.6.3" (a versão vem de `backend/version.py`). Botão principal ciano cheio ("VER NO GITHUB"); os outros só
+"J.A.R.V.I.S. · FOLHA · SITE · REV. v5.7.0" (a versão vem de `backend/version.py`). Botão principal ciano cheio ("VER NO GITHUB"); os outros só
 com borda. Logo abaixo, num quadro de borda tracejada âmbar, o botão "ABRIR MEU JARVIS" (borda âmbar, o "olhe aqui" da Sentinela), que abre a **mesma central do PC publicada no site** (`/app/`). Ela conversa com o JARVIS ligado no computador (backend em `127.0.0.1:8000`), então rosto, perfil, Modo Torcedor, rotina e agenda são os de sempre; na primeira vez, o Chrome pergunta se o site pode acessar a rede local (é o backend do próprio PC). Tom: o mesmo da central, e a página deixa claro que é só a vitrine ("O JARVIS roda no seu PC:
 voz, câmera, controle do sistema e os seus dados nunca passam por aqui."). A 404 diz "Procurei em toda a
 planta, senhor, e esta página não está aqui."
@@ -647,6 +659,7 @@ central completa, que agora conversa em cards.
 | **5.4 · sem repetição** | 11/11/2026 | Briefing e saudação de entrada decididos no PC para todos os aparelhos, janela do perfil que cobre a tela e rola, e o QR que abre o app já conectado, sem PIN. |
 | **5.5 · o celular de verdade** | 11/11/2026 | Aparelhos conectados na central, foto do perfil no app, botão 🔊 em cada resposta e alto-falante do chat que lê as respostas no próprio celular, e o liga/desliga dos avisos no app. |
 | **5.6 · a agenda** | 11/11/2026 | Agenda dos próximos 3 dias no briefing (Google pela API ou pelo endereço iCal), contagem regressiva por voz com widget na tela e o app que só se atualiza quando o app muda, sem abrir download. |
+| **5.7 · uma voz só** | 11/11/2026 | A voz sai só no aparelho que pediu (celular ou PC), escolha "voz neste aparelho / voz no PC", "falar no PC" pelo celular e atalhos rápidos no chat do celular. |
 
 O que atravessou todas as versões: tudo roda no PC do dono, o rosto é a chave, a voz é em
 português e o reator (depois Núcleo) fica no centro da tela.

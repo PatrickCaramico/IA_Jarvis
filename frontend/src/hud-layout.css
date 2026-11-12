@@ -1020,3 +1020,22 @@
 @keyframes cd-in { from { opacity: 0; transform: translateY(6px) scale(0.98); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .cd-card { animation: none; } }
 @media (max-width: 760px) { .cd-card { min-width: 0; width: 100%; } .cd-digits b { font-size: 1.4rem; } }
+
+/* V5.7: celular — atalhos rápidos e "falar no PC" */
+.hl-chat-tools-wrap { margin-bottom: 6px; }
+.hl-quick { display: flex; gap: 6px; overflow-x: auto; padding: 2px 0 6px; scrollbar-width: none; }
+.hl-quick::-webkit-scrollbar { display: none; }
+.hl-quick-btn {
+  flex: none; display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 12px;
+  border: 1px solid var(--hl-line); background: rgba(2, 8, 19, 0.6); color: #e6f7fb; font-size: 0.8rem; cursor: pointer;
+  transition: transform 120ms ease, border-color 140ms ease;
+}
+.hl-quick-btn i { font-style: normal; }
+.hl-quick-btn:hover { border-color: var(--hl-cy); }
+.hl-quick-btn:active { transform: scale(0.95); }
+.hl-pc-say { display: flex; gap: 6px; margin: 2px 0 6px; }
+.hl-pc-say input {
+  flex: 1; min-width: 0; padding: 9px 12px; border-radius: 10px; border: 1px solid var(--hl-line);
+  background: rgba(0, 0, 0, 0.35); color: #fff; font-size: 16px;
+}
+.hl-pc-sent { margin: 0 0 6px; font-size: 0.75rem; color: #6ee7b7; }

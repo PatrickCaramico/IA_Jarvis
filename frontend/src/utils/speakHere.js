@@ -62,6 +62,35 @@ export async function speakHere(text, id = "x") {
   await audio.play();
 }
 
+// V5.7: falas que o PC mandou para este aparelho (evento "speak_on_device"), uma depois da outra
+const queue = [];
+let draining = false;
+export function enqueueHere(text) {
+  queue.push(text);
+  if (draining) return;
+  draining = true;
+  (async () => {
+    while (queue.length) {
+      const next = queue.shift();
+      try {
+        await speakHere(next, `q${Date.now()}`);
+        await new Promise((resolve) => {
+          const a = current?.audio;
+          if (!a || a.ended || a.paused) { resolve(); return; }
+          a.addEventListener("ended", resolve, { once: true });
+          a.addEventListener("pause", resolve, { once: true });
+        });
+      } catch {
+        /* sem voz agora: segue para a próxima */
+      }
+    }
+    draining = false;
+  })();
+}
+export function clearQueue() {
+  queue.length = 0;
+}
+
 // Preferência deste aparelho: ler as respostas em voz alta automaticamente (alto-falante do chat)
 const KEY = "jarvis.chat.speaker";
 export function speakerOn() {

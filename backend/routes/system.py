@@ -254,6 +254,22 @@ async def speak_text(req: SpeakRequest) -> dict:
     return {"status": "ok"}
 
 
+@router.post("/api/speak/pc")
+async def speak_on_pc(req: SpeakRequest) -> dict:
+    """V5.7: "FALAR NO PC" do celular: o PC fala em voz alta o texto, mesmo o pedido vindo do celular."""
+    from core import voice_route
+
+    text = (req.text or "").strip()[:300]
+    if not text:
+        raise HTTPException(status_code=400, detail="Digite o que o PC deve falar.")
+    token = voice_route.set_target(None)  # força a caixa de som do PC
+    try:
+        runtime.track(speech.say_quietly(text))
+    finally:
+        voice_route.reset(token)
+    return {"status": "ok"}
+
+
 @router.get("/api/cameras")
 async def get_cameras() -> dict:
     """Detecta webcams conectadas e retorna o índice selecionado."""
