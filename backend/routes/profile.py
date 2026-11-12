@@ -77,6 +77,7 @@ async def save_profile(req: ProfileRequest) -> dict:
 # ---------------------------------------------------------------- preferências (Fase 1 e ajustes)
 class PrefsRequest(BaseModel):
     voice_style: str | None = None  # V6.1
+    briefing_news_themes: list[dict] | None = None  # V6.2
     ai_name: str | None = None
     color_theme: str | None = None
     background_style: str | None = None
@@ -170,6 +171,12 @@ async def update_prefs(req: PrefsRequest) -> dict:
         )
     if "a11y_text_scale" in patch and patch["a11y_text_scale"] not in prefs.A11Y_TEXT_SCALES:
         raise HTTPException(status_code=400, detail="a11y_text_scale inválido. Use 100, 115 ou 130.")
+    if "briefing_news_themes" in patch:
+        from modules.briefing import validate_news_themes
+
+        err = validate_news_themes(patch["briefing_news_themes"])
+        if err:
+            raise HTTPException(status_code=400, detail=err)
     if "voice_style" in patch:
         from modules.tts import VOICE_STYLES
 

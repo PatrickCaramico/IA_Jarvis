@@ -4,6 +4,7 @@ import LockSettings from "./settings/LockSettings.jsx";
 import WaterSettings from "./settings/WaterSettings.jsx";
 import SoundSettings from "./settings/SoundSettings.jsx";
 import VoiceSettings from "./settings/VoiceSettings.jsx";
+import BriefingNewsSettings from "./settings/BriefingNewsSettings.jsx";
 import MaintenanceSettings from "./settings/MaintenanceSettings.jsx";
 import AutomationSettings from "./settings/AutomationSettings.jsx";
 import PeopleSettings from "./settings/PeopleSettings.jsx";
@@ -429,6 +430,8 @@ export default function SettingsPanel({ api, onClose, onPrefsChange, onOpenMicro
             >
               {saving ? "SALVANDO..." : saved ? "✓ CONFIGURAÇÕES SALVAS!" : "SALVAR CONFIGURAÇÕES"}
             </button>
+            {/* V6.2: temas de notícias do "bom dia" (ex.: Marvel com as 3 principais) */}
+            <BriefingNewsSettings api={api} />
             <MaintenanceSettings api={api} onImported={(data) => { applyPrefs(data); onPrefsChange(data); }} />
           </div>
         )}

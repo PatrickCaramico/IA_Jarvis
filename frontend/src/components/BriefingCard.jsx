@@ -109,6 +109,22 @@ function EmailBody({ c }) {
 }
 
 function NewsBody({ c }) {
+  // V6.2: tema com várias manchetes (ex.: Marvel, as 3 principais): lista numerada
+  if (c.items?.length > 1) {
+    return (
+      <ol className="bf-news-list">
+        {c.items.map((it, i) => (
+          <li key={i}>
+            <span className="bf-num">{String(i + 1).padStart(2, "0")}</span>
+            <span className="bf-li-text">
+              <b>{it.title}</b>
+              {it.source && <small>{it.source}</small>}
+            </span>
+          </li>
+        ))}
+      </ol>
+    );
+  }
   const logo = c.domain ? `https://www.google.com/s2/favicons?domain=${encodeURIComponent(c.domain)}&sz=128` : "";
   return (
     <>

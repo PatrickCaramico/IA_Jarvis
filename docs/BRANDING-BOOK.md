@@ -1,4 +1,4 @@
-# Branding Book do JARVIS (v2.1, atualizado na V6.1.0 em 12/11/2026: voz mais natural, uma saudação só e barra de progresso; lista de compras, rotinas, digital, compartilhar e fora de casa; mini janelas de detalhes no bloqueio; fundo Universo, anel dourado, bloqueio completo e briefing no celular; voz no aparelho que pediu e atalhos do celular; agenda dos próximos dias e contagem regressiva; celular com voz, foto e aparelhos conectados; entrada sem repetição, janela do perfil e QR que abre o app; entrada direta para quem já usa, reconexão sozinha e central enxuta no celular)
+# Branding Book do JARVIS (v2.2, atualizado na V6.2.0 em 12/11/2026: temas de notícias no briefing (Marvel); voz mais natural, uma saudação só e barra de progresso; lista de compras, rotinas, digital, compartilhar e fora de casa; mini janelas de detalhes no bloqueio; fundo Universo, anel dourado, bloqueio completo e briefing no celular; voz no aparelho que pediu e atalhos do celular; agenda dos próximos dias e contagem regressiva; celular com voz, foto e aparelhos conectados; entrada sem repetição, janela do perfil e QR que abre o app; entrada direta para quem já usa, reconexão sozinha e central enxuta no celular)
 
 Versão aprovada do Branding Book proposto no plano da 4.2. Há também uma versão ilustrada e animada: abra `docs/branding-book.html` no navegador. Tudo aqui já está aplicado no projeto;
 no fim de cada seção há onde isso vive no código.
@@ -60,7 +60,7 @@ nos módulos do backend.
 | --- | --- |
 | Assistente | JARVIS (o nome da IA pode ser trocado em Configurações) |
 | Módulo de escuta contínua | **Modo Sentinela** (mantido; as siglas propostas não foram adotadas) |
-| Versão exibida na central | `v6.1.0` (sem referências a marcas de terceiros, como "Stark") |
+| Versão exibida na central | `v6.2.0` (sem referências a marcas de terceiros, como "Stark") |
 | Lista de sites abertos por voz | **Meus Sites** (Configurações > Meus Sites) |
 | Resumo da manhã | **Briefing** (disparado por "bom dia") |
 | Resumo da noite | **Fechamento do dia** (disparado por "boa noite") |
@@ -647,6 +647,12 @@ Nada pessoal: a tela continua bloqueada.
   ATUALIZAR do PC, por etapa real (Baixando · Preparando · Reiniciando · Carregando); no ATUALIZAR APP, o
   número exato do download ("Baixando a versão 6.1.0… 42%", depois "Instalando…").
 
+**Temas de notícias no briefing (V6.2).** Card "RADAR · MARVEL" (rótulo com o nome do tema) com a lista numerada
+"01, 02, 03" em JetBrains Mono, manchete em semibold e a fonte embaixo, rodapé "Google Notícias · 3 principais"
+(no card pequeno da fileira, as 2 primeiras). A fala: "Em Marvel, as três principais. Primeira: … Segunda: …
+Terceira: …". Nas Configurações, a seção "NOTÍCIAS DO BRIEFING": uma linha por tema (nome, o que buscar, "3
+manchetes", ✕) e chips "＋ DC", "＋ Palmeiras"… para adicionar com um toque.
+
 ### Meus Sites, escudos e atualização (V5)
 
 **Meus Sites.** Nova aba em Configurações, no mesmo vidro azul das outras. Título "MEUS SITES" em
@@ -679,7 +685,7 @@ o PC tem um APK mais novo. Nada é baixado ou instalado sozinho.
 o orbe Núcleo girando devagar no topo (parado com "reduzir movimento"), "JARVIS" em Orbitron com brilho
 ciano, cartões de vidro azul-marinho com ícone em círculo de contorno (ciano; âmbar para segurança; verde
 para água e para o Modo Torcedor), capturas em moldura com cantos ciano e, no rodapé, o carimbo
-"J.A.R.V.I.S. · FOLHA · SITE · REV. v6.1.0" (a versão vem de `backend/version.py`). Botão principal ciano cheio ("VER NO GITHUB"); os outros só
+"J.A.R.V.I.S. · FOLHA · SITE · REV. v6.2.0" (a versão vem de `backend/version.py`). Botão principal ciano cheio ("VER NO GITHUB"); os outros só
 com borda. Logo abaixo, num quadro de borda tracejada âmbar, o botão "ABRIR MEU JARVIS" (borda âmbar, o "olhe aqui" da Sentinela), que abre a **mesma central do PC publicada no site** (`/app/`). Ela conversa com o JARVIS ligado no computador (backend em `127.0.0.1:8000`), então rosto, perfil, Modo Torcedor, rotina e agenda são os de sempre; na primeira vez, o Chrome pergunta se o site pode acessar a rede local (é o backend do próprio PC). Tom: o mesmo da central, e a página deixa claro que é só a vitrine ("O JARVIS roda no seu PC:
 voz, câmera, controle do sistema e os seus dados nunca passam por aqui."). A 404 diz "Procurei em toda a
 planta, senhor, e esta página não está aqui."
@@ -725,6 +731,7 @@ central completa, que agora conversa em cards.
 | **5.9 · os detalhes** | 12/11/2026 | Todo cartão da tela de bloqueio abre uma mini janela com mais detalhes (sistemas, Spotify, hoje, clima com amanhã, mercado e manchetes). |
 | **6.0 · o dia a dia** | 12/11/2026 | Lista de compras por voz com caixinhas, rotinas em 1 comando (dormir, saindo de casa), entrar no app com a digital, compartilhar com o JARVIS, atalhos e botão na cortina do Android e acesso fora de casa pelo Tailscale. |
 | **6.1 · a voz** | 12/11/2026 | Uma saudação só ao entrar, voz menos robótica com estilos (Natural, Grave, Clássica, Thalita, Andrew) e barra de progresso 0–100% nas atualizações do PC e do app. |
+| **6.2 · as notícias** | 12/11/2026 | Temas de notícias escolhidos no briefing, com quantas manchetes ler (Marvel com as 3 principais), e o levantamento do que depende do navegador. |
 
 O que atravessou todas as versões: tudo roda no PC do dono, o rosto é a chave, a voz é em
 português e o reator (depois Núcleo) fica no centro da tela.

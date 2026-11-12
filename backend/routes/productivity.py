@@ -285,6 +285,12 @@ async def delete_countdown(countdown_id: int) -> dict:
     return {"removed": removed, "items": countdowns.list_countdowns()}
 
 
+@router.get("/api/briefing/news-themes")
+async def briefing_news_themes() -> dict:
+    """V6.2: temas de notícias do "bom dia" em uso (os do usuário ou os padrões) e sugestões."""
+    return {"items": briefing.news_themes(), "defaults": briefing.DEFAULT_NEWS_THEMES}
+
+
 @router.post("/api/briefing/entry")
 async def briefing_entry() -> dict:
     """V5.4: ao entrar na central, o PC decide (para todos os aparelhos juntos): briefing, perguntar ou saudar."""

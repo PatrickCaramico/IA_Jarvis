@@ -36,7 +36,7 @@ def offline(monkeypatch, isolated_data):
 def test_segments_follow_the_video_order(offline):
     data = asyncio.run(briefing.build_morning_briefing())
     kinds = [s["card"]["kind"] for s in data["segments"]]
-    assert kinds == ["weather", "agenda", "email", "news", "news", "news", "health"]
+    assert kinds == ["weather", "agenda", "email", "news", "news", "news", "news", "health"]  # V6.2: + Marvel
     assert data["opening"] == "Sem desvios relevantes"
     weather = data["segments"][0]["card"]
     assert weather["title"] == "Maragogi" and weather["wind"] == 18.3 and weather["rain_probability"] == 62

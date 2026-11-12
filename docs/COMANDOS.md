@@ -1,6 +1,6 @@
 # JARVIS — Comandos do dia a dia
 
-**Versão do projeto:** 6.1.0 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
+**Versão do projeto:** 6.2.0 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
 
 > Montado a partir do código do projeto. Se algum comando não responder como descrito, me avise que eu ajusto o guia.
 > Para a lista técnica de rotas, veja [API.md](API.md); para o `.env`, [CONFIGURACAO.md](CONFIGURACAO.md).
@@ -128,6 +128,10 @@ Palmeiras", "como está o tempo em Recife".
 | Tocando: "Soneca" / "Mais 5 minutos" | Adia 9 minutos (ou o tempo dito). Ou o botão SONECA (tecla S). |
 
 O alarme toca bipes no PC e, a cada 25 s, fala a hora ("Senhor, são 7 horas."). Sem resposta, desliga sozinho depois de 10 minutos. Se o PC estava desligado na hora, ele não toca atrasado (mais de 30 min).
+
+### Notícias do briefing (V6.2)
+
+O "bom dia" lê os temas de **Configurações › Geral › NOTÍCIAS DO BRIEFING** (Google Notícias, últimos 2 dias). Padrão: Tecnologia, Novos modelos de IA, Política e **Marvel com as 3 principais**. Cada tema escolhe de 1 a 5 manchetes; ideias prontas com um toque (DC, Palmeiras, Games, Fórmula 1, Bitcoin, Séries e filmes, Espaço, Star Wars…).
 
 ### Lista de compras (V6.0)
 

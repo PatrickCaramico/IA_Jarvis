@@ -33,6 +33,54 @@ TABS = [
 ]
 
 # Um card por tema. "topic" usa as seções do Google News; "query" usa a busca por tema livre.
+# V6.2: temas do "bom dia" escolhidos pelo usuário (Configurações > Geral > Notícias do briefing).
+# Cada tema: {"title", "query" (busca no Google Notícias) ou "topic" (seção), "count" (1 a 5 manchetes)}.
+# Sem nada salvo, valem os padrões abaixo: os três de antes e Marvel com as 3 principais.
+MAX_NEWS_THEMES = 6
+DEFAULT_NEWS_THEMES = [
+    {"title": "Tecnologia", "topic": "tecnologia", "count": 1},
+    {"title": "Novos modelos de IA", "query": "novo modelo de inteligência artificial", "count": 1},
+    {"title": "Política", "query": "política Brasil", "count": 1},
+    {"title": "Marvel", "query": "Marvel", "count": 3},
+]
+
+
+def news_themes() -> list[dict]:
+    """Temas de notícias do briefing (os do usuário ou os padrões)."""
+    try:
+        from modules import prefs
+
+        user = prefs._load().get("briefing_news_themes")
+    except Exception:  # noqa: BLE001
+        user = None
+    themes = user if isinstance(user, list) and user else DEFAULT_NEWS_THEMES
+    out = []
+    for t in themes[:MAX_NEWS_THEMES]:
+        if not isinstance(t, dict) or not str(t.get("title", "")).strip():
+            continue
+        if not (t.get("query") or t.get("topic")):
+            continue
+        out.append({**t, "count": max(1, min(5, int(t.get("count") or 1)))})
+    return out
+
+
+def validate_news_themes(value) -> str | None:
+    """Valida o que vem das Configurações. Devolve a mensagem de erro ou None."""
+    if not isinstance(value, list) or len(value) > MAX_NEWS_THEMES:
+        return f"Até {MAX_NEWS_THEMES} temas."
+    for t in value:
+        if not isinstance(t, dict):
+            return "Tema inválido."
+        title = str(t.get("title", "")).strip()
+        query = str(t.get("query", "") or t.get("topic", "")).strip()
+        if not title or len(title) > 40 or not query or len(query) > 80:
+            return "Cada tema precisa de um nome (até 40 letras) e uma busca (até 80)."
+        if isinstance(t.get("count"), bool) or not isinstance(t.get("count", 1), int) or not 1 <= int(t.get("count", 1)) <= 5:
+            return "A quantidade de manchetes vai de 1 a 5."
+    return None
+
+
+# Temas fixos da tela "notícias" (briefing_topics) — o "bom dia" usa news_themes()
 NEWS_THEMES = [
     {"title": "Tecnologia", "topic": "tecnologia"},
     {"title": "Novos modelos de IA", "query": "novo modelo de inteligência artificial"},
@@ -271,9 +319,32 @@ def _email_segment(tri: dict) -> dict:
     return {"tab": "email", "progress": "Verificando e-mails importantes...", "speech": speech, "card": card}
 
 
+def _dedupe_titles(items: list[dict]) -> list[dict]:
+    """Tira manchetes quase iguais (o mesmo fato em dois sites)."""
+    import re
+    import unicodedata
+
+    def key(t: str) -> set[str]:
+        n = unicodedata.normalize("NFD", t.lower())
+        n = "".join(c for c in n if unicodedata.category(c) != "Mn")
+        return {w for w in re.findall(r"[a-z0-9]{4,}", n)}
+
+    out, seen = [], []
+    for it in items:
+        k = key(it.get("title", ""))
+        if any(len(k & s) >= max(3, int(0.6 * min(len(k), len(s)))) for s in seen):
+            continue
+        seen.append(k)
+        out.append(it)
+    return out
+
+
 def _news_segment(theme: dict, items: list[dict]) -> dict | None:
     if not items:
         return None
+    count = max(1, min(5, int(theme.get("count") or 1)))
+    if count > 1:
+        return _news_multi_segment(theme, _dedupe_titles(items)[:count])
     top = items[0]
     domain = urlparse(top.get("source_url") or "").netloc
     card = {
@@ -291,6 +362,37 @@ def _news_segment(theme: dict, items: list[dict]) -> dict | None:
     if card["source"]:
         speech += f" A informação é do {card['source']}."
     return {"tab": "noticias", "progress": "Atualizando o radar de notícias...", "speech": speech, "card": card}
+
+
+def _news_multi_segment(theme: dict, items: list[dict]) -> dict | None:
+    """V6.2: tema com várias manchetes (ex.: "as 3 principais sobre Marvel"): um card com a lista."""
+    if not items:
+        return None
+    top = items[0]
+    domain = urlparse(top.get("source_url") or "").netloc
+    card = {
+        "kind": "news",
+        "label": f"RADAR · {theme['title'].upper()}",
+        "title": theme["title"],
+        "headline": top["title"],
+        "source": top.get("source") or domain or "Google News",
+        "domain": domain,
+        "link": top.get("link", ""),
+        "published": top.get("published", ""),
+        "items": [{"title": i["title"], "source": i.get("source", ""), "link": i.get("link", "")} for i in items],
+        "footer": f"Google Notícias · {len(items)} principais",
+    }
+    n = len(items)
+    words = {2: "as duas principais", 3: "as três principais", 4: "as quatro principais", 5: "as cinco principais"}
+    titles = [i["title"].rstrip(".") for i in items]
+    if n == 1:
+        speech = f"Em {theme['title']}: {titles[0]}."
+    else:
+        speech = f"Em {theme['title']}, {words.get(n, 'as principais')}. Primeira: {titles[0]}."
+        middle = ["Segunda", "Terceira", "Quarta", "Quinta"]
+        for idx, t in enumerate(titles[1:], start=0):
+            speech += f" {middle[idx]}: {t}."
+    return {"tab": "noticias", "progress": f"Buscando as notícias de {theme['title']}...", "speech": speech, "card": card}
 
 
 def _health_segment(tele: dict) -> tuple[dict, dict | None]:
@@ -515,15 +617,18 @@ async def build_morning_briefing() -> dict:
         return calendar_hub.upcoming_events(days=4, limit=30) if calendar_hub.connected() else []
 
     def news_for(theme: dict) -> list[dict]:
-        if "topic" in theme:
-            return news_radar.fetch_news_by_category(theme["topic"], limit=3)
-        return news_radar.fetch_news_by_query(theme["query"], limit=3)
+        limit = max(3, int(theme.get("count") or 1) + 3)  # sobra para tirar repetidas
+        if theme.get("topic"):
+            return news_radar.fetch_news_by_category(theme["topic"], limit=limit)
+        return news_radar.fetch_news_by_query(theme["query"], limit=limit)
+
+    themes = news_themes()
 
     weather_res, events, tri, *news_lists = await asyncio.gather(
         safe(_fetch_weather, settings.WEATHER_CITY),
         safe(calendar_events, default=[]),
         safe(email_triage.triage, default={"connected": False}),
-        *(safe(news_for, t, default=[]) for t in NEWS_THEMES),
+        *(safe(news_for, t, default=[]) for t in themes),
     )
 
     segments = []
@@ -541,7 +646,7 @@ async def build_morning_briefing() -> dict:
             segments.append(extra)
     email_seg = _email_segment(tri or {"connected": False})
     segments.append(email_seg)
-    for theme, items in zip(NEWS_THEMES, news_lists):
+    for theme, items in zip(themes, news_lists):
         seg = _news_segment(theme, items or [])
         if seg:
             segments.append(seg)
