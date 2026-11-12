@@ -91,7 +91,7 @@ def clean_command(text: str) -> str:
 def should_listen(health: Optional[dict], status: Optional[dict], enabled: bool) -> bool:
     """O ouvido só atende com o backend no ar, a preferência ligada, o JARVIS calado
     e NENHUMA aba da central aberta no PC (celulares não contam)."""
-    if not enabled or not health or health.get("status") != "online":
+    if not enabled or not health or health.get("status") not in ("ok", "online"):
         return False
     if health.get("speaking"):
         return False

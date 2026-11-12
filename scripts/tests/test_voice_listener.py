@@ -37,7 +37,7 @@ def test_command_after_strips_leftovers_in_overlap():
 
 
 def test_should_listen_gates():
-    ok = {"status": "online", "speaking": False}
+    ok = {"status": "ok", "speaking": False}  # o que /api/health devolve de verdade
     assert vl.should_listen(ok, {"devices": 0, "phones": 0}, True)
     assert vl.should_listen(ok, {"devices": 1, "phones": 1}, True)  # só o celular: ouve
     assert not vl.should_listen(ok, {"devices": 2, "phones": 1}, True)  # aba no PC: a página atende
