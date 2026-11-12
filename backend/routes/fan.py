@@ -66,6 +66,31 @@ class FanToggleRequest(BaseModel):
     enabled: bool | None = None  # None = inverte
 
 
+BACKGROUNDS = ("blueprint", "space", "classic")
+
+
+class BackgroundRequest(BaseModel):
+    style: str | None = None  # sem estilo: passa para o próximo (Blueprint -> Universo -> Clássico)
+
+
+@router.post("/api/background")
+async def set_background(req: BackgroundRequest | None = None) -> dict:
+    """V5.9.1: troca o fundo pelo botão da tela de bloqueio.
+
+    Pública (vale com a central bloqueada), como o botão do Modo Torcedor: só muda o visual.
+    """
+    current = prefs.get_all().get("background_style") or "blueprint"
+    if req is not None and req.style:
+        if req.style not in BACKGROUNDS:
+            raise HTTPException(status_code=400, detail="Fundo inválido. Use blueprint, space ou classic.")
+        style = req.style
+    else:
+        i = BACKGROUNDS.index(current) if current in BACKGROUNDS else 0
+        style = BACKGROUNDS[(i + 1) % len(BACKGROUNDS)]
+    prefs.update(background_style=style)
+    return {"background_style": style}
+
+
 @router.post("/api/fan/toggle")
 async def toggle_fan_mode(req: FanToggleRequest | None = None) -> dict:
     """V4.4: liga/desliga o Modo Torcedor pelo botão da tela de bloqueio.

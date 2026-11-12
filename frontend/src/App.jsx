@@ -2254,6 +2254,18 @@ export default function App() {
           onUpdate={IS_JARVIS_APP ? updateApp : BACKEND_ON_THIS_PC ? updateJarvis : null}
           updateNote={appUpdateNote}
           phoneApp={IS_JARVIS_APP}
+          bgToggle={{
+            value: appPrefs.background_style || "blueprint",
+            onCycle: () => {
+              // V5.9.1: troca na hora (e lembra no navegador); o PC salva para os outros aparelhos
+              const order = ["blueprint", "space", "classic"];
+              const cur = appPrefs.background_style || "blueprint";
+              const next = order[(order.indexOf(cur) + 1) % order.length];
+              applyBackground(next);
+              setAppPrefs((p) => ({ ...p, background_style: next }));
+              api("/api/background", { method: "POST", body: JSON.stringify({ style: next }) }).catch(() => {});
+            },
+          }}
           fanToggle={{
             enabled: fanModeEnabled,
             busy: fanBusy,

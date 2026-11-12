@@ -575,3 +575,9 @@
 @keyframes ld-pop { from { opacity: 0; transform: translateY(8px) scale(0.97); } }
 @media (prefers-reduced-motion: reduce) { .ld-overlay, .ld-card { animation: none; } .lc-click { transition: none; } }
 @media (max-width: 520px) { .ld-overlay { place-items: end center; padding: 0; } .ld-card { width: 100%; border-radius: 18px 18px 0 0; max-height: 85dvh; } }
+
+/* V5.9.1: botão de fundo no bloqueio (mesmo formato do Modo Torcedor, ao lado dele) */
+.bp-corner { gap: 10px; }
+.bp-bg-icon { display: grid; place-items: center; font-size: 0.95rem; color: #c9f6ff; }
+.bp-bg-btn.is-space .bp-bg-icon { color: #c4b5fd; text-shadow: 0 0 8px rgba(196, 181, 253, 0.8); }
+.bp-bg-btn.is-classic .bp-bg-icon { color: #94a3b8; }

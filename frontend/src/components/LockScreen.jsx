@@ -54,11 +54,35 @@ function FanToggle({ fan }) {
   );
 }
 
+// V5.9.1: botão de fundo no bloqueio. Cada toque passa para o próximo: Blueprint -> Universo -> Clássico.
+const BG_LABEL = { blueprint: "BLUEPRINT", space: "UNIVERSO", classic: "CLÁSSICO" };
+const BG_ICON = { blueprint: "▦", space: "✦", classic: "◐" };
+function BgToggle({ bg }) {
+  if (!bg?.onCycle) return null;
+  const value = BG_LABEL[bg.value] ? bg.value : "blueprint";
+  return (
+    <button
+      type="button"
+      className={`bp-fan-btn bp-bg-btn is-${value}`}
+      onClick={(e) => { e.stopPropagation(); e.currentTarget.blur(); bg.onCycle(); }}
+      title="Trocar o fundo (Blueprint, Universo, Clássico)"
+      aria-label={`Fundo: ${BG_LABEL[value]}. Tocar para trocar`}
+    >
+      <span className="bp-fan-ball bp-bg-icon" aria-hidden="true">{BG_ICON[value]}</span>
+      <span className="bp-fan-txt">
+        <b>FUNDO</b>
+        <small>{BG_LABEL[value]}</small>
+      </span>
+    </button>
+  );
+}
+
 // V4.4: carimbo de planta técnica (só aparece com o fundo blueprint; ver blueprint.css).
-// O canto também leva o botão do Modo Torcedor, que aparece nos dois fundos.
-export function BlueprintStamp({ sheet = "BLOQUEIO", fan = null }) {
+// O canto também leva o botão do Modo Torcedor e (V5.9.1) o do fundo, que aparecem em todos os fundos.
+export function BlueprintStamp({ sheet = "BLOQUEIO", fan = null, bg = null }) {
   return (
     <div className="bp-corner">
+      <BgToggle bg={bg} />
       <FanToggle fan={fan} />
       <div className="bp-stamp" aria-hidden="true">
         <span className="bp-stamp-title">J.A.R.V.I.S.</span>
@@ -95,6 +119,7 @@ export default function LockScreen({
   introSound = "default",
   silent = false,
   fanToggle = null, // V4.4: { enabled, busy, onToggle } — botão do Modo Torcedor ao lado do carimbo
+  bgToggle = null, // V5.9.1: { value, onCycle } — botão de fundo ao lado do Modo Torcedor
   onNewProfile = null, // V4.5: "＋ NOVA PESSOA" (perfil próprio: rosto, PIN e preferências)
   onUpdate = null, // botão ATUALIZAR: no PC baixa a versão nova e reinicia; no app, atualiza o app (V5.7.1)
   updateNote = "", // V5.7.1: resposta do ATUALIZAR APP ("O app já está na versão mais nova…")
@@ -290,7 +315,7 @@ export default function LockScreen({
             alterar foto
           </button>
         )}
-        {phase !== "scanning" && phase !== "pin" ? <BlueprintStamp sheet="SENTINELA" fan={fanToggle} /> : <BlueprintStamp sheet="SENTINELA" />}
+        {phase !== "scanning" && phase !== "pin" ? <BlueprintStamp sheet="SENTINELA" fan={fanToggle} bg={bgToggle} /> : <BlueprintStamp sheet="SENTINELA" />}
         {/* V4.5: QR pequeno para baixar o app Android (só no modo rede) */}
         {cards?.api && phase !== "scanning" && phase !== "pin" && !phoneApp && <MobileAppQr api={cards.api} />}
       </div>
@@ -422,7 +447,7 @@ export default function LockScreen({
       <footer className="ls-footer">
         <span>JARVIS · NÚCLEO DE PROTOCOLOS AUTÔNOMOS · BRASÍLIA BR</span>
       </footer>
-      {phase !== "scanning" && phase !== "pin" ? <BlueprintStamp fan={fanToggle} /> : <BlueprintStamp />}
+      {phase !== "scanning" && phase !== "pin" ? <BlueprintStamp fan={fanToggle} bg={bgToggle} /> : <BlueprintStamp />}
     </div>
   );
 }

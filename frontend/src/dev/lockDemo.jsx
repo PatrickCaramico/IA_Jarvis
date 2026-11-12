@@ -92,6 +92,7 @@ function Demo() {
   // ?app=1: como aparece dentro do app do celular (botão ATUALIZAR APP)
   const phoneApp = q.get("app") === "1";
   const [note, setNote] = React.useState("");
+  const [bgVal, setBgVal] = React.useState(q.get("bg") === "space" ? "space" : q.get("bg") === "classic" ? "classic" : "blueprint");
   const toggle = () => setFan((v) => { applyFanMode(!v); return !v; });
   if (q.get("screen") === "newprofile") return <NewProfileScreen api={baseApi} onCancel={() => {}} onCreated={() => {}} />;
   if (q.get("screen") === "welcome") return <ProfileWelcome api={baseApi} name="Maria" onDone={() => {}} />;
@@ -109,6 +110,13 @@ function Demo() {
     onChangePhoto={() => {}}
     silent
     fanToggle={{ enabled: fan, busy: false, onToggle: toggle }}
+    bgToggle={{ value: bgVal, onCycle: () => {
+      const order = ["blueprint", "space", "classic"];
+      const next = order[(order.indexOf(bgVal) + 1) % order.length];
+      document.documentElement.dataset.bg = next === "classic" ? "classic" : "blueprint";
+      if (next === "space") document.documentElement.dataset.sky = "space"; else delete document.documentElement.dataset.sky;
+      setBgVal(next);
+    } }}
     onNewProfile={() => {}}
     onUpdate={() => { setNote("Procurando atualização no PC…"); setTimeout(() => setNote("O app já está na versão mais nova (5.7.1)."), 900); }}
     updateNote={note}

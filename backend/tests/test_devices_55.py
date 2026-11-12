@@ -72,3 +72,18 @@ def test_lock_public_info_works_locked(monkeypatch):
     data = TestClient(main.app).get("/api/lock/public-info").json()
     assert data["rates"][0]["code"] == "USD" and data["rates"][0]["bid"] == 5.5
     assert data["headline"] == {"title": "Manchete X", "source": "g1", "published": "", "category": "brasil", "more": []}
+
+
+def test_background_button_works_locked():
+    """V5.9.1: botão de fundo do bloqueio: rota pública que só troca o visual."""
+    from modules import prefs
+
+    access.reset_for_tests(access.LOCKED)
+    prefs.update(background_style="blueprint")
+    client = TestClient(main.app)
+    assert client.post("/api/background").json() == {"background_style": "space"}
+    assert client.post("/api/background").json() == {"background_style": "classic"}
+    assert client.post("/api/background").json() == {"background_style": "blueprint"}
+    assert client.post("/api/background", json={"style": "space"}).json() == {"background_style": "space"}
+    assert client.post("/api/background", json={"style": "neon"}).status_code == 400
+    assert prefs.get_all()["background_style"] == "space"
