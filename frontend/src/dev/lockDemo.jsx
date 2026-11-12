@@ -61,7 +61,15 @@ const fanApi = (path) => demoInfo(path) || (path === "/api/fan/match"
   : path === "/api/weather"
     ? Promise.resolve({ place: "São Paulo", temperature: 24, description: "Garoa leve", rain_probability: 96 })
     : offline());
-const baseApi = (path) => demoInfo(path) || offline();
+// V5.6.1: cartão SISTEMAS e clima também na demo
+const lockExtras = (path) => (path === "/api/health"
+  ? Promise.resolve({ boot_id: String(Date.now() - 134 * 60000), services: { ai: true, microphone: true, camera: true, internet: true } })
+  : path === "/api/lock/status"
+    ? Promise.resolve({ devices: 2, phones: 1, next_alarm: "amanhã às 07:00" })
+    : path === "/api/weather"
+      ? Promise.resolve({ place: "São Paulo", temperature: 19, description: "Tempo parcialmente nublado", rain_probability: 67 })
+      : null);
+const baseApi = (path) => demoInfo(path) || lockExtras(path) || offline();
 
 function Demo() {
   const [fan, setFan] = React.useState(fanOn);
@@ -84,7 +92,7 @@ function Demo() {
     fanToggle={{ enabled: fan, busy: false, onToggle: toggle }}
     onNewProfile={() => {}}
     onUpdate={() => {}}
-    cards={{ api: fan ? fanApi : baseApi, list: fan ? ["clock", "weather"] : [], fanModeEnabled: fan }}
+    cards={{ api: fan ? fanApi : baseApi, list: fan ? ["clock", "weather"] : ["clock", "weather"], fanModeEnabled: fan }}
     mic={sentinelOn ? null : { muted: true, onToggle: () => {} }}
     sentinel={sentinelOn ? {
       enabled: true,

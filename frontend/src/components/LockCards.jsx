@@ -10,6 +10,9 @@ export default function LockCards({ api, cards = [], fanModeEnabled = false, hid
   const [weather, setWeather] = useState(null);
   const [match, setMatch] = useState(null);
   const [water, setWater] = useState(null);
+  // V5.6.1: cartão SISTEMAS do lado esquerdo (serviços, tempo no ar, celular, próximo alarme). Nada pessoal.
+  const [health, setHealth] = useState(null);
+  const [status, setStatus] = useState(null);
   const want = (key) => cards.includes(key);
 
   const now = useNow(want("clock"));
@@ -22,14 +25,45 @@ export default function LockCards({ api, cards = [], fanModeEnabled = false, hid
       if (want("water")) api("/api/water").then((d) => active && setWater(d)).catch(() => {});
     };
     const stopPolling = startPolling(load, 10 * 60 * 1000);
-    const onWs = (e) => { if (e.detail?.type === "water_updated" && e.detail.data) setWater(e.detail.data); };
+    const loadStatus = () => {
+      api("/api/health").then((d) => active && setHealth(d)).catch(() => active && setHealth(null));
+      api("/api/lock/status").then((d) => active && setStatus(d)).catch(() => {});
+    };
+    const stopStatus = startPolling(loadStatus, 60 * 1000);
+    const onWs = (e) => {
+      if (e.detail?.type === "water_updated" && e.detail.data) setWater(e.detail.data);
+      if (e.detail?.type === "devices") api("/api/lock/status").then((d) => active && setStatus(d)).catch(() => {});
+    };
     window.addEventListener("jarvis_ws_event", onWs);
-    return () => { active = false; stopPolling(); window.removeEventListener("jarvis_ws_event", onWs); };
+    return () => { active = false; stopPolling(); stopStatus(); window.removeEventListener("jarvis_ws_event", onWs); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cards.join(","), fanModeEnabled]);
 
-  if (hidden || !cards.length) return null;
+  if (hidden) return null;
   const items = [];
+  if (!allRight && health) {
+    const svc = health.services || {};
+    const dots = [["ia", "IA", svc.ai], ["mic", "MIC", svc.microphone], ["cam", "CÂMERA", svc.camera], ["net", "INTERNET", svc.internet]];
+    const bootMs = Number(health.boot_id);
+    const upMin = Number.isFinite(bootMs) && bootMs > 1e12 ? Math.max(0, Math.floor((Date.now() - bootMs) / 60000)) : null;
+    const up = upMin == null ? "" : upMin < 60 ? `${upMin} min` : `${Math.floor(upMin / 60)}h ${String(upMin % 60).padStart(2, "0")}min`;
+    items.push(
+      <div className="lc-card lc-status" key="status">
+        <div className="lc-label">SISTEMAS · J.A.R.V.I.S.</div>
+        <div className="lc-status-dots">
+          {dots.map(([k, label, on]) => (
+            <span key={k} className={on ? "on" : "off"} title={`${label}: ${on ? "online" : "offline"}`}><i aria-hidden="true" />{label}</span>
+          ))}
+        </div>
+        <ul className="lc-status-list">
+          {up && <li><b>◉</b>No ar há {up}</li>}
+          <li><b>📱</b>{status?.phones ? `Celular conectado${status.phones > 1 ? ` (${status.phones})` : ""}` : "Nenhum celular conectado"}</li>
+          {status?.next_alarm && <li><b>◷</b>Alarme {status.next_alarm}</li>}
+        </ul>
+        <div className="lc-status-scan" aria-hidden="true" />
+      </div>,
+    );
+  }
   if (want("clock")) {
     items.push(
       <div className="lc-card" key="clock">
@@ -76,6 +110,7 @@ export default function LockCards({ api, cards = [], fanModeEnabled = false, hid
   if (!items.length) return null;
   // Clima à direita do orbe; relógio, jogo e água à esquerda (em telas estreitas, tudo embaixo)
   const right = allRight ? items : items.filter((el) => el.key === "weather" || el.key === "spotify");
+  // (o cartão SISTEMAS vai à esquerda, junto com relógio, jogo e água)
   const left = allRight ? [] : items.filter((el) => el.key !== "weather" && el.key !== "spotify");
   return (
     <div className="lc-wrap" aria-label="Informações da tela de bloqueio">

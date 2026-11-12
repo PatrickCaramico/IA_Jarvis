@@ -42,3 +42,16 @@ def test_tts_returns_mp3(monkeypatch):
     assert res.status_code == 200 and res.headers["content-type"] == "audio/mpeg" and res.content == b"ID3fake-mp3"
     assert TestClient(main.app).post("/api/tts", json={"text": "  "}).status_code == 400
     access.reset_for_tests(access.LOCKED)
+
+
+def test_lock_status_is_public_and_has_nothing_personal():
+    """V5.6.1: cartão SISTEMAS do bloqueio funciona bloqueado e não mostra nomes nem rótulos."""
+    from datetime import datetime, timedelta
+
+    from modules import alarms
+
+    access.reset_for_tests(access.LOCKED)
+    alarms.add_alarm(datetime.now() + timedelta(days=1), label="remédio secreto")
+    data = TestClient(main.app).get("/api/lock/status").json()
+    assert set(data) == {"devices", "phones", "next_alarm"}
+    assert data["next_alarm"].startswith("amanhã às") and "remédio" not in str(data)

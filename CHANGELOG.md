@@ -2,6 +2,10 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 5.6.1 — 11 de novembro de 2026
+
+- **Cartão SISTEMAS no bloqueio:** o lado esquerdo da tela de bloqueio ganhou um cartão com o estado da IA, do microfone, da câmera e da internet, há quanto tempo o JARVIS está no ar, se há celular conectado e a hora do próximo alarme. Nova rota pública `GET /api/lock/status`, sem nada pessoal (sem nomes de aparelhos nem rótulo do alarme).
+
 ## 5.6.0 — 11 de novembro de 2026
 
 A agenda.

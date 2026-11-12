@@ -359,6 +359,29 @@ async def enter(req: Optional[EnterRequest] = None) -> dict:
     return {"status": "ok"}
 
 
+@router.get("/api/lock/status")
+async def lock_status() -> dict:
+    """V5.6.1: cartão "SISTEMAS" do lado esquerdo do bloqueio. Nada pessoal: quantos aparelhos estão
+    conectados (sem nomes) e a HORA do próximo alarme (sem o rótulo)."""
+    from datetime import datetime
+
+    from core import runtime
+    from modules import alarms
+    from modules.when import describe
+
+    devices = runtime.manager.devices()
+    phones = sum(1 for d in devices if d["kind"] in ("app", "browser"))
+    next_alarm = None
+    try:
+        items = alarms.list_alarms()
+        if items:
+            at = datetime.strptime(items[0]["proximo"], "%Y-%m-%d %H:%M")
+            next_alarm = describe(at, None, datetime.now())
+    except Exception:  # noqa: BLE001 - sem alarmes legíveis: o cartão só não mostra a linha
+        next_alarm = None
+    return {"devices": len(devices), "phones": phones, "next_alarm": next_alarm}
+
+
 @router.get("/api/lock/summary-data")
 async def lock_summary_data() -> dict:
     """Dados extras do resumo do dia (seção 17.3): próximo jogo (Modo Torcedor) e água de ontem."""
