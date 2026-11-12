@@ -2,6 +2,11 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 6.5.10 — 12 de novembro de 2026
+
+- **Rodapé do bloqueio invertido (PC):** o carimbo J.A.R.V.I.S. foi para o canto inferior esquerdo e o CELULAR para a direita, ao lado do Modo Torcedor (também deixa de ficar embaixo do selo do Netlify). No celular e em telas pequenas, nada muda.
+- **Spotify do bloqueio com imagem:** parado ou desconectado, um disco de vinil no lugar do ícone (gira devagar quando conectado, com a dica "Jarvis, toca minha playlist"); tocando, a capa do álbum fica maior e o fundo do cartão ganha a capa desfocada.
+
 ## 6.5.9 — 12 de novembro de 2026
 
 - **ATUALIZAR APP no Xiaomi/HyperOS:** a instalação "por sessão" do Android ficava parada em 100% nesses celulares. Agora, com o app aberto, ele entrega o APK baixado ao instalador padrão do Android (a tela "Deseja atualizar este app?"), que funciona em qualquer celular (`ApkProvider`); em segundo plano continua a instalação silenciosa. APK 6.5.9.

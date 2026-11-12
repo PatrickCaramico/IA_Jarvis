@@ -161,14 +161,17 @@ function LockSpotify({ api }) {
   const { track } = useNowPlaying(api);
   if (track && (track.state === "playing" || track.state === "paused")) return <NowPlaying api={api} variant="lock" />;
   const off = !track || track.state === "off" || track.state === "error";
+  // V6.5.10: parado ou desconectado também tem "capa": um disco de vinil (gira devagar quando conectado)
   return (
-    <div className={`lc-card lc-spotify${off ? " is-off" : ""}`}>
+    <div className={`lc-card lc-spotify${off ? " is-off" : " is-idle"}`}>
       <div className="lc-label">SPOTIFY</div>
       <div className="lc-spotify-row">
-        <span className="lc-spotify-logo" aria-hidden="true">♫</span>
-        <div>
-          <div className="lc-value lc-small">{off ? "Não conectado" : "Conectado"}</div>
-          <div className="lc-sub lc-nocap">{off ? "Conecte em TELAS › Fontes de Dados" : "Nada tocando agora"}</div>
+        <span className="lc-vinyl" aria-hidden="true"><i /></span>
+        <div className="lc-spotify-txt">
+          <div className="lc-value lc-small">{off ? "Não conectado" : "Pronto para tocar"}</div>
+          <div className="lc-sub lc-nocap">
+            {off ? "Conecte em TELAS › Fontes de Dados" : "Diga \u201cJarvis, toca minha playlist\u201d"}
+          </div>
         </div>
       </div>
     </div>

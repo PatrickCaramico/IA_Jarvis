@@ -64,7 +64,11 @@ export default function NowPlaying({ api, variant = "lock", controls = false }) 
   };
 
   return (
-    <div className={`np np-${variant} ${playing ? "is-playing" : "is-paused"}`} aria-label="Tocando agora no Spotify">
+    <div
+      className={`np np-${variant} ${playing ? "is-playing" : "is-paused"}${track.image ? " has-art" : ""}`}
+      aria-label="Tocando agora no Spotify"
+      style={track.image ? { "--np-art": `url("${track.image}")` } : undefined}
+    >
       <div className="np-head">
         <span className="np-dot" aria-hidden="true" />
         <span>{playing ? "TOCANDO AGORA · SPOTIFY" : "SPOTIFY · PAUSADO"}</span>

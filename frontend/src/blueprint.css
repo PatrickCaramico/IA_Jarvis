@@ -379,3 +379,12 @@
   border: 2px solid rgba(245, 197, 66, 0.9);
   box-shadow: 0 0 14px rgba(245, 197, 66, 0.5), inset 0 0 12px rgba(245, 197, 66, 0.3);
 }
+
+/* V6.5.10: no PC, o carimbo J.A.R.V.I.S. vai para o canto inferior ESQUERDO e o CELULAR para o DIREITO
+   (ao lado do Modo Torcedor). No celular/tela pequena o carimbo some e fica como antes. */
+@media (min-width: 901px) and (min-height: 621px) {
+  [data-bg="blueprint"] .bp-stamp { position: fixed; left: 28px; bottom: 28px; }
+  .mqr-wrap { left: auto; right: 28px; align-items: flex-end; }
+  .mqr-chip { width: 160px; }
+  body:has(.mqr-wrap) .bp-corner { right: calc(28px + 160px + 12px); }
+}
