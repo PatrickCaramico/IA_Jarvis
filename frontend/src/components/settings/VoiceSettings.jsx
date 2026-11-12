@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Note, Section } from "./SettingsControls.jsx";
+import { Note, Section, Toggle } from "./SettingsControls.jsx";
 
 // V6.1: estilo da voz do JARVIS (aba Mídia & Foco). Tocar num estilo salva e já fala um exemplo.
 const STYLES = [
@@ -52,6 +52,19 @@ export default function VoiceSettings({ prefs, onPatch, api }) {
         })}
       </div>
       <Note>Toque num estilo para ouvir e usar. As falas curtas agora saem inteiras, sem picotar.</Note>
+      <Toggle
+        checked={prefs.voice_listener_enabled !== false}
+        onChange={async (on) => {
+          onPatch({ voice_listener_enabled: on });
+          try {
+            await api("/api/prefs", { method: "PATCH", body: JSON.stringify({ voice_listener_enabled: on }) });
+          } catch {
+            /* a mensagem de erro aparece no salvar */
+          }
+        }}
+        label="Ouvir “Jarvis” com o navegador fechado"
+        hint="Ouvido offline no PC (nada sai do computador). Fica quieto quando a central está aberta numa aba do PC."
+      />
     </Section>
   );
 }

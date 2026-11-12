@@ -2,6 +2,11 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 6.3.0 — 12 de novembro de 2026
+
+- **Ouvido offline:** "Jarvis, que horas são?" com o navegador **fechado**. `scripts/voice_listener.py` (Vosk, modelo pt-BR pequeno em `%USERPROFILE%\.jarvis-voice`, nada sai do PC) acorda com "Jarvis" e manda o pedido para `/api/chat`; a resposta sai pela caixa do PC. Fica quieto com a central aberta numa aba do PC (a página já atende), enquanto o JARVIS fala (`/api/health` ganhou `speaking`) e com a opção desligada (Configurações › Mídia & Foco, `voice_listener_enabled`). Só "Jarvis"? Bipa e ouve o pedido na frase seguinte. O `Iniciar-JARVIS.bat` liga quando o modelo existe; o `Parar-JARVIS.bat` desliga. Log em `logs/ouvido.log`. Pacotes: `scripts/requirements-ouvido.txt`.
+- **Acesso de longe por túnel:** conexões que chegam por túnel (Cloudflare, ngrok, proxies) nunca contam como "este PC": exigem a chave e não recebem a chave. O link pode levar o endereço do PC (`?api=https://….trycloudflare.com`, `?api=reset` volta ao normal). Longe do PC, a central entra pelo **PIN** (sem a verificação do rosto).
+
 ## 6.2.0 — 12 de novembro de 2026
 
 - **Temas de notícias no briefing:** o "bom dia" usa os temas de Configurações › Geral › NOTÍCIAS DO BRIEFING (`briefing_news_themes`, `GET /api/briefing/news-themes`), cada um com 1 a 5 manchetes. Padrão: os três de antes e **Marvel com as 3 principais** ("Em Marvel, as três principais. Primeira: …"), num card com a lista numerada; manchetes repetidas (o mesmo fato em dois sites) saem. Ideias prontas com um toque (DC, Palmeiras, Games, Fórmula 1, Bitcoin, Séries e filmes, Espaço, Star Wars…).

@@ -1,4 +1,4 @@
-# JARVIS sem o navegador aberto: o que funciona e o que falta (V6.2)
+# JARVIS sem o navegador aberto: o que funciona e o que falta (V6.2, ouvido na V6.3)
 
 Levantamento feito no código em 12/11/2026. O JARVIS tem duas partes:
 
@@ -16,6 +16,7 @@ Levantamento feito no código em 12/11/2026. O JARVIS tem duas partes:
 | App do celular inteiro | app Android | O celular **é** a tela: conversa, voz no celular, lista de compras, briefing. |
 | Ligar o JARVIS com 2 palmas | `scripts/clap_launcher.py` (Instalar-Palmas-no-Windows.bat) | Ouve o microfone pelo Windows e abre a central. |
 | Voz (falar) | `modules/tts.py` | A voz sai do backend, não do navegador. |
+| **"Jarvis, …" pelo microfone do PC (V6.3)** | `scripts/voice_listener.py` | Ouvido offline com Vosk: acorda com "Jarvis", manda o pedido ao chat e responde pela caixa. Fica quieto com a central aberta numa aba do PC. |
 
 ## Depende da aba aberta no PC
 
@@ -47,5 +48,10 @@ Levantamento feito no código em 12/11/2026. O JARVIS tem duas partes:
 mais o download do modelo Vosk (~50 MB) uma vez. **Custo no notebook:** um núcleo com uso baixo e contínuo
 enquanto escuta (o detector só "acorda" o reconhecimento completo depois do "Jarvis").
 
-**Resumo:** hoje, com a aba fechada, o JARVIS continua **avisando e falando** (alarmes, lembretes, água,
+> **Feito na V6.3:** o ouvido foi feito como `scripts/voice_listener.py` (processo separado, como as palmas),
+> ligado pelo `Iniciar-JARVIS.bat` quando o modelo está em `%USERPROFILE%\.jarvis-voice\vosk-model-small-pt-0.3`.
+> Pacotes: `pip install -r scripts/requirements-ouvido.txt`. Teste: `python scripts/voice_listener.py --test`.
+> Desligar: Configurações › Mídia & Foco › "Ouvir Jarvis com o navegador fechado".
+
+**Resumo (antes da V6.3):** com a aba fechada, o JARVIS continua **avisando e falando** (alarmes, lembretes, água,
 jogo, celular), mas **não escuta** pelo PC. Para escutar sem navegador, o passo é o ouvido offline no backend.

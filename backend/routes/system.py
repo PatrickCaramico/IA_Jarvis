@@ -39,6 +39,7 @@ async def health() -> dict:
         "provider": provider,
         "personality": personality,
         "busy": session.busy,
+        "speaking": session.speaking > 0,  # V6.3: o ouvido offline não escuta enquanto o JARVIS fala
         "has_profile": face.has_profile(),
         "timers": tools.active_timers(),
         "cooldown": {"active": in_cooldown, "remaining": remaining},

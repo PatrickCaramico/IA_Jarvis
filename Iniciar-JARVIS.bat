@@ -128,6 +128,13 @@ if defined USE_VITE (
   powershell -NoProfile -Command "Start-Process -FilePath '%PY%' -ArgumentList 'serve_frontend.py --host %HOST% --port 5173' -WorkingDirectory '%ROOT%scripts' -WindowStyle Hidden"
 )
 
+rem V6.3: ouvido offline ("Jarvis, ..." com o navegador fechado). So liga se o modelo Vosk estiver
+rem baixado (%USERPROFILE%\.jarvis-voice). Fica quieto sozinho quando a central esta aberta numa aba do PC.
+powershell -NoProfile -Command "$f=Join-Path '%ROOT%' 'logs\ouvido.pid'; if (Test-Path $f) { $i=Get-Content $f -ErrorAction SilentlyContinue; if ($i) { Stop-Process -Id $i -Force -ErrorAction SilentlyContinue }; Remove-Item $f -ErrorAction SilentlyContinue }"
+if exist "%USERPROFILE%\.jarvis-voice\vosk-model-small-pt-0.3" if exist "%BACKEND%\venv\Scripts\pythonw.exe" (
+  powershell -NoProfile -Command "Start-Process -FilePath '%BACKEND%\venv\Scripts\pythonw.exe' -ArgumentList 'voice_listener.py' -WorkingDirectory '%ROOT%scripts' -WindowStyle Hidden"
+)
+
 rem Abre o painel assim que backend e frontend responderem (ate 60 s), sem espera fixa.
 powershell -NoProfile -Command "$d=(Get-Date).AddSeconds(60); while((Get-Date) -lt $d){ try { $null=Invoke-WebRequest -UseBasicParsing -TimeoutSec 2 'http://127.0.0.1:8000/api/health'; $t=New-Object Net.Sockets.TcpClient('127.0.0.1',5173); $t.Close(); exit 0 } catch { Start-Sleep -Milliseconds 250 } }; exit 1"
 rem V5.6.2: se uma aba do JARVIS ja estava aberta, ela reconecta sozinha em poucos segundos; nesse caso

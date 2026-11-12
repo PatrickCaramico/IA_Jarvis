@@ -40,8 +40,9 @@ _DEFAULTS: dict[str, Any] = {
     # --- Tela de bloqueio (seção 17) ---
     "lock_daily_summary": "first_login",  # "off" | "first_login" | "always"
     "briefing_entry": {},
-    "voice_style": "natural",
-    "briefing_news_themes": [],           # V6.2: temas de notícias do "bom dia" ([] = padrões, com Marvel)             # V6.1: natural | grave | classica | thalita | andrew
+    "voice_style": "natural",             # V6.1: natural | grave | classica | thalita | andrew
+    "briefing_news_themes": [],           # V6.2: temas de notícias do "bom dia" ([] = padrões, com Marvel)
+    "voice_listener_enabled": True,       # V6.3: ouvido offline ("Jarvis, ..." sem o navegador)
     "calendar_ics_url": "",               # V5.6: endereço secreto iCal do Google Agenda (alternativa ao OAuth)
     "countdowns": [],                     # V5.6: contagens regressivas na tela [{id, title, target, all_day}]                 # V5.4: briefing/pergunta do dia já feitos (vale para todos os aparelhos)
     "lock_cards": ["clock", "weather", "spotify"],   # cartões visíveis na tela de bloqueio
@@ -92,6 +93,7 @@ PUBLIC_KEYS = {
     "sentinel_enabled", "sentinel_wake_words", "sentinel_show_clock", "sentinel_night_dim",
     "water_vessel", "sfx_volume", "sfx_mode",
     "a11y_text_scale", "a11y_high_contrast", "a11y_reduce_motion",
+    "voice_listener_enabled",  # V6.3: o ouvido offline lê sem a chave (nada pessoal)
 }
 
 LOCK_CARD_KEYS = ("clock", "weather", "spotify", "fan_match", "water")

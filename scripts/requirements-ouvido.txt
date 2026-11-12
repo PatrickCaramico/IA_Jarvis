@@ -1,0 +1,5 @@
+# Dependências SÓ do Ouvido offline (scripts/voice_listener.py, V6.3): "Jarvis, ..." sem o navegador.
+# Separadas de backend/requirements.txt para não arriscar o backend.
+vosk>=0.3.45
+sounddevice>=0.4.6
+numpy>=1.26
