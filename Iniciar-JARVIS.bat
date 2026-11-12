@@ -7,12 +7,18 @@ set "ROOT=%~dp0"
 set "BACKEND=%ROOT%backend"
 set "FRONTEND=%ROOT%frontend"
 
+rem V5.4.1: a central abre pelo site do Netlify (o mesmo endereco do celular e de qualquer PC).
+rem O site conversa com o backend deste PC. No modo dev (Iniciar-JARVIS-Dev.bat) ou com
+rem JARVIS_PAINEL_LOCAL=1, abre a interface local (http://127.0.0.1:5173) como antes.
+set "SITE_URL=https://projeto-jarvis-ia.netlify.app/app/"
+if "%JARVIS_DEV%"=="1" set "SITE_URL=http://127.0.0.1:5173/"
+if "%JARVIS_PAINEL_LOCAL%"=="1" set "SITE_URL=http://127.0.0.1:5173/"
 rem Parametro opcional "wake" (Ouvinte de Palmas): abre o painel ja iniciando o escaneamento facial.
-set "OPEN_URL=http://127.0.0.1:5173"
+set "OPEN_URL=%SITE_URL%"
 set "WAKE="
 if /i "%~1"=="wake" (
   set "WAKE=1"
-  set "OPEN_URL=http://127.0.0.1:5173/?wake=clap"
+  set "OPEN_URL=%SITE_URL%?wake=clap"
 )
 rem Parametro "site" (botao LIGAR O JARVIS da central do site, via Instalar-Botao-Ligar.bat):
 rem liga tudo, mas nao abre aba nova; a central do site ja aberta reconecta sozinha.

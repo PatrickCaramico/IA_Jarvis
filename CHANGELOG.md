@@ -7,6 +7,7 @@ Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 - **Entrada sem repetição:** "já fiz o briefing hoje" ficava salvo em cada navegador, então o site, a central do PC e o app repetiam o briefing inteiro, e toda reentrada perguntava de novo se repetia (junto com um "Em que posso ajudar?"). Agora o PC decide para todos (`modules/entry_greeting.py`, `POST /api/briefing/entry`): 1ª entrada do dia, o briefing; 2ª, pergunta uma vez; depois, uma saudação curta que nunca repete a anterior. "Bom dia" por voz também conta.
 - **Janela do perfil cortada no topo:** ela era desenhada dentro do cabeçalho (que tem efeito de vidro) e ficava presa a ele. Agora cobre a tela (portal no `<body>`), rola quando não cabe, fecha com Esc ou clique fora, vira uma coluna no celular e mostra a versão real no rodapé.
 - **QR que abre o app já conectado:** a página do QR de pareamento (Perfil › Acesso Mobile › App Android) abre o app sozinha, sem endereço nem PIN; sem o app instalado, volta oferecendo baixar o JARVIS.apk.
+- **Central sempre pelo site:** o `Iniciar-JARVIS.bat` e o `Abrir-Painel.bat` (também usado pelas palmas) abrem a central em https://projeto-jarvis-ia.netlify.app/app/, não mais em http://127.0.0.1:5173. No modo dev (`Iniciar-JARVIS-Dev.bat`) ou com `JARVIS_PAINEL_LOCAL=1`, continua a interface local.
 - **Endereço do PC no app:** aceita vírgula no lugar do ponto e avisa quando faltam os pontos ("192168158"), com uma dica para usar o QR. APK 5.4.0 gerado no PC.
 
 ## 5.3.0 — 11 de novembro de 2026

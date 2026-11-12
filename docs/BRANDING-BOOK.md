@@ -516,6 +516,10 @@ anterior ("Bem-vindo de volta, senhor.", "De volta à central, senhor. Ao seu di
 senhor. Em que posso ajudar?", "Tudo em ordem por aqui, senhor.", "Pronto quando o senhor estiver.").
 O "Em que posso ajudar?" da entrada saiu (falava junto). Pedir "bom dia" por voz também conta.
 
+**Central sempre pelo site (V5.4).** O `Iniciar-JARVIS.bat` e as palmas abrem a central no endereço do site
+(projeto-jarvis-ia.netlify.app/app/), o mesmo em qualquer aparelho; o endereço local (127.0.0.1:5173) fica
+só para o modo de desenvolvimento.
+
 **Janela do perfil (V5.4).** Cobre a tela inteira com o fundo escurecido, rola quando é mais alta que a
 tela, fecha com Esc, ✕ FECHAR ou clique fora; no celular os botões ficam em uma coluna. O rodapé mostra a
 versão de verdade ("J.A.R.V.I.S. v5.4.0", não mais "v4.0").
