@@ -781,9 +781,16 @@ public class MainActivity extends Activity {
                     c.disconnect();
                 }
                 updateProgress(100, "Instalando… se o Android pedir, toque em Atualizar.");
-                installApk(apk);
-                retryHandler.removeCallbacks(updateWatchdog);
-                retryHandler.postDelayed(updateWatchdog, 120_000L);
+                // V6.5.9: com a tela aberta, usa o instalador padrão do Android (funciona até no Xiaomi);
+                // em segundo plano, a instalação por sessão (silenciosa no Android 12+).
+                if (visible && openSystemInstaller()) {
+                    updateInProgress = false;
+                    reportUpdate(true, "confirm", "Toque em Atualizar (ou Instalar) na tela do Android.");
+                } else {
+                    installApk(apk);
+                    retryHandler.removeCallbacks(updateWatchdog);
+                    retryHandler.postDelayed(updateWatchdog, 120_000L);
+                }
             } catch (Exception e) {
                 // V5.6: nunca mais abre o navegador para baixar: tenta de novo sozinho na próxima abertura
                 updateInProgress = false;
@@ -793,6 +800,31 @@ public class MainActivity extends Activity {
                         "Não consegui atualizar agora. Tento de novo sozinho mais tarde.", Toast.LENGTH_SHORT).show());
             }
         }, "jarvis-self-update").start();
+    }
+
+    /** V6.5.9: abre o instalador do sistema com o APK baixado (tela "Deseja atualizar este app?"). */
+    private boolean openSystemInstaller() {
+        final boolean[] ok = {false};
+        final java.util.concurrent.CountDownLatch done = new java.util.concurrent.CountDownLatch(1);
+        runOnUiThread(() -> {
+            try {
+                Intent i = new Intent(Intent.ACTION_VIEW)
+                        .setDataAndType(ApkProvider.uri(), "application/vnd.android.package-archive")
+                        .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(i);
+                ok[0] = true;
+            } catch (Exception e) {
+                ok[0] = false;
+            } finally {
+                done.countDown();
+            }
+        });
+        try {
+            done.await(5, java.util.concurrent.TimeUnit.SECONDS);
+        } catch (InterruptedException ignored) {
+            Thread.currentThread().interrupt();
+        }
+        return ok[0];
     }
 
     private void installApk(java.io.File apk) throws java.io.IOException {

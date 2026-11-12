@@ -122,6 +122,10 @@ public class NotifyService extends Service {
         c.setConnectTimeout(5000);
         c.setReadTimeout(8000);
         c.setRequestProperty("Accept", "application/json");
+        try {  // V6.5.9: o PC registra qual versão do app está instalada (diagnóstico de atualização)
+            c.setRequestProperty("X-Jarvis-App", getPackageManager().getPackageInfo(getPackageName(), 0).versionName);
+        } catch (Exception ignored) {
+        }
         int code = c.getResponseCode();
         if (code != 200) {
             c.disconnect();

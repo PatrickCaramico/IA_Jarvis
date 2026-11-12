@@ -85,6 +85,7 @@ async def mobile_info() -> dict:
         # V6.0: endereço do PC no Tailscale; o app usa quando a Wi-Fi de casa não responde
         "remote_host": tailscale_ip(),
         "size_kb": round(APK_PATH.stat().st_size / 1024) if apk_available() else 0,
+        "phone_app": LAST_APP_VERSION["value"],  # V6.5.9: versão que o celular pareado informou por último
     }
 
 
@@ -198,6 +199,7 @@ async def mobile_pair_pin(req: PairPinRequest, request: Request) -> dict:
 
 
 _POLLERS: dict[str, float] = {}
+LAST_APP_VERSION: dict = {"value": "", "at": 0.0}  # V6.5.9: versão do app que o celular informou
 
 
 def _note_poll(request: Request) -> None:
@@ -206,7 +208,10 @@ def _note_poll(request: Request) -> None:
 
     ua = request.headers.get("user-agent", "")
     m = re.search(r"JarvisApp/[\w.]+", ua)
-    who = m.group(0) if m else (ua[:40] or "?")
+    app_version = (request.headers.get("x-jarvis-app") or "")[:16]
+    who = m.group(0) if m else (f"app {app_version}" if app_version else (ua[:40] or "?"))
+    if app_version:
+        LAST_APP_VERSION["value"], LAST_APP_VERSION["at"] = app_version, _time.time()
     via = "túnel" if tunnel_origin(request) else ("este PC" if runtime.is_local_conn(request) else "rede")
     key = f"{who}|{via}"
     now = _time.time()

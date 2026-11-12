@@ -2,6 +2,11 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 6.5.9 — 12 de novembro de 2026
+
+- **ATUALIZAR APP no Xiaomi/HyperOS:** a instalação "por sessão" do Android ficava parada em 100% nesses celulares. Agora, com o app aberto, ele entrega o APK baixado ao instalador padrão do Android (a tela "Deseja atualizar este app?"), que funciona em qualquer celular (`ApkProvider`); em segundo plano continua a instalação silenciosa. APK 6.5.9.
+- **Diagnóstico:** o celular informa a versão do app instalada ao buscar avisos (`X-Jarvis-App`); o PC registra no log e mostra em `/api/mobile/info` (`phone_app`).
+
 ## 6.5.8 — 12 de novembro de 2026
 
 - **Botão ÁUDIO na tela de bloqueio** (🎧, ao lado do FUNDO): escolher onde o JARVIS fala (no celular: aqui ou no PC), a caixa de som do PC (com 🔊 TESTAR), o microfone do PC (o ouvido offline reabre na hora no microfone novo) e o microfone desta tela (palmas e escuta). `GET/POST /api/audio`, `POST /api/audio/test`, `modules/audio_devices.py`; preferências `audio_output_device` e `voice_input_device`. O alarme toca na mesma caixa da voz.

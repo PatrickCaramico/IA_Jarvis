@@ -87,6 +87,13 @@
             android:name=".InstallReceiver"
             android:exported="false" />
 
+        <!-- V6.5.9: entrega o APK baixado ao instalador do Android (Xiaomi travava na instalação por sessão) -->
+        <provider
+            android:name=".ApkProvider"
+            android:authorities="com.patrick.jarvis.apk"
+            android:exported="false"
+            android:grantUriPermissions="true" />
+
         <receiver
             android:name=".BootReceiver"
             android:exported="true">
