@@ -152,6 +152,15 @@ export default function App() {
   const [lockAnswer, setLockAnswer] = useState(null); // V6.5.8: mini janela da resposta no bloqueio
   const [audioOpen, setAudioOpen] = useState(false); // V6.5.8: botão ÁUDIO do bloqueio
   const [browserChoice, setBrowserChoice] = useState(null); // V6.5.11: "Em qual navegador?"
+  const [chatFresh, setChatFresh] = useState(false); // V6.5.18: conversa recente (a janelinha da Área Limpa aparece)
+  const [chatPoke, setChatPoke] = useState(0);
+  const pokeChat = useCallback(() => setChatPoke((n) => n + 1), []);
+  useEffect(() => {
+    if (!(userText || response || error) && !chatPoke) return undefined;
+    setChatFresh(true);
+    const t = setTimeout(() => setChatFresh(false), 45000);
+    return () => clearTimeout(t);
+  }, [userText, response, error, chatPoke]);
   const closeBrowserChoice = useCallback(() => setBrowserChoice(null), []);
   const [sentinelUnlock, setSentinelUnlock] = useState(false);
   // V4.2.2: na tela de bloqueio o microfone (escuta do Sentinela e palmas) começa SILENCIADO;
@@ -2528,7 +2537,9 @@ export default function App() {
   const busy = jarvisState !== "idle";
   const heardAwake = central.phase === "awake" && jarvisState === "idle"; // "Jarvis" ouvido: esperando o pedido
   const stateLabel = listening || heardAwake ? "Ouvindo" : STATE_LABEL[jarvisState];
-  const showConversation = listening || busy || Boolean(userText || response || error);
+  // V6.5.18: na Área Limpa, a janelinha do chat ficava aberta para sempre depois da primeira resposta.
+  // Agora some sozinha 45 s depois da última conversa (ou do último toque nela).
+  const showConversation = listening || busy || jarvisState === "speaking" || chatFresh;
   const sessionSeconds = Math.floor(sessionElapsed / 1000);
   const sessionClock = [Math.floor(sessionSeconds / 3600), Math.floor((sessionSeconds % 3600) / 60), sessionSeconds % 60]
     .map((value) => String(value).padStart(2, "0"))
@@ -2939,6 +2950,7 @@ export default function App() {
 
       <HudLayout
         userName={name}
+        onChatActivity={pokeChat}
         devices={devices}
         countdowns={countdowns}
         onRemoveCountdown={(id) => api(`/api/countdowns/${id}`, { method: "DELETE" }).then((r) => setCountdowns(r.items || [])).catch(() => {})}

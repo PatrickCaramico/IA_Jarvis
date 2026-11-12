@@ -2,6 +2,11 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 6.5.18 — 12 de novembro de 2026
+
+- **Botão FUNDO na central:** no topo, ao lado de ÁUDIO e SPOTIFY, troca o fundo na hora (Blueprint → Universo → Clássico) e o PC salva para os outros aparelhos. O "Trocar fundo" do CONTROLES passou a trocar na hora também (antes dependia da resposta do PC e não reconhecia o Universo como atual).
+- **Chat que recolhe sozinho:** na Área Limpa, a janelinha do chat ficava aberta para sempre depois da primeira resposta; agora some 45 s depois da última conversa (rolar ou digitar nela segura aberta). No modo normal, o Canal Ativo recolhe depois de 90 s sem uso (antes 3 min).
+
 ## 6.5.17 — 12 de novembro de 2026
 
 - **Voz cortando o começo da frase:** com "Jarvis, …" (sem tocar no microfone), o Chrome dividia a frase numa pausa curta ("Jarvis abre o" + "YouTube") e só um pedaço era enviado. Agora os pedaços que chegam logo depois da palavra de ativação são juntados (até 1,3 s de silêncio) e a frase vai inteira. No botão do microfone, a permissão era conferida a cada toque e atrasava o início (as primeiras palavras se perdiam): agora só na primeira vez, e o bipe toca quando o microfone de fato começou a ouvir.

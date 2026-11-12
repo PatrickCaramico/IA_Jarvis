@@ -42,7 +42,7 @@ const BRASILIA_CLOCK = new Intl.DateTimeFormat("pt-BR", {
   hour12: false,
 });
 
-const RIGHT_IDLE_MS = 3 * 60 * 1000; // V4.2.2: coluna direita recolhe após 3 min sem conversa
+const RIGHT_IDLE_MS = 90 * 1000; // V4.2.2: coluna direita recolhe sem conversa (V6.5.18: 90 s; antes 3 min)
 
 // V4.4: data curta embaixo do relógio do cabeçalho ("QUA · 04 NOV")
 const BRASILIA_DATE = new Intl.DateTimeFormat("pt-BR", { timeZone: TIME_ZONE, weekday: "short", day: "2-digit", month: "short" });
@@ -652,12 +652,18 @@ function HudControlsMenu({
       }
       case "background":
         if (!api) break;
-        try {
-          const r = await api("/api/background", { method: "POST" });
-          if (r?.background_style) applyBackground(r.background_style);
-          setFlash("Fundo trocado.");
-        } catch {
-          setFlash("Não consegui trocar o fundo agora.");
+        {
+          const order = ["blueprint", "space", "classic"];
+          const names = { blueprint: "Blueprint", space: "Universo", classic: "Clássico" };
+          const cur = document.documentElement.dataset.sky === "space" ? "space" : (document.documentElement.dataset.bg || "blueprint");
+          const next = order[(order.indexOf(cur) + 1) % order.length];
+          applyBackground(next);
+          setFlash(`Fundo: ${names[next]}.`);
+          try {
+            await api("/api/background", { method: "POST", body: JSON.stringify({ style: next }) });
+          } catch {
+            /* sem o PC agora: vale só nesta tela */
+          }
         }
         break;
       case "zen":
@@ -791,6 +797,7 @@ function HudControlsMenu({
 export default function HudLayout({
   aiName,
   userName = "", // V6.5.15: saudação da tela de espera
+  onChatActivity = null, // V6.5.18: mexeu no chat (rolar, digitar): segura aberto na Área Limpa
   stateLabel,
   jarvisState,
   listening,
@@ -895,7 +902,10 @@ export default function HudLayout({
   // o briefing; assim o modo em espera fica só com o orbe. Mexer nela (digitar, clicar) conta como uso.
   const [rightOpen, setRightOpen] = useState(true);
   const [rightActivity, setRightActivity] = useState(0);
-  const touchRight = () => setRightActivity((n) => n + 1);
+  const touchRight = () => {
+    setRightActivity((n) => n + 1);
+    if (onChatActivity) onChatActivity();
+  };
   const lastMsg = log.length ? log[log.length - 1] : null;
   const lastMsgId = lastMsg ? lastMsg.id : null; // a lista guarda só 50: o id muda sempre
   const lastFromUser = lastMsg?.role === "user";
@@ -1027,6 +1037,25 @@ export default function HudLayout({
             </button>
             <button type="button" className="hl-act" onClick={onOpenSpotify} title="Spotify">
               <i aria-hidden="true">◉</i>SPOTIFY
+            </button>
+            {/* V6.5.18: trocar o fundo direto da central (Blueprint -> Universo -> Clássico) */}
+            <button
+              type="button"
+              className="hl-act"
+              onClick={async () => {
+                const order = ["blueprint", "space", "classic"];
+                const cur = document.documentElement.dataset.sky === "space" ? "space" : (document.documentElement.dataset.bg || "blueprint");
+                const next = order[(order.indexOf(cur) + 1) % order.length];
+                applyBackground(next); // troca na hora; o PC salva para os outros aparelhos
+                try {
+                  await api("/api/background", { method: "POST", body: JSON.stringify({ style: next }) });
+                } catch {
+                  /* sem o PC agora: vale só nesta tela */
+                }
+              }}
+              title="Trocar o fundo (Blueprint, Universo, Clássico)"
+            >
+              <i aria-hidden="true">▦</i>FUNDO
             </button>
           </span>
           {(busy || listening) && (
