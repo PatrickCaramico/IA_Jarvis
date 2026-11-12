@@ -3,6 +3,23 @@
 const q = new URLSearchParams(window.location.search);
 const offline = q.get("offline") === "1";
 if (q.get("phone") === "1") window.__JARVIS_DEMO_PHONE__ = true; // mostra a barra do celular
+// ?app=1: finge ser o app Android (user agent e uma ponte JarvisApp de mentira, com digital)
+if (q.get("app") === "1") {
+  window.__JARVIS_DEMO_PHONE__ = true;
+  const ua = navigator.userAgent + " JarvisApp/6.0.0";
+  Object.defineProperty(navigator, "userAgent", { get: () => ua });
+  let bio = false;
+  window.JarvisApp = {
+    version: () => "6.0.0",
+    notificationsEnabled: () => true,
+    setNotifications: () => {},
+    canUseBiometric: () => true,
+    hasBiometric: () => bio,
+    saveDeviceSecret: () => { bio = true; window.dispatchEvent(new CustomEvent("jarvis-app-biometric", { detail: { action: "saved", message: "Digital ativada. Na próxima vez, é só encostar o dedo." } })); },
+    biometricUnlock: () => window.dispatchEvent(new CustomEvent("jarvis-app-biometric", { detail: { action: "unlock", secret: "demo" } })),
+    forgetBiometric: () => { bio = false; },
+  };
+}
 
 try {
   if (q.get("new") === "1") localStorage.removeItem("jarvis.lastLogin");

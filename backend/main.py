@@ -112,7 +112,9 @@ _PRIVATE_NETWORK = (
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
-    allow_origin_regex=r"^https?://(192\.168\.\d+\.\d+|10\.\d+\.\d+|172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+):5173$",
+    # rede de casa (192.168, 10, 172.16-31), Tailscale (100.64-127, V6.0) e nomes do Tailscale (*.ts.net)
+    allow_origin_regex=(r"^https?://(192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+"
+                        r"|100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\.\d+\.\d+|[a-z0-9-]+(\.[a-z0-9-]+)*\.ts\.net):5173$"),
     allow_methods=["*"],
     allow_headers=["*"],
     **_PRIVATE_NETWORK,

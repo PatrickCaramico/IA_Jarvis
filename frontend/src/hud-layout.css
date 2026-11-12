@@ -1060,3 +1060,7 @@
 .shop-empty { margin: 0; font-size: 0.8rem; color: rgba(201, 246, 255, 0.65); }
 .shop-clear { justify-self: start; border: 1px dashed rgba(201, 246, 255, 0.3); background: none; color: rgba(201, 246, 255, 0.75); border-radius: 999px; padding: 4px 12px; font-size: 0.72rem; cursor: pointer; }
 @media (max-width: 760px) { .shop-list input[type="checkbox"] { width: 22px; height: 22px; } .shop-list li { padding: 9px 10px; } .shop-add input { font-size: 16px; } }
+
+/* V6.0: app — compartilhar com o JARVIS e oferta da digital */
+.app-share-text { margin: 0 0 12px; font-size: 0.9rem; line-height: 1.4; color: #e6f7fb; max-height: 30vh; overflow-y: auto; word-break: break-word; }
+.app-share-actions { display: flex; flex-wrap: wrap; gap: 8px; }

@@ -120,6 +120,7 @@ export default function LockScreen({
   silent = false,
   fanToggle = null, // V4.4: { enabled, busy, onToggle } — botão do Modo Torcedor ao lado do carimbo
   bgToggle = null, // V5.9.1: { value, onCycle } — botão de fundo ao lado do Modo Torcedor
+  onBiometric = null, // V6.0: no app com a digital ativada, "ENTRAR COM A DIGITAL"
   onNewProfile = null, // V4.5: "＋ NOVA PESSOA" (perfil próprio: rosto, PIN e preferências)
   onUpdate = null, // botão ATUALIZAR: no PC baixa a versão nova e reinicia; no app, atualiza o app (V5.7.1)
   updateNote = "", // V5.7.1: resposta do ATUALIZAR APP ("O app já está na versão mais nova…")
@@ -167,10 +168,16 @@ export default function LockScreen({
 
   const phoneEntry = phoneApp && (phase === "ready" || phase === "failed");
   const phoneHint = hasPin
-    ? "Toque em ENTRAR COM PIN"
+    ? (onBiometric ? "Encoste o dedo ou use o PIN" : "Toque em ENTRAR COM PIN")
     : "Para entrar pelo celular, crie um PIN no PC (Configurações › Bloqueio)";
   const phonePinButton = phoneEntry && hasPin ? (
-    <button type="button" onClick={handleBtnClick} className="ls-chip is-strong ls-phone-pin">🔑 ENTRAR COM PIN</button>
+    <>
+      {/* V6.0: digital ativada no app: botão principal; o PIN continua como alternativa */}
+      {onBiometric && (
+        <button type="button" onClick={(e) => { e.stopPropagation(); onBiometric(); }} className="ls-chip is-strong ls-phone-pin">👆 ENTRAR COM A DIGITAL</button>
+      )}
+      <button type="button" onClick={handleBtnClick} className={`ls-chip ${onBiometric ? "" : "is-strong "}ls-phone-pin`}>🔑 ENTRAR COM PIN</button>
+    </>
   ) : null;
 
   // Verificação rápida falhou: pode ser alguém novo. O convite para criar perfil fica em destaque.

@@ -1,6 +1,6 @@
 # JARVIS — Comandos do dia a dia
 
-**Versão do projeto:** 5.9.1 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
+**Versão do projeto:** 6.0.0 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
 
 > Montado a partir do código do projeto. Se algum comando não responder como descrito, me avise que eu ajusto o guia.
 > Para a lista técnica de rotas, veja [API.md](API.md); para o `.env`, [CONFIGURACAO.md](CONFIGURACAO.md).
@@ -128,6 +128,38 @@ Palmeiras", "como está o tempo em Recife".
 | Tocando: "Soneca" / "Mais 5 minutos" | Adia 9 minutos (ou o tempo dito). Ou o botão SONECA (tecla S). |
 
 O alarme toca bipes no PC e, a cada 25 s, fala a hora ("Senhor, são 7 horas."). Sem resposta, desliga sozinho depois de 10 minutos. Se o PC estava desligado na hora, ele não toca atrasado (mais de 30 min).
+
+### Lista de compras (V6.0)
+
+| Exemplo | O que faz |
+| --- | --- |
+| "Jarvis, coloca leite, pão e ovos na lista" / "adiciona café na lista de compras" | Põe na lista (vários de uma vez). |
+| "Jarvis, comprei o leite" | Marca como comprado (risca na lista). |
+| "Tira o pão da lista" | Remove. |
+| "O que tem na lista de compras?" | Lê o que falta comprar. |
+| "Limpa a lista de compras" / "limpa a lista inteira" | Apaga o que já foi comprado (ou tudo). |
+
+A lista aparece no painel LISTA DE COMPRAS (no celular, logo abaixo da conversa), com caixinhas para marcar no mercado.
+
+### Rotinas em 1 comando (V6.0)
+
+| Exemplo | O que faz |
+| --- | --- |
+| "Jarvis, vou dormir" / "modo dormir" | Pausa a música, para o foco, baixa o volume e fala o despertador, o primeiro compromisso e o clima de amanhã. |
+| "Jarvis, estou saindo" / "modo saindo de casa" | Fala o clima agora e a lista de compras, pausa a música e bloqueia o computador. |
+| "Modo trabalho" / "protocolo gravação" | Os protocolos de antes também respondem por "modo …". |
+
+Monte as suas em Configurações › Automação › Protocolos (passos novos: pausar a música, bloquear o computador, resumo de amanhã, clima agora, ler a lista de compras).
+
+### No celular (V6.0)
+
+| Onde | O que faz |
+| --- | --- |
+| Toque longo no ícone do JARVIS | Atalhos: Falar com o JARVIS, Bom dia, Lista de compras. |
+| Cortina do Android (lápis › arraste o "JARVIS") | Botão que abre o JARVIS já ouvindo, mesmo com o app fechado. |
+| Compartilhar › JARVIS (em qualquer app) | Resumir, Anotar, Lembrar amanhã ou pôr na lista de compras. |
+| Bloqueio do app › ENTRAR COM A DIGITAL | Depois de entrar uma vez pelo PIN, o app oferece ativar a digital. |
+| Fora de casa | Com o Tailscale no PC e no celular, o app entra pelo 4G (guia em docs/ACESSO-FORA-DE-CASA.md). |
 
 ### Timers e foco
 

@@ -209,6 +209,56 @@ async def pin_status() -> dict:
     return lock_pin.status()
 
 
+class DeviceEnrollRequest(BaseModel):
+    name: str = "Celular"
+
+
+class DeviceUnlockRequest(BaseModel):
+    secret: str
+
+
+@router.post("/api/auth/device/enroll")
+async def device_enroll(req: DeviceEnrollRequest) -> dict:
+    """V6.0: cria a chave do aparelho para entrar com a digital (só com a central liberada)."""
+    from modules import device_keys
+
+    return await asyncio.to_thread(device_keys.enroll, req.name)
+
+
+@router.post("/api/auth/device/unlock")
+async def device_unlock(req: DeviceUnlockRequest) -> dict:
+    """V6.0: o app manda a chave do aparelho depois que a digital confirma. Libera como o PIN."""
+    from modules import device_keys
+
+    key = await asyncio.to_thread(device_keys.verify, req.secret)
+    if not key:
+        lock_log.add("device", "fail")
+        await asyncio.sleep(1.0)  # sem pressa para quem tenta adivinhar
+        return {"verified": False, "message": "Esta digital não está mais ligada ao JARVIS. Entre com o PIN e ative de novo."}
+    if profiles.count() > 1:
+        profiles.activate_owner()
+    lock_log.add("device", "ok")
+    access.unlock("device")
+    await speech.broadcast_access()
+    name = face.get_name()
+    return {"verified": True, "name": name, "message": f"Acesso liberado pela digital{', ' + name if name else ''}."}
+
+
+@router.get("/api/auth/device")
+async def device_list() -> dict:
+    from modules import device_keys
+
+    return {"items": device_keys.list_keys()}
+
+
+@router.delete("/api/auth/device")
+async def device_revoke(key_id: Optional[str] = None) -> dict:
+    """Esquece a digital de um aparelho (ou de todos, sem key_id)."""
+    from modules import device_keys
+
+    return {"removed": device_keys.revoke(key_id)}
+
+
 @router.post("/api/auth/pin")
 async def pin_verify(req: PinRequest) -> dict:
     # V4.5: com várias pessoas, descobre de quem é o PIN sem gastar tentativas; as tentativas

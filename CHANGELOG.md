@@ -2,6 +2,18 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 6.0.0 — 12 de novembro de 2026
+
+O dia a dia.
+
+- **Lista de compras** (`modules/shopping.py`, `/api/shopping`, painel LISTA DE COMPRAS): "coloca leite, pão e ovos na lista", "comprei o leite", "tira o pão da lista", "o que tem na lista?", "limpa a lista". Caixinhas para marcar no mercado; o celular e o PC ficam iguais na hora (evento `shopping`). Um arquivo por pessoa.
+- **Rotinas em 1 comando:** os protocolos ganham os passos pausar a música, bloquear o computador, resumo de amanhã, clima agora e ler a lista de compras; rotinas prontas **Dormir** ("vou dormir", "modo dormir") e **Saindo de casa** ("estou saindo"). Editor das Configurações com os passos novos.
+- **Entrar no app com a digital:** depois de entrar pelo PIN, o app oferece ativar; o PC guarda só o hash de uma chave do aparelho (`modules/device_keys.py`, `/api/auth/device/*`) e o app só a usa depois da biometria do Android. No bloqueio do app, "ENTRAR COM A DIGITAL" (e o pedido já abre sozinho).
+- **Compartilhar com o JARVIS:** "Compartilhar → JARVIS" em qualquer app abre Resumir, Anotar, Lembrar amanhã ou Lista de compras.
+- **Atalhos do Android:** toque longo no ícone (Falar com o JARVIS, Bom dia, Lista de compras) e botão "JARVIS" nas configurações rápidas (`JarvisTile`), que abre a central já ouvindo (`jarvis://listen`, `jarvis://say`).
+- **Acesso fora de casa (Tailscale):** o PC informa o endereço do Tailscale (`remote_host`) e aceita a central por ele; o app tenta esse endereço quando a Wi-Fi de casa não responde. Guia em `docs/ACESSO-FORA-DE-CASA.md`. Correção: o endereço da rede de casa não pega mais o do Tailscale, e a regra de origem para redes `10.x.x.x` foi consertada.
+- APK 6.0.0. Testes: `test_shopping_60.py`, `test_routines_60.py`, `test_device_keys_60.py`.
+
 ## 5.9.1 — 12 de novembro de 2026
 
 - **Botão FUNDO na tela de bloqueio**, à esquerda do Modo Torcedor: cada toque troca o fundo (Blueprint → Universo → Clássico), na hora e salvo no PC. Rota pública `POST /api/background` (só o visual, como o botão do Modo Torcedor).

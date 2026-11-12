@@ -73,6 +73,12 @@ export default function NetworkQrModal({ api, initialUrl = "", onClose }) {
               <p className="mt-4 break-all text-xs text-arc-200">{value}</p>
             )}
             <p className="mt-3 text-[11px] text-amber-200/80">Este QR tem a chave de acesso: mostre só para o seu celular.</p>
+            {/* V6.0: acesso fora de casa (Tailscale) */}
+            <p className={`mt-2 text-[11px] ${data?.remote_host ? "text-emerald-300" : "text-arc-300/60"}`}>
+              {data?.remote_host
+                ? `🌐 Fora de casa: ativo pelo Tailscale (${data.remote_host}). O app usa sozinho quando sair da Wi-Fi.`
+                : "🌐 Fora de casa: instale o Tailscale no PC e no celular (guia em docs/ACESSO-FORA-DE-CASA.md)."}
+            </p>
           </>
         ) : (
           <p className="py-12 text-sm text-arc-300/70">{status}</p>

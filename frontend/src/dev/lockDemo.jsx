@@ -121,6 +121,8 @@ function Demo() {
     onUpdate={() => { setNote("Procurando atualização no PC…"); setTimeout(() => setNote("O app já está na versão mais nova (5.7.1)."), 900); }}
     updateNote={note}
     phoneApp={phoneApp}
+    hasPin={phoneApp}
+    onBiometric={phoneApp && q.get("bio") === "1" ? () => setNote("Digital confirmada (demo).") : null}
     cards={{ api: fan ? fanApi : baseApi, list: fan ? ["clock", "weather"] : ["clock", "weather", "spotify"], fanModeEnabled: fan }}
     mic={sentinelOn ? null : { muted: true, onToggle: () => {} }}
     sentinel={sentinelOn ? {

@@ -125,6 +125,7 @@ _PUBLIC_EXACT = {
     ("POST", "/api/auth/verify"),
     ("GET", "/api/auth/pin/status"),
     ("POST", "/api/auth/pin"),
+    ("POST", "/api/auth/device/unlock"),  # V6.0: entrar com a digital no app (chave do aparelho)
     ("POST", "/api/guest/enter"),
     ("POST", "/api/guest/exit"),
     ("POST", "/api/chat"),            # quando restrito, só responde pedidos públicos (modules/sentinel.py)

@@ -23,6 +23,7 @@ _WRITABLE = (
     ("finances", "DATA_PATH", "financas.json"),
     ("files", "UNDO_PATH", "organizacao_ultima.json"),
     ("shopping", "_PATH", "compras.json"),  # V6.0
+    ("device_keys", "_PATH", "chaves_aparelho.json"),  # V6.0
 )
 
 

@@ -101,6 +101,26 @@ async def get_auth_token(request: Request) -> dict:
     return {"token": runtime.ACCESS_TOKEN}
 
 
+def is_tailscale_ip(ip: str) -> bool:
+    """V6.0: endereços do Tailscale ficam em 100.64.0.0/10 (100.64.x.x a 100.127.x.x)."""
+    parts = ip.split(".")
+    return len(parts) == 4 and parts[0] == "100" and parts[1].isdigit() and 64 <= int(parts[1]) <= 127
+
+
+def tailscale_ip() -> str:
+    """V6.0: endereço deste PC no Tailscale (acesso fora de casa), ou "" se o Tailscale não estiver ligado."""
+    try:
+        import psutil
+
+        for addrs in psutil.net_if_addrs().values():
+            for a in addrs:
+                if a.family == socket.AF_INET and is_tailscale_ip(a.address):
+                    return a.address
+    except Exception:  # noqa: BLE001
+        pass
+    return ""
+
+
 def local_ip() -> str:
     """Endereço deste PC na rede de casa (ex.: 192.168.0.10), ou "" se não houver rede."""
     try:
@@ -110,6 +130,7 @@ def local_ip() -> str:
                 item[4][0]
                 for item in candidates
                 if not item[4][0].startswith("127.") and not item[4][0].startswith("169.254.")
+                and not is_tailscale_ip(item[4][0])  # V6.0: o da rede de casa, não o do Tailscale
             ),
             "",
         )
@@ -135,6 +156,8 @@ async def network_access() -> dict:
         # V4.5: app Android. A página de pareamento leva o token; só aparece com a central liberada.
         "app_pair_url": f"http://{ip}:8000/api/mobile/pair?token={runtime.ACCESS_TOKEN}" if ip else "",
         "app_download_url": f"http://{ip}:8000/api/mobile" if ip else "",
+        # V6.0: acesso fora de casa pelo Tailscale (vazio se ele não estiver ligado neste PC)
+        "remote_host": tailscale_ip(),
     }
 
 

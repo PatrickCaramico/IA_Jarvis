@@ -6,7 +6,12 @@ import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.content.pm.ShortcutInfo;
+import android.content.pm.ShortcutManager;
 import android.graphics.Color;
+import android.graphics.drawable.Icon;
+import android.hardware.biometrics.BiometricPrompt;
+import android.os.CancellationSignal;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.Uri;
@@ -71,6 +76,14 @@ public class MainActivity extends Activity {
     private boolean offlineScreen = false;
     private ConnectivityManager.NetworkCallback networkCallback;
 
+    // V6.0: acesso fora de casa (Tailscale): endereço do PC que o PC informa em /api/mobile/info
+    private static final String KEY_REMOTE = "remote_host";
+    // V6.0: chave do aparelho para entrar com a digital (o PC guarda só o hash)
+    private static final String KEY_DEVICE_SECRET = "device_secret";
+    // V6.0: comandos para a central (atalhos, botão da cortina, compartilhar) esperando a página abrir
+    private final ArrayList<String> pendingJs = new ArrayList<>();
+    private volatile boolean pageReady = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -100,6 +113,7 @@ public class MainActivity extends Activity {
             @Override
             public void onPageStarted(WebView view, String url, android.graphics.Bitmap favicon) {
                 currentUrl = url;
+                pageReady = false;
                 if (isHttp(url)) mainFrameFailed = false;
             }
 
@@ -110,6 +124,9 @@ public class MainActivity extends Activity {
                     retryAttempt = 0;
                     offlineScreen = false;
                     retryHandler.removeCallbacks(retryRunnable);
+                    pageReady = true;
+                    // a central (React) precisa de um instante para montar antes de receber comandos
+                    retryHandler.postDelayed(MainActivity.this::flushJs, 1800);
                 }
             }
 
@@ -132,6 +149,15 @@ public class MainActivity extends Activity {
             public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
                 if (request.isForMainFrame() && !request.getUrl().toString().startsWith(SETUP)) {
                     mainFrameFailed = true;
+                    // V6.0: a Wi-Fi de casa não respondeu: tenta o endereço do Tailscale antes de "reconectando"
+                    Uri saved0 = savedUri();
+                    String remote = prefs.getString(KEY_REMOTE, "");
+                    String failedHost = request.getUrl().getHost();
+                    if (saved0 != null && !remote.isEmpty() && failedHost != null && failedHost.equals(saved0.getHost())) {
+                        int port = saved0.getPort();
+                        view.loadUrl(saved0.buildUpon().encodedAuthority(remote + (port > 0 ? ":" + port : "")).build().toString());
+                        return;
+                    }
                     String h = savedHostValue();
                     if (savedUri() != null) {
                         // Já pareado: tela "reconectando" e nova tentativa sozinha
@@ -164,6 +190,104 @@ public class MainActivity extends Activity {
         if (!handleIntent(getIntent())) loadSavedOrSetup();
         if (savedUri() != null && prefs.getBoolean(NotifyService.KEY_ENABLED, true)) enableNotifications(false);
         watchNetwork();
+        setupShortcuts();
+    }
+
+    // ------------------------------------------------------------------ V6.0: atalhos e comandos
+    /** Toque longo no ícone: Falar com o JARVIS, Bom dia, Lista de compras. */
+    private void setupShortcuts() {
+        if (Build.VERSION.SDK_INT < 25) return;
+        try {
+            ShortcutManager sm = getSystemService(ShortcutManager.class);
+            if (sm == null) return;
+            ArrayList<ShortcutInfo> list = new ArrayList<>();
+            list.add(shortcut("falar", "Falar com o JARVIS", "jarvis://listen"));
+            list.add(shortcut("bomdia", "Bom dia", "jarvis://say?text=" + Uri.encode("bom dia")));
+            list.add(shortcut("lista", "Lista de compras", "jarvis://say?text=" + Uri.encode("o que tem na lista de compras")));
+            sm.setDynamicShortcuts(list);
+        } catch (Exception ignored) {
+            // atalhos são extra: sem eles o app funciona igual
+        }
+    }
+
+    private ShortcutInfo shortcut(String id, String label, String uri) {
+        Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(uri)).setPackage(getPackageName());
+        return new ShortcutInfo.Builder(this, id).setShortLabel(label).setLongLabel(label)
+                .setIcon(Icon.createWithResource(this, R.mipmap.ic_launcher)).setIntent(i).build();
+    }
+
+    /** Roda um comando na central assim que ela estiver aberta (abre a central se precisar). */
+    private void queueJs(String js) {
+        synchronized (pendingJs) {
+            pendingJs.add(js);
+        }
+        if (pageReady && isHttp(currentUrl) && sameHost(Uri.parse(currentUrl))) {
+            runOnUiThread(this::flushJs);
+        }
+    }
+
+    private void flushJs() {
+        if (!pageReady) return;
+        ArrayList<String> now;
+        synchronized (pendingJs) {
+            now = new ArrayList<>(pendingJs);
+            pendingJs.clear();
+        }
+        for (String js : now) web.evaluateJavascript(js, null);
+    }
+
+    private static String event(String name, JSONObject detail) {
+        return "window.dispatchEvent(new CustomEvent('" + name + "',{detail:" + (detail == null ? "{}" : detail.toString()) + "}))";
+    }
+
+    // ------------------------------------------------------------------ V6.0: digital (biometria do Android)
+    private boolean biometricAvailable() {
+        if (Build.VERSION.SDK_INT < 28) return false;
+        if (Build.VERSION.SDK_INT >= 29) {
+            try {
+                android.hardware.biometrics.BiometricManager bm = getSystemService(android.hardware.biometrics.BiometricManager.class);
+                return bm != null && bm.canAuthenticate() == android.hardware.biometrics.BiometricManager.BIOMETRIC_SUCCESS;
+            } catch (Exception e) {
+                return false;
+            }
+        }
+        return getPackageManager().hasSystemFeature(PackageManager.FEATURE_FINGERPRINT);
+    }
+
+    /** Pede a digital; ok=true roda onSuccess, senão avisa a central (jarvis-app-biometric, action=error). */
+    private void askBiometric(String title, String subtitle, Runnable onSuccess) {
+        if (Build.VERSION.SDK_INT < 28) return;
+        try {
+            BiometricPrompt prompt = new BiometricPrompt.Builder(this)
+                    .setTitle(title)
+                    .setSubtitle(subtitle)
+                    .setNegativeButton("Usar PIN", getMainExecutor(), (dialog, which) -> sendBiometric("cancel", null, null))
+                    .build();
+            prompt.authenticate(new CancellationSignal(), getMainExecutor(), new BiometricPrompt.AuthenticationCallback() {
+                @Override
+                public void onAuthenticationSucceeded(BiometricPrompt.AuthenticationResult result) {
+                    onSuccess.run();
+                }
+
+                @Override
+                public void onAuthenticationError(int code, CharSequence msg) {
+                    sendBiometric("error", null, msg == null ? "" : msg.toString());
+                }
+            });
+        } catch (Exception e) {
+            sendBiometric("error", null, "A digital não está disponível neste celular.");
+        }
+    }
+
+    private void sendBiometric(String action, String secret, String message) {
+        try {
+            JSONObject d = new JSONObject().put("action", action);
+            if (secret != null) d.put("secret", secret);
+            if (message != null) d.put("message", message);
+            String js = event("jarvis-app-biometric", d);
+            runOnUiThread(() -> web.evaluateJavascript(js, null));
+        } catch (Exception ignored) {
+        }
     }
 
     // ------------------------------------------------------------------ reconexão (V5.2)
@@ -226,13 +350,45 @@ public class MainActivity extends Activity {
     }
 
     private boolean handleIntent(Intent intent) {
-        if (intent == null || intent.getData() == null) return false;
+        if (intent == null) return false;
+        // V6.0: "Compartilhar -> JARVIS" de qualquer app (texto ou link)
+        if (Intent.ACTION_SEND.equals(intent.getAction())) {
+            String text = intent.getStringExtra(Intent.EXTRA_TEXT);
+            if (text != null && !text.trim().isEmpty() && savedUri() != null) {
+                try {
+                    String subject = intent.getStringExtra(Intent.EXTRA_SUBJECT);
+                    JSONObject d = new JSONObject().put("text", text.trim()).put("subject", subject == null ? "" : subject);
+                    queueJs(event("jarvis-app-share", d));
+                } catch (Exception ignored) {
+                }
+            }
+            setIntent(new Intent(this, MainActivity.class)); // não repete ao girar a tela
+            return false;
+        }
+        if (intent.getData() == null) return false;
         return handleUri(intent.getData());
     }
 
     /** jarvis://connect?url=http://IP:5173/?token=...  |  jarvis://open */
     private boolean handleUri(Uri uri) {
         if (!"jarvis".equals(uri.getScheme())) return false;
+        // V6.0: atalhos do ícone e botão da cortina
+        if ("listen".equals(uri.getHost()) && savedUri() != null) {
+            queueJs(event("jarvis-app-listen", null));
+            if (!isHttp(currentUrl)) loadSavedOrSetup();
+            return true;
+        }
+        if ("say".equals(uri.getHost()) && savedUri() != null) {
+            String text = uri.getQueryParameter("text");
+            if (text != null && !text.trim().isEmpty() && text.length() <= 300) {
+                try {
+                    queueJs(event("jarvis-app-say", new JSONObject().put("text", text.trim())));
+                } catch (Exception ignored) {
+                }
+            }
+            if (!isHttp(currentUrl)) loadSavedOrSetup();
+            return true;
+        }
         if ("connect".equals(uri.getHost())) {
             String url = uri.getQueryParameter("url");
             if (isHttp(url)) {
@@ -401,6 +557,8 @@ public class MainActivity extends Activity {
                 }
                 connection.disconnect();
                 JSONObject info = new JSONObject(body.toString());
+                String remoteHost = info.optString("remote_host", "");
+                if (remoteHost.matches("[\\w.-]+")) prefs.edit().putString(KEY_REMOTE, remoteHost).apply();
                 String pcVersion = info.optString("version", "");
                 String phoneVersion = installedVersion();
                 if (info.optBoolean("available") && compareVersions(pcVersion, phoneVersion) > 0) {
@@ -615,7 +773,9 @@ public class MainActivity extends Activity {
 
     private boolean sameHost(Uri uri) {
         Uri saved = savedUri();
-        return saved != null && uri.getHost() != null && uri.getHost().equals(saved.getHost());
+        if (saved == null || uri.getHost() == null) return false;
+        String remote = prefs.getString(KEY_REMOTE, "");
+        return uri.getHost().equals(saved.getHost()) || (!remote.isEmpty() && uri.getHost().equals(remote));
     }
 
     private static boolean isHttp(String url) {
@@ -725,6 +885,44 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public String version() {
             return installedVersion();
+        }
+
+        /** V6.0: o celular tem digital e ela já foi ativada para o JARVIS? */
+        @JavascriptInterface
+        public boolean hasBiometric() {
+            return fromJarvis() && biometricAvailable() && !prefs.getString(KEY_DEVICE_SECRET, "").isEmpty();
+        }
+
+        /** V6.0: dá para usar a digital neste celular (para oferecer ativar)? */
+        @JavascriptInterface
+        public boolean canUseBiometric() {
+            return fromJarvis() && biometricAvailable();
+        }
+
+        /** V6.0: guarda a chave do aparelho depois de confirmar a digital (ativar). */
+        @JavascriptInterface
+        public void saveDeviceSecret(String secret) {
+            if (!fromJarvis() || secret == null || secret.length() < 20 || secret.length() > 200) return;
+            runOnUiThread(() -> askBiometric("Ativar a digital no JARVIS", "Confirme com a sua digital",
+                    () -> {
+                        prefs.edit().putString(KEY_DEVICE_SECRET, secret).apply();
+                        sendBiometric("saved", null, "Digital ativada. Na próxima vez, é só encostar o dedo.");
+                    }));
+        }
+
+        /** V6.0: entrar com a digital: confirmada, devolve a chave para a central liberar no PC. */
+        @JavascriptInterface
+        public void biometricUnlock() {
+            String secret = prefs.getString(KEY_DEVICE_SECRET, "");
+            if (!fromJarvis() || secret.isEmpty()) return;
+            runOnUiThread(() -> askBiometric("Entrar no JARVIS", "Encoste o dedo para liberar a central",
+                    () -> sendBiometric("unlock", secret, null)));
+        }
+
+        /** V6.0: esquece a digital neste celular. */
+        @JavascriptInterface
+        public void forgetBiometric() {
+            if (fromJarvis()) prefs.edit().remove(KEY_DEVICE_SECRET).apply();
         }
 
         /** V5.7.1: botão ATUALIZAR APP (tela de bloqueio): procura versão nova no PC agora e responde à tela. */

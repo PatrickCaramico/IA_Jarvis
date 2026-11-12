@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import ArcReactorHUD from "./components/ArcReactorHUD.jsx";
 import WireOrb from "./components/WireOrb.jsx";
 import LockScreen, { BlueprintStamp } from "./components/LockScreen.jsx";
@@ -1152,11 +1153,13 @@ export default function App() {
     }
   }, []);
 
+  const pinEnteredRef = useRef(false);
   const submitPin = useCallback(async (pin) => {
     setPinState((cur) => ({ ...cur, busy: true, message: "" }));
     try {
       const data = await api("/api/auth/pin", { method: "POST", body: JSON.stringify({ pin }) });
       if (data.verified) {
+        if (IS_JARVIS_APP) pinEnteredRef.current = true; // V6.0: oferece ativar a digital depois de entrar
         setPinState({ busy: false, message: "", lockedUntil: null });
         setName(data.name ?? "");
         setLockMessage(data.message ?? "");
@@ -2060,6 +2063,124 @@ export default function App() {
     returnToWaiting(true);
   }, [handlePrefsChange, hasPhoto, returnToWaiting]);
 
+  // ================= V6.0: app do celular — atalhos, compartilhar e digital =================
+  const [shareItem, setShareItem] = useState(null); // { text, subject } vindo do "Compartilhar -> JARVIS"
+  const [bioOffer, setBioOffer] = useState(false);
+  const queuedAppCmd = useRef(null); // { listen } | { say } esperando entrar na central
+  const sendRef = useRef(send);
+  sendRef.current = send;
+  const toggleMicRef = useRef(toggleMic);
+  toggleMicRef.current = toggleMic;
+  const listeningRef = useRef(listening);
+  listeningRef.current = listening;
+
+  const runAppCmd = useCallback((cmd) => {
+    if (!cmd) return;
+    if (cmd.listen && !listeningRef.current) toggleMicRef.current();
+    if (cmd.say) sendRef.current(cmd.say);
+  }, []);
+
+  const unlockWithDevice = useCallback(async (secret) => {
+    setPinState((cur) => ({ ...cur, busy: true, message: "" }));
+    try {
+      const data = await api("/api/auth/device/unlock", { method: "POST", body: JSON.stringify({ secret }) });
+      if (data.verified) {
+        setPinState({ busy: false, message: "", lockedUntil: null });
+        setName(data.name ?? "");
+        setLockMessage(data.message ?? "");
+        setFailCount(0);
+        setLockPhase("verified");
+        setTimeout(() => enterMainRef.current(undefined), 400); // digital já é a confirmação: entra direto
+      } else {
+        try { window.JarvisApp?.forgetBiometric?.(); } catch { /* app antigo */ }
+        setPinState((cur) => ({ ...cur, busy: false, message: data.message }));
+      }
+    } catch (err) {
+      setPinState((cur) => ({ ...cur, busy: false, message: err.message }));
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!IS_JARVIS_APP) return undefined;
+    const onListen = () => {
+      if (screenRef.current === "main") runAppCmd({ listen: true });
+      else queuedAppCmd.current = { listen: true };
+    };
+    const onSay = (e) => {
+      const text = String(e.detail?.text || "").trim();
+      if (!text) return;
+      if (screenRef.current === "main") runAppCmd({ say: text });
+      else queuedAppCmd.current = { say: text };
+    };
+    const onShare = (e) => {
+      const text = String(e.detail?.text || "").trim();
+      if (text) setShareItem({ text: text.slice(0, 2000), subject: String(e.detail?.subject || "") });
+    };
+    const onBio = (e) => {
+      const d = e.detail || {};
+      if (d.action === "unlock" && d.secret) unlockWithDevice(d.secret);
+      else if (d.action === "saved") setNotice(d.message || "Digital ativada.");
+      else if (d.action === "error" && d.message) setPinState((cur) => ({ ...cur, message: d.message }));
+    };
+    window.addEventListener("jarvis-app-listen", onListen);
+    window.addEventListener("jarvis-app-say", onSay);
+    window.addEventListener("jarvis-app-share", onShare);
+    window.addEventListener("jarvis-app-biometric", onBio);
+    return () => {
+      window.removeEventListener("jarvis-app-listen", onListen);
+      window.removeEventListener("jarvis-app-say", onSay);
+      window.removeEventListener("jarvis-app-share", onShare);
+      window.removeEventListener("jarvis-app-biometric", onBio);
+    };
+  }, [runAppCmd, unlockWithDevice]);
+
+  // Entrou na central: roda o atalho que estava esperando e, se entrou pelo PIN no app, oferece a digital
+  useEffect(() => {
+    if (screen !== "main") return undefined;
+    const t = setTimeout(() => {
+      const cmd = queuedAppCmd.current;
+      queuedAppCmd.current = null;
+      runAppCmd(cmd);
+    }, 1200);
+    if (IS_JARVIS_APP && pinEnteredRef.current) {
+      pinEnteredRef.current = false;
+      let asked = false;
+      try { asked = localStorage.getItem("jarvis.bio.asked") === "1"; } catch { /* sem armazenamento */ }
+      try {
+        if (!asked && window.JarvisApp?.canUseBiometric?.() && !window.JarvisApp?.hasBiometric?.()) setBioOffer(true);
+      } catch { /* app antigo, sem digital */ }
+    }
+    return () => clearTimeout(t);
+  }, [screen, runAppCmd]);
+
+  // Bloqueio no app com a digital ativada: já pede a digital ao abrir (cancelar = usar o PIN)
+  useEffect(() => {
+    if (!IS_JARVIS_APP || screen !== "lock") return undefined;
+    let has = false;
+    try { has = Boolean(window.JarvisApp?.hasBiometric?.()); } catch { has = false; }
+    if (!has) return undefined;
+    const t = setTimeout(() => { try { window.JarvisApp.biometricUnlock(); } catch { /* sem digital */ } }, 700);
+    return () => clearTimeout(t);
+  }, [screen]);
+
+  const enableBiometric = useCallback(async () => {
+    setBioOffer(false);
+    try { localStorage.setItem("jarvis.bio.asked", "1"); } catch { /* sem armazenamento */ }
+    try {
+      const key = await api("/api/auth/device/enroll", { method: "POST", body: JSON.stringify({ name: "Celular" }) });
+      window.JarvisApp?.saveDeviceSecret?.(key.secret);
+    } catch (err) {
+      setNotice(`Não consegui ativar a digital: ${err.message}`);
+    }
+  }, []);
+
+  const shareActions = shareItem ? [
+    { icon: "✦", label: "Resumir", say: `Resuma em poucas frases: ${shareItem.text}` },
+    { icon: "✎", label: "Anotar", say: `anota: ${shareItem.text.slice(0, 280)}` },
+    { icon: "⏰", label: "Lembrar amanhã", say: `me lembra amanhã às 9 de ver ${shareItem.subject || shareItem.text.slice(0, 120)}` },
+    { icon: "🛒", label: "Lista de compras", say: `coloca ${shareItem.text.slice(0, 120)} na lista` },
+  ] : [];
+
   // ================= Telas =================
   if (screen === "boot") {
     const returningUser = hasLoggedBefore();
@@ -2254,6 +2375,8 @@ export default function App() {
           onUpdate={IS_JARVIS_APP ? updateApp : BACKEND_ON_THIS_PC ? updateJarvis : null}
           updateNote={appUpdateNote}
           phoneApp={IS_JARVIS_APP}
+          onBiometric={IS_JARVIS_APP && (() => { try { return window.JarvisApp?.hasBiometric?.(); } catch { return false; } })()
+            ? () => window.JarvisApp.biometricUnlock() : null}
           bgToggle={{
             value: appPrefs.background_style || "blueprint",
             onCycle: () => {
@@ -2409,6 +2532,40 @@ export default function App() {
         />
       )}
       {notice && <div className="notice-toast" role="status">{notice}</div>}
+      {/* V6.0: "Compartilhar -> JARVIS" */}
+      {shareItem && createPortal(
+        <div className="ld-overlay" role="dialog" aria-modal="true" aria-label="Compartilhado com o JARVIS" onClick={(e) => { if (e.target === e.currentTarget) setShareItem(null); }}>
+          <section className="ld-card app-share">
+            <header className="ld-head">
+              <span className="lc-label">COMPARTILHADO COM O JARVIS</span>
+              <button type="button" className="ld-x" onClick={() => setShareItem(null)} aria-label="Fechar">✕</button>
+            </header>
+            <p className="app-share-text">{shareItem.subject ? <b>{shareItem.subject}<br /></b> : null}{shareItem.text.slice(0, 300)}{shareItem.text.length > 300 ? "…" : ""}</p>
+            <div className="app-share-actions">
+              {shareActions.map((a) => (
+                <button key={a.label} type="button" className="hl-quick-btn" onClick={() => { setShareItem(null); send(a.say); }}>
+                  <i aria-hidden="true">{a.icon}</i>{a.label}
+                </button>
+              ))}
+            </div>
+          </section>
+        </div>,
+        document.body,
+      )}
+      {/* V6.0: depois de entrar pelo PIN no app, oferece a digital */}
+      {bioOffer && createPortal(
+        <div className="ld-overlay" role="dialog" aria-modal="true" aria-label="Entrar com a digital">
+          <section className="ld-card app-bio">
+            <header className="ld-head"><span className="lc-label">ENTRAR COM A DIGITAL</span></header>
+            <p className="ld-text" style={{ textTransform: "none" }}>Quer entrar no JARVIS só encostando o dedo, sem digitar o PIN? Dá para desligar quando quiser.</p>
+            <div className="app-share-actions">
+              <button type="button" className="hl-quick-btn" onClick={enableBiometric}><i aria-hidden="true">👆</i>Ativar a digital</button>
+              <button type="button" className="hl-quick-btn" onClick={() => { setBioOffer(false); try { localStorage.setItem("jarvis.bio.asked", "1"); } catch { /* ok */ } }}>Agora não</button>
+            </div>
+          </section>
+        </div>,
+        document.body,
+      )}
       {fanModeEnabled && <FanGoalOverlay event={fanEvent} onDone={clearFanEvent} />}
       {briefingAsk && (
         <div className="bask-root" role="dialog" aria-modal="false" aria-labelledby="bask-title">

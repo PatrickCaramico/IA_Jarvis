@@ -1,4 +1,4 @@
-# Branding Book do JARVIS (v1.19, atualizado na V5.9.0 em 12/11/2026: mini janelas de detalhes no bloqueio; fundo Universo, anel dourado, bloqueio completo e briefing no celular; voz no aparelho que pediu e atalhos do celular; agenda dos próximos dias e contagem regressiva; celular com voz, foto e aparelhos conectados; entrada sem repetição, janela do perfil e QR que abre o app; entrada direta para quem já usa, reconexão sozinha e central enxuta no celular)
+# Branding Book do JARVIS (v2.0, atualizado na V6.0.0 em 12/11/2026: lista de compras, rotinas, digital, compartilhar e fora de casa; mini janelas de detalhes no bloqueio; fundo Universo, anel dourado, bloqueio completo e briefing no celular; voz no aparelho que pediu e atalhos do celular; agenda dos próximos dias e contagem regressiva; celular com voz, foto e aparelhos conectados; entrada sem repetição, janela do perfil e QR que abre o app; entrada direta para quem já usa, reconexão sozinha e central enxuta no celular)
 
 Versão aprovada do Branding Book proposto no plano da 4.2. Há também uma versão ilustrada e animada: abra `docs/branding-book.html` no navegador. Tudo aqui já está aplicado no projeto;
 no fim de cada seção há onde isso vive no código.
@@ -60,7 +60,7 @@ nos módulos do backend.
 | --- | --- |
 | Assistente | JARVIS (o nome da IA pode ser trocado em Configurações) |
 | Módulo de escuta contínua | **Modo Sentinela** (mantido; as siglas propostas não foram adotadas) |
-| Versão exibida na central | `v5.9.1` (sem referências a marcas de terceiros, como "Stark") |
+| Versão exibida na central | `v6.0.0` (sem referências a marcas de terceiros, como "Stark") |
 | Lista de sites abertos por voz | **Meus Sites** (Configurações > Meus Sites) |
 | Resumo da manhã | **Briefing** (disparado por "bom dia") |
 | Resumo da noite | **Fechamento do dia** (disparado por "boa noite") |
@@ -618,6 +618,22 @@ escurecido e desfocado). Fecha no ✕, no Esc ou tocando fora; no celular sobe d
 - **MANCHETES:** a manchete principal com a fonte e mais duas.
 Nada pessoal: a tela continua bloqueada.
 
+**JARVIS 6.0: o assistente do dia a dia.**
+- **Lista de compras:** painel "LISTA DE COMPRAS" (rótulo com 🛒): campo "Adicionar (ex.: "leite, pão e ovos")"
+  com botão ＋, itens com caixinha turquesa (22 px no celular), comprados riscados e apagados embaixo, ✕ que
+  fica vermelho no hover e o chip tracejado "Limpar comprados (N)". No celular vem logo depois da conversa.
+- **Rotinas:** "vou dormir" e "estou saindo" (Dormir, Saindo de casa) respondem como protocolos; a fala junta
+  despertador, compromisso e clima de amanhã, ou o clima agora e a lista de compras.
+- **Digital no app:** no bloqueio do app, "👆 ENTRAR COM A DIGITAL" vira o botão principal (o "🔑 ENTRAR COM PIN"
+  fica como alternativa, sem destaque) e a dica diz "Encoste o dedo ou use o PIN". Depois do PIN, uma janela
+  "ENTRAR COM A DIGITAL" oferece "👆 Ativar a digital" ou "Agora não".
+- **Compartilhar com o JARVIS:** janela "COMPARTILHADO COM O JARVIS" (sobe de baixo no celular) com o título e
+  o texto e os botões ✦ Resumir · ✎ Anotar · ⏰ Lembrar amanhã · 🛒 Lista de compras.
+- **Atalhos do Android:** toque longo no ícone (Falar com o JARVIS, Bom dia, Lista de compras) e o botão
+  "JARVIS · Falar" na cortina do Android, com o ícone do Núcleo.
+- **Fora de casa:** na janela "JARVIS no celular", a linha "🌐 Fora de casa: ativo pelo Tailscale" em verde
+  (ou a dica de instalar, em cinza).
+
 ### Meus Sites, escudos e atualização (V5)
 
 **Meus Sites.** Nova aba em Configurações, no mesmo vidro azul das outras. Título "MEUS SITES" em
@@ -650,7 +666,7 @@ o PC tem um APK mais novo. Nada é baixado ou instalado sozinho.
 o orbe Núcleo girando devagar no topo (parado com "reduzir movimento"), "JARVIS" em Orbitron com brilho
 ciano, cartões de vidro azul-marinho com ícone em círculo de contorno (ciano; âmbar para segurança; verde
 para água e para o Modo Torcedor), capturas em moldura com cantos ciano e, no rodapé, o carimbo
-"J.A.R.V.I.S. · FOLHA · SITE · REV. v5.9.1" (a versão vem de `backend/version.py`). Botão principal ciano cheio ("VER NO GITHUB"); os outros só
+"J.A.R.V.I.S. · FOLHA · SITE · REV. v6.0.0" (a versão vem de `backend/version.py`). Botão principal ciano cheio ("VER NO GITHUB"); os outros só
 com borda. Logo abaixo, num quadro de borda tracejada âmbar, o botão "ABRIR MEU JARVIS" (borda âmbar, o "olhe aqui" da Sentinela), que abre a **mesma central do PC publicada no site** (`/app/`). Ela conversa com o JARVIS ligado no computador (backend em `127.0.0.1:8000`), então rosto, perfil, Modo Torcedor, rotina e agenda são os de sempre; na primeira vez, o Chrome pergunta se o site pode acessar a rede local (é o backend do próprio PC). Tom: o mesmo da central, e a página deixa claro que é só a vitrine ("O JARVIS roda no seu PC:
 voz, câmera, controle do sistema e os seus dados nunca passam por aqui."). A 404 diz "Procurei em toda a
 planta, senhor, e esta página não está aqui."
@@ -694,6 +710,7 @@ central completa, que agora conversa em cards.
 | **5.7 · uma voz só** | 11/11/2026 | A voz sai só no aparelho que pediu (celular ou PC), escolha "voz neste aparelho / voz no PC", "falar no PC" pelo celular e atalhos rápidos no chat do celular. |
 | **5.8 · o universo** | 12/11/2026 | Fundo Universo, anel dourado no reator, mercado e manchete no lado direito do bloqueio e o briefing ajustado ao celular. |
 | **5.9 · os detalhes** | 12/11/2026 | Todo cartão da tela de bloqueio abre uma mini janela com mais detalhes (sistemas, Spotify, hoje, clima com amanhã, mercado e manchetes). |
+| **6.0 · o dia a dia** | 12/11/2026 | Lista de compras por voz com caixinhas, rotinas em 1 comando (dormir, saindo de casa), entrar no app com a digital, compartilhar com o JARVIS, atalhos e botão na cortina do Android e acesso fora de casa pelo Tailscale. |
 
 O que atravessou todas as versões: tudo roda no PC do dono, o rosto é a chave, a voz é em
 português e o reator (depois Núcleo) fica no centro da tela.

@@ -25,7 +25,7 @@ from pydantic import BaseModel
 
 from config import settings
 from core import runtime
-from routes.system import local_ip
+from routes.system import local_ip, tailscale_ip
 from version import VERSION
 
 router = APIRouter()
@@ -68,6 +68,8 @@ async def mobile_info() -> dict:
         "network_mode": settings.NETWORK_MODE,
         "download_url": f"http://{ip}:8000/api/mobile" if ip else "",
         "version": apk_version(),
+        # V6.0: endereço do PC no Tailscale; o app usa quando a Wi-Fi de casa não responde
+        "remote_host": tailscale_ip(),
         "size_kb": round(APK_PATH.stat().st_size / 1024) if apk_available() else 0,
     }
 
