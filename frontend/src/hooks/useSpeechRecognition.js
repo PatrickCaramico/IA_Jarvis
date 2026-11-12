@@ -20,6 +20,10 @@ const ERROR_TEXT = {
   network: "Falha no reconhecimento de voz. Ele precisa de internet.",
 };
 
+// V6.5.17: depois que o microfone foi liberado uma vez, não confere de novo a cada toque
+// (a conferência atrasava o início e as primeiras palavras, como "abre o", se perdiam).
+let micChecked = false;
+
 const SILENCE_TIMEOUT_MS = 2200; // Tempo de silêncio após falar para enviar automaticamente
 const MAX_WAIT_TIMEOUT_MS = 15000; // Tempo máximo de espera se você não disser nada
 
@@ -92,18 +96,21 @@ export default function useSpeechRecognition({ onFinal, onError, deviceId }) {
       return;
     }
     startingRef.current = true;
-    try {
-      if (!navigator.mediaDevices?.getUserMedia) {
-        throw new Error("media-devices-unavailable");
+    if (!micChecked) {
+      try {
+        if (!navigator.mediaDevices?.getUserMedia) {
+          throw new Error("media-devices-unavailable");
+        }
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: deviceId ? { deviceId: { exact: deviceId } } : true,
+        });
+        stream?.getTracks().forEach((track) => track.stop());
+        micChecked = true;
+      } catch (error) {
+        startingRef.current = false;
+        onErrorRef.current?.(microphoneError(error));
+        return;
       }
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: deviceId ? { deviceId: { exact: deviceId } } : true,
-      });
-      stream?.getTracks().forEach((track) => track.stop());
-    } catch (error) {
-      startingRef.current = false;
-      onErrorRef.current?.(microphoneError(error));
-      return;
     }
     canceledRef.current = false;
     textBufferRef.current = "";
@@ -147,7 +154,17 @@ export default function useSpeechRecognition({ onFinal, onError, deviceId }) {
       }
     };
 
+    // V6.5.17: avisa quando o microfone de fato começou a ouvir (aí já pode falar)
+    rec.onaudiostart = () => {
+      try {
+        window.dispatchEvent(new CustomEvent("jarvis-mic-ready"));
+      } catch {
+        /* sem eventos: segue */
+      }
+    };
+
     rec.onerror = (event) => {
+      if (event.error === "not-allowed") micChecked = false;
       if (event.error === "no-speech" || event.error === "aborted") return;
       onErrorRef.current?.(ERROR_TEXT[event.error] ?? `Erro no microfone: ${event.error}`);
     };

@@ -1831,11 +1831,17 @@ export default function App() {
   useEffect(() => {
     soundManager.configure({ volume: appPrefs.sfx_volume, mode: appPrefs.sfx_mode, silent: appPrefs.silent_mode });
   }, [appPrefs.sfx_volume, appPrefs.sfx_mode, appPrefs.silent_mode]);
+  useEffect(() => {
+    const onReady = () => soundManager.playListening();
+    window.addEventListener("jarvis-mic-ready", onReady);
+    return () => window.removeEventListener("jarvis-mic-ready", onReady);
+  }, []);
   const prevOrbRef = useRef({ state: "idle", listening: false });
   useEffect(() => {
     const prev = prevOrbRef.current;
     if (screen === "main") {
-      if (listening && !prev.listening) soundManager.playListening();
+      // V6.5.17: no navegador, o bipe toca quando o microfone DE FATO começou a ouvir (evento jarvis-mic-ready)
+      if (listening && !prev.listening && IS_JARVIS_APP) soundManager.playListening();
       else if (!listening && jarvisState === "idle" && (prev.state === "speaking" || prev.state === "processing")) {
         soundManager.playIdle();
       }

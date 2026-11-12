@@ -58,8 +58,41 @@ export default function useSentinelListener({ enabled, paused = false, wakeWords
     }
     activeRef.current = true;
 
+    // V6.5.17: o Chrome às vezes corta a frase numa pausa curta ("Jarvis abre o" + "YouTube").
+    // Depois da palavra de ativação, os pedaços que chegam em seguida são juntados e só então enviados.
+    const JOIN_MS = 1300;
+    let pending = null; // { rest, text, timer }
+    const flush = () => {
+      if (!pending) return;
+      const { rest, text } = pending;
+      clearTimeout(pending.timer);
+      pending = null;
+      goSleep();
+      cbRef.current.onCommand?.(rest, text);
+    };
+    const queue = (rest, text) => {
+      if (pending) {
+        clearTimeout(pending.timer);
+        pending.rest = `${pending.rest} ${rest}`.trim();
+        pending.text = `${pending.text} ${text}`.trim();
+      } else {
+        pending = { rest, text, timer: null };
+      }
+      pending.timer = setTimeout(flush, JOIN_MS);
+    };
+    const holdOn = () => {  // ainda falando (resultado parcial): espera mais um pouco
+      if (pending) {
+        clearTimeout(pending.timer);
+        pending.timer = setTimeout(flush, JOIN_MS);
+      }
+    };
+
     const handleFinal = (text) => {
       const now = Date.now();
+      if (pending) {  // continuação da mesma frase
+        queue(text, text);
+        return;
+      }
       // V4.2.2: "abrir central", "liberar"... vão direto para o escaneamento (com ou sem "Jarvis")
       if (cbRef.current.onUnlock && matchUnlock(text, wakeRef.current || [])) {
         goSleep();
@@ -75,8 +108,7 @@ export default function useSentinelListener({ enabled, paused = false, wakeWords
         return;
       }
       if (matched || awake) {
-        goSleep();
-        cbRef.current.onCommand?.(matched ? rest : text, text);
+        queue(matched ? rest : text, text);
       }
     };
 
@@ -95,6 +127,7 @@ export default function useSentinelListener({ enabled, paused = false, wakeWords
           else partial += result[0].transcript;
         }
         setInterim(partial.trim());
+        if (partial.trim()) holdOn();
         backoffRef.current = 400;
         if (awakeUntilRef.current && Date.now() > awakeUntilRef.current) goSleep();
       };

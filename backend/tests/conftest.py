@@ -27,6 +27,7 @@ _WRITABLE = (
     ("news_alerts", "_PATH", "noticias_avisadas.json"),  # V6.5
     ("phrases", "_PATH", "frases_recentes.json"),  # V6.5.3
     ("phone_feed", "_PATH", "avisos_celular.json"),  # V6.5.4
+    ("triggers", "_FIRED_PATH", "gatilhos_avisados.json"),  # V6.5.17
 )
 
 

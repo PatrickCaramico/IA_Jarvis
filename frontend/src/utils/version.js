@@ -1,2 +1,2 @@
 // Versão do JARVIS mostrada na interface (a do backend fica em backend/version.py; os dois são conferidos em teste).
-export const APP_VERSION = "6.5.16";
+export const APP_VERSION = "6.5.17";

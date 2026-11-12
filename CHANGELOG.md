@@ -2,6 +2,11 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 6.5.17 — 12 de novembro de 2026
+
+- **Voz cortando o começo da frase:** com "Jarvis, …" (sem tocar no microfone), o Chrome dividia a frase numa pausa curta ("Jarvis abre o" + "YouTube") e só um pedaço era enviado. Agora os pedaços que chegam logo depois da palavra de ativação são juntados (até 1,3 s de silêncio) e a frase vai inteira. No botão do microfone, a permissão era conferida a cada toque e atrasava o início (as primeiras palavras se perdiam): agora só na primeira vez, e o bipe toca quando o microfone de fato começou a ouvir.
+- **"Abriu o clima" sozinho:** o aviso "Previsão de chuva amanhã…" é diário, mas a memória de "já avisei" zerava a cada reinício do JARVIS (toda atualização reinicia) e ele se repetia várias vezes no mesmo dia. Agora fica em disco (`data/gatilhos_avisados.json`).
+
 ## 6.5.16 — 12 de novembro de 2026
 
 - **Limpar o chat:** botão "🗑 LIMPAR" no Canal Ativo. Pergunta "Apagar qual conversa?" — "Só a de hoje" ou "Todo o período" (ou Cancelar). Apaga a conversa na tela de todos os aparelhos (evento `chat_cleared`) e no PC (memória de conversa e o contexto da IA), sem apagar fatos, preferências e rotina. `POST /api/chat/clear` e `memory.clear_conversation`.

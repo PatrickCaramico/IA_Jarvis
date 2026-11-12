@@ -46,6 +46,35 @@ CPU_COOLDOWN_S = 30 * 60
 
 _lock = threading.Lock()
 _fired: dict[str, str] = {}      # chave -> marca do período em que já avisou
+# V6.5.17: guardado em disco. Antes, cada reinício do JARVIS (toda atualização reinicia) esquecia que já tinha
+# avisado, e o "chuva amanhã" repetia várias vezes no mesmo dia.
+_FIRED_PATH = settings.DATA_DIR / "gatilhos_avisados.json"
+_fired_loaded = False
+
+
+def _load_fired() -> None:
+    global _fired_loaded
+    if _fired_loaded:
+        return
+    _fired_loaded = True
+    try:
+        import json
+
+        data = json.loads(_FIRED_PATH.read_text(encoding="utf-8"))
+        if isinstance(data, dict):
+            _fired.update({str(k): str(v) for k, v in data.items()})
+    except (OSError, ValueError):
+        pass
+
+
+def _save_fired() -> None:
+    try:
+        import json
+
+        _FIRED_PATH.parent.mkdir(parents=True, exist_ok=True)
+        _FIRED_PATH.write_text(json.dumps(_fired, ensure_ascii=False), encoding="utf-8")
+    except OSError as exc:
+        log.debug("Não consegui guardar os avisos já dados: %s", exc)
 _cpu_high_since: Optional[float] = None
 _cpu_last_alert: Optional[float] = None
 
@@ -152,9 +181,11 @@ def _new(key_and_text: Optional[tuple[str, str]], kind: str) -> Optional[dict]:
         return None
     key, text = key_and_text
     with _lock:
+        _load_fired()
         if _fired.get(kind) == key:
             return None
         _fired[kind] = key
+        _save_fired()
     return {"kind": kind, "text": text}
 
 
@@ -166,6 +197,8 @@ def check_all(user_cfg: Optional[dict], fan_enabled: bool, team_id: str,
     cfg = merged_config(user_cfg)
     now = now or datetime.now(SP_TZ)
     alerts: list[dict] = []
+    with _lock:
+        _load_fired()
 
     if cfg["rain_tomorrow"]["enabled"] and now.hour >= cfg["rain_tomorrow"]["hour"] \
             and _fired.get("rain_tomorrow") != f"rain:{now.date()}":
@@ -196,9 +229,10 @@ def check_all(user_cfg: Optional[dict], fan_enabled: bool, team_id: str,
 
 
 def reset_for_tests() -> None:
-    global _cpu_high_since, _cpu_last_alert
+    global _cpu_high_since, _cpu_last_alert, _fired_loaded
     with _lock:
         _fired.clear()
+        _fired_loaded = True
     _cpu_high_since = None
     _cpu_last_alert = None
 
