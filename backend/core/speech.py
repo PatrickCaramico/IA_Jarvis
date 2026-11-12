@@ -61,9 +61,18 @@ async def speak(text: str, release_busy: bool = True, idle_after: bool = True) -
         if device:
             # V5.7: pedido do celular: a voz toca SÓ nele (ele busca o MP3 em /api/tts); o PC fica quieto.
             # Espera o tempo aproximado da fala para o briefing em etapas manter o ritmo.
+            # V6.5.1: espera o aparelho avisar que terminou (com folga para baixar a voz pela rede);
+            # aparelho que não avisa (versão antiga) cai no tempo estimado + a folga.
             await on_start()
-            await runtime.manager.broadcast({"type": "speak_on_device", "client_id": device, "text": text})
-            await asyncio.sleep(voice_route.estimate_seconds(text))
+            say_id = voice_route.new_say_id()
+            done = voice_route.expect(say_id)
+            await runtime.manager.broadcast({"type": "speak_on_device", "client_id": device, "text": text, "say_id": say_id})
+            try:
+                await asyncio.wait_for(done.wait(), timeout=voice_route.estimate_seconds(text) * 1.5 + voice_route.ACK_SLACK_SECONDS)
+            except asyncio.TimeoutError:
+                log.info("O aparelho não confirmou o fim da fala; seguindo pelo tempo estimado.")
+            finally:
+                voice_route.forget(say_id)
         else:
             await generate_and_play_speech(text, on_playback_start=on_start)
         await runtime.manager.broadcast({"type": "step", "step": "tts", "status": "done"})

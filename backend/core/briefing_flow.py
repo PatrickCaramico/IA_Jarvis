@@ -79,6 +79,12 @@ async def run_sequence(message: str, turn: int, data: dict, max_history: int) ->
     try:
         segments = data["segments"]
         opening_text = " ".join(p for p in (data["greeting"], data["opening_speech"]) if p)
+        if not prefs.is_silent_mode():
+            # V6.5.1: gera a voz de todas as partes já (no celular, o texto inteiro, como ele pede)
+            from core import voice_route
+
+            tts_module.prefetch([opening_text, *(s["speech"] for s in segments), data.get("closing") or ""],
+                                whole=voice_route.current() is not None)
         await runtime.manager.broadcast({
             "type": "briefing_start",
             "mode": data["mode"],
@@ -136,6 +142,7 @@ async def run_sequence(message: str, turn: int, data: dict, max_history: int) ->
         await runtime.manager.broadcast({"type": "error", "message": "O briefing foi interrompido por uma falha."})
     finally:
         _skip = None
+        tts_module.clear_prefetch()  # V6.5.1: sobras de um briefing cancelado não ficam gerando voz
         if not speech.canceled(turn):
             session.busy = False
             await runtime.manager.broadcast({"type": "state", "state": "idle"})

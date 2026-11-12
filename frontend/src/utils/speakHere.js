@@ -63,17 +63,28 @@ export async function speakHere(text, id = "x") {
 }
 
 // V5.7: falas que o PC mandou para este aparelho (evento "speak_on_device"), uma depois da outra
+// V6.5.1: avisa o PC quando cada fala termina (say_id), para o briefing trocar o card na hora certa
+function ackPlayed(sayId) {
+  if (!sayId) return;
+  const token = getJarvisToken();
+  fetch(`${API_URL}/api/tts/played`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(token ? { "X-Jarvis-Token": token } : {}) },
+    body: JSON.stringify({ say_id: sayId }),
+  }).catch(() => { /* o PC segue pelo tempo estimado */ });
+}
+
 const queue = [];
 let draining = false;
-export function enqueueHere(text) {
-  queue.push(text);
+export function enqueueHere(text, sayId = null) {
+  queue.push({ text, sayId });
   if (draining) return;
   draining = true;
   (async () => {
     while (queue.length) {
       const next = queue.shift();
       try {
-        await speakHere(next, `q${Date.now()}`);
+        await speakHere(next.text, `q${Date.now()}`);
         await new Promise((resolve) => {
           const a = current?.audio;
           if (!a || a.ended || a.paused) { resolve(); return; }
@@ -83,6 +94,7 @@ export function enqueueHere(text) {
       } catch {
         /* sem voz agora: segue para a próxima */
       }
+      ackPlayed(next.sayId);
     }
     draining = false;
   })();

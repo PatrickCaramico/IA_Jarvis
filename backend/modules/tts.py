@@ -228,8 +228,70 @@ async def _synthesize(text: str, path: str) -> None:
     volume = _current_volume()
     if _from_cache(text, volume, path):
         return
+    task = _prefetched.pop(_cache_key(text, volume), None)
+    if task is not None:  # V6.5.1: já estava sendo gerada antes (briefing): só espera terminar
+        try:
+            data = await task
+            if data:
+                Path(path).write_bytes(data)
+                return
+        except Exception:  # noqa: BLE001 - a geração adiantada falhou: gera agora, como antes
+            log.debug("Voz adiantada falhou; gerando de novo.")
     await _synthesize_remote(text, path, volume)
     _to_cache(text, volume, path)
+
+
+# ---- V6.5.1: voz adiantada ------------------------------------------------------------------
+# No briefing, cada parte só começava a ser gerada quando chegava a vez dela: o card entrava e a voz
+# demorava (pior nas notícias, as falas mais longas). Agora todas as partes começam a ser geradas no
+# início (no máximo 3 de cada vez) e cada fala só espera o que faltar.
+_prefetched: dict[str, "asyncio.Task[bytes]"] = {}
+_PREFETCH_MAX = 24
+_prefetch_slots: Optional[asyncio.Semaphore] = None
+
+
+async def _render_bytes(text: str, volume: str) -> bytes:
+    global _prefetch_slots
+    if _prefetch_slots is None:
+        _prefetch_slots = asyncio.Semaphore(3)
+    async with _prefetch_slots:
+        fd, path = tempfile.mkstemp(suffix=".mp3", prefix="jarvis_pre_")
+        os.close(fd)
+        try:
+            await _synthesize_remote(text, path, volume)
+            return Path(path).read_bytes()
+        finally:
+            try:
+                os.remove(path)
+            except OSError:
+                pass
+
+
+def prefetch(texts, whole: bool = False) -> int:
+    """Começa a gerar a voz destes textos já. whole=False: nos mesmos pedaços que a caixa do PC toca;
+    whole=True: o texto inteiro, como o celular pede em /api/tts. Devolve quantos pedidos começaram."""
+    volume = _current_volume()
+    started = 0
+    for text in texts:
+        speech = _clean_for_speech(text or "")
+        if not speech:
+            continue
+        for piece in ([speech[:1500]] if whole else _split_chunks(speech)):
+            key = _cache_key(piece, volume)
+            if key in _prefetched or key in _memory_cache:
+                continue
+            while len(_prefetched) >= _PREFETCH_MAX:
+                old = _prefetched.pop(next(iter(_prefetched)))
+                old.cancel()
+            _prefetched[key] = asyncio.create_task(_render_bytes(piece, volume))
+            started += 1
+    return started
+
+
+def clear_prefetch() -> None:
+    for task in _prefetched.values():
+        task.cancel()
+    _prefetched.clear()
 
 
 async def _synthesize_remote(text: str, path: str, volume: str) -> None:

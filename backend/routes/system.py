@@ -262,6 +262,18 @@ async def tts_audio(req: TtsRequest):
     return Response(content=data, media_type="audio/mpeg", headers={"Cache-Control": "no-store"})
 
 
+class PlayedRequest(BaseModel):
+    say_id: str
+
+
+@router.post("/api/tts/played")
+async def tts_played(req: PlayedRequest) -> dict:
+    """V6.5.1: o aparelho terminou de tocar a fala (o briefing passa para o próximo card na hora certa)."""
+    from core import voice_route
+
+    return {"ok": voice_route.mark_played((req.say_id or "")[:32])}
+
+
 class SpeakRequest(BaseModel):
     text: str
 

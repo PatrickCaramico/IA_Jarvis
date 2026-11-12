@@ -2,6 +2,11 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 6.5.1 — 12 de novembro de 2026
+
+- **Briefing sem atraso nas notícias:** a voz de cada parte só começava a ser gerada quando chegava a vez dela; nas notícias (as falas mais longas) eram até ~9 s de silêncio com o card já na tela. Agora todas as partes começam a ser geradas no início do briefing (`tts.prefetch`, até 3 de cada vez) e cada fala só espera o que faltar.
+- **Celular no mesmo ritmo da tela:** o PC "chutava" a duração da fala no celular e passava para o próximo card; voz e tela iam se desencontrando. Agora o celular avisa quando termina cada fala (`POST /api/tts/played`, `say_id` no `speak_on_device`) e só então o próximo card entra (com folga para a rede; aparelho antigo segue pelo tempo estimado). Testes em `test_voice_sync_651.py`.
+
 ## 6.5.0 — 12 de novembro de 2026
 
 - **"Boa tarde":** resumo da tarde em etapas (`build_afternoon_briefing`, título RESUMO DA TARDE): o que falta da agenda de hoje, tarefas pendentes ("Ainda faltam…"), clima, água, e-mails (se conectados) e as notícias dos seus temas, com um fechamento ("O próximo compromisso é…"). "Resumo da tarde", "minha tarde" e "resumo" sozinho entre 12h e 18h também abrem. A entrada na central entre 12h e 18h faz o resumo da tarde (antes era o "bom dia" com "Boa tarde" na saudação). Atalho "boa tarde" ◐ na faixa DIGA.

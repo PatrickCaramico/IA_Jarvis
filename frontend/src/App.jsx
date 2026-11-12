@@ -509,7 +509,7 @@ export default function App() {
         break;
       case "speak_on_device":
         // V5.7: a resposta a um pedido DESTE aparelho: a voz toca aqui (o PC ficou em silêncio)
-        if (msg.client_id && msg.client_id === clientId() && msg.text) enqueueHere(msg.text);
+        if (msg.client_id && msg.client_id === clientId() && msg.text) enqueueHere(msg.text, msg.say_id);
         break;
       case "countdowns":
         setCountdowns(Array.isArray(msg.items) ? msg.items : []); // V5.6: widget de contagem regressiva

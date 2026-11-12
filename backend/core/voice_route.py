@@ -45,6 +45,38 @@ def current() -> Optional[str]:
     return _target.get()
 
 
+# V6.5.1: o aparelho avisa quando terminou de tocar cada fala (POST /api/tts/played). Antes o PC só
+# "chutava" a duração e passava para o próximo card: no celular, voz e tela iam se desencontrando.
+_played: dict[str, "asyncio.Event"] = {}
+ACK_SLACK_SECONDS = 6.0  # folga para o aparelho baixar a voz pela rede (túnel, dados móveis)
+
+
+def new_say_id() -> str:
+    import secrets
+
+    return secrets.token_urlsafe(8)
+
+
+def expect(say_id: str):
+    import asyncio
+
+    ev = asyncio.Event()
+    _played[say_id] = ev
+    return ev
+
+
+def mark_played(say_id: str) -> bool:
+    ev = _played.pop(say_id, None)
+    if ev is None:
+        return False
+    ev.set()
+    return True
+
+
+def forget(say_id: str) -> None:
+    _played.pop(say_id, None)
+
+
 def estimate_seconds(text: str) -> float:
     """Quanto a fala dura no aparelho (para o briefing em etapas manter o ritmo sem a caixa do PC)."""
     words = len((text or "").split())

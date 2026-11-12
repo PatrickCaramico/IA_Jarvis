@@ -28,6 +28,7 @@ def _capture(monkeypatch):
     monkeypatch.setattr(runtime.manager, "broadcast", fake_broadcast)
     monkeypatch.setattr(speech, "generate_and_play_speech", fake_play)
     monkeypatch.setattr(voice_route, "estimate_seconds", lambda text: 0)
+    monkeypatch.setattr(voice_route, "ACK_SLACK_SECONDS", 0)  # V6.5.1: sem esperar o aviso do aparelho
     prefs.update(silent_mode=False)
     return events, played
 
@@ -44,7 +45,9 @@ def test_phone_request_speaks_only_on_phone(monkeypatch):
 
     asyncio.run(run())
     assert played == []
-    assert {"type": "speak_on_device", "client_id": "cphone1234", "text": "Olá do celular."} in events
+    sent = [e for e in events if e.get("type") == "speak_on_device"]
+    assert len(sent) == 1 and sent[0]["client_id"] == "cphone1234" and sent[0]["text"] == "Olá do celular."
+    assert sent[0]["say_id"]  # V6.5.1: o aparelho confirma o fim da fala por este id
 
 
 def test_pc_request_speaks_on_pc(monkeypatch):
