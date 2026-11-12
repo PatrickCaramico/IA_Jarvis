@@ -140,6 +140,11 @@ from modules import countdowns as _countdowns  # noqa: E402
 
 _countdowns.configure(broadcast=runtime.manager.broadcast)
 
+# V6.0: lista de compras avisa as telas quando muda
+from modules import shopping as _shopping  # noqa: E402
+
+_shopping.configure(broadcast=runtime.manager.broadcast)
+
 
 focus.set_focus_announcer(announce)
 

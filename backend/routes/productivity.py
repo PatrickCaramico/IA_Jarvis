@@ -217,6 +217,58 @@ async def set_calendar_ics(req: IcsRequest) -> dict:
         raise HTTPException(status_code=400, detail=f"Não consegui ler essa agenda: {exc}") from exc
 
 
+class ShoppingAdd(BaseModel):
+    texto: str
+
+
+class ShoppingPatch(BaseModel):
+    comprado: bool = True
+
+
+@router.get("/api/shopping")
+async def shopping_list() -> dict:
+    from modules import shopping
+
+    return {"items": shopping.list_items()}
+
+
+@router.post("/api/shopping")
+async def shopping_add(req: ShoppingAdd) -> dict:
+    from modules import shopping
+
+    added = shopping.add(shopping._split(req.texto))  # noqa: SLF001
+    await shopping.announce()
+    return {"added": added, "items": shopping.list_items()}
+
+
+@router.patch("/api/shopping/{item_id}")
+async def shopping_mark(item_id: int, req: ShoppingPatch) -> dict:
+    from modules import shopping
+
+    if not shopping.set_bought(item_id, req.comprado):
+        raise HTTPException(status_code=404, detail="Item não encontrado.")
+    await shopping.announce()
+    return {"items": shopping.list_items()}
+
+
+@router.delete("/api/shopping/{item_id}")
+async def shopping_remove(item_id: int) -> dict:
+    from modules import shopping
+
+    shopping.remove(item_id)
+    await shopping.announce()
+    return {"items": shopping.list_items()}
+
+
+@router.post("/api/shopping/clear")
+async def shopping_clear(all: bool = False) -> dict:  # noqa: A002
+    from modules import shopping
+
+    removed = shopping.clear(only_bought=not all)
+    await shopping.announce()
+    return {"removed": removed, "items": shopping.list_items()}
+
+
 @router.get("/api/countdowns")
 async def get_countdowns() -> dict:
     from modules import countdowns

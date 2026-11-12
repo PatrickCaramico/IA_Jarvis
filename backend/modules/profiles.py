@@ -55,6 +55,7 @@ PERSONAL_FILES: tuple[tuple[str, str, str], ...] = (
     ("quick_replies", "CUSTOM_PATH", "respostas.json"),
     ("whatsapp", "CONTACTS_PATH", "contatos.json"),  # V4.5
     ("finances", "DATA_PATH", "financas.json"),       # V4.5
+    ("shopping", "_PATH", "compras.json"),            # V6.0: lista de compras
 )
 
 _lock = threading.RLock()

@@ -22,6 +22,7 @@ _WRITABLE = (
     ("whatsapp", "CONTACTS_PATH", "contatos.json"),
     ("finances", "DATA_PATH", "financas.json"),
     ("files", "UNDO_PATH", "organizacao_ultima.json"),
+    ("shopping", "_PATH", "compras.json"),  # V6.0
 )
 
 

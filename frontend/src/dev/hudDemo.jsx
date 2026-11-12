@@ -21,6 +21,9 @@ const DATA = {
   "/api/tasks": { tasks: [] },
   "/api/notifications": { items: [] },
   "/api/health": { status: "ok" },
+  "/api/shopping": { items: [
+    { id: 1, texto: "Leite", comprado: false }, { id: 2, texto: "Pão", comprado: false }, { id: 3, texto: "Café", comprado: true },
+  ] },
   "/api/countdowns": { items: [
     { id: 1, title: "Viagem a Maceió", target: new Date(Date.now() + (3 * 86400 + 4 * 3600 + 125) * 1000).toISOString().slice(0, 19), all_day: false },
   ] },

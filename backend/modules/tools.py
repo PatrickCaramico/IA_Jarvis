@@ -1464,6 +1464,13 @@ async def _h_bluetooth_health(message: str, norm: str, words: int, name: str) ->
 
 
 # ===================================================================== produtividade (Fase 2)
+async def _h_shopping(message: str, norm: str, words: int, name: str) -> Optional[str]:
+    # V6.0: lista de compras ("coloca leite na lista", "comprei o pão"); antes das tarefas
+    from modules import shopping
+
+    return await shopping.handle_voice(message)
+
+
 async def _h_tasks(message: str, norm: str, words: int, name: str) -> Optional[str]:
     return await tasks.handle_voice(message, norm, words, name)
 
@@ -1592,7 +1599,7 @@ async def _h_finances(message: str, norm: str, words: int, name: str) -> Optiona
 # ===================================================================== entrada principal
 _HANDLERS = (
     _h_memory, _h_whatsapp, _h_finances,
-    _h_protocol, _h_screen, _h_files, _h_notifications, _h_logs, _h_bluetooth_health, _h_countdown, _h_alarms, _h_timer, _h_reminders, _h_tasks, _h_focus, _h_briefing, _h_notes, _h_browser, _h_spotify, _h_custom_shortcut, _h_open,
+    _h_protocol, _h_screen, _h_files, _h_notifications, _h_logs, _h_bluetooth_health, _h_countdown, _h_alarms, _h_timer, _h_reminders, _h_shopping, _h_tasks, _h_focus, _h_briefing, _h_notes, _h_browser, _h_spotify, _h_custom_shortcut, _h_open,
     _h_search, _h_calc, _h_status, _h_system, _h_exchange, _h_weather,
 )
 

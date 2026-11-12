@@ -181,3 +181,6 @@
   .bf-caption { font-size: 0.9rem; max-width: 100%; }
   .bf-stage.is-done > .bf-row-wrap { width: 100%; overflow-x: auto; }
 }
+
+/* V6.0: no celular a lista de compras vem logo depois da conversa */
+@media (max-width: 760px) { .hl-root .hl-panel.hl-shop { order: 3; } }

@@ -1,4 +1,5 @@
 import NowPlaying from "./NowPlaying.jsx";
+import ShoppingList from "./ShoppingList.jsx";
 import CountdownWidget from "./CountdownWidget.jsx";
 import { clearQueue, onSpeakingChange, speakHere, stopHere } from "../utils/speakHere.js";
 import { BACKEND_ON_THIS_PC, setVoiceHere, voiceHere } from "../utils/api.js";
@@ -173,6 +174,7 @@ const PHONE_ACTIONS = [
   { icon: "💧", label: "+250 ml", say: "bebi 250 ml de água" },
   { icon: "☑", label: "Tarefas", say: "quais são minhas tarefas" },
   { icon: "⏰", label: "Alarmes", say: "quais são meus alarmes" },
+  { icon: "🛒", label: "Lista", say: "o que tem na lista de compras" },
   { icon: "☁", label: "Clima", say: "como está o clima" },
   { icon: "⏸", label: "Pausar música", say: "pausar a música no spotify" },
   { icon: "🔒", label: "Bloquear PC", say: "bloquear a tela", confirm: "Bloquear a tela do computador?" },
@@ -1097,6 +1099,10 @@ export default function HudLayout({
             {waiting && <p className="hl-msg hl-muted">Preparando sua resposta…</p>}
           </div>
           <div className="hl-command">{commandSlot}</div>
+        </Panel>
+        {/* V6.0: lista de compras (voz: "Jarvis, coloca leite na lista") */}
+        <Panel id="compras" title="LISTA DE COMPRAS" tag="🛒" className="hl-shop" onMoveToSecondary={handleMoveToSecondary}>
+          <ShoppingList api={api} />
         </Panel>
       </aside>
 

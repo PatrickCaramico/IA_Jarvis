@@ -1039,3 +1039,24 @@
   background: rgba(0, 0, 0, 0.35); color: #fff; font-size: 16px;
 }
 .hl-pc-sent { margin: 0 0 6px; font-size: 0.75rem; color: #6ee7b7; }
+
+/* V6.0: lista de compras */
+.shop { display: grid; gap: 8px; }
+.shop-add { display: flex; gap: 6px; }
+.shop-add input {
+  flex: 1; min-width: 0; padding: 7px 10px; border-radius: 8px; border: 1px solid var(--hl-line);
+  background: rgba(0, 0, 0, 0.35); color: #fff; font-size: 0.85rem;
+}
+.shop-add button { width: 34px; border-radius: 8px; border: 1px solid var(--hl-line); background: rgba(94, 234, 212, 0.15); color: #e6fffb; cursor: pointer; }
+.shop-add button:disabled { opacity: 0.4; cursor: default; }
+.shop-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; max-height: 240px; overflow-y: auto; }
+.shop-list li { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 8px; border-radius: 8px; background: rgba(2, 8, 19, 0.45); }
+.shop-list label { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; cursor: pointer; }
+.shop-list input[type="checkbox"] { width: 18px; height: 18px; accent-color: #5eead4; flex: none; }
+.shop-list span { font-size: 0.9rem; color: #e6f7fb; overflow: hidden; text-overflow: ellipsis; }
+.shop-list li.is-bought span { text-decoration: line-through; color: rgba(201, 246, 255, 0.45); }
+.shop-x { border: 0; background: none; color: rgba(201, 246, 255, 0.45); cursor: pointer; padding: 2px 6px; }
+.shop-x:hover { color: #f87171; }
+.shop-empty { margin: 0; font-size: 0.8rem; color: rgba(201, 246, 255, 0.65); }
+.shop-clear { justify-self: start; border: 1px dashed rgba(201, 246, 255, 0.3); background: none; color: rgba(201, 246, 255, 0.75); border-radius: 999px; padding: 4px 12px; font-size: 0.72rem; cursor: pointer; }
+@media (max-width: 760px) { .shop-list input[type="checkbox"] { width: 22px; height: 22px; } .shop-list li { padding: 9px 10px; } .shop-add input { font-size: 16px; } }
