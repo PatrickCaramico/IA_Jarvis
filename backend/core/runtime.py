@@ -32,11 +32,36 @@ ACCESS_TOKEN = get_or_create_access_token()
 LOCAL_HOSTS = {"127.0.0.1", "::1", "localhost", "testclient"}
 
 
+def describe_device(ip: str, user_agent: str, local: bool) -> dict:
+    """V5.5: nome amigável do aparelho a partir do user agent ("Celular · SM-A546E", "Este PC")."""
+    import re
+    import time as _time
+
+    ua = user_agent or ""
+    app = "JarvisApp/" in ua
+    model = ""
+    m = re.search(r"Android [\d.]+; (?:[a-z]{2}-[a-z]{2}; )?([^;)]+?)(?: Build/[^;)]*)?[;)]", ua)
+    if m:
+        model = m.group(1).strip()
+        if model.lower() in ("k", "wv"):  # Chrome novo esconde o modelo ("Android 10; K")
+            model = ""
+    if app:
+        kind, name = "app", f"Celular · {model}" if model else "Celular (app JARVIS)"
+    elif local:
+        kind, name = "pc", "Este PC"
+    elif "Android" in ua or "iPhone" in ua:
+        kind, name = "browser", f"Navegador do celular{' · ' + model if model else ''}"
+    else:
+        kind, name = "browser", "Outro computador"
+    return {"kind": kind, "name": name, "ip": ip, "since": _time.time()}
+
+
 class ConnectionManager:
     """Mantém os WebSockets abertos e distribui eventos para todos."""
 
     def __init__(self) -> None:
         self.connections: set[WebSocket] = set()
+        self.meta: dict[int, dict] = {}  # V5.5: aparelho de cada conexão (id(ws) -> dados)
 
     @staticmethod
     def is_local(ws: WebSocket) -> bool:
@@ -59,9 +84,29 @@ class ConnectionManager:
     async def connect(self, ws: WebSocket) -> None:
         await ws.accept()
         self.connections.add(ws)
+        host = ws.client.host if getattr(ws, "client", None) else ""
+        try:
+            ua = ws.headers.get("user-agent", "")
+        except Exception:  # noqa: BLE001
+            ua = ""
+        self.meta[id(ws)] = describe_device(host, ua, host in LOCAL_HOSTS)
 
     def disconnect(self, ws: WebSocket) -> None:
         self.connections.discard(ws)
+        self.meta.pop(id(ws), None)
+
+    def devices(self) -> list[dict]:
+        """V5.5: aparelhos conectados agora, sem repetir (várias abas do mesmo aparelho contam uma vez)."""
+        seen: dict[str, dict] = {}
+        for ws in list(self.connections):
+            info = self.meta.get(id(ws))
+            if not info:
+                continue
+            key = f"{info['kind']}|{info['ip']}|{info['name']}"
+            if key not in seen or info["since"] < seen[key]["since"]:
+                seen[key] = info
+        order = {"pc": 0, "app": 1, "browser": 2}
+        return sorted(seen.values(), key=lambda d: (order.get(d["kind"], 9), d["since"]))
 
     async def broadcast(self, event: dict) -> None:
         for ws in list(self.connections):

@@ -34,7 +34,7 @@ import { buildDailySummary, shouldSpeakSummary } from "./utils/lockSummary.js";
 import { statusSentence } from "./utils/waterMath.js";
 import { subscribeNow } from "./hooks/useNow.js";
 import { soundManager } from "./utils/soundEffects.js";
-import { API_URL, BACKEND_ON_THIS_PC, api, hasMemoryToken, publicUrl, setJarvisToken } from "./utils/api.js";
+import { API_URL, BACKEND_ON_THIS_PC, api, getJarvisToken, hasMemoryToken, publicUrl, setJarvisToken } from "./utils/api.js";
 import { scheduleDailyUpdateCheck } from "./utils/updateCheck.js";
 import { applyAccessibility, applyBackground, applyFanMode, applyTheme } from "./utils/theme.js";
 import { IS_JARVIS_APP } from "./utils/device.js";
@@ -189,6 +189,9 @@ export default function App() {
     return () => clearTimeout(t);
   }, [fanError]);
   const [notifItems, setNotifItems] = useState([]);
+  // V5.5: aparelhos com a central aberta (evento "devices" do WebSocket)
+  const [devices, setDevices] = useState([]);
+  const devicesRef = useRef(null);
   const [orbFlash, setOrbFlash] = useState(null); // Branding 4.2: "success" | "error" por um instante
   const orbFlashTimer = useRef(null);
   const flashOrb = (kind) => {
@@ -257,7 +260,9 @@ export default function App() {
   const busyRef = useRef(false);
   const bootedRef = useRef(false);
   const enterMainRef = useRef(() => {}); // boot() vem antes de enterMain no arquivo
-  const photoUrl = `${API_URL}/api/profile/photo?v=${photoVersion}`;
+  // V5.5: fora do PC (app do celular, outro aparelho) a imagem precisa da chave: o <img> não manda cabeçalho
+  const photoToken = !BACKEND_ON_THIS_PC && getJarvisToken() ? `&token=${encodeURIComponent(getJarvisToken())}` : "";
+  const photoUrl = `${API_URL}/api/profile/photo?v=${photoVersion}${photoToken}`;
 
   useEffect(() => {
     api("/api/network-access")
@@ -494,6 +499,16 @@ export default function App() {
           closing: msg.closing,
         }));
         break;
+      case "devices": {
+        // V5.5: aparelhos conectados; avisa quando um celular acaba de entrar
+        const items = Array.isArray(msg.items) ? msg.items : [];
+        const before = new Set((devicesRef.current || []).map((dv) => `${dv.kind}|${dv.ip}|${dv.name}`));
+        const fresh = items.filter((dv) => dv.kind !== "pc" && !before.has(`${dv.kind}|${dv.ip}|${dv.name}`));
+        if (devicesRef.current !== null && fresh.length && !IS_JARVIS_APP) setNotice(`📱 Conectado: ${fresh[0].name}`);
+        devicesRef.current = items;
+        setDevices(items);
+        break;
+      }
       case "access_state":
         setAccessInfo(msg);
         break;
@@ -2649,6 +2664,7 @@ export default function App() {
       )}
 
       <HudLayout
+        devices={devices}
         fanModeEnabled={fanModeEnabled}
         fanTeam={fanTeam}
         aiName={aiName}

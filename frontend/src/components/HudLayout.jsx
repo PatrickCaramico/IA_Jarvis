@@ -1,4 +1,6 @@
 import NowPlaying from "./NowPlaying.jsx";
+import { onSpeakingChange, setSpeakerOn, speakerOn, speakHere, stopHere } from "../utils/speakHere.js";
+import { IS_JARVIS_APP, appNotificationsEnabled, setAppNotifications } from "../utils/device.js";
 import { APP_VERSION } from "../utils/version.js";
 import { useEffect, useMemo, useRef, useState } from "react";
 import MotivationWidget from "./MotivationWidget.jsx";
@@ -136,6 +138,78 @@ function Typed({ text }) {
 /**
  * Panel móvel e redimensionável com suporte a mover para a Tela 2 (monitor secundário).
  */
+// V5.5: 🔊 em cada resposta do JARVIS: fala o texto NESTE aparelho (celular ou navegador). ■ para.
+function useSpeakingId() {
+  const [id, setId] = useState(null);
+  useEffect(() => onSpeakingChange(setId), []);
+  return id;
+}
+
+function SpeakButton({ id, text }) {
+  const speaking = useSpeakingId() === id;
+  const [failed, setFailed] = useState(false);
+  return (
+    <button
+      type="button"
+      className={`hl-speak${speaking ? " is-on" : ""}${failed ? " is-err" : ""}`}
+      onClick={() => {
+        if (speaking) { stopHere(); return; }
+        setFailed(false);
+        speakHere(text, id).catch(() => setFailed(true));
+      }}
+      title={speaking ? "Parar a leitura" : "Ouvir esta resposta neste aparelho"}
+      aria-label={speaking ? "Parar a leitura" : "Ouvir esta resposta"}
+    >
+      {speaking ? "■" : "🔊"}
+    </button>
+  );
+}
+
+// V5.5: barra do chat: alto-falante (lê as respostas novas sozinho, neste aparelho) e, no app, avisos.
+function ChatTools() {
+  const [speaker, setSpeaker] = useState(speakerOn);
+  const [notif, setNotif] = useState(() => (IS_JARVIS_APP ? appNotificationsEnabled() : false));
+  useEffect(() => {
+    const onSpeaker = () => setSpeaker(speakerOn());
+    window.addEventListener("jarvis_speaker_change", onSpeaker);
+    return () => window.removeEventListener("jarvis_speaker_change", onSpeaker);
+  }, []);
+  return (
+    <div className="hl-chat-tools" role="toolbar" aria-label="Opções do chat">
+      <button
+        type="button"
+        className={`hl-chat-tool${speaker ? " is-on" : ""}`}
+        aria-pressed={speaker}
+        onClick={() => {
+          const next = !speaker;
+          setSpeakerOn(next);
+          setSpeaker(next);
+          if (!next) stopHere();
+          window.dispatchEvent(new Event("jarvis_speaker_change"));
+        }}
+        title="Ler as respostas em voz alta neste aparelho"
+      >
+        {speaker ? "🔊" : "🔈"} ALTO-FALANTE {speaker ? "LIGADO" : "DESLIGADO"}
+      </button>
+      {IS_JARVIS_APP && (
+        <button
+          type="button"
+          className={`hl-chat-tool${notif ? " is-on" : ""}`}
+          aria-pressed={notif}
+          onClick={() => {
+            const next = !notif;
+            setAppNotifications(next);
+            setNotif(next);
+          }}
+          title="Avisos do JARVIS na barra do celular (lembretes, água, alarmes, jogo)"
+        >
+          📳 AVISOS {notif ? "LIGADOS" : "DESLIGADOS"}
+        </button>
+      )}
+    </div>
+  );
+}
+
 function Panel({ id, title, tag, className = "", onMoveToSecondary, children }) {
   const [detached, setDetached] = useState(false);
   const [pos, setPos] = useState({ left: 100, top: 100, width: 340, height: "auto" });
@@ -614,6 +688,7 @@ export default function HudLayout({
   onCloseBriefing,
   onSkipBriefing,
   photoUrl = "",
+  devices = [],
 }) {
   const [clock, todayLabel] = useBrasiliaClock();
   const [screensOpen, setScreensOpen] = useState(false);
@@ -660,6 +735,16 @@ export default function HudLayout({
 
   const bars = useSpectrum(jarvisState, listening);
   const log = useConversationLog(userText, response, error, responseCards);
+  // V5.5: alto-falante do chat ligado: cada resposta NOVA do JARVIS é lida neste aparelho
+  const spokenRef = useRef(null);
+  useEffect(() => {
+    const last = log[log.length - 1];
+    if (!last || last.role !== "jarvis" || last.old || !last.text) return;
+    if (spokenRef.current === null) { spokenRef.current = last.id; return; } // não lê o que já estava na tela
+    if (spokenRef.current === last.id) return;
+    spokenRef.current = last.id;
+    if (speakerOn()) speakHere(last.text, last.id).catch(() => {});
+  }, [log]);
 
   // V4.2.2: a coluna direita (Clima e Canal Ativo) recolhe após 3 min sem conversa, como a esquerda.
   // V4.4: reabre só quando VOCÊ fala ou envia um pedido (não a cada fala do JARVIS) e nunca durante
@@ -858,6 +943,20 @@ export default function HudLayout({
               );
             })}
           </ul>
+          {/* V5.5: aparelhos com a central aberta agora */}
+          {devices && devices.length > 0 && (
+            <div className="hl-devices" aria-label="Aparelhos conectados">
+              <span className="hl-devices-label">APARELHOS CONECTADOS</span>
+              <ul>
+                {devices.map((dv) => (
+                  <li key={`${dv.kind}-${dv.ip}-${dv.name}`} className={`is-${dv.kind}`} title={dv.ip}>
+                    <i aria-hidden="true">{dv.kind === "pc" ? "🖥" : dv.kind === "app" ? "📱" : "🌐"}</i>
+                    {dv.name}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </Panel>
 
         {fanModeEnabled && (
@@ -916,6 +1015,7 @@ export default function HudLayout({
         <WeatherPanel api={api} onMoveToSecondary={handleMoveToSecondary} />
         <NowPlaying api={api} variant="hud" controls />
         <Panel id="chat" title="JARVIS · CANAL ATIVO" tag={busy ? "OCUPADO" : "PRONTO"} className="hl-channel" onMoveToSecondary={handleMoveToSecondary}>
+          <ChatTools />
           <div className="hl-messages" ref={listRef} aria-live="polite" aria-label="Conversa">
             {log.length === 0 && !listening && (
               <p className="hl-msg hl-muted">Digite abaixo ou aperte a barra de espaço para falar.</p>
@@ -927,6 +1027,7 @@ export default function HudLayout({
                 <p style={{ margin: 0 }}>
                   <b>{WHO[m.role]}</b>{" "}
                   {m.role === "jarvis" && !m.old ? <Typed text={m.text} /> : m.text}
+                  {m.role === "jarvis" && m.text && <SpeakButton id={m.id} text={m.text} />}
                 </p>
                 {m.cards && m.cards.length > 0 && (
                   <div className="hl-reactive-cards">

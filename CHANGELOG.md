@@ -2,6 +2,16 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 5.5.0 — 11 de novembro de 2026
+
+O celular de verdade.
+
+- **Aparelhos conectados:** o PC sabe quem está com a central aberta (`runtime.manager.devices()`, evento `devices` e `GET /api/devices`) e mostra a lista no painel NÚCLEO · SERVIÇOS ("Este PC", "Celular · SM-A546E"...). Quando um celular conecta, aparece o aviso "📱 Conectado: …".
+- **Foto no app:** a foto do perfil não aparecia no celular porque a imagem era pedida sem a chave de acesso; agora leva a chave quando a central não está no próprio PC.
+- **Voz no celular:** `POST /api/tts` devolve a fala do JARVIS em MP3 para tocar no aparelho. Cada resposta do Canal Ativo tem um botão 🔊 (■ para) e o chat ganhou o **alto-falante**: ligado, toda resposta nova é lida sozinha no aparelho (preferência salva em cada aparelho).
+- **Avisos no app:** no celular, o botão "📳 AVISOS" do chat liga ou desliga as notificações do JARVIS na barra do Android (antes só pelo menu do botão voltar).
+- Testes em `backend/tests/test_devices_55.py`. APK 5.5.0 gerado no PC.
+
 ## 5.4.0 — 11 de novembro de 2026
 
 - **Entrada sem repetição:** "já fiz o briefing hoje" ficava salvo em cada navegador, então o site, a central do PC e o app repetiam o briefing inteiro, e toda reentrada perguntava de novo se repetia (junto com um "Em que posso ajudar?"). Agora o PC decide para todos (`modules/entry_greeting.py`, `POST /api/briefing/entry`): 1ª entrada do dia, o briefing; 2ª, pergunta uma vez; depois, uma saudação curta que nunca repete a anterior. "Bom dia" por voz também conta.

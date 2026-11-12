@@ -189,6 +189,8 @@ async def websocket_endpoint(ws: WebSocket) -> None:
     await runtime.manager.connect(ws)
     await ws.send_json({"type": "state", "state": "processing" if session.busy else "idle"})
     await ws.send_json({"type": "access_state", **access.snapshot()})
+    # V5.5: aparelhos conectados (a central mostra quem está ligado; o celular aparece ao conectar)
+    await runtime.manager.broadcast({"type": "devices", "items": runtime.manager.devices()})
     try:
         while True:
             message = await ws.receive_text()  # mantém a conexão viva
@@ -196,6 +198,47 @@ async def websocket_endpoint(ws: WebSocket) -> None:
                 await ws.send_text("pong")
     except WebSocketDisconnect:
         runtime.manager.disconnect(ws)
+        await runtime.manager.broadcast({"type": "devices", "items": runtime.manager.devices()})
+
+
+@router.get("/api/devices")
+async def connected_devices() -> dict:
+    """V5.5: aparelhos com a central aberta agora (PC, app do celular, navegadores)."""
+    return {"items": runtime.manager.devices()}
+
+
+class TtsRequest(BaseModel):
+    text: str
+
+
+@router.post("/api/tts")
+async def tts_audio(req: TtsRequest):
+    """V5.5: devolve a fala em MP3 para tocar NO APARELHO (botão 🔊 e alto-falante do chat no celular)."""
+    import os
+    import tempfile
+
+    from fastapi.responses import Response
+
+    text = tts_module._clean_for_speech(req.text or "")[:1500]  # noqa: SLF001
+    if not text:
+        raise HTTPException(status_code=400, detail="Nada para falar.")
+    fd, path = tempfile.mkstemp(suffix=".mp3", prefix="jarvis_dev_")
+    os.close(fd)
+    try:
+        await tts_module._synthesize(text, path)  # noqa: SLF001
+        with open(path, "rb") as f:
+            data = f.read()
+    except Exception as exc:  # noqa: BLE001
+        log.warning("Voz para o aparelho falhou: %s", exc)
+        raise HTTPException(status_code=503, detail="Não consegui gerar a voz agora.") from exc
+    finally:
+        try:
+            os.remove(path)
+        except OSError:
+            pass
+    if not data:
+        raise HTTPException(status_code=503, detail="Não consegui gerar a voz agora.")
+    return Response(content=data, media_type="audio/mpeg", headers={"Cache-Control": "no-store"})
 
 
 class SpeakRequest(BaseModel):

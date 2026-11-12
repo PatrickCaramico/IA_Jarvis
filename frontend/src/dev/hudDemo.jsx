@@ -43,6 +43,13 @@ class DemoSocket {
       }
       this.readyState = 1;
       this.onopen?.();
+      // Aparelhos conectados e uma resposta de exemplo (para ver o 🔊 e a lista no painel)
+      const send = (ev) => this.onmessage?.({ data: JSON.stringify(ev) });
+      setTimeout(() => send({ type: "devices", items: [
+        { kind: "pc", name: "Este PC", ip: "127.0.0.1", since: 1 },
+        { kind: "app", name: "Celular · SM-A546E", ip: "192.168.1.58", since: 2 },
+      ] }), 300);
+      setTimeout(() => send({ type: "response", text: "Em Maragogi, 27 graus e sol. Vale levar protetor solar hoje.", cards: [] }), 900);
     }, 200);
   }
   send(data) {

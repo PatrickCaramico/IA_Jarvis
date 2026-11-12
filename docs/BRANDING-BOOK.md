@@ -1,4 +1,4 @@
-# Branding Book do JARVIS (v1.13, atualizado na V5.4.0 em 11/11/2026: entrada sem repetição, janela do perfil e QR que abre o app; entrada direta para quem já usa, reconexão sozinha e central enxuta no celular)
+# Branding Book do JARVIS (v1.14, atualizado na V5.5.0 em 11/11/2026: celular com voz, foto e aparelhos conectados; entrada sem repetição, janela do perfil e QR que abre o app; entrada direta para quem já usa, reconexão sozinha e central enxuta no celular)
 
 Versão aprovada do Branding Book proposto no plano da 4.2. Há também uma versão ilustrada e animada: abra `docs/branding-book.html` no navegador. Tudo aqui já está aplicado no projeto;
 no fim de cada seção há onde isso vive no código.
@@ -60,7 +60,7 @@ nos módulos do backend.
 | --- | --- |
 | Assistente | JARVIS (o nome da IA pode ser trocado em Configurações) |
 | Módulo de escuta contínua | **Modo Sentinela** (mantido; as siglas propostas não foram adotadas) |
-| Versão exibida na central | `v5.4.0` (sem referências a marcas de terceiros, como "Stark") |
+| Versão exibida na central | `v5.5.0` (sem referências a marcas de terceiros, como "Stark") |
 | Lista de sites abertos por voz | **Meus Sites** (Configurações > Meus Sites) |
 | Resumo da manhã | **Briefing** (disparado por "bom dia") |
 | Resumo da noite | **Fechamento do dia** (disparado por "boa noite") |
@@ -531,6 +531,18 @@ QR como o jeito mais fácil; o endereço aceita vírgula no lugar do ponto, e s�
 "Faltaram os pontos no endereço. Digite como aparece no PC, ex.: 192.168.1.58.". O PIN nunca é mostrado: o PC
 guarda só o hash.
 
+**Celular de verdade (V5.5).**
+- **Aparelhos conectados:** no painel NÚCLEO · SERVIÇOS, abaixo dos serviços, "APARELHOS CONECTADOS" com
+  pílulas (🖥 Este PC, 📱 Celular · SM-A546E com borda turquesa, 🌐 Navegador do celular / Outro computador).
+  Quando um celular entra, o PC mostra o aviso "📱 Conectado: Celular · SM-A546E".
+- **Foto no app:** a foto do perfil aparece no celular (a imagem leva a chave de acesso).
+- **Voz no aparelho:** cada resposta do JARVIS no Canal Ativo tem um botão 🔊 (quadrado 26×22, borda
+  fina; ■ turquesa pulsando enquanto lê). Toca a voz do JARVIS NESTE aparelho, não na caixa do PC.
+- **Alto-falante do chat:** pílula "🔈 ALTO-FALANTE DESLIGADO" / "🔊 ALTO-FALANTE LIGADO" (turquesa) no topo do
+  Canal Ativo: ligada, toda resposta nova é lida sozinha no aparelho. Fica salva em cada aparelho.
+- **Avisos no app:** no celular, a pílula "📳 AVISOS LIGADOS/DESLIGADOS" ao lado liga as notificações do
+  JARVIS na barra do Android (lembretes, água, alarmes, jogo).
+
 ### Meus Sites, escudos e atualização (V5)
 
 **Meus Sites.** Nova aba em Configurações, no mesmo vidro azul das outras. Título "MEUS SITES" em
@@ -563,7 +575,7 @@ o PC tem um APK mais novo. Nada é baixado ou instalado sozinho.
 o orbe Núcleo girando devagar no topo (parado com "reduzir movimento"), "JARVIS" em Orbitron com brilho
 ciano, cartões de vidro azul-marinho com ícone em círculo de contorno (ciano; âmbar para segurança; verde
 para água e para o Modo Torcedor), capturas em moldura com cantos ciano e, no rodapé, o carimbo
-"J.A.R.V.I.S. · FOLHA · SITE · REV. v5.4.0" (a versão vem de `backend/version.py`). Botão principal ciano cheio ("VER NO GITHUB"); os outros só
+"J.A.R.V.I.S. · FOLHA · SITE · REV. v5.5.0" (a versão vem de `backend/version.py`). Botão principal ciano cheio ("VER NO GITHUB"); os outros só
 com borda. Logo abaixo, num quadro de borda tracejada âmbar, o botão "ABRIR MEU JARVIS" (borda âmbar, o "olhe aqui" da Sentinela), que abre a **mesma central do PC publicada no site** (`/app/`). Ela conversa com o JARVIS ligado no computador (backend em `127.0.0.1:8000`), então rosto, perfil, Modo Torcedor, rotina e agenda são os de sempre; na primeira vez, o Chrome pergunta se o site pode acessar a rede local (é o backend do próprio PC). Tom: o mesmo da central, e a página deixa claro que é só a vitrine ("O JARVIS roda no seu PC:
 voz, câmera, controle do sistema e os seus dados nunca passam por aqui."). A 404 diz "Procurei em toda a
 planta, senhor, e esta página não está aqui."
@@ -602,6 +614,7 @@ central completa, que agora conversa em cards.
 | **5.2 · direto ao ponto** | 11/11/2026 | Quem já entrou abre a central direto, tela curta de "reconectando" com o PC desligado, conexão que se refaz sozinha (site e app Android, sem pedir o PIN de novo) e central enxuta no celular, com o Canal Ativo logo abaixo do orbe. |
 | **5.3 · o briefing pessoal** | 11/11/2026 | Saudação que segue o relógio, clima com conselho e ícone do tempo, agenda pelo próximo compromisso, prioridades do dia, jogo do time e despertador de amanhã no briefing. |
 | **5.4 · sem repetição** | 11/11/2026 | Briefing e saudação de entrada decididos no PC para todos os aparelhos, janela do perfil que cobre a tela e rola, e o QR que abre o app já conectado, sem PIN. |
+| **5.5 · o celular de verdade** | 11/11/2026 | Aparelhos conectados na central, foto do perfil no app, botão 🔊 em cada resposta e alto-falante do chat que lê as respostas no próprio celular, e o liga/desliga dos avisos no app. |
 
 O que atravessou todas as versões: tudo roda no PC do dono, o rosto é a chave, a voz é em
 português e o reator (depois Núcleo) fica no centro da tela.
