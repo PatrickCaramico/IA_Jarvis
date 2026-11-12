@@ -18,6 +18,7 @@ import useNow from "../hooks/useNow.js";
 import lazyComponent from "../utils/lazyComponent.jsx";
 import JarvisLogo from "./JarvisLogo.jsx";
 import NewsWindow from "./NewsWindow.jsx";
+import { applyBackground } from "../utils/theme.js";
 
 // Carregados sob demanda (otimização 4.2: pacote inicial menor)
 const ScreensOverlay = lazyComponent(() => import("./ScreensOverlay.jsx"));
@@ -459,6 +460,69 @@ function WeatherPanel({ api, onMoveToSecondary }) {
 
 const WHO = { user: "VOCÊ ▸", jarvis: "JARVIS ▸", error: "ERRO ▸" };
 
+// V6.5.5: painel CONTROLES com mais funções, em grade compacta por seção.
+// Cada item ou manda um comando (o mesmo que falar) ou faz uma ação direta na tela.
+const CONTROL_SECTIONS = [
+  {
+    title: "MODOS DE AMBIENTE",
+    items: [
+      { icon: "🎬", label: "CINEMA", sub: "Vol 45% · brilho 35%", cmd: "modo cinema" },
+      { icon: "💼", label: "FOCO", sub: "Vol 30% · brilho 85%", cmd: "modo trabalho" },
+      { icon: "⚡", label: "NORMAL", sub: "Volume e brilho padrão", cmd: "modo normal" },
+      { id: "fan", icon: "⚽", label: "TORCEDOR", tone: "emerald" },
+      { icon: "🛡️", label: "SENTINELA", sub: "Bloqueia a central e fica ouvindo \"Jarvis\"", cmd: "modo sentinela", tone: "amber", wide: true },
+    ],
+  },
+  {
+    title: "ROTINAS",
+    items: [
+      { icon: "📋", label: "RESUMO AGORA", sub: "Pela hora do dia", cmd: "resumo" },
+      { icon: "🌙", label: "DORMIR", sub: "Rotina da noite", cmd: "vou dormir" },
+      { icon: "🚪", label: "SAINDO DE CASA", sub: "Clima e compras", cmd: "estou saindo" },
+      { icon: "⏱", label: "TIMER 5 MIN", sub: "Avisa em 5 minutos", cmd: "timer de 5 minutos" },
+    ],
+  },
+  {
+    title: "AÇÕES RÁPIDAS",
+    items: [
+      { id: "news", icon: "📰", label: "NOTÍCIAS", sub: "Seus temas e busca" },
+      { icon: "🛒", label: "COMPRAS", sub: "O que tem na lista", cmd: "o que tem na lista de compras" },
+      { icon: "🥤", label: "BEBI UM COPO", sub: "Registra 250 ml", cmd: "bebi um copo de água", tone: "sky" },
+      { icon: "💧", label: "ÍNDICE DE ÁGUA", sub: "Hidratação de hoje", cmd: "índice de água", tone: "sky" },
+    ],
+  },
+  {
+    title: "MÚSICA & SOM",
+    cols: 3,
+    items: [
+      { icon: "▶", label: "TOCAR", sub: "Spotify", cmd: "tocar spotify" },
+      { icon: "⏸", label: "PAUSAR", sub: "Spotify", cmd: "pausar spotify" },
+      { icon: "⏭", label: "PRÓXIMA", sub: "Spotify", cmd: "próxima no spotify" },
+      { icon: "🔇", label: "MUDO", sub: "Som do PC", cmd: "silenciar o som" },
+      { icon: "🔉", label: "VOL −", sub: "Som do PC", cmd: "diminuir o volume" },
+      { icon: "🔊", label: "VOL +", sub: "Som do PC", cmd: "aumentar o volume" },
+    ],
+  },
+  {
+    title: "SISTEMA & HUD",
+    items: [
+      { id: "silent", icon: "🤫", label: "SILENCIOSO" },
+      { id: "background", icon: "🌌", label: "TROCAR FUNDO", sub: "Grade, universo, clássico" },
+      { id: "zen", icon: "⛶", label: "ÁREA LIMPA" },
+      { id: "widgets", icon: "◫", label: "WIDGETS", sub: "Organizar painéis" },
+      { id: "settings", icon: "⚙", label: "AJUSTES", sub: "Configurações e IA", wide: true },
+    ],
+  },
+];
+
+const CONTROL_TONES = {
+  cyan: "text-cyan-100 border-cyan-500/15 hover:border-cyan-300/60 hover:bg-cyan-500/15",
+  emerald: "text-emerald-200 border-emerald-500/25 hover:border-emerald-300/70 hover:bg-emerald-500/15",
+  amber: "text-amber-200 border-amber-500/25 hover:border-amber-300/70 hover:bg-amber-500/15",
+  sky: "text-sky-200 border-sky-500/25 hover:border-sky-300/70 hover:bg-sky-500/15",
+  on: "text-white border-cyan-300 bg-cyan-500/25 shadow-[0_0_10px_rgba(79,220,255,0.35)]",
+};
+
 function HudControlsMenu({
   zenMode,
   onToggleZen,
@@ -466,8 +530,12 @@ function HudControlsMenu({
   onOpenSettings,
   onCommand,
   fanModeEnabled = false,
+  api,
+  placement = "down", // V6.5.5: "up" = abre para cima (rodapé do celular)
 }) {
   const [open, setOpen] = useState(false);
+  const [silent, setSilent] = useState(null);
+  const [flash, setFlash] = useState("");
   const menuRef = useRef(null);
 
   useEffect(() => {
@@ -486,6 +554,86 @@ function HudControlsMenu({
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, []);
+
+  // ao abrir, lê o modo silencioso de agora (o botão mostra ligado/desligado)
+  useEffect(() => {
+    if (!open || !api) return;
+    api("/api/prefs").then((p) => setSilent(Boolean(p.silent_mode))).catch(() => {});
+  }, [open, api]);
+
+  useEffect(() => {
+    if (!flash) return undefined;
+    const t = setTimeout(() => setFlash(""), 2200);
+    return () => clearTimeout(t);
+  }, [flash]);
+
+  const run = async (item) => {
+    if (item.cmd) {
+      if (onCommand) onCommand(item.cmd);
+      setOpen(false);
+      return;
+    }
+    switch (item.id) {
+      case "fan":
+        if (onCommand) onCommand(fanModeEnabled ? "desativar modo torcedor" : "ativar modo torcedor");
+        setOpen(false);
+        break;
+      case "news":
+        window.dispatchEvent(new CustomEvent("jarvis-open-news"));
+        setOpen(false);
+        break;
+      case "silent": {
+        if (!api) break;
+        const next = !silent;
+        setSilent(next);
+        try {
+          await api("/api/prefs", { method: "PATCH", body: JSON.stringify({ silent_mode: next }) });
+          setFlash(next ? "Modo silencioso ligado: o JARVIS não fala." : "Modo silencioso desligado.");
+        } catch {
+          setSilent(!next);
+          setFlash("Não consegui mudar agora.");
+        }
+        break;
+      }
+      case "background":
+        if (!api) break;
+        try {
+          const r = await api("/api/background", { method: "POST" });
+          if (r?.background_style) applyBackground(r.background_style);
+          setFlash("Fundo trocado.");
+        } catch {
+          setFlash("Não consegui trocar o fundo agora.");
+        }
+        break;
+      case "zen":
+        onToggleZen();
+        setOpen(false);
+        break;
+      case "widgets":
+        onOpenWidgets();
+        setOpen(false);
+        break;
+      case "settings":
+        if (onOpenSettings) onOpenSettings();
+        setOpen(false);
+        break;
+      default:
+        break;
+    }
+  };
+
+  const describe = (item) => {
+    if (item.id === "fan") {
+      return { label: fanModeEnabled ? "TORCEDOR · ATIVO" : "TORCEDOR", sub: fanModeEnabled ? "Desativar modo clube" : "Palmeiras", on: fanModeEnabled };
+    }
+    if (item.id === "silent") {
+      return { label: "SILENCIOSO", sub: silent === null ? "…" : silent ? "Ligado · toque p/ falar" : "Desligado", on: Boolean(silent) };
+    }
+    if (item.id === "zen") {
+      return { label: zenMode ? "RESTAURAR HUD" : "ÁREA LIMPA", sub: zenMode ? "Mostrar os painéis" : "Só o orbe", on: zenMode };
+    }
+    return { label: item.label, sub: item.sub, on: false };
+  };
 
   return (
     <div
@@ -513,13 +661,14 @@ function HudControlsMenu({
 
       {open && (
         <div
-          className={`absolute top-[calc(100%+8px)] left-1/2 -translate-x-1/2 w-72 rounded-2xl border p-3 z-50 shadow-[0_12px_40px_rgba(0,0,0,0.9)] backdrop-blur-xl transition-all ${
+          className={`hl-controls-panel absolute ${placement === "up" ? "bottom-[calc(100%+10px)] right-0" : "top-[calc(100%+8px)] left-1/2 -translate-x-1/2"} w-[360px] max-w-[calc(100vw-24px)] max-h-[calc(100dvh-110px)] overflow-y-auto rounded-2xl border p-3 z-50 shadow-[0_12px_40px_rgba(0,0,0,0.9)] backdrop-blur-xl ${
             fanModeEnabled
               ? "border-emerald-400/40 bg-[#02160d]/95 shadow-[0_0_25px_rgba(4,101,56,0.35)]"
               : "border-cyan-400/50 bg-[#030e1c]/95 shadow-[0_0_25px_rgba(31,194,245,0.25)]"
           }`}
+          role="menu"
+          aria-label="Painel de controle rápido"
         >
-          {/* Header do Menu */}
           <div className="flex items-center justify-between pb-2 mb-2 border-b border-cyan-500/20">
             <span className="text-[10px] font-['Orbitron'] tracking-[0.16em] text-cyan-300/80 font-bold">
               PAINEL DE CONTROLE RÁPIDO
@@ -534,172 +683,45 @@ function HudControlsMenu({
             </button>
           </div>
 
-          {/* Seção 1: Modos de Ambiente */}
-          <div className="text-[9px] font-['Orbitron'] tracking-[0.14em] text-cyan-400/60 px-1 mb-1.5 font-semibold">
-            MODOS DE AMBIENTE
-          </div>
-          <div className="flex flex-col gap-1 mb-3">
-            <button
-              type="button"
-              onClick={() => {
-                onCommand && onCommand("modo cinema");
-                setOpen(false);
-              }}
-              className="flex items-center gap-3 px-2.5 py-2 rounded-xl text-left text-xs text-cyan-100 hover:text-white hover:bg-cyan-500/20 border border-transparent hover:border-cyan-400/30 transition cursor-pointer active:scale-98"
-            >
-              <span className="text-base">🎬</span>
-              <div>
-                <strong className="block font-['Orbitron'] text-[11px] tracking-wide">MODO CINEMA</strong>
-                <small className="text-[9px] text-cyan-300/60 block">Volume 45% · Brilho 35%</small>
-              </div>
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                onCommand && onCommand("modo trabalho");
-                setOpen(false);
-              }}
-              className="flex items-center gap-3 px-2.5 py-2 rounded-xl text-left text-xs text-cyan-100 hover:text-white hover:bg-cyan-500/20 border border-transparent hover:border-cyan-400/30 transition cursor-pointer active:scale-98"
-            >
-              <span className="text-base">💼</span>
-              <div>
-                <strong className="block font-['Orbitron'] text-[11px] tracking-wide">MODO FOCO</strong>
-                <small className="text-[9px] text-cyan-300/60 block">Volume 30% · Brilho 85%</small>
-              </div>
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                onCommand && onCommand("modo normal");
-                setOpen(false);
-              }}
-              className="flex items-center gap-3 px-2.5 py-2 rounded-xl text-left text-xs text-cyan-100 hover:text-white hover:bg-cyan-500/20 border border-transparent hover:border-cyan-400/30 transition cursor-pointer active:scale-98"
-            >
-              <span className="text-base">⚡</span>
-              <div>
-                <strong className="block font-['Orbitron'] text-[11px] tracking-wide">MODO NORMAL</strong>
-                <small className="text-[9px] text-cyan-300/60 block">Volume e brilho padrão</small>
-              </div>
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                onCommand && onCommand(fanModeEnabled ? "desativar modo torcedor" : "ativar modo torcedor");
-                setOpen(false);
-              }}
-              className={`flex items-center gap-3 px-2.5 py-2 rounded-xl text-left text-xs transition cursor-pointer active:scale-98 border ${
-                fanModeEnabled
-                  ? "bg-emerald-950/60 border-emerald-400/40 text-emerald-200 hover:bg-emerald-900/60"
-                  : "text-cyan-100 hover:text-white hover:bg-cyan-500/20 border-transparent hover:border-cyan-400/30"
-              }`}
-            >
-              <span className="text-base">⚽</span>
-              <div>
-                <strong className="block font-['Orbitron'] text-[11px] tracking-wide text-emerald-300">
-                  MODO TORCEDOR {fanModeEnabled ? "(ATIVO)" : ""}
-                </strong>
-                <small className="text-[9px] text-emerald-200/70 block">
-                  {fanModeEnabled ? "Desativar modo clube" : "Palmeiras · Glassmorphism"}
-                </small>
-              </div>
-            </button>
-          </div>
+          {flash && (
+            <div className="mb-2 rounded-lg border border-cyan-400/40 bg-cyan-500/10 px-2.5 py-1.5 text-[11px] text-cyan-100" role="status">
+              {flash}
+            </div>
+          )}
 
-          <div className="flex flex-col gap-1 -mt-2 mb-3">
-            <button
-              type="button"
-              onClick={() => {
-                onCommand && onCommand("modo sentinela");
-                setOpen(false);
-              }}
-              className="flex items-center gap-3 px-2.5 py-2 rounded-xl text-left text-xs text-cyan-100 hover:text-white hover:bg-amber-500/15 border border-transparent hover:border-amber-400/40 transition cursor-pointer active:scale-98"
-              title="Bloqueia a central e entra no Modo Sentinela"
-            >
-              <span className="text-base">🛡️</span>
-              <div>
-                <strong className="block font-['Orbitron'] text-[11px] tracking-wide text-amber-300">MODO SENTINELA</strong>
-                <small className="text-[9px] text-amber-200/70 block">Bloqueia e fica ouvindo "Jarvis"</small>
+          {CONTROL_SECTIONS.map((section) => (
+            <div key={section.title} className="mb-2.5 last:mb-0">
+              <div className="text-[9px] font-['Orbitron'] tracking-[0.14em] text-cyan-400/60 px-1 mb-1.5 font-semibold">
+                {section.title}
               </div>
-            </button>
-          </div>
-
-          {/* Seção 2: Saúde e Hidratação */}
-          <div className="text-[9px] font-['Orbitron'] tracking-[0.14em] text-cyan-400/60 px-1 mb-1.5 font-semibold">
-            SAÚDE & SENSORES
-          </div>
-          <div className="flex flex-col gap-1 mb-3">
-            <button
-              type="button"
-              onClick={() => {
-                onCommand && onCommand("índice de água");
-                setOpen(false);
-              }}
-              className="flex items-center gap-3 px-2.5 py-2 rounded-xl text-left text-xs text-cyan-100 hover:text-white hover:bg-sky-500/20 border border-transparent hover:border-sky-400/40 transition cursor-pointer active:scale-98"
-            >
-              <span className="text-base">💧</span>
-              <div>
-                <strong className="block font-['Orbitron'] text-[11px] tracking-wide text-sky-300">
-                  ÍNDICE DE ÁGUA
-                </strong>
-                <small className="text-[9px] text-sky-200/60 block">Consultar hidratação e registrar doses</small>
+              <div className={`grid gap-1.5 ${section.cols === 3 ? "grid-cols-3" : "grid-cols-2"}`}>
+                {section.items
+                  .filter((item) => item.id !== "settings" || onOpenSettings)
+                  .map((item) => {
+                    const d = describe(item);
+                    const toggle = item.id === "silent" || item.id === "zen" || item.id === "fan";
+                    return (
+                      <button
+                        key={item.label}
+                        type="button"
+                        role="menuitem"
+                        onClick={() => run(item)}
+                        aria-pressed={toggle ? d.on : undefined}
+                        className={`flex min-w-0 items-center gap-2 rounded-xl border bg-black/20 px-2 py-1.5 text-left transition cursor-pointer active:scale-[0.97] ${item.wide ? "col-span-2" : ""} ${
+                          d.on ? CONTROL_TONES.on : CONTROL_TONES[item.tone || "cyan"]
+                        }`}
+                      >
+                        <span className="text-[15px] leading-none shrink-0" aria-hidden="true">{item.icon}</span>
+                        <span className="min-w-0">
+                          <strong className="block truncate font-['Orbitron'] text-[10px] tracking-wide">{d.label}</strong>
+                          {d.sub && <small className="block truncate text-[9px] opacity-60">{d.sub}</small>}
+                        </span>
+                      </button>
+                    );
+                  })}
               </div>
-            </button>
-          </div>
-
-          {/* Seção 3: Interface HUD */}
-          <div className="text-[9px] font-['Orbitron'] tracking-[0.14em] text-cyan-400/60 px-1 mb-1.5 font-semibold">
-            INTERFACE & HUD
-          </div>
-          <div className="flex flex-col gap-1">
-            <button
-              type="button"
-              onClick={() => {
-                onToggleZen();
-                setOpen(false);
-              }}
-              className="flex items-center gap-3 px-2.5 py-2 rounded-xl text-left text-xs text-cyan-100 hover:text-white hover:bg-cyan-500/20 border border-transparent hover:border-cyan-400/30 transition cursor-pointer active:scale-98"
-            >
-              <span className="text-base">{zenMode ? "◫" : "⛶"}</span>
-              <div>
-                <strong className="block font-['Orbitron'] text-[11px] tracking-wide">
-                  {zenMode ? "RESTAURAR HUD" : "ÁREA LIMPA (ZEN)"}
-                </strong>
-                <small className="text-[9px] text-cyan-300/60 block">
-                  {zenMode ? "Exibir todos os painéis" : "Apenas Orbe central"}
-                </small>
-              </div>
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                onOpenWidgets();
-                setOpen(false);
-              }}
-              className="flex items-center gap-3 px-2.5 py-2 rounded-xl text-left text-xs text-cyan-100 hover:text-white hover:bg-cyan-500/20 border border-transparent hover:border-cyan-400/30 transition cursor-pointer active:scale-98"
-            >
-              <span className="text-base">◫</span>
-              <div>
-                <strong className="block font-['Orbitron'] text-[11px] tracking-wide">GERENCIAR WIDGETS</strong>
-                <small className="text-[9px] text-cyan-300/60 block">Organizar painéis na tela</small>
-              </div>
-            </button>
-            {onOpenSettings && (
-              <button
-                type="button"
-                onClick={() => {
-                  onOpenSettings();
-                  setOpen(false);
-                }}
-                className="flex items-center gap-3 px-2.5 py-2 rounded-xl text-left text-xs text-cyan-100 hover:text-white hover:bg-cyan-500/20 border border-transparent hover:border-cyan-400/30 transition cursor-pointer active:scale-98"
-              >
-                <span className="text-base">⚙</span>
-                <div>
-                  <strong className="block font-['Orbitron'] text-[11px] tracking-wide">AJUSTES DO SISTEMA</strong>
-                  <small className="text-[9px] text-cyan-300/60 block">Configurações gerais e IA</small>
-                </div>
-              </button>
-            )}
-          </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
@@ -913,6 +935,7 @@ export default function HudLayout({
             onOpenSettings={onOpenSettings}
             onCommand={onCommand}
             fanModeEnabled={fanModeEnabled}
+            api={api}
           />
         </div>
 
@@ -1133,6 +1156,19 @@ export default function HudLayout({
           </svg>
         </button>
         <span className="hl-muted">NUVEM · IA {services.ai === true ? "ONLINE" : "OFFLINE"}</span>
+        {/* V6.5.5: no celular, o CONTROLES (que fica no topo do PC) mora aqui no rodapé */}
+        <span className="hl-ctrl-mobile">
+          <HudControlsMenu
+            zenMode={zenMode}
+            onToggleZen={onToggleZen}
+            onOpenWidgets={onOpenWidgets}
+            onOpenSettings={onOpenSettings}
+            onCommand={onCommand}
+            fanModeEnabled={fanModeEnabled}
+            api={api}
+            placement="up"
+          />
+        </span>
       </footer>
 
       {newsOpen && <NewsWindow api={api} onClose={() => setNewsOpen(false)} />}

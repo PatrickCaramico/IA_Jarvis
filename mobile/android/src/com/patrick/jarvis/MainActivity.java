@@ -212,6 +212,34 @@ public class MainActivity extends Activity {
         }
     }
 
+    /** V6.5.5: põe um comando ("bom dia", "notícias"...) como ícone na tela inicial. O Android confirma. */
+    private boolean pinCommand(String label, String text) {
+        if (Build.VERSION.SDK_INT < 26 || label == null || text == null) return false;
+        String l = label.trim();
+        String t = text.trim();
+        if (l.isEmpty() || t.isEmpty() || l.length() > 24 || t.length() > 120) return false;
+        try {
+            ShortcutManager sm = getSystemService(ShortcutManager.class);
+            if (sm == null || !sm.isRequestPinShortcutSupported()) return false;
+            String id = "cmd_" + Integer.toHexString(t.toLowerCase().hashCode());
+            // "notícias" abre a janela de notícias; os outros rodam o comando como se fosse falado
+            String uri = "notícias".equals(t) ? "jarvis://news" : "jarvis://say?text=" + Uri.encode(t);
+            return sm.requestPinShortcut(shortcut(id, l, uri), null);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private boolean canPinCommands() {
+        if (Build.VERSION.SDK_INT < 26) return false;
+        try {
+            ShortcutManager sm = getSystemService(ShortcutManager.class);
+            return sm != null && sm.isRequestPinShortcutSupported();
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     private ShortcutInfo shortcut(String id, String label, String uri) {
         Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(uri)).setPackage(getPackageName());
         return new ShortcutInfo.Builder(this, id).setShortLabel(label).setLongLabel(label)
@@ -985,6 +1013,17 @@ public class MainActivity extends Activity {
 
         /** V6.4: rede de agora e a da última vez que a central perguntou ("wifi" -> "cellular"...).
          *  Fica no app (não na página), então vale mesmo quando a página troca de endereço com a rede. */
+        /** V6.5.5: a faixa DIGA pergunta se dá para fixar comandos na tela inicial. */
+        @JavascriptInterface
+        public boolean canPinShortcut() {
+            return canPinCommands();
+        }
+
+        @JavascriptInterface
+        public boolean pinShortcut(String label, String text) {
+            return pinCommand(label, text);
+        }
+
         @JavascriptInterface
         public String networkNotice() {
             String now = currentNetType();

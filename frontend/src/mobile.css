@@ -191,3 +191,12 @@
   .hl-bottom .hl-btns .hl-btn { padding: 6px 8px; font-size: 0.6rem; letter-spacing: 0.06em; }
   .hl-bottom .hl-muted { font-size: 0.55rem; text-align: right; }
 }
+
+/* V6.5.5: CONTROLES no rodapé do celular (no PC ele fica no topo) */
+.hl-ctrl-mobile { display: none; }
+@media (max-width: 760px) {
+  .hl-bottom .hl-muted { display: none; }
+  .hl-ctrl-mobile { display: block; justify-self: end; }
+  .hl-ctrl-mobile .hl-btn { padding: 6px 10px; font-size: 0.6rem; }
+  .hl-ctrl-mobile .hl-controls-panel { max-height: calc(100dvh - 150px); }
+}

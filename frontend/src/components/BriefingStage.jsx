@@ -26,18 +26,52 @@ export const VOICE_HINTS = [
   { say: "comandos", icon: "◎" },
 ];
 
+// V6.5.5: no app do celular, dá para fixar um comando da faixa DIGA como ícone na tela inicial
+function canPinShortcut() {
+  try {
+    return Boolean(window.JarvisApp?.canPinShortcut?.());
+  } catch {
+    return false;
+  }
+}
+
 /** Faixa "DIGA:" com as frases. Clicar numa delas envia o comando como se você tivesse falado. */
 export function VoiceHints({ onSay, exclude = [], compact = false }) {
   const hints = VOICE_HINTS.filter((h) => !exclude.includes(h.say));
+  const [pinMode, setPinMode] = useState(false);
+  const [pinNote, setPinNote] = useState("");
+  const [canPin] = useState(canPinShortcut);
+  useEffect(() => {
+    if (!pinNote) return undefined;
+    const t = setTimeout(() => setPinNote(""), 4000);
+    return () => clearTimeout(t);
+  }, [pinNote]);
+
+  const pin = (h) => {
+    setPinMode(false);
+    const label = h.say.charAt(0).toUpperCase() + h.say.slice(1);
+    let ok = false;
+    try {
+      ok = Boolean(window.JarvisApp?.pinShortcut?.(label, h.say));
+    } catch {
+      ok = false;
+    }
+    setPinNote(ok ? `Confirme no Android para pôr "${label}" na tela inicial.` : "Este celular não deixou criar o atalho.");
+  };
+
   return (
-    <div className={`bf-hints${compact ? " is-compact" : ""}`} aria-label="Comandos de voz">
-      <span className="bf-hints-label">DIGA</span>
+    <div className={`bf-hints${compact ? " is-compact" : ""}${pinMode ? " is-pinning" : ""}`} aria-label="Comandos de voz">
+      <span className="bf-hints-label">{pinMode ? "TOQUE NO COMANDO PARA FIXAR" : "DIGA"}</span>
       {hints.map((h) => (
         <button
           key={h.say}
           type="button"
           className="bf-hint"
           onClick={() => {
+            if (pinMode) {
+              pin(h);
+              return;
+            }
             // V6.5: tocar em "notícias" abre a janela de notícias (falar "notícias" continua lendo o resumo)
             if (h.say === "notícias") {
               window.dispatchEvent(new CustomEvent("jarvis-open-news"));
@@ -51,6 +85,18 @@ export function VoiceHints({ onSay, exclude = [], compact = false }) {
           <i aria-hidden="true">{h.icon}</i>"{h.say}"
         </button>
       ))}
+      {canPin && (
+        <button
+          type="button"
+          className={`bf-hint bf-pin${pinMode ? " is-on" : ""}`}
+          onClick={() => setPinMode((v) => !v)}
+          aria-pressed={pinMode}
+          title="Pôr um comando como ícone na tela inicial do celular"
+        >
+          <i aria-hidden="true">📌</i>{pinMode ? "cancelar" : "fixar na tela inicial"}
+        </button>
+      )}
+      {pinNote && <span className="bf-pin-note" role="status">{pinNote}</span>}
     </div>
   );
 }

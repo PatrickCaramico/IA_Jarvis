@@ -447,6 +447,14 @@
 .bf-hint i { font-style: normal; color: var(--j-core); }
 .bf-hint:hover:not(:disabled), .bf-hint:focus-visible { border-color: var(--j-core); background: rgba(34, 211, 238, 0.15); }
 .bf-hints.is-compact .bf-hint { font-size: 0.65rem; padding: 2px 8px; }
+/* V6.5.5: fixar comando na tela inicial (app do celular) */
+.bf-pin { border-style: dashed; }
+.bf-pin.is-on { border-style: solid; border-color: #fbbf24; color: #fde68a; background: rgba(251, 191, 36, 0.12); }
+.bf-hints.is-pinning .bf-hint:not(.bf-pin) { border-color: rgba(251, 191, 36, 0.75); box-shadow: 0 0 10px rgba(251, 191, 36, 0.3); animation: bf-pin-pulse 1.2s ease-in-out infinite; }
+.bf-hints.is-pinning .bf-hints-label { color: #fbbf24; }
+.bf-pin-note { flex-basis: 100%; text-align: center; font-size: 0.7rem; color: #fde68a; }
+@keyframes bf-pin-pulse { 50% { box-shadow: 0 0 2px rgba(251, 191, 36, 0.15); } }
+@media (prefers-reduced-motion: reduce) { .bf-hints.is-pinning .bf-hint { animation: none; } }
 .bf-say { flex: none; font-family: var(--font-data); font-size: 0.72rem; color: var(--j-core); min-width: 128px; }
 
 /* página de demonstração (frontend/briefing-demo.html) */

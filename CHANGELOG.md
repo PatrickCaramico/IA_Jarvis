@@ -2,6 +2,12 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 6.5.5 — 12 de novembro de 2026
+
+- **Painel CONTROLES ampliado:** grade compacta por seção com Modos de ambiente, Rotinas (resumo pela hora, dormir, saindo de casa, timer de 5 min), Ações rápidas (notícias, compras, bebi um copo, índice de água), Música & som (tocar, pausar, próxima, mudo, volume − e +) e Sistema & HUD (modo silencioso liga/desliga direto, trocar fundo, área limpa, widgets, ajustes). No celular, o CONTROLES fica no rodapé e abre para cima.
+- **Fixar comando na tela inicial (app):** na faixa DIGA, "📌 fixar na tela inicial" e depois o comando ("bom dia", "boa tarde", "notícias"…): o Android cria um ícone que roda o comando direto (`JarvisApp.pinShortcut`; "notícias" abre a janela de notícias). APK 6.5.5.
+- **Pesquisa no celular:** a tela de resultado não espreme mais a pergunta numa coluna estreita (o card empilha), o título fica menor, o FECHAR vira ✕ e a janela rola por dentro; um "resumo" que era só cortesia ("Certo, senhor Patrick") não aparece mais.
+
 ## 6.5.4 — 12 de novembro de 2026
 
 - **Notícias que não chegavam no celular:** a fila de avisos do celular ficava só na memória; cada reinício do JARVIS (toda atualização publicada reinicia) apagava os avisos que o celular ainda não tinha buscado, e as notícias já marcadas como avisadas não voltavam. Agora a fila fica em disco (`modules/phone_feed.py`, `data/avisos_celular.json`) e a numeração continua depois do reinício. O log registra quando o celular busca avisos ("Celular buscando avisos … via túnel/rede").
