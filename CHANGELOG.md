@@ -2,6 +2,11 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 6.5.12 — 12 de novembro de 2026
+
+- **Bloquear pelo celular:** o botão do topo virou "🔒 BLOQUEAR" (antes "⏻ SAIR", que não deixava claro que volta à tela de bloqueio) e o painel CONTROLES ganhou "BLOQUEAR" em Sistema & HUD (no celular, o CONTROLES fica no rodapé). "Modo bloqueio" por voz continua valendo.
+- **Selo do Netlify por cima do CELULAR:** no site, o grupo de botões do rodapé do bloqueio (Áudio, Fundo, Modo Torcedor, Celular) fica à esquerda do selo "Powered by Netlify"; no celular, os botões sobem um pouco.
+
 ## 6.5.11 — 12 de novembro de 2026
 
 - **Em qual navegador?** Ao abrir um site ("abra o YouTube"), o JARVIS pergunta em qual navegador, mostra a lista dos instalados (Chrome, Edge, Firefox, Brave, Opera e "Padrão do Windows") e abre no escolhido, falando ("no Chrome", "sempre no Edge", "tanto faz", "cancela") ou tocando. "Sempre…" ou a caixinha "Lembrar a escolha" grava a preferência (`site_browser`: "ask", "default" ou o navegador), que também fica em Configurações › Mídia & Foco › NAVEGADOR DOS SITES. Com um navegador só instalado, não pergunta. `modules/browser_choice.py`, `GET /api/browser`, `POST /api/browser/choose`, `components/BrowserChooser.jsx`.

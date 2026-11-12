@@ -506,11 +506,12 @@ const CONTROL_SECTIONS = [
   {
     title: "SISTEMA & HUD",
     items: [
+      { id: "lock", icon: "🔒", label: "BLOQUEAR", sub: "Volta à tela de bloqueio", tone: "amber" },
       { id: "silent", icon: "🤫", label: "SILENCIOSO" },
       { id: "background", icon: "🌌", label: "TROCAR FUNDO", sub: "Grade, universo, clássico" },
       { id: "zen", icon: "⛶", label: "ÁREA LIMPA" },
       { id: "widgets", icon: "◫", label: "WIDGETS", sub: "Organizar painéis" },
-      { id: "settings", icon: "⚙", label: "AJUSTES", sub: "Configurações e IA", wide: true },
+      { id: "settings", icon: "⚙", label: "AJUSTES", sub: "Configurações e IA" },
     ],
   },
 ];
@@ -532,6 +533,7 @@ function HudControlsMenu({
   fanModeEnabled = false,
   api,
   placement = "down", // V6.5.5: "up" = abre para cima (rodapé do celular)
+  onLock = null, // V6.5.12: BLOQUEAR (mesmo do botão do topo)
 }) {
   const [open, setOpen] = useState(false);
   const [silent, setSilent] = useState(null);
@@ -616,6 +618,11 @@ function HudControlsMenu({
       case "settings":
         if (onOpenSettings) onOpenSettings();
         setOpen(false);
+        break;
+      case "lock": // V6.5.12: no celular não havia um jeito claro de voltar ao bloqueio
+        setOpen(false);
+        if (onLock) onLock();
+        else if (onCommand) onCommand("modo bloqueio");
         break;
       default:
         break;
@@ -936,6 +943,7 @@ export default function HudLayout({
             onCommand={onCommand}
             fanModeEnabled={fanModeEnabled}
             api={api}
+            onLock={onExit}
           />
         </div>
 
@@ -976,9 +984,9 @@ export default function HudLayout({
             type="button"
             className="hl-btn hl-btn-power"
             onClick={onExit}
-            title="Sair / Tela de Bloqueio"
+            title="Bloquear a central (volta para a tela de bloqueio)"
           >
-            ⏻ SAIR
+            🔒 BLOQUEAR
           </button>
           {profileSlot}
         </div>
@@ -1167,6 +1175,7 @@ export default function HudLayout({
             fanModeEnabled={fanModeEnabled}
             api={api}
             placement="up"
+            onLock={onExit}
           />
         </span>
       </footer>

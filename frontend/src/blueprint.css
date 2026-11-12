@@ -388,3 +388,15 @@
   .mqr-chip { width: 160px; }
   body:has(.mqr-wrap) .bp-corner { right: calc(28px + 160px + 12px); }
 }
+
+/* V6.5.12: no site (Netlify) o selo "Powered by Netlify" fica no canto inferior direito, por cima do
+   CELULAR: o grupo da direita sobe para a esquerda o tamanho do selo. */
+@media (min-width: 901px) and (min-height: 621px) {
+  [data-netlify] .mqr-wrap { right: 210px; }
+  [data-netlify] body:has(.mqr-wrap) .bp-corner { right: calc(210px + 160px + 12px); }
+  [data-netlify] .bp-corner { right: 210px; }
+}
+@media (max-width: 900px), (max-height: 620px) {
+  [data-netlify] .bp-corner { bottom: 76px; }
+  [data-netlify] .mqr-wrap { bottom: 76px; }
+}

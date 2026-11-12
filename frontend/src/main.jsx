@@ -20,6 +20,9 @@ import "./mobile.css";
 initialBackground(); // V4.4: fundo blueprint/clássico antes do primeiro desenho
 initialAccessibility(); // V4.5: texto maior, alto contraste e menos movimento já na primeira tela
 markDevice(); // V4.5: <html data-app="android"> dentro do app do celular
+// V6.5.12: no site do Netlify aparece o selo "Powered by Netlify" no canto inferior direito;
+// os botões do rodapé do bloqueio se afastam dele (ver blueprint.css)
+if (/\.netlify\.app$/i.test(window.location.hostname)) document.documentElement.dataset.netlify = "1";
 
 // Carregados sob demanda (otimização 4.2: pacote inicial menor)
 const ScreensPopout = lazyComponent(() => import("./components/ScreensPopout.jsx"));
