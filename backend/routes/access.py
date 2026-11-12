@@ -382,6 +382,47 @@ async def lock_status() -> dict:
     return {"devices": len(devices), "phones": phones, "next_alarm": next_alarm}
 
 
+_PUBLIC_INFO: dict = {"at": 0.0, "data": None}
+
+
+@router.get("/api/lock/public-info")
+async def lock_public_info() -> dict:
+    """V5.8: lado direito do bloqueio: cotações (dólar, euro, bitcoin) e a manchete do momento.
+    Só informação pública; cache de 10 min. Fonte que falhar fica de fora (o cartão some)."""
+    from modules import news_radar
+    from services import quotes
+
+    now = time.monotonic()
+    if _PUBLIC_INFO["data"] is not None and now - _PUBLIC_INFO["at"] < 600:
+        return _PUBLIC_INFO["data"]
+
+    async def rates() -> list[dict]:
+        try:
+            return quotes.summarize(await asyncio.to_thread(quotes.fetch_rates))
+        except Exception as exc:  # noqa: BLE001
+            log.debug("Bloqueio: cotações indisponíveis: %s", exc)
+            return []
+
+    async def headline() -> Optional[dict]:
+        for category in ("brasil", "mundo"):
+            try:
+                items = await asyncio.to_thread(news_radar.fetch_news_by_category, category, 3)
+            except Exception as exc:  # noqa: BLE001
+                log.debug("Bloqueio: manchete indisponível (%s): %s", category, exc)
+                continue
+            if items:
+                top = items[0]
+                return {"title": top.get("title", ""), "source": top.get("source", ""),
+                        "published": top.get("published", ""), "category": category}
+        return None
+
+    r, h = await asyncio.gather(rates(), headline())
+    data = {"rates": r, "headline": h}
+    if r or h:
+        _PUBLIC_INFO.update(at=now, data=data)
+    return data
+
+
 @router.get("/api/lock/summary-data")
 async def lock_summary_data() -> dict:
     """Dados extras do resumo do dia (seção 17.3): próximo jogo (Modo Torcedor) e água de ontem."""

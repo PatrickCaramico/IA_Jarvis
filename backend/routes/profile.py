@@ -169,8 +169,8 @@ async def update_prefs(req: PrefsRequest) -> dict:
         )
     if "a11y_text_scale" in patch and patch["a11y_text_scale"] not in prefs.A11Y_TEXT_SCALES:
         raise HTTPException(status_code=400, detail="a11y_text_scale inválido. Use 100, 115 ou 130.")
-    if "background_style" in patch and patch["background_style"] not in {"blueprint", "classic"}:
-        raise HTTPException(status_code=400, detail="background_style inválido. Use 'blueprint' ou 'classic'.")
+    if "background_style" in patch and patch["background_style"] not in {"blueprint", "classic", "space"}:
+        raise HTTPException(status_code=400, detail="background_style inválido. Use 'blueprint', 'space' ou 'classic'.")
     if "llm_provider" in patch and patch["llm_provider"] not in {
         "openai",
         "gemini",

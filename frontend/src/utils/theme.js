@@ -14,9 +14,17 @@ export function applyTheme(themeColors) {
 // próxima abertura já começar com o fundo certo, antes das preferências chegarem do backend.
 export const BG_STORAGE_KEY = "jarvis_bg";
 
+// V5.8: "space" (Universo) usa os painéis da planta (data-bg="blueprint") com o céu estrelado (data-sky).
+function setBgAttrs(style) {
+  const root = document.documentElement;
+  root.dataset.bg = style === "classic" ? "classic" : "blueprint";
+  if (style === "space") root.dataset.sky = "space";
+  else delete root.dataset.sky;
+}
+
 export function applyBackground(style) {
-  const value = style === "classic" ? "classic" : "blueprint";
-  document.documentElement.dataset.bg = value;
+  const value = style === "classic" || style === "space" ? style : "blueprint";
+  setBgAttrs(value);
   try {
     localStorage.setItem(BG_STORAGE_KEY, value);
   } catch {
@@ -31,7 +39,7 @@ export function initialBackground() {
   } catch {
     /* ignora */
   }
-  document.documentElement.dataset.bg = saved === "classic" ? "classic" : "blueprint";
+  setBgAttrs(saved === "classic" || saved === "space" ? saved : "blueprint");
 }
 
 // V4.5: acessibilidade no documento inteiro (vale no bloqueio também).

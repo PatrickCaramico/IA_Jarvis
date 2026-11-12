@@ -22,6 +22,7 @@ initialAccessibility();
 
 const q = new URLSearchParams(window.location.search);
 document.documentElement.dataset.bg = q.get("bg") === "classic" ? "classic" : "blueprint";
+if (q.get("bg") === "space") document.documentElement.dataset.sky = "space"; // V5.8: ?bg=space
 if (q.get("fan") === "1") applyFanMode(true);
 const sentinelOn = q.get("mode") !== "classic";
 const phase = q.get("phase") || "ready";
@@ -69,6 +70,15 @@ const lockExtras = (path) => (path === "/api/health"
     ? Promise.resolve({ devices: 2, phones: 1, next_alarm: "amanhã às 07:00" })
     : path === "/api/weather"
       ? Promise.resolve({ place: "São Paulo", temperature: 19, description: "Tempo parcialmente nublado", rain_probability: 67, humidity: 89, wind: 11, sunrise: "05:15", sunset: "18:26" })
+      : path === "/api/lock/public-info"
+        ? Promise.resolve({
+          rates: [
+            { pair: "USDBRL", code: "USD", bid: 5.583, pctChange: 0.18 },
+            { pair: "EURBRL", code: "EUR", bid: 6.1806, pctChange: -0.21 },
+            { pair: "BTCBRL", code: "BTC", bid: 413502, pctChange: 0.46 },
+          ],
+          headline: { title: "Governo anuncia novo pacote de investimentos em infraestrutura para 2027", source: "g1", category: "brasil" },
+        })
       : path === "/api/integrations/spotify/track"
         ? Promise.resolve(q.get("music") === "1"
           ? { state: "playing", title: "Back in Black", artist: "AC/DC", duration_ms: 255000, progress_ms: 61000 }

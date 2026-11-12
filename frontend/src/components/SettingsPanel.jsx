@@ -318,6 +318,7 @@ export default function SettingsPanel({ api, onClose, onPrefsChange, onOpenMicro
               <div className="grid grid-cols-2 gap-2">
                 {[
                   ["blueprint", "Blueprint (planta azul)"],
+                  ["space", "Universo (estrelas)"],
                   ["classic", "Clássico escuro"],
                 ].map(([key, label]) => {
                   const current = (prefs?.background_style || "blueprint") === key;

@@ -11,6 +11,8 @@ import "../index.css";
 import "../brand.css";
 import "../feedback.css";
 import "../briefing.css";
+import "../blueprint.css";
+import "../mobile.css"; // V5.8: mostra também o layout do celular
 
 const TABS = [
   { id: "clima", label: "Clima" },

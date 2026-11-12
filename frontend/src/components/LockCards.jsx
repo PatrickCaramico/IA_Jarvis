@@ -13,6 +13,8 @@ export default function LockCards({ api, cards = [], fanModeEnabled = false, hid
   // V5.6.1: cartão SISTEMAS do lado esquerdo (serviços, tempo no ar, celular, próximo alarme). Nada pessoal.
   const [health, setHealth] = useState(null);
   const [status, setStatus] = useState(null);
+  // V5.8: lado direito: cotações (em cima do clima) e a manchete do momento (embaixo). Informação pública.
+  const [info, setInfo] = useState(null);
   const want = (key) => cards.includes(key);
 
   const now = useNow(want("clock"));
@@ -30,12 +32,13 @@ export default function LockCards({ api, cards = [], fanModeEnabled = false, hid
       api("/api/lock/status").then((d) => active && setStatus(d)).catch(() => {});
     };
     const stopStatus = startPolling(loadStatus, 60 * 1000);
+    const stopInfo = startPolling(() => api("/api/lock/public-info").then((d) => active && setInfo(d)).catch(() => {}), 10 * 60 * 1000);
     const onWs = (e) => {
       if (e.detail?.type === "water_updated" && e.detail.data) setWater(e.detail.data);
       if (e.detail?.type === "devices") api("/api/lock/status").then((d) => active && setStatus(d)).catch(() => {});
     };
     window.addEventListener("jarvis_ws_event", onWs);
-    return () => { active = false; stopPolling(); stopStatus(); window.removeEventListener("jarvis_ws_event", onWs); };
+    return () => { active = false; stopPolling(); stopStatus(); stopInfo(); window.removeEventListener("jarvis_ws_event", onWs); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cards.join(","), fanModeEnabled]);
 
@@ -89,6 +92,8 @@ export default function LockCards({ api, cards = [], fanModeEnabled = false, hid
   if (!allRight && weather?.sunrise) {
     items.push(<TodayCard key="today" weather={weather} />);
   }
+  if (info?.rates?.length) items.push(<RatesCard key="rates" rates={info.rates} />);
+  if (info?.headline?.title) items.push(<HeadlineCard key="headline" item={info.headline} />);
   if (want("fan_match") && fanModeEnabled && match?.opponent) {
     const d = new Date(match.date);
     items.push(
@@ -114,8 +119,11 @@ export default function LockCards({ api, cards = [], fanModeEnabled = false, hid
   // Clima à direita do orbe; à esquerda, de cima para baixo: SISTEMAS, Spotify, HOJE, relógio, jogo e água
   // (em telas estreitas, tudo embaixo)
   const LEFT_ORDER = ["status", "spotify", "today", "clock", "fan", "water"];
-  const right = allRight ? items : items.filter((el) => el.key === "weather");
-  const left = allRight ? [] : items.filter((el) => el.key !== "weather")
+  // direita, de cima para baixo: cotações, clima, manchete
+  const RIGHT = ["rates", "weather", "headline"];
+  const right = allRight ? items : items.filter((el) => RIGHT.includes(el.key))
+    .sort((a, b) => RIGHT.indexOf(a.key) - RIGHT.indexOf(b.key));
+  const left = allRight ? [] : items.filter((el) => !RIGHT.includes(el.key))
     .sort((a, b) => LEFT_ORDER.indexOf(a.key) - LEFT_ORDER.indexOf(b.key));
   return (
     <div className="lc-wrap" aria-label="Informações da tela de bloqueio">
@@ -176,6 +184,43 @@ function TodayCard({ weather }) {
       </dl>
       <div className="lc-bar" title={`${dayPct}% do dia`}><span style={{ width: `${dayPct}%` }} /></div>
       <div className="lc-sub lc-nocap">{dayPct}% do dia já passou</div>
+    </div>
+  );
+}
+
+// V5.8: cotações do dia (dólar, euro, bitcoin), com a variação em verde/vermelho
+const RATE_LABEL = { USD: "Dólar", EUR: "Euro", BTC: "Bitcoin" };
+function money(v, code) {
+  const digits = code === "BTC" ? 0 : 2;
+  return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: digits, maximumFractionDigits: digits });
+}
+function RatesCard({ rates }) {
+  return (
+    <div className="lc-card lc-rates">
+      <div className="lc-label">MERCADO · AGORA</div>
+      <ul className="lc-rates-list">
+        {rates.map((r) => {
+          const up = r.pctChange >= 0;
+          return (
+            <li key={r.pair}>
+              <span className="lc-rate-name">{RATE_LABEL[r.code] || r.code}</span>
+              <b>{money(r.bid, r.code)}</b>
+              <em className={up ? "up" : "down"}>{up ? "▲" : "▼"} {Math.abs(r.pctChange).toFixed(2).replace(".", ",")}%</em>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+// V5.8: a manchete do momento (Google Notícias), com a fonte
+function HeadlineCard({ item }) {
+  return (
+    <div className="lc-card lc-headline">
+      <div className="lc-label">MANCHETE · {item.category === "mundo" ? "MUNDO" : "BRASIL"}</div>
+      <p className="lc-headline-title">{item.title}</p>
+      {item.source && <div className="lc-sub lc-nocap">{item.source}</div>}
     </div>
   );
 }

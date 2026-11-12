@@ -66,6 +66,8 @@ export default function ArcReactorHUD({
       role="img"
       aria-label={`Orbe do JARVIS: ${state}`}
     >
+      {/* V5.8: anel dourado */}
+      <span className="arc-gold-ring" aria-hidden="true" />
       {/* Aura externa */}
       <div
         className={`absolute inset-0 animate-arc-pulse rounded-full blur-3xl ${colors.pulse}`}

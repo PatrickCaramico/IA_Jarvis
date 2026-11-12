@@ -130,3 +130,54 @@
   .ls-container .lc-card, .ls-container .np { width: 100%; box-sizing: border-box; }
   .ls-container .bp-corner { position: static !important; display: flex; justify-content: center; margin: 4px auto 0; transform: none !important; }
 }
+
+/* ==========================================================
+   V5.8: briefing no celular. No PC o palco fica por cima do orbe (posição absoluta); no celular o
+   centro é baixo e tudo transbordava: cabeçalho esticado, página mais larga que a tela, cards lado a
+   lado. Aqui vira uma coluna: abertura, abas (faixa que rola), o card falado na largura toda, a fileira
+   dos outros cards (rola para o lado) e a legenda; o orbe fica de fundo, apagado.
+   ========================================================== */
+@media (max-width: 760px) {
+  .hl-root.hl-briefing {
+    display: flex !important; flex-direction: column; align-items: stretch;
+    min-height: 100dvh; height: auto; overflow-x: hidden;
+  }
+  .hl-root.hl-briefing > * { min-width: 0; max-width: 100%; }
+  .hl-root.hl-briefing .hl-top { flex: none; height: auto !important; align-self: stretch; }
+  .hl-root.hl-briefing .hl-center {
+    position: relative; flex: 1 0 auto; display: flex; flex-direction: column; align-items: center;
+    min-height: 0 !important; padding: 0 0 8px; overflow: visible;
+  }
+  .hl-root.hl-briefing .hl-ticks { display: none; }
+  .hl-root.hl-briefing .hl-state { font-size: 0.85rem; margin: 2px 0 4px; }
+  .hl-root.hl-briefing .hl-orb {
+    position: absolute; top: 40px; left: 50%; transform: translateX(-50%);
+    width: 80vw; height: 80vw; opacity: 0.18; pointer-events: none; z-index: 0;
+  }
+  .bf-stage {
+    position: relative; inset: auto; z-index: 1; display: flex; flex-direction: column; align-items: stretch;
+    gap: 10px; width: 100%; max-width: 100%; pointer-events: auto;
+  }
+  .bf-head { width: 100%; }
+  .bf-opening { max-width: 100%; padding: 8px 14px; }
+  .bf-tabs {
+    width: 100%; max-width: 100%; justify-content: flex-start; flex-wrap: nowrap; overflow-x: auto;
+    padding: 2px 2px 6px; scrollbar-width: none;
+  }
+  .bf-tabs::-webkit-scrollbar { display: none; }
+  .bf-tab { flex: none; }
+  .bf-focus-area { width: 100%; overflow: visible; padding: 0; gap: 10px; justify-content: flex-start; }
+  .bf-focus-area > .bf-card.is-wide { width: 100%; }
+  .bf-card.is-wide .bf-weather-temp { font-size: 2rem; }
+  .bf-trail {
+    width: 100%; max-width: 100%; justify-content: flex-start; flex-wrap: nowrap !important; overflow-x: auto;
+    padding-bottom: 4px; scroll-snap-type: x proximity; scrollbar-width: none;
+  }
+  .bf-trail::-webkit-scrollbar { display: none; }
+  .bf-trail-item { flex: 0 0 min(72vw, 220px); scroll-snap-align: start; }
+  .bf-trail-item.is-done:nth-last-child(n + 3), .bf-trail-item.is-next:nth-child(n + 4) { display: flex; }
+  .bf-bottom { width: 100%; }
+  .bf-controls { flex-wrap: wrap; justify-content: center; gap: 8px; }
+  .bf-caption { font-size: 0.9rem; max-width: 100%; }
+  .bf-stage.is-done > .bf-row-wrap { width: 100%; overflow-x: auto; }
+}

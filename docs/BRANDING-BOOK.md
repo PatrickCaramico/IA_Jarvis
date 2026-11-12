@@ -1,4 +1,4 @@
-# Branding Book do JARVIS (v1.17, atualizado na V5.7.0 em 11/11/2026: voz no aparelho que pediu e atalhos do celular; agenda dos próximos dias e contagem regressiva; celular com voz, foto e aparelhos conectados; entrada sem repetição, janela do perfil e QR que abre o app; entrada direta para quem já usa, reconexão sozinha e central enxuta no celular)
+# Branding Book do JARVIS (v1.18, atualizado na V5.8.0 em 12/11/2026: fundo Universo, anel dourado, bloqueio completo e briefing no celular; voz no aparelho que pediu e atalhos do celular; agenda dos próximos dias e contagem regressiva; celular com voz, foto e aparelhos conectados; entrada sem repetição, janela do perfil e QR que abre o app; entrada direta para quem já usa, reconexão sozinha e central enxuta no celular)
 
 Versão aprovada do Branding Book proposto no plano da 4.2. Há também uma versão ilustrada e animada: abra `docs/branding-book.html` no navegador. Tudo aqui já está aplicado no projeto;
 no fim de cada seção há onde isso vive no código.
@@ -60,7 +60,7 @@ nos módulos do backend.
 | --- | --- |
 | Assistente | JARVIS (o nome da IA pode ser trocado em Configurações) |
 | Módulo de escuta contínua | **Modo Sentinela** (mantido; as siglas propostas não foram adotadas) |
-| Versão exibida na central | `v5.7.1` (sem referências a marcas de terceiros, como "Stark") |
+| Versão exibida na central | `v5.8.0` (sem referências a marcas de terceiros, como "Stark") |
 | Lista de sites abertos por voz | **Meus Sites** (Configurações > Meus Sites) |
 | Resumo da manhã | **Briefing** (disparado por "bom dia") |
 | Resumo da noite | **Fechamento do dia** (disparado por "boa noite") |
@@ -590,6 +590,19 @@ direita.
   (5.7.1)." ou "Atualizando o app para a versão …"). No bloqueio do celular, os cartões ficam com a mesma
   largura e o Modo Torcedor vai para o fim da página (não flutua mais por cima dos cartões).
 
+**Universo, anel dourado e bloqueio completo (V5.8).**
+- **Fundo Universo:** Configurações › Geral › Fundo › "Universo (estrelas)", ao lado de Blueprint e Clássico.
+  Céu azul-noite (#0b1437 → #02040e) com nebulosas roxa (#7c3aed), azul (#0ea5e9) e rosa (#ec4899) bem
+  suaves e quatro camadas de estrelas em CSS; usa os mesmos painéis de vidro da planta, sem a grade. No
+  bloqueio as estrelas piscam devagar (paradas com "menos movimento").
+- **Anel dourado no reator:** um aro dourado (#f5c542, 2 px, brilho suave) em volta do núcleo, no bloqueio e
+  na abertura; vale nos três fundos e no Modo Torcedor.
+- **Lado direito do bloqueio:** "MERCADO · AGORA" em cima do clima (Dólar, Euro, Bitcoin em JetBrains Mono,
+  variação ▲ verde / ▼ vermelha) e "MANCHETE · BRASIL" embaixo (até 3 linhas e a fonte). Só informação
+  pública; atualiza a cada 10 min.
+- **Briefing no celular:** em coluna, sem transbordar: abertura, abas numa faixa que rola, o card falado na
+  largura toda, os outros cards numa fileira que rola para o lado e a legenda; o orbe fica de fundo, apagado.
+
 ### Meus Sites, escudos e atualização (V5)
 
 **Meus Sites.** Nova aba em Configurações, no mesmo vidro azul das outras. Título "MEUS SITES" em
@@ -622,7 +635,7 @@ o PC tem um APK mais novo. Nada é baixado ou instalado sozinho.
 o orbe Núcleo girando devagar no topo (parado com "reduzir movimento"), "JARVIS" em Orbitron com brilho
 ciano, cartões de vidro azul-marinho com ícone em círculo de contorno (ciano; âmbar para segurança; verde
 para água e para o Modo Torcedor), capturas em moldura com cantos ciano e, no rodapé, o carimbo
-"J.A.R.V.I.S. · FOLHA · SITE · REV. v5.7.1" (a versão vem de `backend/version.py`). Botão principal ciano cheio ("VER NO GITHUB"); os outros só
+"J.A.R.V.I.S. · FOLHA · SITE · REV. v5.8.0" (a versão vem de `backend/version.py`). Botão principal ciano cheio ("VER NO GITHUB"); os outros só
 com borda. Logo abaixo, num quadro de borda tracejada âmbar, o botão "ABRIR MEU JARVIS" (borda âmbar, o "olhe aqui" da Sentinela), que abre a **mesma central do PC publicada no site** (`/app/`). Ela conversa com o JARVIS ligado no computador (backend em `127.0.0.1:8000`), então rosto, perfil, Modo Torcedor, rotina e agenda são os de sempre; na primeira vez, o Chrome pergunta se o site pode acessar a rede local (é o backend do próprio PC). Tom: o mesmo da central, e a página deixa claro que é só a vitrine ("O JARVIS roda no seu PC:
 voz, câmera, controle do sistema e os seus dados nunca passam por aqui."). A 404 diz "Procurei em toda a
 planta, senhor, e esta página não está aqui."
@@ -664,6 +677,7 @@ central completa, que agora conversa em cards.
 | **5.5 · o celular de verdade** | 11/11/2026 | Aparelhos conectados na central, foto do perfil no app, botão 🔊 em cada resposta e alto-falante do chat que lê as respostas no próprio celular, e o liga/desliga dos avisos no app. |
 | **5.6 · a agenda** | 11/11/2026 | Agenda dos próximos 3 dias no briefing (Google pela API ou pelo endereço iCal), contagem regressiva por voz com widget na tela e o app que só se atualiza quando o app muda, sem abrir download. |
 | **5.7 · uma voz só** | 11/11/2026 | A voz sai só no aparelho que pediu (celular ou PC), escolha "voz neste aparelho / voz no PC", "falar no PC" pelo celular e atalhos rápidos no chat do celular. |
+| **5.8 · o universo** | 12/11/2026 | Fundo Universo, anel dourado no reator, mercado e manchete no lado direito do bloqueio e o briefing ajustado ao celular. |
 
 O que atravessou todas as versões: tudo roda no PC do dono, o rosto é a chave, a voz é em
 português e o reator (depois Núcleo) fica no centro da tela.

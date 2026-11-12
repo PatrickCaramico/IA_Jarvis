@@ -55,3 +55,20 @@ def test_lock_status_is_public_and_has_nothing_personal():
     data = TestClient(main.app).get("/api/lock/status").json()
     assert set(data) == {"devices", "phones", "next_alarm"}
     assert data["next_alarm"].startswith("amanhã às") and "remédio" not in str(data)
+
+
+def test_lock_public_info_works_locked(monkeypatch):
+    """V5.8: cotações e manchete do bloqueio: rota pública, só dado público."""
+    from modules import news_radar
+    from routes import access as access_routes
+    from services import quotes
+
+    monkeypatch.setattr(quotes, "fetch_rates", lambda: {"USDBRL": {"code": "USD", "name": "Dólar", "bid": "5.5",
+                                                                   "pctChange": "0.2", "high": "5.6", "low": "5.4"}})
+    monkeypatch.setattr(news_radar, "fetch_news_by_category",
+                        lambda cat, limit=3: [{"title": "Manchete X", "source": "g1"}] if cat == "brasil" else [])
+    access_routes._PUBLIC_INFO.update(at=0.0, data=None)
+    access.reset_for_tests(access.LOCKED)
+    data = TestClient(main.app).get("/api/lock/public-info").json()
+    assert data["rates"][0]["code"] == "USD" and data["rates"][0]["bid"] == 5.5
+    assert data["headline"] == {"title": "Manchete X", "source": "g1", "published": "", "category": "brasil"}

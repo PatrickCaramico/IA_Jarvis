@@ -2,6 +2,14 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 5.8.0 — 12 de novembro de 2026
+
+- **Fundo Universo:** nova opção em Configurações › Geral › Fundo (`background_style: "space"`): céu com nebulosas e estrelas em CSS, com os painéis de vidro da planta; no bloqueio, estrelas piscando devagar.
+- **Anel dourado no reator** (`.arc-gold-ring` no `ArcReactorHUD`).
+- **Lado direito do bloqueio:** cotações (dólar, euro, bitcoin) em cima do clima e a manchete do momento embaixo; rota pública `GET /api/lock/public-info` (só informação pública, cache de 10 min).
+- **Briefing no celular:** o palco do briefing (feito para ficar por cima do orbe no PC) transbordava no celular — cabeçalho esticado, página mais larga que a tela. Agora vira uma coluna com abas e cards em faixas que rolam para o lado.
+- **Voz no celular:** a voz só sai no aparelho que pediu depois de reiniciar o JARVIS do PC na 5.7 ou mais nova (o PC ainda rodava a 5.6.3).
+
 ## 5.7.1 — 11 de novembro de 2026
 
 - **Botão ATUALIZAR APP** na tela de bloqueio do app: procura a versão nova no PC na hora (sem esperar os 30 minutos) e mostra a resposta ("O app já está na versão mais nova", "Atualizando o app…", ou o erro). Ponte nova `JarvisApp.checkUpdate()`; no app antigo, o botão recarrega pelo `jarvis://open`, que também confere. APK 5.7.1.

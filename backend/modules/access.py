@@ -143,6 +143,7 @@ _PUBLIC_EXACT = {
     ("POST", "/api/profiles"),        # criar pessoa nova pelo bloqueio (exige o PIN do dono, se houver)
     ("GET", "/api/water"),            # cartão "água de hoje" da tela de bloqueio
     ("GET", "/api/lock/status"),      # V5.6.1: cartão de sistemas do bloqueio (sem nada pessoal)
+    ("GET", "/api/lock/public-info"),  # V5.8: cotações e manchete do bloqueio (informação pública)
     ("POST", "/api/health/biometrics"),  # recebimento do relógio (Android Sync) não pode quebrar
     ("POST", "/api/system/update"),   # botão ATUALIZAR do bloqueio (a rota aceita só o próprio PC)
     ("GET", "/api/alarms/ringing"),   # V5.1: alarme tocando (sem o rótulo)

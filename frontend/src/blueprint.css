@@ -329,3 +329,53 @@
 @media (prefers-reduced-motion: reduce) {
   [data-bg="blueprint"] .ls-container::after { animation: none; display: none; }
 }
+
+/* ==========================================================================
+   V5.8: fundo "Universo" (Configurações › Geral › Fundo). Usa os mesmos painéis de vidro da planta
+   (data-bg="blueprint") e troca só o fundo: céu escuro, nebulosas e três camadas de estrelas, tudo em
+   CSS (sem imagem). Fica parado na central (os painéis usam desfoque); no bloqueio as estrelas
+   piscam devagar, e param com "reduzir movimento".
+   ========================================================================== */
+[data-sky="space"] {
+  --sky-stars-1: radial-gradient(1px 1px at 20px 30px, #fff, transparent 60%) 0 0 / 160px 160px;
+  --sky-stars-2: radial-gradient(1.4px 1.4px at 90px 120px, rgba(200, 225, 255, 0.9), transparent 60%) 0 0 / 230px 230px;
+  --sky-stars-3: radial-gradient(1.8px 1.8px at 150px 60px, rgba(255, 236, 200, 0.85), transparent 60%) 0 0 / 340px 340px;
+  --sky-stars-4: radial-gradient(1px 1px at 60px 200px, rgba(170, 210, 255, 0.7), transparent 60%) 0 0 / 280px 280px;
+  --sky-nebula:
+    radial-gradient(ellipse 55% 40% at 18% 22%, rgba(124, 58, 237, 0.28), transparent 70%),
+    radial-gradient(ellipse 50% 45% at 85% 75%, rgba(14, 165, 233, 0.22), transparent 70%),
+    radial-gradient(ellipse 40% 30% at 70% 15%, rgba(236, 72, 153, 0.12), transparent 70%),
+    radial-gradient(ellipse 90% 80% at 50% 50%, #0b1437 0%, #060b22 55%, #02040e 100%);
+}
+[data-sky="space"] body,
+[data-sky="space"] .hl-root,
+[data-sky="space"] .ls-container,
+[data-sky="space"] .gs-root,
+[data-sky="space"][data-mode="fan"] .hl-root {
+  background: var(--sky-stars-1), var(--sky-stars-2), var(--sky-stars-3), var(--sky-stars-4), var(--sky-nebula), #02040e;
+}
+[data-sky="space"] body { background-attachment: fixed; }
+/* a grade da planta não aparece no universo */
+[data-sky="space"] .ls-container::before, [data-sky="space"] .hl-root::before { background-image: none !important; }
+/* estrelas piscando só no bloqueio */
+[data-sky="space"] .ls-container::after {
+  content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%; transform: none;
+  pointer-events: none; z-index: -1; will-change: opacity;
+  background:
+    radial-gradient(1.6px 1.6px at 40px 70px, rgba(255, 255, 255, 0.95), transparent 60%) 0 0 / 300px 300px,
+    radial-gradient(1.2px 1.2px at 210px 160px, rgba(190, 220, 255, 0.9), transparent 60%) 0 0 / 420px 420px;
+  animation: sky-twinkle 6s ease-in-out infinite alternate;
+}
+@keyframes sky-twinkle { from { opacity: 0.25; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { [data-sky="space"] .ls-container::after { animation: none; } }
+[data-motion="reduce"][data-sky="space"] .ls-container::after { animation: none; }
+
+/* ==========================================================================
+   V5.8: anel dourado no reator (elemento .arc-gold-ring dentro do ArcReactorHUD;
+   os ::before/::after do reator já são o invólucro e o halo da planta)
+   ========================================================================== */
+.arc-gold-ring {
+  position: absolute; inset: 17%; border-radius: 50%; pointer-events: none; z-index: 2;
+  border: 2px solid rgba(245, 197, 66, 0.9);
+  box-shadow: 0 0 14px rgba(245, 197, 66, 0.5), inset 0 0 12px rgba(245, 197, 66, 0.3);
+}

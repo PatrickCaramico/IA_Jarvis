@@ -15,7 +15,7 @@ _SETTINGS_PATH = settings.DATA_DIR / "jarvis_settings.json"
 _DEFAULTS: dict[str, Any] = {
     "ai_name": "JARVIS",          # nome que o usuário dá à IA
     "color_theme": "blue",        # "blue" | "green" | "purple" | "orange" | "red"
-    "background_style": "blueprint",  # V4.4: "blueprint" (planta azul) | "classic" (escuro antigo)
+    "background_style": "blueprint",  # V4.4: "blueprint" (planta azul) | "classic" (escuro antigo) | "space" (V5.8: universo)
     "widgets": ["status", "about"],  # widgets visíveis no painel
     "widget_layout": {},             # posição e tamanho persistidos no painel
     "custom_shortcuts": {},       # atalhos personalizados: {"nome": {"apps": [...], "urls": [...]}}
