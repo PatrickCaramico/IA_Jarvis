@@ -1065,3 +1065,91 @@
 /* V6.0: app — compartilhar com o JARVIS e oferta da digital */
 .app-share-text { margin: 0 0 12px; font-size: 0.9rem; line-height: 1.4; color: #e6f7fb; max-height: 30vh; overflow-y: auto; word-break: break-word; }
 .app-share-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* ==========================================================
+   V6.5.15 — Área Limpa como "smart display" (components/ZenGlance.jsx)
+   ========================================================== */
+.zg-root { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
+.zg-root > * { pointer-events: auto; }
+.hl-center:has(.zg-root) > .hl-state,
+.hl-center:has(.zg-root) > .hl-ticks { visibility: hidden; }
+
+.zg-clock {
+  position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center; gap: 2px; pointer-events: none; text-align: center;
+}
+.zg-hello { font-family: "Rajdhani", sans-serif; font-size: clamp(0.95rem, 1.4vw, 1.25rem); letter-spacing: 0.08em; color: rgba(201, 246, 255, 0.75); }
+.zg-time {
+  font-family: "Orbitron", sans-serif; font-weight: 600; font-size: clamp(2.6rem, 5.2vw, 4.4rem); line-height: 1;
+  color: #e9fbff; text-shadow: 0 0 22px rgba(79, 220, 255, 0.45); letter-spacing: 0.04em;
+}
+.zg-time i { font-style: normal; animation: zg-blink 2s steps(1) infinite; opacity: 0.85; }
+@keyframes zg-blink { 50% { opacity: 0.25; } }
+.zg-date { font-family: "Orbitron", sans-serif; font-size: 0.62rem; letter-spacing: 0.22em; text-transform: uppercase; color: rgba(94, 234, 212, 0.85); }
+
+.zg-side { position: absolute; top: 50%; transform: translateY(-46%); width: clamp(250px, 21vw, 330px); display: grid; gap: 12px; }
+.zg-left { left: clamp(16px, 3vw, 56px); }
+.zg-right { right: clamp(16px, 3vw, 56px); }
+
+.zg-card {
+  display: block; width: 100%; text-align: left; cursor: pointer; color: #e6f7fb;
+  padding: 14px 16px; border-radius: 16px; border: 1px solid rgba(94, 234, 212, 0.28);
+  background: linear-gradient(180deg, rgba(6, 26, 62, 0.72), rgba(3, 14, 38, 0.82));
+  backdrop-filter: blur(10px); box-shadow: 0 10px 30px rgba(2, 8, 25, 0.35);
+  transition: border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+  animation: zg-in 420ms ease-out both;
+}
+.zg-card:hover, .zg-card:focus-visible { border-color: rgba(94, 234, 212, 0.7); transform: translateY(-2px); box-shadow: 0 14px 36px rgba(2, 8, 25, 0.45), 0 0 18px rgba(94, 234, 212, 0.18); }
+@keyframes zg-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.zg-right .zg-card:nth-child(1), .zg-row .zg-card:nth-child(1) { animation-delay: 80ms; }
+.zg-row .zg-card:nth-child(2) { animation-delay: 160ms; }
+.zg-label { display: block; font-family: "Orbitron", sans-serif; font-size: 0.55rem; letter-spacing: 0.18em; color: #5eead4; margin-bottom: 8px; }
+
+.zg-weather-now { display: grid; grid-template-columns: auto auto 1fr; align-items: center; gap: 10px; }
+.zg-weather-icon { font-size: 2.4rem; line-height: 1; }
+.zg-weather-now strong { font-family: "Orbitron", sans-serif; font-size: 2.3rem; font-weight: 600; line-height: 1; }
+.zg-weather-desc { font-size: 0.85rem; color: rgba(201, 246, 255, 0.85); text-transform: capitalize; line-height: 1.25; }
+.zg-weather-desc small { display: block; margin-top: 3px; font-size: 0.72rem; color: rgba(201, 246, 255, 0.55); text-transform: none; }
+.zg-week { list-style: none; margin: 12px 0 0; padding: 10px 0 0; border-top: 1px dashed rgba(201, 246, 255, 0.15); display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+.zg-week li { display: grid; justify-items: center; gap: 2px; font-size: 0.7rem; color: rgba(201, 246, 255, 0.65); }
+.zg-week li span { font-family: "Orbitron", sans-serif; font-size: 0.5rem; letter-spacing: 0.08em; text-transform: uppercase; }
+.zg-week li i { font-style: normal; font-size: 1.1rem; }
+.zg-week li b { color: #fff; font-weight: 600; font-size: 0.8rem; }
+
+.zg-agenda ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.zg-agenda li { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: baseline; }
+.zg-when { font-family: "JetBrains Mono", Consolas, monospace; font-size: 0.72rem; color: #5eead4; white-space: nowrap; }
+.zg-what { font-size: 0.9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.zg-empty { margin: 0; font-size: 0.85rem; color: rgba(201, 246, 255, 0.7); }
+.zg-alarm { margin: 10px 0 0; font-size: 0.8rem; color: #fde68a; }
+
+.zg-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.zg-mini { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 10px; padding: 12px; }
+.zg-mini-txt { display: grid; font-size: 0.85rem; line-height: 1.2; min-width: 0; }
+.zg-mini-txt .zg-label { margin-bottom: 3px; }
+.zg-mini-txt small { font-size: 0.66rem; color: rgba(201, 246, 255, 0.5); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.zg-ring-wrap { position: relative; width: 44px; height: 44px; display: grid; place-items: center; }
+.zg-ring-wrap b { position: absolute; font-family: "Orbitron", sans-serif; font-size: 0.55rem; }
+.zg-ring { position: absolute; inset: 0; transform: rotate(-90deg); }
+.zg-ring-bg { fill: none; stroke: rgba(125, 211, 252, 0.15); stroke-width: 6; }
+.zg-ring-fg { fill: none; stroke: #38bdf8; stroke-width: 6; stroke-linecap: round; transition: stroke-dashoffset 600ms ease; filter: drop-shadow(0 0 4px rgba(56, 189, 248, 0.6)); }
+.zg-big-icon { font-size: 1.8rem; line-height: 1; }
+
+.zg-bottom { position: absolute; left: 50%; transform: translateX(-50%); top: clamp(118px, 15vh, 150px); width: min(720px, 60vw); display: flex; justify-content: center; }
+.zg-ticker {
+  display: flex; align-items: center; gap: 10px; max-width: 100%; padding: 7px 14px; border-radius: 999px; cursor: pointer;
+  border: 1px solid rgba(94, 234, 212, 0.25); background: rgba(2, 8, 19, 0.45); color: #e6f7fb; backdrop-filter: blur(6px);
+}
+.zg-ticker:hover { border-color: rgba(94, 234, 212, 0.6); }
+.zg-ticker-tag { flex: none; font-family: "Orbitron", sans-serif; font-size: 0.52rem; letter-spacing: 0.14em; color: #5eead4; text-transform: uppercase; }
+.zg-ticker-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.86rem; animation: zg-in 500ms ease-out; }
+.zg-ticker-src { flex: none; font-size: 0.68rem; color: rgba(201, 246, 255, 0.5); }
+
+@media (max-width: 1150px) {
+  .zg-side { display: none; }
+  .zg-bottom { width: min(560px, 86vw); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .zg-card, .zg-ticker-text { animation: none; }
+  .zg-time i { animation: none; }
+}

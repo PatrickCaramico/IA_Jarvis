@@ -86,6 +86,33 @@ def _tomorrow(daily: dict) -> dict | None:
         return None
 
 
+@router.get("/api/agenda/next")
+async def agenda_next(limit: int = 3) -> dict:
+    """V6.5.15: próximos compromissos (agenda conectada + lembretes) para a tela de espera."""
+    from datetime import datetime
+
+    from modules import calendar_hub, reminders
+
+    now = datetime.now()
+    items = []
+    try:
+        if calendar_hub.connected():
+            for ev in await asyncio.to_thread(calendar_hub.upcoming_events, 2, 15):
+                start = (ev.get("start") or "")[:16].replace("T", " ")
+                items.append({"at": start, "title": ev.get("title") or "Compromisso", "kind": "agenda"})
+    except Exception as exc:  # noqa: BLE001 - agenda fora do ar: segue com os lembretes
+        log.warning("Agenda indisponível para a tela de espera: %s", exc)
+    for r in reminders.get_reminders(only_pending=True):
+        items.append({"at": (r.get("data_hora") or "")[:16], "title": r.get("texto") or "Lembrete", "kind": "lembrete"})
+    today, cut = now.strftime("%Y-%m-%d"), now.strftime("%Y-%m-%d %H:%M")
+    upcoming = sorted((i for i in items if i["at"] and (i["at"] >= cut or len(i["at"]) == 10)), key=lambda i: i["at"])
+    out = []
+    for i in upcoming[: max(1, min(limit, 6))]:
+        day = "Hoje" if i["at"].startswith(today) else "Amanhã" if i["at"][:10] > today else i["at"][:10]
+        out.append({**i, "label": f"{day} {i['at'][11:16]}".strip()})
+    return {"items": out}
+
+
 @router.get("/api/weather")
 async def get_weather(city: str | None = Query(default=None, max_length=80)) -> dict:
     """Retorna dados estruturados para o widget de clima."""
@@ -118,6 +145,9 @@ async def get_weather(city: str | None = Query(default=None, max_length=80)) -> 
             "sunset": ((daily.get("sunset") or [""])[0] or "")[11:16] or None,
             # V5.9: janela de detalhes do clima no bloqueio (previsão de amanhã)
             "tomorrow": _tomorrow(daily),
+            # V6.5.15: tela de espera (Área Limpa): ícone de agora e a semana
+            "icon": (tools.weather_card(result) or {}).get("now", {}).get("icon"),
+            "week": (tools.weather_card(result) or {}).get("days", []),
         }
     except (KeyError, IndexError, TypeError, ValueError) as exc:
         log.warning("Resposta de clima incompleta para %s: %s", requested_city, exc)

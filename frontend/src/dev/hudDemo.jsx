@@ -38,7 +38,16 @@ const DATA = {
   "/api/tasks": { tasks: [] },
   "/api/notifications": { items: [] },
   "/api/health": { status: "ok" },
-  // V6.5: janela de notícias
+  // V6.5.15: tela de espera (Área Limpa)
+  "/api/weather": { place: "São Paulo", temperature: 21, description: "parcialmente nublado", maximum: 26, minimum: 17, rain_probability: 100, icon: "⛅",
+    week: [["Hoje", 26, 17, "⛅"], ["Amanhã", 25, 18, "🌧"], ["Sáb 14", 27, 18, "⛅"], ["Dom 15", 28, 16, "🌦"], ["Seg 16", 26, 19, "☀"], ["Ter 17", 28, 18, "☀"]]
+      .map(([label, max, min, icon]) => ({ label, max, min, icon, rain: 40 })) },
+  "/api/agenda/next": { items: [
+    { label: "Hoje 21:00", title: "Ligar para a mãe", kind: "lembrete" },
+    { label: "Amanhã 09:30", title: "Reunião de planejamento", kind: "agenda" },
+  ] },
+  "/api/water": { total_ml: 1250, goal_ml: 2500, percentage: 50 },
+  "/api/lock/status": { devices: 2, phones: 1, next_alarm: "amanhã às 07:00" },
   "/api/briefing/news-themes": { items: [
     { title: "Tecnologia", query: "tecnologia", count: 1 },
     { title: "Marvel", query: "Marvel", count: 3 },

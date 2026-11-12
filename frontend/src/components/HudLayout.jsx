@@ -18,6 +18,7 @@ import useNow from "../hooks/useNow.js";
 import lazyComponent from "../utils/lazyComponent.jsx";
 import JarvisLogo from "./JarvisLogo.jsx";
 import NewsWindow from "./NewsWindow.jsx";
+import ZenGlance from "./ZenGlance.jsx";
 import { applyBackground } from "../utils/theme.js";
 
 // Carregados sob demanda (otimização 4.2: pacote inicial menor)
@@ -737,6 +738,7 @@ function HudControlsMenu({
 
 export default function HudLayout({
   aiName,
+  userName = "", // V6.5.15: saudação da tela de espera
   stateLabel,
   jarvisState,
   listening,
@@ -1071,6 +1073,8 @@ export default function HudLayout({
 
       {/* ===== Centro ===== */}
       <main className="hl-center">
+        {/* V6.5.15: Área Limpa vira um "smart display": relógio, clima da semana, próximos, água, compras e manchetes */}
+        {zenMode && !briefingRunning && <ZenGlance api={api} name={userName} onCommand={onCommand} />}
         <div className={`hl-state ${jarvisState}`}>{stateLabel.toUpperCase()}</div>
         <div className="hl-ticks" aria-hidden="true" />
         <div className="hl-orb">

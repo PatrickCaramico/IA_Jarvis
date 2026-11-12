@@ -2929,6 +2929,7 @@ export default function App() {
       )}
 
       <HudLayout
+        userName={name}
         devices={devices}
         countdowns={countdowns}
         onRemoveCountdown={(id) => api(`/api/countdowns/${id}`, { method: "DELETE" }).then((r) => setCountdowns(r.items || [])).catch(() => {})}

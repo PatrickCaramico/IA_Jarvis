@@ -2,6 +2,10 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 6.5.15 — 12 de novembro de 2026
+
+- **Tela de espera (Área Limpa) como smart display:** em volta do orbe, saudação e relógio grande com a data; manchetes dos seus temas passando (tocar abre a janela de notícias); à esquerda o clima de agora e dos próximos 5 dias; à direita os próximos compromissos e lembretes (com o alarme), a água do dia num anel (toque = +1 copo) e as compras. Tocar em qualquer cartão faz o pedido por voz. Tudo se atualiza sozinho (`components/ZenGlance.jsx`). Novos dados: `GET /api/agenda/next` e `icon`/`week` em `/api/weather`.
+
 ## 6.5.14 — 12 de novembro de 2026
 
 - **"YouTube" pela segunda vez não abria:** o reconhecimento de voz entregou só "YouTube" (sem o "abre"), e a frase ia para a IA, que só conversava. Agora o nome de um site/app sozinho abre (como na Alexa), inclusive "vai no YouTube", "entra no Netflix" e "o Netflix aí".
