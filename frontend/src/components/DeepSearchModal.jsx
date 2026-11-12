@@ -1,14 +1,51 @@
-import { useEffect } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { soundManager } from "../utils/soundEffects.js";
 
 /**
  * Modal Holográfico Tático de Pesquisa Profunda do J.A.R.V.I.S.
  * Inspirado diretamente na interface tática Stark com apresentação de notícias do Google em tempo real.
  */
-export default function DeepSearchModal({ data, onClose, onDeepSearch }) {
+// V6.5.6: sem nenhum toque/rolagem/tecla, a janela fecha sozinha depois deste tempo (com o JARVIS
+// calado). Qualquer interação recomeça a contagem; "MANTER ABERTA" desliga.
+export const AUTO_CLOSE_MS = 25000;
+
+export default function DeepSearchModal({ data, onClose, onDeepSearch, holdOpen = false, autoCloseMs = AUTO_CLOSE_MS }) {
   useEffect(() => {
     soundManager.playSuccess();
   }, []);
+
+  const [pinned, setPinned] = useState(false);
+  const [left, setLeft] = useState(autoCloseMs);
+  const deadline = useRef(Date.now() + autoCloseMs);
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+  const touch = useCallback(() => {
+    deadline.current = Date.now() + autoCloseMs;
+    setLeft(autoCloseMs);
+  }, [autoCloseMs]);
+
+  // enquanto o JARVIS fala, a contagem fica parada (recomeça cheia quando ele termina)
+  useEffect(() => {
+    if (holdOpen) touch();
+  }, [holdOpen, touch]);
+
+  useEffect(() => {
+    if (!data || pinned || !autoCloseMs) return undefined;
+    const t = setInterval(() => {
+      if (holdOpen || document.hidden) {
+        deadline.current = Date.now() + autoCloseMs;
+        setLeft(autoCloseMs);
+        return;
+      }
+      const ms = deadline.current - Date.now();
+      setLeft(Math.max(0, ms));
+      if (ms <= 0) {
+        clearInterval(t);
+        closeRef.current?.();
+      }
+    }, 250);
+    return () => clearInterval(t);
+  }, [data, pinned, holdOpen, autoCloseMs]);
 
   if (!data) return null;
 
@@ -29,7 +66,24 @@ export default function DeepSearchModal({ data, onClose, onDeepSearch }) {
 
   return (
     <div className="dsm-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-3 sm:p-4 select-none animate-fadeIn">
-      <div className="dsm-card relative w-full max-w-3xl max-h-[calc(100dvh-24px)] overflow-y-auto rounded-xl border border-cyan-400/50 bg-gradient-to-b from-[#061b30]/95 via-[#020d1c]/98 to-[#01060e]/98 p-4 sm:p-6 shadow-[0_0_60px_rgba(31,194,245,0.4)] text-cyan-50 font-sans">
+      <div
+        onPointerDown={touch}
+        onPointerMove={touch}
+        onWheel={touch}
+        onScroll={touch}
+        onKeyDown={touch}
+        onTouchStart={touch}
+        className="dsm-card relative w-full max-w-3xl max-h-[calc(100dvh-24px)] overflow-y-auto rounded-xl border border-cyan-400/50 bg-gradient-to-b from-[#061b30]/95 via-[#020d1c]/98 to-[#01060e]/98 p-4 sm:p-6 shadow-[0_0_60px_rgba(31,194,245,0.4)] text-cyan-50 font-sans"
+      >
+        {/* V6.5.6: barra fininha do tempo até fechar sozinha */}
+        {!pinned && autoCloseMs > 0 && (
+          <div className="absolute left-0 right-0 top-0 h-[2px] overflow-hidden rounded-t-xl" aria-hidden="true">
+            <div
+              className="h-full bg-cyan-300/70 transition-[width] duration-300 ease-linear"
+              style={{ width: `${Math.round((left / autoCloseMs) * 100)}%` }}
+            />
+          </div>
+        )}
         {/* Cantos Táticos do HUD Stark */}
         <div className="absolute top-2 left-2 w-3.5 h-3.5 border-t-2 border-l-2 border-cyan-400" />
         <div className="absolute top-2 right-2 w-3.5 h-3.5 border-t-2 border-r-2 border-cyan-400" />
@@ -46,6 +100,21 @@ export default function DeepSearchModal({ data, onClose, onDeepSearch }) {
           </div>
 
           <div className="ml-auto flex items-center gap-2">
+            {autoCloseMs > 0 && (
+              <button
+                type="button"
+                onClick={() => setPinned((v) => !v)}
+                aria-pressed={pinned}
+                className={`px-2 py-1 rounded border text-[10px] font-['Orbitron'] tracking-wider whitespace-nowrap transition ${
+                  pinned
+                    ? "border-amber-300/70 bg-amber-500/15 text-amber-200"
+                    : "border-cyan-500/30 text-cyan-300/70 hover:text-white hover:bg-cyan-500/20"
+                }`}
+                title={pinned ? "Volta a fechar sozinha quando parada" : "Não fechar sozinha"}
+              >
+                {pinned ? "📌 FIXADA" : holdOpen ? "LENDO…" : `FECHA EM ${Math.ceil(left / 1000)}s`}
+              </button>
+            )}
             {onDeepSearch && (
               <button
                 type="button"

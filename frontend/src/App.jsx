@@ -2532,6 +2532,7 @@ export default function App() {
       {deepSearchData && (
         <DeepSearchModal
           data={deepSearchData}
+          holdOpen={jarvisState === "speaking"} // V6.5.6: não fecha sozinha enquanto o JARVIS lê a resposta
           onClose={() => setDeepSearchData(null)}
           onDeepSearch={(query) => {
             setDeepSearchData(null);

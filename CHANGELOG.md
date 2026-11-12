@@ -2,6 +2,10 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 6.5.6 — 12 de novembro de 2026
+
+- **Janela da pesquisa fecha sozinha:** sem nenhuma interação, ela fecha 25 s depois (`AUTO_CLOSE_MS`), sempre esperando o JARVIS terminar de ler a resposta ("LENDO…"). Uma barra fininha no topo mostra o tempo; tocar, rolar ou digitar recomeça a contagem, e "FECHA EM Xs" → "📌 FIXADA" mantém aberta.
+
 ## 6.5.5 — 12 de novembro de 2026
 
 - **Painel CONTROLES ampliado:** grade compacta por seção com Modos de ambiente, Rotinas (resumo pela hora, dormir, saindo de casa, timer de 5 min), Ações rápidas (notícias, compras, bebi um copo, índice de água), Música & som (tocar, pausar, próxima, mudo, volume − e +) e Sistema & HUD (modo silencioso liga/desliga direto, trocar fundo, área limpa, widgets, ajustes). No celular, o CONTROLES fica no rodapé e abre para cima.
