@@ -1537,10 +1537,11 @@ async def _h_logs(message: str, norm: str, words: int, name: str) -> Optional[st
 
 # ===================================================================== 4.2: protocolos
 async def _h_protocol(message: str, norm: str, words: int, name: str) -> Optional[str]:
-    if "protocolo" not in norm:
-        return None
     from modules import protocols
 
+    if "protocolo" not in norm:
+        # V6.0: rotinas por frase natural ("modo dormir", "vou dormir", "estou saindo")
+        return await protocols.handle_natural(norm) if words <= 8 else None
     return await protocols.handle_voice(norm)
 
 

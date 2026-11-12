@@ -12,6 +12,13 @@ Só existem ações seguras e reversíveis (nada apaga arquivos nem envia mensag
   volume     ajusta o volume do Windows (0 a 100)
   playlist   toca uma playlist do Spotify (link ou URI)
   say        frase dita ao terminar
+V6.0 (rotinas em 1 comando):
+  pause_music  pausa o Spotify
+  lock_pc      bloqueia a tela do Windows (Win+L)
+  tomorrow     fala o despertador, o clima e o primeiro compromisso de amanhã
+  weather_now  fala o clima de agora
+  shopping     lê o que falta na lista de compras
+Também valem frases naturais: "modo dormir", "vou dormir", "estou saindo" (campo "aliases").
 """
 from __future__ import annotations
 
@@ -23,7 +30,10 @@ from typing import Any, Optional
 
 log = logging.getLogger("jarvis.protocols")
 
-ACTIONS = ("open", "focus", "focus_stop", "silent", "volume", "playlist", "say")
+ACTIONS = ("open", "focus", "focus_stop", "silent", "volume", "playlist", "say",
+           "pause_music", "lock_pc", "tomorrow", "weather_now", "shopping")
+# Ações que só falam algo (o texto entra na resposta, na ordem)
+SPEAKING_ACTIONS = ("tomorrow", "weather_now", "shopping")
 MAX_PROTOCOLS = 12
 MAX_STEPS = 10
 
@@ -43,6 +53,28 @@ DEFAULT_PROTOCOLS: dict[str, dict[str, Any]] = {
             {"action": "volume", "value": 40},
             {"action": "say", "value": "Protocolo gravação ativo. Vou ficar em silêncio até o senhor desligar o modo silencioso."},
             {"action": "silent", "value": True},
+        ],
+    },
+    "dormir": {
+        "label": "Dormir",
+        "aliases": ["vou dormir", "hora de dormir", "boa noite jarvis vou dormir"],
+        "steps": [
+            {"action": "pause_music", "value": None},
+            {"action": "focus_stop", "value": None},
+            {"action": "volume", "value": 15},
+            {"action": "tomorrow", "value": None},
+            {"action": "say", "value": "Bom descanso, senhor."},
+        ],
+    },
+    "saindo": {
+        "label": "Saindo de casa",
+        "aliases": ["estou saindo", "to saindo", "vou sair", "saindo de casa"],
+        "steps": [
+            {"action": "weather_now", "value": None},
+            {"action": "shopping", "value": None},
+            {"action": "pause_music", "value": None},
+            {"action": "lock_pc", "value": None},
+            {"action": "say", "value": "Bloqueei o computador. Até mais, senhor."},
         ],
     },
     "descanso": {
@@ -104,7 +136,7 @@ def _validate_step(step: Any) -> Optional[str]:
     elif action == "silent":
         if not isinstance(value, bool):
             return "'silent' precisa de verdadeiro ou falso."
-    return None
+    return None  # pause_music, lock_pc, tomorrow, weather_now, shopping: sem valor
 
 
 def all_protocols(user: Optional[dict] = None) -> dict[str, dict[str, Any]]:
@@ -119,7 +151,7 @@ def all_protocols(user: Optional[dict] = None) -> dict[str, dict[str, Any]]:
 def find(name: str, protos: dict[str, dict[str, Any]]) -> Optional[tuple[str, dict[str, Any]]]:
     wanted = slug(name)
     for key, proto in protos.items():
-        if wanted in (slug(key), slug(proto.get("label", key))):
+        if wanted in (slug(key), slug(proto.get("label", key))) or wanted in {slug(a) for a in proto.get("aliases", [])}:
             return key, proto
     for key, proto in protos.items():  # começo do nome ("protocolo grava")
         if len(wanted) >= 3 and (slug(key).startswith(wanted) or slug(proto.get("label", key)).startswith(wanted)):
@@ -147,12 +179,82 @@ async def _run_step(step: dict) -> Optional[str]:
             await asyncio.to_thread(system_control._set_volume, int(value))
         elif action == "playlist":
             await asyncio.to_thread(spotify.play_playlist, str(value), True)
+        elif action == "pause_music":
+            if spotify.connected():
+                await asyncio.to_thread(spotify.pause)
+        elif action == "lock_pc":
+            await asyncio.to_thread(system_control._lock_screen)
     except Exception as exc:  # noqa: BLE001 - um passo com problema não impede os outros
         log.warning("Passo %s do protocolo falhou: %s", action, exc)
         labels = {"open": f"não abri {value}", "playlist": "a playlist não tocou", "volume": "o volume não mudou",
+                  "pause_music": "a música não pausou", "lock_pc": "o computador não bloqueou",
                   "focus": "o foco não iniciou", "focus_stop": "o foco não parou", "silent": "o modo silencioso não mudou"}
         return labels.get(action, f"{action} falhou")
     return None
+
+
+async def _speak_step(action: str) -> str:
+    """V6.0: passos que viram fala (amanhã, clima agora, lista de compras). Falha vira texto vazio."""
+    from datetime import datetime, timedelta
+
+    try:
+        if action == "shopping":
+            from modules import shopping
+
+            pending = [i["texto"].lower() for i in shopping.list_items() if not i.get("comprado")]
+            if not pending:
+                return ""
+            return "Na lista de compras: " + (pending[0] if len(pending) == 1 else ", ".join(pending[:-1]) + " e " + pending[-1]) + "."
+        if action == "weather_now":
+            from config import settings
+            from modules import tools
+
+            res = await asyncio.to_thread(tools._fetch_weather, settings.WEATHER_CITY)
+            if not res:
+                return ""
+            from modules.briefing import weather_tip
+
+            cur, daily = res["data"].get("current", {}), res["data"].get("daily", {})
+            desc = tools._WMO.get(cur.get("weather_code"), "tempo variável")
+            rain = (daily.get("precipitation_probability_max") or [None])[0]
+            tip = weather_tip((daily.get("temperature_2m_min") or [None])[0], (daily.get("temperature_2m_max") or [None])[0], rain, cur.get("weather_code"))
+            return f"Lá fora, {round(cur.get('temperature_2m', 0))} graus e {desc}." + (f" {tip}" if tip else "")
+        if action == "tomorrow":
+            from config import settings
+            from modules import alarms, calendar_hub, reminders, tools
+
+            tomorrow = datetime.now() + timedelta(days=1)
+            day = tomorrow.strftime("%Y-%m-%d")
+            parts = []
+            alarm = next((a for a in alarms.list_alarms() if a.get("proximo", "").startswith(day)), None)
+            parts.append(f"Seu despertador toca às {alarm['hora']}." if alarm else "Não há despertador para amanhã.")
+            first = None
+            try:
+                evs = [e for e in calendar_hub.upcoming_events(days=2, limit=15) if (e.get("start") or "").startswith(day)] if calendar_hub.connected() else []
+                if evs:
+                    first = (evs[0].get("start", "")[11:16] or "dia todo", evs[0].get("title", "compromisso"))
+            except Exception:  # noqa: BLE001
+                first = None
+            if not first:
+                rs = [r for r in reminders.get_reminders(only_pending=True) if r.get("data_hora", "").startswith(day)]
+                if rs:
+                    rs.sort(key=lambda r: r["data_hora"])
+                    first = (rs[0]["data_hora"][11:16], rs[0].get("texto", "lembrete"))
+            if first:
+                parts.append(f"O primeiro compromisso é {first[1]}, às {first[0]}.")
+            res = await asyncio.to_thread(tools._fetch_weather, settings.WEATHER_CITY)
+            if res:
+                daily = res["data"].get("daily", {})
+                try:
+                    tmin, tmax = round(daily["temperature_2m_min"][1]), round(daily["temperature_2m_max"][1])
+                    desc = tools._WMO.get((daily.get("weather_code") or [None, None])[1], "tempo variável")
+                    parts.append(f"Amanhã: {desc}, entre {tmin} e {tmax} graus.")
+                except (KeyError, IndexError, TypeError):
+                    pass
+            return " ".join(parts)
+    except Exception as exc:  # noqa: BLE001
+        log.warning("Passo %s da rotina falhou: %s", action, exc)
+    return ""
 
 
 async def run(name: str, user: Optional[dict] = None, record: bool = True) -> dict[str, Any]:
@@ -174,6 +276,11 @@ async def run(name: str, user: Optional[dict] = None, record: bool = True) -> di
     for step in proto["steps"]:
         if step["action"] == "say":
             say_parts.append(str(step["value"]))
+            continue
+        if step["action"] in SPEAKING_ACTIONS:
+            text = await _speak_step(step["action"])
+            if text:
+                say_parts.append(text)
             continue
         if step["action"] == "silent" and step.get("value") is True:
             silence_after = True  # liga depois da fala, senão a confirmação não seria ouvida
@@ -203,6 +310,27 @@ async def _silence_later(delay: float) -> None:
 
 _RUN_RE = re.compile(r"^(?:jarvis\s+)?(?:(?:ativar|ativa|ative|iniciar|inicia|inicie|executar|executa|execute|rodar|roda)\s+)?(?:o\s+)?protocolo\s+(.+)$")
 _LIST_RE = re.compile(r"^(?:jarvis\s+)?(?:quais|que|lista(?:r)?|mostra(?:r)?)\s+(?:sao\s+)?(?:os\s+)?(?:meus\s+)?protocolos")
+
+
+_MODE_RE = re.compile(r"^(?:jarvis\s+)?(?:(?:ativar|ativa|ative|liga|ligar)\s+(?:o\s+)?)?(?:modo|rotina)\s+(.+)$")
+
+
+async def handle_natural(norm: str) -> Optional[str]:
+    """V6.0: "modo dormir", "rotina saindo", "vou dormir", "estou saindo" (só se bater com um protocolo)."""
+    text = re.sub(r"^(?:ei\s+)?jarvis\s+", "", norm).strip()
+    protos = all_protocols()
+    m = _MODE_RE.match(text)
+    candidate = m.group(1).strip() if m else text
+    hit = find(candidate, protos) if m else None
+    if hit is None:
+        for key, proto in protos.items():
+            if text in {slug(a) for a in proto.get("aliases", [])}:
+                hit = (key, proto)
+                break
+    if hit is None:
+        return None
+    result = await run(hit[0])
+    return result["reply"]
 
 
 async def handle_voice(norm: str) -> Optional[str]:

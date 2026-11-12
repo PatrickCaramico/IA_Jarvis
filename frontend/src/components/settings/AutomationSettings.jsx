@@ -10,7 +10,15 @@ const ACTION_LABELS = {
   volume: "Volume (0 a 100)",
   playlist: "Playlist do Spotify",
   say: "Falar no final",
+  // V6.0: rotinas em 1 comando
+  pause_music: "Pausar a música",
+  lock_pc: "Bloquear o computador",
+  tomorrow: "Falar o resumo de amanhã",
+  weather_now: "Falar o clima agora",
+  shopping: "Ler a lista de compras",
 };
+// ações sem valor (só o nome)
+const NO_VALUE = new Set(["focus_stop", "pause_music", "lock_pc", "tomorrow", "weather_now", "shopping"]);
 const NUMBER_ACTIONS = new Set(["focus", "volume"]);
 
 function NumberField({ label, value, min, max, onChange, suffix }) {
@@ -90,14 +98,14 @@ function TriggersSection({ api, onPatch }) {
 }
 
 function StepRow({ step, actions, onChange, onRemove }) {
-  const needsValue = step.action !== "focus_stop";
+  const needsValue = !NO_VALUE.has(step.action);
   return (
     <div className="flex flex-wrap items-center gap-1.5 rounded border border-cyan-500/15 bg-black/30 p-1.5">
       <select
         value={step.action}
         onChange={(e) => {
           const action = e.target.value;
-          const value = action === "silent" ? true : NUMBER_ACTIONS.has(action) ? 30 : action === "focus_stop" ? null : "";
+          const value = action === "silent" ? true : NUMBER_ACTIONS.has(action) ? 30 : NO_VALUE.has(action) ? null : "";
           onChange({ action, value });
         }}
         className="rounded border border-cyan-500/30 bg-black/60 p-1 text-[11px] text-cyan-100"
