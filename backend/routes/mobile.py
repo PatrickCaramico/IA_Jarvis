@@ -14,6 +14,7 @@ existem com o modo rede ligado (Iniciar-JARVIS-Rede.bat).
 
 import asyncio
 import json
+import re
 import secrets
 from html import escape
 from pathlib import Path
@@ -36,6 +37,17 @@ PACKAGE = "com.patrick.jarvis"
 # Rotas que o celular usa ANTES de ter o token (liberadas no middleware de main.py, só no modo rede)
 NO_TOKEN_PATHS = {"/api/mobile", "/api/mobile/app.apk"}
 NO_TOKEN_POST = {"/api/mobile/pair-pin"}  # pareamento pelo PIN do dono (é como o celular ganha a chave)
+
+
+_TUNNEL_HOST = re.compile(r"^[a-z0-9-]+\.trycloudflare\.com$", re.I)
+
+
+def tunnel_origin(request: Request) -> str:
+    """V6.4.1: "https://xxx.trycloudflare.com" quando o pedido chegou pelo túnel da Cloudflare; senão ""."""
+    if runtime.is_local_conn(request):  # deste PC mesmo (sem cabeçalhos de túnel)
+        return ""
+    host = (request.headers.get("host") or "").split(":")[0]
+    return f"https://{host.lower()}" if _TUNNEL_HOST.match(host) else ""
 
 
 def apk_available() -> bool:
@@ -208,16 +220,22 @@ async def mobile_pair(request: Request) -> HTMLResponse:
     Android volta para esta página (?app=0), que oferece baixar o JARVIS.apk e escanear de novo.
     """
     ip = request.url.hostname or local_ip()
-    target = f"http://{ip}:5173/?token={runtime.ACCESS_TOKEN}"
+    tunnel = tunnel_origin(request)
+    if tunnel:
+        # V6.4.1: de longe, pelo túnel: o app abre o site (Netlify) falando com o PC pelo túnel
+        target = f"{settings.SITE_ORIGIN.rstrip('/')}/app/?api={quote(tunnel, safe='')}&token={runtime.ACCESS_TOKEN}"
+        self_url = f"{tunnel}/api/mobile/pair?token={runtime.ACCESS_TOKEN}&app=0"
+    else:
+        target = f"http://{ip}:5173/?token={runtime.ACCESS_TOKEN}"
+        self_url = f"http://{ip}:8000/api/mobile/pair?token={runtime.ACCESS_TOKEN}&app=0"
     deep = f"jarvis://connect?url={quote(target, safe='')}"
     intent = f"intent://connect?url={quote(target, safe='')}#Intent;scheme=jarvis;package={PACKAGE};end"
-    self_url = f"http://{ip}:8000/api/mobile/pair?token={runtime.ACCESS_TOKEN}&app=0"
     auto_intent = (f"intent://connect?url={quote(target, safe='')}#Intent;scheme=jarvis;package={PACKAGE};"
                    f"S.browser_fallback_url={quote(self_url, safe='')};end")
     no_app = request.query_params.get("app") == "0"
     install = (
         '<div class="c w"><h2>1 · INSTALE O APP</h2>'
-        '<a class="btn" href="/api/mobile/app.apk" download="JARVIS.apk">BAIXAR JARVIS.apk</a>'
+        f'<a class="btn" href="/api/mobile/app.apk?token={runtime.ACCESS_TOKEN}" download="JARVIS.apk">BAIXAR JARVIS.apk</a>'
         '<p class="m">Instale o app e <b>escaneie este mesmo QR de novo</b>: ele abre o JARVIS já conectado, sem PIN.</p></div>'
     ) if no_app and apk_available() else ""
     body = install + (
@@ -225,10 +243,14 @@ async def mobile_pair(request: Request) -> HTMLResponse:
         f'<a class="btn" href="{escape(intent)}">ABRIR NO APP JARVIS</a>'
         f'<a class="btn alt" href="{escape(deep)}">Não abriu? Tentar de outro jeito</a>'
         f'<a class="btn alt" href="{escape(target)}">Continuar no navegador</a>'
-        '<p class="m">O app entra já conectado a este PC: não precisa digitar endereço nem PIN.</p></div>'
+        '<p class="m">O app entra já conectado a este PC: não precisa digitar endereço nem PIN.</p>'
+        + ('<p class="m"><b>De longe (túnel):</b> o link do túnel muda quando o PC reinicia. Em casa, pareie de novo '
+           'pelo QR da central (ou pelo PIN) para o app voltar a usar a Wi-Fi.</p>' if tunnel else '')
+        + '</div>'
     )
     auto = "" if no_app else (
         "<script>if(/Android/i.test(navigator.userAgent)){setTimeout(function(){location.href="
         f"{json.dumps(auto_intent)};}},300);}}</script>"
     )
-    return HTMLResponse(_PAGE.format(title="Parear JARVIS", sub="PAREAMENTO NA REDE DE CASA", body=body + auto))
+    sub = "PAREAMENTO DE LONGE (TÚNEL)" if tunnel else "PAREAMENTO NA REDE DE CASA"
+    return HTMLResponse(_PAGE.format(title="Parear JARVIS", sub=sub, body=body + auto))
