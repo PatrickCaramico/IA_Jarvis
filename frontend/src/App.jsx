@@ -36,7 +36,7 @@ import { statusSentence } from "./utils/waterMath.js";
 import { subscribeNow } from "./hooks/useNow.js";
 import { soundManager } from "./utils/soundEffects.js";
 import { API_URL, BACKEND_ON_THIS_PC, api, clientId, getJarvisToken, hasMemoryToken, publicUrl, setJarvisToken } from "./utils/api.js";
-import { enqueueHere } from "./utils/speakHere.js";
+import { enqueueHere, stopSpeech } from "./utils/speakHere.js";
 import { scheduleDailyUpdateCheck } from "./utils/updateCheck.js";
 import { applyAccessibility, applyBackground, applyFanMode, applyTheme } from "./utils/theme.js";
 import { IS_JARVIS_APP } from "./utils/device.js";
@@ -162,7 +162,12 @@ export default function App() {
     const ask = briefingAskRef.current;
     setBriefingAsk(null);
     if (repeat && ask) setPendingToRun(ask.command);
-    else api("/api/speak", { method: "POST", body: JSON.stringify({ text: "Certo, senhor. Em que posso ajudar?" }) }).catch(() => {});
+    else {
+      // V6.5.3: varia a resposta ao "pular" o briefing
+      const replies = ["Certo, senhor. Em que posso ajudar?", "Sem problemas. O que vai ser?", "Combinado. Estou à disposição.", "Tudo bem, senhor. Às ordens."];
+      const text = replies[Math.floor(Math.random() * replies.length)];
+      api("/api/speak", { method: "POST", body: JSON.stringify({ text }) }).catch(() => {});
+    }
   };
   useEffect(() => {
     if (!briefingAsk) return undefined;
@@ -506,6 +511,9 @@ export default function App() {
           readiness: msg.readiness,
           closing: msg.closing,
         }));
+        break;
+      case "speech_stop": // V6.5.3: pular/cancelar também cala a voz deste aparelho
+        stopSpeech(msg.say_id || null);
         break;
       case "speak_on_device":
         // V5.7: a resposta a um pedido DESTE aparelho: a voz toca aqui (o PC ficou em silêncio)
@@ -1759,6 +1767,7 @@ export default function App() {
     setSteps({});
     setError("");
     setResponse("Ação cancelada.");
+    stopSpeech(); // V6.5.3: cala a voz aqui na hora (sem esperar o PC responder)
     try {
       await api("/api/cancel", { method: "POST" });
     } catch {

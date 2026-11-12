@@ -66,6 +66,7 @@ async def speak(text: str, release_busy: bool = True, idle_after: bool = True) -
             await on_start()
             say_id = voice_route.new_say_id()
             done = voice_route.expect(say_id)
+            voice_route.playing_on_device = say_id
             await runtime.manager.broadcast({"type": "speak_on_device", "client_id": device, "text": text, "say_id": say_id})
             try:
                 await asyncio.wait_for(done.wait(), timeout=voice_route.estimate_seconds(text) * 1.5 + voice_route.ACK_SLACK_SECONDS)
@@ -73,6 +74,8 @@ async def speak(text: str, release_busy: bool = True, idle_after: bool = True) -
                 log.info("O aparelho não confirmou o fim da fala; seguindo pelo tempo estimado.")
             finally:
                 voice_route.forget(say_id)
+                if voice_route.playing_on_device == say_id:
+                    voice_route.playing_on_device = None
         else:
             await generate_and_play_speech(text, on_playback_start=on_start)
         await runtime.manager.broadcast({"type": "step", "step": "tts", "status": "done"})

@@ -140,11 +140,15 @@ async def auth_verify(req: Optional[VerifyRequest] = None) -> dict:
                 who = f", {name}" if name else ""
                 from modules import entry_greeting
 
+                from modules import phrases
+
+                tg = speech.time_greeting()
                 if entry_greeting.briefing_pending():
                     # V6.1: o briefing vem logo em seguida com "Bom dia, Patrick..."; aqui só confirma
-                    message = f"Identidade confirmada{who}.{failures_note}"
+                    message = phrases.pick("unlock_confirm", who=who) + failures_note
                 else:
-                    message = f"Olá, {speech.time_greeting().lower()}{who}. Tudo bem?{failures_note}"
+                    # V6.5.3: frases variadas (antes era sempre "Olá, boa tarde... Tudo bem?")
+                    message = phrases.pick("unlock_hello", tg=tg.lower(), TG=tg, who=who) + failures_note
             else:
                 message = f"Identidade confirmada{', ' + name if name else ''}."
         else:
@@ -250,7 +254,10 @@ async def device_unlock(req: DeviceUnlockRequest) -> dict:
     from modules import entry_greeting
 
     if not entry_greeting.briefing_pending():
-        runtime.track(speech.speak(f"Olá, {speech.time_greeting().lower()}{', ' + name if name else ''}."))
+        from modules import phrases
+
+        tg = speech.time_greeting()
+        runtime.track(speech.speak(phrases.pick("unlock_hello", tg=tg.lower(), TG=tg, who=", " + name if name else "")))
     return {"verified": True, "name": name, "message": f"Acesso liberado pela digital{', ' + name if name else ''}."}
 
 
@@ -304,7 +311,14 @@ async def pin_verify(req: PinRequest) -> dict:
             else ""
         )
         message = f"Acesso liberado por PIN{', ' + name if name else ''}.{note}"
-        runtime.track(speech.speak(message))
+        # V6.5.3: a fala varia (a mensagem na tela continua dizendo que foi pelo PIN)
+        from modules import entry_greeting, phrases
+
+        who = ", " + name if name else ""
+        tg = speech.time_greeting()
+        spoken = (phrases.pick("unlock_confirm", who=who) if entry_greeting.briefing_pending()
+                  else phrases.pick("unlock_hello", tg=tg.lower(), TG=tg, who=who)) + note
+        runtime.track(speech.speak(spoken))
         return {**result, "name": name, "message": message}
     lock_log.add("pin", "locked_out" if result["reason"] == "locked_out" else "fail")
     if result["reason"] == "locked_out":
@@ -414,7 +428,9 @@ class EnterRequest(BaseModel):
 async def enter(req: Optional[EnterRequest] = None) -> dict:
     """Chamado quando o usuário entra na tela principal."""
     if not (req and req.silent):
-        runtime.track(speech.speak("Em que posso ajudar?", release_busy=True))
+        from modules import phrases
+
+        runtime.track(speech.speak(phrases.pick("ready"), release_busy=True))
     return {"status": "ok"}
 
 

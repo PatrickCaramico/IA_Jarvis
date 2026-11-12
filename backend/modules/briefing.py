@@ -666,7 +666,13 @@ async def build_morning_briefing() -> dict:
 
     deviations = _deviations(now, weather_res)
     note = _day_note(now)
-    greeting = f"{greeting_word(now)}{nome_str}. Hoje é {_date_line(now)}." + (f" {note}" if note else "")
+    from modules import phrases
+
+    if greeting_word(now) == "Bom dia":  # V6.5.3: abertura variada
+        greeting = phrases.pick("briefing_morning", who=nome_str, day=_date_line(now))
+    else:
+        greeting = f"{greeting_word(now)}{nome_str}. Hoje é {_date_line(now)}."
+    greeting += f" {note}" if note else ""
     if deviations:
         opening = f"Atenção a {len(deviations)} {'ponto' if len(deviations) == 1 else 'pontos'}"
         opening_sub = "; ".join(deviations)
@@ -674,8 +680,8 @@ async def build_morning_briefing() -> dict:
     else:
         opening = "Sem desvios relevantes"
         opening_sub = "dados consolidados desde ontem"
-        opening_speech = ("Revisei o que já está consolidado e nada exige interromper a sua "
-                          + ("manhã." if now.hour < 12 else "tarde." if now.hour < 18 else "noite."))
+        opening_speech = phrases.pick(  # V6.5.3: varia
+            "no_deviations", period="manhã" if now.hour < 12 else "tarde" if now.hour < 18 else "noite")
 
     pending = len(pending_list)
     upcoming = [i for i in agenda_seg["card"]["items"]
@@ -917,7 +923,9 @@ async def build_evening_briefing() -> dict:
         if seg:
             segments.append(seg)
 
-    greeting = f"Boa noite{nome_str}. Aqui está o fechamento de {_date_line(now)}."
+    from modules import phrases
+
+    greeting = phrases.pick("briefing_evening", who=nome_str, day=_date_line(now))  # V6.5.3: varia
     tomorrow_items = agenda_seg["card"]["items"]
     if not pending and not tomorrow_items:
         opening, opening_sub = "Dia encerrado sem pendências", "nada ficou para amanhã"
@@ -1098,7 +1106,9 @@ async def build_afternoon_briefing() -> dict:
         if seg:
             segments.append(seg)
 
-    greeting = f"Boa tarde{nome_str}. Aqui está o resumo da tarde de {_date_line(now)}."
+    from modules import phrases
+
+    greeting = phrases.pick("briefing_afternoon", who=nome_str, day=_date_line(now))  # V6.5.3: varia
     ahead = [i for i in agenda_seg["card"]["items"]
              if ":" in i["time"] and (_minutes_until(now, i["time"]) or 0) >= 0]
     pending = len(pending_list)

@@ -39,10 +39,13 @@ export function speakingId() {
   return current?.id ?? null;
 }
 
+let stopGen = 0; // V6.5.3: muda a cada "pular/cancelar": uma voz que ainda estava baixando não toca
+
 export async function speakHere(text, id = "x") {
   stopHere();
   const clean = String(text || "").trim();
   if (!clean) return;
+  const gen = stopGen;
   const token = getJarvisToken();
   const res = await fetch(`${API_URL}/api/tts`, {
     method: "POST",
@@ -51,6 +54,7 @@ export async function speakHere(text, id = "x") {
   });
   if (!res.ok) throw new Error("Não consegui gerar a voz agora.");
   const blob = await res.blob();
+  if (gen !== stopGen) return; // pularam ou cancelaram enquanto a voz baixava
   const url = URL.createObjectURL(blob);
   const audio = new Audio(url);
   const mine = { audio, url, id };
@@ -76,6 +80,22 @@ function ackPlayed(sayId) {
 
 const queue = [];
 let draining = false;
+let playingSayId = null;
+
+// V6.5.3: "pular" cala só a fala indicada; "cancelar" (sem id) cala tudo e esvazia a fila
+export function stopSpeech(sayId = null) {
+  if (sayId) {
+    for (let i = queue.length - 1; i >= 0; i -= 1) if (queue[i].sayId === sayId) queue.splice(i, 1);
+    if (playingSayId === sayId) {
+      stopGen += 1;
+      stopHere();
+    }
+    return;
+  }
+  queue.length = 0;
+  stopGen += 1;
+  stopHere();
+}
 export function enqueueHere(text, sayId = null) {
   queue.push({ text, sayId });
   if (draining) return;
@@ -83,6 +103,7 @@ export function enqueueHere(text, sayId = null) {
   (async () => {
     while (queue.length) {
       const next = queue.shift();
+      playingSayId = next.sayId;
       try {
         await speakHere(next.text, `q${Date.now()}`);
         await new Promise((resolve) => {
@@ -94,6 +115,7 @@ export function enqueueHere(text, sayId = null) {
       } catch {
         /* sem voz agora: segue para a próxima */
       }
+      playingSayId = null;
       ackPlayed(next.sayId);
     }
     draining = false;

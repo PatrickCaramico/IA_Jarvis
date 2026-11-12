@@ -48,6 +48,7 @@ def current() -> Optional[str]:
 # V6.5.1: o aparelho avisa quando terminou de tocar cada fala (POST /api/tts/played). Antes o PC só
 # "chutava" a duração e passava para o próximo card: no celular, voz e tela iam se desencontrando.
 _played: dict[str, "asyncio.Event"] = {}
+playing_on_device: str | None = None  # V6.5.3: fala tocando agora no aparelho (pular/cancelar cala ela)
 ACK_SLACK_SECONDS = 6.0  # folga para o aparelho baixar a voz pela rede (túnel, dados móveis)
 
 

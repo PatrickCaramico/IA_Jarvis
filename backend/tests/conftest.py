@@ -25,6 +25,7 @@ _WRITABLE = (
     ("shopping", "_PATH", "compras.json"),  # V6.0
     ("device_keys", "_PATH", "chaves_aparelho.json"),  # V6.0
     ("news_alerts", "_PATH", "noticias_avisadas.json"),  # V6.5
+    ("phrases", "_PATH", "frases_recentes.json"),  # V6.5.3
 )
 
 

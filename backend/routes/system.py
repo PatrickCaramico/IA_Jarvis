@@ -179,6 +179,9 @@ async def cancel_operation() -> dict:
         if not task.done():
             task.cancel()
     session.busy = False
+    tts_module.clear_prefetch()
+    # V6.5.3: cala também a voz que estiver tocando no celular (e a fila dele)
+    await runtime.manager.broadcast({"type": "speech_stop"})
     await runtime.manager.broadcast({"type": "state", "state": "idle"})
     log.info("Operação cancelada pelo usuário.")
     return {"status": "ok"}

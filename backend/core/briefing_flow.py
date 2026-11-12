@@ -35,6 +35,11 @@ def skip() -> bool:
         return False
     _skip.set()
     tts_module.stop_playback()
+    # V6.5.3: a voz pode estar tocando no celular: cala só a fala atual dele (a próxima parte segue)
+    from core import voice_route
+
+    if voice_route.playing_on_device:
+        runtime.track(runtime.manager.broadcast({"type": "speech_stop", "say_id": voice_route.playing_on_device}))
     return True
 
 

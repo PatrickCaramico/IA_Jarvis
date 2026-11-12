@@ -94,7 +94,9 @@ def decide(now: Optional[datetime] = None, rng: Optional[random.Random] = None) 
     if mode != "off" and not st["asked"]:
         st["asked"] = True
         _save(st)
-        return {"action": "ask", "command": command, "text": ASK_TEXT}
+        from modules import phrases
+
+        return {"action": "ask", "command": command, "text": phrases.pick("ask_repeat")}  # V6.5.3: varia
 
     # V6.1: já fez o briefing e já perguntou hoje: o desbloqueio já cumprimentou, então a entrada fica em
     # silêncio (antes vinha "Bem-vindo de volta" logo depois do "Olá... tudo bem?": duas saudações)
