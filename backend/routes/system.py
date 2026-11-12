@@ -265,6 +265,23 @@ async def tts_audio(req: TtsRequest):
     return Response(content=data, media_type="audio/mpeg", headers={"Cache-Control": "no-store"})
 
 
+class ChatClear(BaseModel):
+    scope: str = "today"  # "today" | "all"
+
+
+@router.post("/api/chat/clear")
+async def chat_clear(req: ChatClear) -> dict:
+    """V6.5.16: botão LIMPAR do Canal Ativo. Apaga a conversa (hoje ou tudo) no PC e avisa os aparelhos."""
+    from modules import memory
+
+    if req.scope not in ("today", "all"):
+        raise HTTPException(status_code=400, detail="Use 'today' ou 'all'.")
+    removed = await asyncio.to_thread(memory.clear_conversation, req.scope)
+    session.history.clear()  # o contexto da IA recomeça (não lembra do que foi apagado)
+    await runtime.manager.broadcast({"type": "chat_cleared", "scope": req.scope})
+    return {"status": "ok", "removed": removed}
+
+
 class BrowserPick(BaseModel):
     browser: str
     remember: bool = False

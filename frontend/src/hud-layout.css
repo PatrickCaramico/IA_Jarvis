@@ -1153,3 +1153,24 @@
   .zg-card, .zg-ticker-text { animation: none; }
   .zg-time i { animation: none; }
 }
+
+/* V6.5.16: LIMPAR conversa do Canal Ativo */
+.hl-chat-clear { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px; margin: 0 0 6px; }
+.hl-chat-clear-btn {
+  padding: 3px 10px; border-radius: 999px; cursor: pointer; border: 1px solid rgba(201, 246, 255, 0.2);
+  background: rgba(2, 8, 19, 0.45); color: rgba(201, 246, 255, 0.7); font-family: "Orbitron", sans-serif; font-size: 0.52rem; letter-spacing: 0.12em;
+}
+.hl-chat-clear-btn:hover { border-color: rgba(248, 113, 113, 0.6); color: #fecaca; }
+.hl-chat-clear-ask {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 6px 8px; border-radius: 10px;
+  border: 1px solid rgba(248, 113, 113, 0.35); background: rgba(40, 6, 12, 0.55); font-size: 0.78rem; color: #fde2e2;
+}
+.hl-chat-clear-ask button {
+  padding: 4px 9px; border-radius: 8px; cursor: pointer; border: 1px solid rgba(201, 246, 255, 0.3);
+  background: rgba(2, 8, 19, 0.5); color: #e6f7fb; font-size: 0.75rem;
+}
+.hl-chat-clear-ask button:hover { border-color: #5eead4; }
+.hl-chat-clear-ask button.is-danger { border-color: rgba(248, 113, 113, 0.6); color: #fecaca; }
+.hl-chat-clear-ask button.is-danger:hover { background: rgba(248, 113, 113, 0.18); }
+.hl-chat-clear-ask button.is-ghost { border-color: transparent; color: rgba(201, 246, 255, 0.6); }
+.hl-chat-clear-note { font-size: 0.72rem; color: #a7f3d0; }

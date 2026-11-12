@@ -99,6 +99,24 @@ function useConversationLog(userText, response, error, responseCards = []) {
       /* sem armazenamento: só não lembra */
     }
   }, [log]);
+  // V6.5.16: LIMPAR conversa ("today" = só hoje; "all" = tudo). Vem do botão ou de outro aparelho.
+  useEffect(() => {
+    const onClear = (e) => {
+      const scope = e.detail?.scope || "today";
+      if (scope === "all") {
+        setLog([]);
+        return;
+      }
+      const start = new Date();
+      start.setHours(0, 0, 0, 0);
+      setLog((cur) => {
+        const kept = cur.filter((m) => m.role !== "divider" && (m.at || 0) < start.getTime());
+        return kept.length ? [...kept, { id: "divider", role: "divider", text: "CONVERSAS ANTERIORES ▲" }] : [];
+      });
+    };
+    window.addEventListener("jarvis-chat-clear", onClear);
+    return () => window.removeEventListener("jarvis-chat-clear", onClear);
+  }, []);
   const add = (role, text, cards = []) =>
     setLog((current) => {
       const last = current[current.length - 1];
@@ -185,6 +203,40 @@ const PHONE_ACTIONS = [
 
 // V5.5/5.7: barra do chat. Fora do PC: onde a voz sai (neste aparelho ou no PC), avisos do app,
 // atalhos rápidos e "falar no PC". No próprio PC a voz já sai na caixa dele: a barra some.
+// V6.5.16: botão LIMPAR do Canal Ativo, com a pergunta "só hoje ou todo o período?"
+function ChatClear({ api }) {
+  const [asking, setAsking] = useState(false);
+  const [note, setNote] = useState("");
+  const clear = async (scope) => {
+    setAsking(false);
+    window.dispatchEvent(new CustomEvent("jarvis-chat-clear", { detail: { scope } }));
+    try {
+      await api("/api/chat/clear", { method: "POST", body: JSON.stringify({ scope }) });
+    } catch {
+      /* a tela já limpou; o PC limpa na próxima */
+    }
+    setNote(scope === "all" ? "Conversa apagada." : "Conversa de hoje apagada.");
+    setTimeout(() => setNote(""), 2500);
+  };
+  return (
+    <div className="hl-chat-clear">
+      {!asking ? (
+        <button type="button" className="hl-chat-clear-btn" onClick={() => setAsking(true)} title="Apagar a conversa">
+          🗑 LIMPAR
+        </button>
+      ) : (
+        <div className="hl-chat-clear-ask" role="group" aria-label="Apagar a conversa">
+          <span>Apagar qual conversa?</span>
+          <button type="button" onClick={() => clear("today")}>Só a de hoje</button>
+          <button type="button" className="is-danger" onClick={() => clear("all")}>Todo o período</button>
+          <button type="button" className="is-ghost" onClick={() => setAsking(false)}>Cancelar</button>
+        </div>
+      )}
+      {note && <span className="hl-chat-clear-note" role="status">{note}</span>}
+    </div>
+  );
+}
+
 function ChatTools({ api, onCommand }) {
   const [here, setHere] = useState(voiceHere);
   const [notif, setNotif] = useState(() => (IS_JARVIS_APP ? appNotificationsEnabled() : false));
@@ -1114,6 +1166,7 @@ export default function HudLayout({
         <NowPlaying api={api} variant="hud" controls />
         <Panel id="chat" title="JARVIS · CANAL ATIVO" tag={busy ? "OCUPADO" : "PRONTO"} className="hl-channel" onMoveToSecondary={handleMoveToSecondary}>
           <ChatTools api={api} onCommand={onCommand} />
+          {log.length > 0 && <ChatClear api={api} />}
           <div className="hl-messages" ref={listRef} aria-live="polite" aria-label="Conversa">
             {log.length === 0 && !listening && (
               <p className="hl-msg hl-muted">Digite abaixo ou aperte a barra de espaço para falar.</p>

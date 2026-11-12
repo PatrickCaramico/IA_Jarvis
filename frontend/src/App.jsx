@@ -519,6 +519,9 @@ export default function App() {
           closing: msg.closing,
         }));
         break;
+      case "chat_cleared": // V6.5.16: apagaram a conversa em outro aparelho
+        window.dispatchEvent(new CustomEvent("jarvis-chat-clear", { detail: { scope: msg.scope } }));
+        break;
       case "browser_choice": // V6.5.11
         setBrowserChoice(Array.isArray(msg.browsers) ? msg.browsers : []);
         break;

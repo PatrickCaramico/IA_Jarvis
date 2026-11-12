@@ -54,6 +54,20 @@ def add_conversation(user: str, assistant: str) -> None:
     _save(data)
 
 
+def clear_conversation(scope: str = "today") -> int:
+    """V6.5.16: apaga a conversa guardada ("today" = só a de hoje; "all" = todo o período).
+    Fatos, preferências e rotina (o que o JARVIS sabe sobre você) ficam. Devolve quantas trocas saíram."""
+    data = _load()
+    before = len(data["conversation"])
+    if scope == "all":
+        data["conversation"] = []
+    else:
+        today = datetime.now().strftime("%Y-%m-%d")
+        data["conversation"] = [c for c in data["conversation"] if not str(c.get("at", "")).startswith(today)]
+    _save(data)
+    return before - len(data["conversation"])
+
+
 # V4.5: hora em que o JARVIS abriu; conversas antes disso são "de sessões anteriores"
 _BOOT = datetime.now().isoformat(timespec="seconds")
 

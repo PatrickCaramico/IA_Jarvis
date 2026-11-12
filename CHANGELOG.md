@@ -2,6 +2,10 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 6.5.16 — 12 de novembro de 2026
+
+- **Limpar o chat:** botão "🗑 LIMPAR" no Canal Ativo. Pergunta "Apagar qual conversa?" — "Só a de hoje" ou "Todo o período" (ou Cancelar). Apaga a conversa na tela de todos os aparelhos (evento `chat_cleared`) e no PC (memória de conversa e o contexto da IA), sem apagar fatos, preferências e rotina. `POST /api/chat/clear` e `memory.clear_conversation`.
+
 ## 6.5.15 — 12 de novembro de 2026
 
 - **Tela de espera (Área Limpa) como smart display:** em volta do orbe, saudação e relógio grande com a data; manchetes dos seus temas passando (tocar abre a janela de notícias); à esquerda o clima de agora e dos próximos 5 dias; à direita os próximos compromissos e lembretes (com o alarme), a água do dia num anel (toque = +1 copo) e as compras. Tocar em qualquer cartão faz o pedido por voz. Tudo se atualiza sozinho (`components/ZenGlance.jsx`). Novos dados: `GET /api/agenda/next` e `icon`/`week` em `/api/weather`.
