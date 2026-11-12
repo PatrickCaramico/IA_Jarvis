@@ -183,16 +183,33 @@ async def mobile_notifications(request: Request, since: int = -1) -> dict:
 
 @router.get("/api/mobile/pair", response_class=HTMLResponse)
 async def mobile_pair(request: Request) -> HTMLResponse:
-    """Página de pareamento (exige o token, que já veio no QR da central liberada)."""
+    """Página de pareamento (exige o token, que já veio no QR da central liberada).
+
+    V5.4: abre o app sozinha, já pareado (sem PIN e sem digitar o endereço). Sem o app instalado, o
+    Android volta para esta página (?app=0), que oferece baixar o JARVIS.apk e escanear de novo.
+    """
     ip = request.url.hostname or local_ip()
     target = f"http://{ip}:5173/?token={runtime.ACCESS_TOKEN}"
     deep = f"jarvis://connect?url={quote(target, safe='')}"
     intent = f"intent://connect?url={quote(target, safe='')}#Intent;scheme=jarvis;package={PACKAGE};end"
-    body = (
-        '<div class="c"><h2>PAREAR ESTE CELULAR</h2>'
+    self_url = f"http://{ip}:8000/api/mobile/pair?token={runtime.ACCESS_TOKEN}&app=0"
+    auto_intent = (f"intent://connect?url={quote(target, safe='')}#Intent;scheme=jarvis;package={PACKAGE};"
+                   f"S.browser_fallback_url={quote(self_url, safe='')};end")
+    no_app = request.query_params.get("app") == "0"
+    install = (
+        '<div class="c w"><h2>1 · INSTALE O APP</h2>'
+        '<a class="btn" href="/api/mobile/app.apk" download="JARVIS.apk">BAIXAR JARVIS.apk</a>'
+        '<p class="m">Instale o app e <b>escaneie este mesmo QR de novo</b>: ele abre o JARVIS já conectado, sem PIN.</p></div>'
+    ) if no_app and apk_available() else ""
+    body = install + (
+        f'<div class="c"><h2>{"2 · " if install else ""}PAREAR ESTE CELULAR</h2>'
         f'<a class="btn" href="{escape(intent)}">ABRIR NO APP JARVIS</a>'
         f'<a class="btn alt" href="{escape(deep)}">Não abriu? Tentar de outro jeito</a>'
         f'<a class="btn alt" href="{escape(target)}">Continuar no navegador</a>'
-        '<p class="m">Se ainda não instalou, volte ao bloqueio do PC e escaneie o QR pequeno para baixar o app.</p></div>'
+        '<p class="m">O app entra já conectado a este PC: não precisa digitar endereço nem PIN.</p></div>'
     )
-    return HTMLResponse(_PAGE.format(title="Parear JARVIS", sub="PAREAMENTO NA REDE DE CASA", body=body))
+    auto = "" if no_app else (
+        "<script>if(/Android/i.test(navigator.userAgent)){setTimeout(function(){location.href="
+        f"{json.dumps(auto_intent)};}},300);}}</script>"
+    )
+    return HTMLResponse(_PAGE.format(title="Parear JARVIS", sub="PAREAMENTO NA REDE DE CASA", body=body + auto))

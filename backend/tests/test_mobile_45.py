@@ -152,3 +152,17 @@ def test_qr_abre_o_app_instalado_e_so_baixa_sem_ele(monkeypatch):
     assert "S.browser_fallback_url=http%3A%2F%2F192.168.15.7%3A8000%2Fapi%2Fmobile%2Fapp.apk" in html
     assert "o app se atualiza sozinho" in html and "<script>" in html
     assert "<script>" not in client.get("/api/mobile?app=0").text  # sem o app: não tenta de novo
+
+
+def test_pair_qr_opens_app_by_itself_and_offers_download(monkeypatch):
+    """V5.4: o QR de pareamento abre o app sozinho; sem o app, a página volta oferecendo o APK."""
+    monkeypatch.setattr(main.settings, "NETWORK_MODE", True)
+    monkeypatch.setattr(mobile, "apk_available", lambda: True)
+    access.reset_for_tests(access.UNLOCKED)
+    try:
+        page = _client("192.168.0.50").get(f"/api/mobile/pair?token={runtime.ACCESS_TOKEN}").text
+        assert "location.href" in page and "S.browser_fallback_url" in page and "app%3D0" in page
+        fallback = _client("192.168.0.50").get(f"/api/mobile/pair?token={runtime.ACCESS_TOKEN}&app=0").text
+        assert "location.href" not in fallback and "BAIXAR JARVIS.apk" in fallback
+    finally:
+        access.reset_for_tests(access.LOCKED)

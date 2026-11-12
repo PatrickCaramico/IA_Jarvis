@@ -24,6 +24,8 @@ _MONTHS = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho",
 TABS = [
     {"id": "clima", "label": "Clima"},
     {"id": "agenda", "label": "Agenda"},
+    {"id": "tarefas", "label": "Tarefas"},   # V5.3: só aparece com tarefas pendentes
+    {"id": "jogo", "label": "Jogo"},         # V5.3: só em dia de jogo do time do Modo Torcedor
     {"id": "email", "label": "E-mails"},
     {"id": "noticias", "label": "Notícias"},
     {"id": "saude", "label": "Prioridades"},
@@ -89,6 +91,39 @@ def _date_line(now: datetime) -> str:
     return f"{_WEEKDAYS[now.weekday()]}, {now.day} de {_MONTHS[now.month - 1]}"
 
 
+def greeting_word(now: datetime) -> str:
+    """V5.3: "bom dia" falado às 15h vira "Boa tarde" (o briefing acompanha a hora de verdade)."""
+    if now.hour < 12:
+        return "Bom dia"
+    return "Boa tarde" if now.hour < 18 else "Boa noite"
+
+
+def _day_note(now: datetime) -> str:
+    """V5.3: um toque sobre o dia da semana, como uma pessoa faria."""
+    return {
+        0: "Começo de semana.",
+        4: "Último dia útil da semana.",
+        5: "É sábado.",
+        6: "É domingo.",
+    }.get(now.weekday(), "")
+
+
+def _minutes_until(now: datetime, hm: str) -> int | None:
+    try:
+        h, m = (int(x) for x in hm.split(":"))
+    except ValueError:
+        return None
+    return int((now.replace(hour=h, minute=m, second=0, microsecond=0) - now).total_seconds() // 60)
+
+
+def _in_words(minutes: int) -> str:
+    if minutes < 60:
+        return f"daqui a {minutes} {'minuto' if minutes == 1 else 'minutos'}"
+    hours, rest = divmod(minutes, 60)
+    base = f"daqui a {hours} {'hora' if hours == 1 else 'horas'}"
+    return base + (f" e {rest} minutos" if rest >= 10 else "")
+
+
 def _fmt(value, digits: int = 1) -> str:
     """Número no formato brasileiro (26,7)."""
     return f"{value:.{digits}f}".replace(".", ",")
@@ -109,9 +144,12 @@ def _weather_segment(result: dict | None) -> dict | None:
     t_min = (daily.get("temperature_2m_min") or [None])[0]
     t_max = (daily.get("temperature_2m_max") or [None])[0]
     rain = (daily.get("precipitation_probability_max") or [None])[0]
+    tip = weather_tip(t_min, t_max, rain, cur.get("weather_code"))
     card = {
         "kind": "weather",
         "label": "PANORAMA · CLIMA",
+        "icon": weather_icon(cur.get("weather_code")),
+        "tip": tip,
         "title": place,
         "temperature": temp,
         "description": desc,
@@ -128,7 +166,37 @@ def _weather_segment(result: dict | None) -> dict | None:
     speech += "."
     if rain is not None and rain >= 50:
         speech += f" A chance de chuva é de {round(rain)} por cento."
+    if tip:
+        speech += f" {tip}"
     return {"tab": "clima", "progress": "Lendo o clima de hoje...", "speech": speech, "card": card}
+
+
+def weather_icon(code) -> str:
+    """V5.3: ícone do card conforme o tempo (antes era sempre ☀)."""
+    if code is None:
+        return "☀"
+    if code >= 95:
+        return "⚡"
+    if code >= 51:
+        return "☂"
+    if code >= 45:
+        return "≋"
+    if code >= 2:
+        return "☁"
+    return "☀"
+
+
+def weather_tip(t_min, t_max, rain, code=None) -> str:
+    """V5.3: um conselho prático, só quando faz diferença (trovoada, chuva, calor, frio)."""
+    if code is not None and code >= 95:
+        return "Há risco de trovoadas: evite sair no pior horário."
+    if rain is not None and rain >= 50:
+        return "Vale levar um guarda-chuva."
+    if t_max is not None and t_max >= 31:
+        return "Vai fazer calor: capriche na água."
+    if t_min is not None and t_min <= 14:
+        return "Começa frio: leve um casaco."
+    return ""
 
 
 def _agenda_segment(day: datetime, calendar_events: list[dict], when: str = "hoje") -> dict:
@@ -155,9 +223,27 @@ def _agenda_segment(day: datetime, calendar_events: list[dict], when: str = "hoj
         speech = f"Sua agenda está livre {when}."
     else:
         card["title"] = f"{len(items)} compromisso{'s' if len(items) != 1 else ''}"
-        first = items[0]
-        speech = (f"Você tem {len(items)} {'compromisso' if len(items) == 1 else 'compromissos'} {when}. "
-                  f"O primeiro é {first['title']}, às {first['time']}.")
+        speech = f"Você tem {len(items)} {'compromisso' if len(items) == 1 else 'compromissos'} {when}. "
+        timed = [i for i in items if ":" in i["time"]]
+        # V5.3: hoje, fala do PRÓXIMO (não de um que já passou) e de quanto falta, se for logo
+        now = datetime.now()
+        ahead = timed
+        if when == "hoje":
+            ahead = [i for i in timed if (_minutes_until(now, i["time"]) or 0) >= 0]
+        if ahead:
+            nxt = ahead[0]
+            speech += f"{'O primeiro' if nxt is timed[0] else 'O próximo'} é {nxt['title']}, às {nxt['time']}"
+            mins = _minutes_until(now, nxt["time"]) if when == "hoje" else None
+            if mins is not None and 0 <= mins <= 120:
+                speech += f", {_in_words(mins)}"
+                card["next_in"] = mins
+            speech += "."
+            if len(ahead) > 1:
+                speech += f" Depois, {ahead[1]['title']} às {ahead[1]['time']}."
+        elif timed:
+            speech += "Os horários de hoje já passaram."
+        else:
+            speech += f"O primeiro é {items[0]['title']}."
     return {"tab": "agenda", "progress": f"Conferindo a agenda de {when}...", "speech": speech, "card": card}
 
 
@@ -240,6 +326,83 @@ def _health_segment(tele: dict) -> tuple[dict, dict | None]:
     return segment, readiness
 
 
+def _focus_segment(pending: list[dict]) -> dict | None:
+    """V5.3: no "bom dia", as tarefas viram um plano: as três mais antigas primeiro."""
+    items = [{"text": t.get("texto", "")} for t in pending if t.get("texto")]
+    if not items:
+        return None
+    card = {"kind": "tasks", "label": "PRIORIDADES · HOJE", "title": f"Comece por: {items[0]['text']}",
+            "items": items[:3], "more": max(0, len(items) - 3), "total": len(items),
+            "footer": 'As mais antigas primeiro · diga "concluir tarefa" ao terminar'}
+    if len(items) == 1:
+        speech = f"Você tem uma tarefa pendente: {items[0]['text']}."
+    else:
+        speech = (f"Você tem {len(items)} tarefas pendentes. Sugiro começar por {items[0]['text']}"
+                  f", e depois {items[1]['text']}.")
+    return {"tab": "tarefas", "progress": "Montando as prioridades do dia...", "speech": speech, "card": card}
+
+
+def _match_segment(now: datetime) -> dict | None:
+    """V5.3: dia de jogo do time do Modo Torcedor entra no "bom dia" (só lê o cache, sem rede)."""
+    from modules import fan_mode, prefs, sports_provider
+
+    try:
+        p = prefs._load()
+        if not p.get("fan_mode_enabled"):
+            return None
+        team_key = p.get("fan_team", "palmeiras")
+        match = sports_provider.get_current_or_next_match(team_key)
+    except Exception as exc:  # noqa: BLE001
+        log.warning("Briefing: jogo do time indisponível: %s", exc)
+        return None
+    if not match.get("is_match_day") or match.get("status") in ("finished", "postponed", "unknown"):
+        return None
+    team = ((fan_mode.get_team_info(team_key) or {}).get("name")) or team_key.capitalize()
+    hm = ""
+    if match.get("time_known", True):
+        try:
+            hm = datetime.fromisoformat(match["date"]).strftime("%H:%M")
+        except (KeyError, ValueError):
+            hm = ""
+    opponent = match.get("opponent") or "A definir"
+    rows = [{"label": "Adversário", "value": opponent},
+            {"label": "Horário", "value": hm or "a confirmar"},
+            {"label": "Competição", "value": match.get("competition", "")}]
+    if match.get("venue"):
+        rows.append({"label": "Local", "value": match["venue"]})
+    card = {"kind": "metrics", "badge": "◉", "label": "MODO TORCEDOR · HOJE", "title": f"{team} x {opponent}",
+            "items": rows, "footer": "Agenda do time · ESPN"}
+    if match.get("status") == "live":
+        speech = f"E o {team} está em campo agora, contra {opponent}."
+    else:
+        speech = f"E hoje tem {team}, contra {opponent}" + (f", às {hm}." if hm else ", com horário a confirmar.")
+    return {"tab": "jogo", "progress": "Conferindo o jogo de hoje...", "speech": speech, "card": card}
+
+
+def _alarm_segment(tomorrow: datetime) -> dict | None:
+    """V5.3: no "boa noite", o despertador de amanhã (se houver)."""
+    from modules import alarms
+
+    try:
+        day = tomorrow.strftime("%Y-%m-%d")
+        items = [a for a in alarms.list_alarms() if a.get("proximo", "").startswith(day)]
+    except Exception as exc:  # noqa: BLE001
+        log.warning("Fechamento: alarmes indisponíveis: %s", exc)
+        return None
+    if not items:
+        return None
+    first = items[0]
+    rows = [{"label": "Toca às", "value": first["hora"]}]
+    if first.get("rotulo"):
+        rows.append({"label": "Para", "value": first["rotulo"]})
+    if len(items) > 1:
+        rows.append({"label": "Outros", "value": ", ".join(a["hora"] for a in items[1:3])})
+    card = {"kind": "metrics", "badge": "◷", "label": "DESPERTADOR · AMANHÃ", "title": f"Alarme às {first['hora']}",
+            "items": rows, "footer": 'Diga "cancela o alarme" para desmarcar'}
+    speech = f"Seu despertador de amanhã está marcado para as {first['hora']}."
+    return {"tab": "agenda", "progress": "Conferindo o despertador...", "speech": speech, "card": card}
+
+
 def _deviations(now: datetime, weather: dict | None) -> list[str]:
     """Pontos que justificam interromper a manhã (briefing por exceção)."""
     out = []
@@ -258,15 +421,23 @@ def _deviations(now: datetime, weather: dict | None) -> list[str]:
     return out
 
 
-def _closing(card_weather: dict | None, agenda_items: int, to_act: int, pending_tasks: int) -> str:
+def _closing(card_weather: dict | None, agenda_items: int, to_act: int, pending_tasks: int,
+             first_task: str = "", next_event: dict | None = None) -> str:
+    # V5.3: quando dá, o conselho junta a primeira tarefa e o próximo compromisso
+    if first_task and next_event and ":" in next_event.get("time", ""):
+        return f"Hoje, resolva {first_task} antes de {next_event['title']}, às {next_event['time']}."
     if to_act >= 3:
         return "Hoje, resolva primeiro os e-mails que pedem ação e depois mantenha o foco no essencial."
     if card_weather and (card_weather.get("rain_probability") or 0) >= 60:
+        if first_task:
+            return f"Hoje, leve um guarda-chuva e comece por {first_task}."
         return "Hoje, leve um guarda-chuva e mantenha o foco no essencial."
     if agenda_items >= 4:
         return "Hoje o dia está cheio; proteja os intervalos entre os compromissos."
     if pending_tasks >= 5:
         return f"Hoje, escolha duas das {pending_tasks} tarefas pendentes e comece por elas."
+    if first_task:
+        return f"Hoje, comece por {first_task} e mantenha o foco no essencial."
     return "Hoje, mantenha o foco no essencial."
 
 
@@ -310,6 +481,10 @@ async def build_morning_briefing() -> dict:
         segments.append(weather_seg)
     agenda_seg = _agenda_segment(now, events or [])
     segments.append(agenda_seg)
+    pending_list = tasks.get_tasks(include_completed=False)
+    for extra in (_focus_segment(pending_list), _match_segment(now)):
+        if extra:
+            segments.append(extra)
     email_seg = _email_segment(tri or {"connected": False})
     segments.append(email_seg)
     for theme, items in zip(NEWS_THEMES, news_lists):
@@ -320,7 +495,8 @@ async def build_morning_briefing() -> dict:
     segments.append(health_seg)
 
     deviations = _deviations(now, weather_res)
-    greeting = f"Bom dia{nome_str}. Hoje é {_date_line(now)}."
+    note = _day_note(now)
+    greeting = f"{greeting_word(now)}{nome_str}. Hoje é {_date_line(now)}." + (f" {note}" if note else "")
     if deviations:
         opening = f"Atenção a {len(deviations)} {'ponto' if len(deviations) == 1 else 'pontos'}"
         opening_sub = "; ".join(deviations)
@@ -328,11 +504,15 @@ async def build_morning_briefing() -> dict:
     else:
         opening = "Sem desvios relevantes"
         opening_sub = "dados consolidados desde ontem"
-        opening_speech = "Revisei o que já está consolidado e nada exige interromper a sua manhã."
+        opening_speech = ("Revisei o que já está consolidado e nada exige interromper a sua "
+                          + ("manhã." if now.hour < 12 else "tarde." if now.hour < 18 else "noite."))
 
-    pending = len(tasks.get_tasks(include_completed=False))
+    pending = len(pending_list)
+    upcoming = [i for i in agenda_seg["card"]["items"]
+                if ":" in i["time"] and (_minutes_until(now, i["time"]) or 0) >= 0]
+    first_task = (pending_list[0].get("texto") or "") if pending_list else ""
     closing = _closing(weather_seg["card"] if weather_seg else None, len(agenda_seg["card"]["items"]),
-                       email_seg["card"]["to_act"], pending)
+                       email_seg["card"]["to_act"], pending, first_task, upcoming[0] if upcoming else None)
 
     speech = " ".join(p for p in [greeting, opening_speech, *(s["speech"] for s in segments), closing] if p)
     used_tabs = {s["tab"] for s in segments}
@@ -454,6 +634,8 @@ def _tomorrow_weather_segment(result: dict | None) -> dict | None:
     card = {
         "kind": "weather",
         "label": "PANORAMA · CLIMA AMANHÃ",
+        "icon": weather_icon(at("weather_code")),
+        "tip": weather_tip(t_min, t_max, rain, at("weather_code")),
         "title": result["place"],
         "temperature": t_max,
         "description": desc,
@@ -513,8 +695,12 @@ def _notes_segment(notes: list[dict]) -> dict | None:
     return {"tab": "notas", "progress": "Revisando as anotações...", "speech": speech, "card": card}
 
 
-def _evening_closing(pending: int, tomorrow_items: list[dict], rain) -> str:
+def _evening_closing(pending: int, tomorrow_items: list[dict], rain, has_alarm: bool = True) -> str:
     if tomorrow_items and tomorrow_items[0]["time"] < "09:00":
+        if not has_alarm:
+            # V5.3: começa cedo e não tem despertador: oferece marcar
+            return (f"Amanhã começa cedo, às {tomorrow_items[0]['time']}, e não há despertador marcado. "
+                    'Se quiser, diga "me acorda às" e o horário.')
         return f"Amanhã começa cedo, às {tomorrow_items[0]['time']}. Vale dormir um pouco antes hoje."
     if rain is not None and rain >= 60:
         return "Deixe o guarda-chuva separado para amanhã e descanse bem."
@@ -551,6 +737,9 @@ async def build_evening_briefing() -> dict:
     segments = [_tasks_segment(pending)]
     agenda_seg = _agenda_segment(tomorrow, events or [], when="amanhã")
     segments.append(agenda_seg)
+    alarm_seg = _alarm_segment(tomorrow)
+    if alarm_seg:
+        segments.append(alarm_seg)
     weather_seg = _tomorrow_weather_segment(weather_res)
     if weather_seg:
         segments.append(weather_seg)
@@ -568,7 +757,7 @@ async def build_evening_briefing() -> dict:
         opening_sub = f"{len(pending)} pendente{'s' if len(pending) != 1 else ''} · {len(tomorrow_items)} para amanhã"
         opening_speech = ""
     rain = weather_seg["card"]["rain_probability"] if weather_seg else None
-    closing = _evening_closing(len(pending), tomorrow_items, rain)
+    closing = _evening_closing(len(pending), tomorrow_items, rain, has_alarm=alarm_seg is not None)
 
     speech = " ".join(p for p in [greeting, opening_speech, *(s["speech"] for s in segments), closing] if p)
     used_tabs = {s["tab"] for s in segments}

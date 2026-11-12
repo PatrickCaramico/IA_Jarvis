@@ -2,6 +2,25 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 5.4.0 — 11 de novembro de 2026
+
+- **Entrada sem repetição:** "já fiz o briefing hoje" ficava salvo em cada navegador, então o site, a central do PC e o app repetiam o briefing inteiro, e toda reentrada perguntava de novo se repetia (junto com um "Em que posso ajudar?"). Agora o PC decide para todos (`modules/entry_greeting.py`, `POST /api/briefing/entry`): 1ª entrada do dia, o briefing; 2ª, pergunta uma vez; depois, uma saudação curta que nunca repete a anterior. "Bom dia" por voz também conta.
+- **Janela do perfil cortada no topo:** ela era desenhada dentro do cabeçalho (que tem efeito de vidro) e ficava presa a ele. Agora cobre a tela (portal no `<body>`), rola quando não cabe, fecha com Esc ou clique fora, vira uma coluna no celular e mostra a versão real no rodapé.
+- **QR que abre o app já conectado:** a página do QR de pareamento (Perfil › Acesso Mobile › App Android) abre o app sozinha, sem endereço nem PIN; sem o app instalado, volta oferecendo baixar o JARVIS.apk.
+- **Endereço do PC no app:** aceita vírgula no lugar do ponto e avisa quando faltam os pontos ("192168158"), com uma dica para usar o QR. APK 5.4.0 gerado no PC.
+
+## 5.3.0 — 11 de novembro de 2026
+
+Briefing mais pessoal.
+
+- **Saudação que segue o relógio:** "bom dia" às 15h responde "Boa tarde" (e a abertura diz "sua tarde"); segunda, sexta e fim de semana ganham uma frase própria ("Último dia útil da semana.").
+- **Clima com conselho:** ícone do card conforme o tempo (☀ ☁ ≋ ☂ ⚡) e, só quando faz diferença, um conselho falado e numa faixa âmbar: guarda-chuva, calor, frio ou trovoada. Também no clima de amanhã do "boa noite".
+- **Agenda pelo próximo compromisso:** fala do próximo (não de um que já passou), "daqui a X minutos" se for nas próximas 2 horas e o seguinte; o card ganha o chip "PRÓXIMO EM X MIN".
+- **Prioridades no "bom dia":** com tarefas pendentes, o card "PRIORIDADES · HOJE" sugere por onde começar (as mais antigas primeiro), e a recomendação final junta a primeira tarefa com o próximo compromisso ou com o clima.
+- **Dia de jogo:** com o Modo Torcedor ligado, o jogo de hoje do time entra no briefing (adversário, horário, competição e local), lido do cache, sem rede extra.
+- **Despertador no "boa noite":** o alarme de amanhã aparece num card; se amanhã começa antes das 9 e não há alarme, o JARVIS oferece marcar.
+- Testes novos em `backend/tests/test_briefing_53.py`; demo do briefing com os cards novos.
+
 ## 5.2.1 — 11 de novembro de 2026
 
 - **Botão LIGAR O JARVIS sem aviso falso:** o Chrome novo pergunta "Abrir …?" num quadro dentro da página, sem tirar o foco dela, e a central concluía em 2,5 s que o atalho `jarvis://` não estava instalado ("O botão ainda não está ativado neste PC") mesmo com ele instalado e a pergunta esperando o clique. Agora, logo depois do toque, a tela pede "Clique em Abrir"; a ajuda de instalar o atalho só aparece depois de 30 s sem o JARVIS responder, com o título "O JARVIS ainda não respondeu.".

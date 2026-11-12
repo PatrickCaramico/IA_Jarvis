@@ -69,6 +69,13 @@ async def run_sequence(message: str, turn: int, data: dict, max_history: int) ->
     """Fala o briefing parte a parte. Libera o JARVIS (busy) ao terminar ou cancelar."""
     global _skip
     _skip = asyncio.Event()
+    if data.get("mode") in ("morning", "evening"):
+        try:  # V5.4: "bom dia" pedido por voz também conta: a próxima entrada não repete o briefing
+            from modules import entry_greeting
+
+            entry_greeting.mark_briefed()
+        except Exception as exc:  # noqa: BLE001
+            log.warning("Não consegui registrar o briefing do dia: %s", exc)
     try:
         segments = data["segments"]
         opening_text = " ".join(p for p in (data["greeting"], data["opening_speech"]) if p)

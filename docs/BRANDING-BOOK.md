@@ -1,4 +1,4 @@
-# Branding Book do JARVIS (v1.11, atualizado na V5.2.1 em 11/11/2026: entrada direta para quem já usa, reconexão sozinha e central enxuta no celular)
+# Branding Book do JARVIS (v1.13, atualizado na V5.4.0 em 11/11/2026: entrada sem repetição, janela do perfil e QR que abre o app; entrada direta para quem já usa, reconexão sozinha e central enxuta no celular)
 
 Versão aprovada do Branding Book proposto no plano da 4.2. Há também uma versão ilustrada e animada: abra `docs/branding-book.html` no navegador. Tudo aqui já está aplicado no projeto;
 no fim de cada seção há onde isso vive no código.
@@ -60,7 +60,7 @@ nos módulos do backend.
 | --- | --- |
 | Assistente | JARVIS (o nome da IA pode ser trocado em Configurações) |
 | Módulo de escuta contínua | **Modo Sentinela** (mantido; as siglas propostas não foram adotadas) |
-| Versão exibida na central | `v5.2.1` (sem referências a marcas de terceiros, como "Stark") |
+| Versão exibida na central | `v5.4.0` (sem referências a marcas de terceiros, como "Stark") |
 | Lista de sites abertos por voz | **Meus Sites** (Configurações > Meus Sites) |
 | Resumo da manhã | **Briefing** (disparado por "bom dia") |
 | Resumo da noite | **Fechamento do dia** (disparado por "boa noite") |
@@ -250,6 +250,27 @@ mono com a procedência ("Open-Meteo · 07:42", "Triagem do briefing · somente 
 
 **Faixa DIGA:** chips com as frases que abrem cada tela ("bom dia", "boa noite", "notícias"...). O
 texto vai entre aspas, como algo para falar; clicar faz o mesmo que dizer.
+
+**Briefing mais pessoal (V5.3).**
+- **Saudação que segue o relógio:** "bom dia" às 15h vira "Boa tarde"; a abertura diz "interromper a sua
+  manhã / tarde / noite". Segunda ganha "Começo de semana.", sexta "Último dia útil da semana.", e o fim de
+  semana "É sábado." / "É domingo.".
+- **Clima com conselho:** o ícone do card segue o tempo (☀ sol, ☁ nublado, ≋ neblina, ☂ chuva, ⚡ trovoada)
+  e, só quando faz diferença, uma faixa âmbar com borda à esquerda dá o conselho, também falado: "Vale levar um
+  guarda-chuva.", "Vai fazer calor: capriche na água.", "Começa frio: leve um casaco.", "Há risco de
+  trovoadas: evite sair no pior horário.". Vale também para o clima de amanhã no "boa noite".
+- **Agenda pelo próximo:** fala do próximo compromisso (não de um que já passou), "daqui a 45 minutos" se
+  for nas próximas 2 h, e o seguinte ("Depois, Dentista às 15:00."). No card, o chip âmbar
+  "PRÓXIMO EM 45 MIN" no topo da lista.
+- **Prioridades (aba Tarefas):** com tarefas pendentes, o card "PRIORIDADES · HOJE", título "Comece por:
+  …", as três mais antigas numeradas e a fala "Sugiro começar por …, e depois …".
+- **Dia de jogo (aba Jogo):** com o Modo Torcedor ligado e jogo hoje, o card "MODO TORCEDOR · HOJE"
+  (ícone ◉, "Palmeiras x Remo", adversário, horário, competição e local) e a fala "E hoje tem Palmeiras,
+  contra Remo, às 21:30.".
+- **Despertador no "boa noite":** card "DESPERTADOR · AMANHÃ" (ícone ◷) com a hora e o rótulo. Amanhã
+  começa antes das 9 e não há alarme: o fechamento oferece "Se quiser, diga "me acorda às" e o horário.".
+- **Recomendação que junta as pontas:** "Hoje, resolva Pagar a luz antes de Reunião com o time, às 09:30."
+  ou "Hoje, leve um guarda-chuva e comece por Pagar a luz.".
 
 **No código:** `frontend/src/components/BriefingStage.jsx`, `BriefingCard.jsx` e
 `frontend/src/briefing.css`; falas em `backend/modules/briefing.py` e `briefing_topics.py`.
@@ -488,6 +509,24 @@ com "menos movimento"). Somem no celular os controles de desktop: RECOLHER, ⠿ 
 de toque com pelo menos 40 px e campo de texto em 16 px (sem zoom ao tocar). A faixa de queda ocupa a largura,
 abaixo da barra de status.
 
+**Entrada sem repetição (V5.4).** O que o JARVIS fala ao entrar é decidido no PC e vale para o site, a
+central do PC e o app juntos: 1ª entrada do dia, o briefing; 2ª, a pergunta "Bem-vindo de volta, senhor. Quer
+que eu repita o briefing de hoje ou prefere pular?" UMA vez; depois, só uma saudação curta, nunca igual à
+anterior ("Bem-vindo de volta, senhor.", "De volta à central, senhor. Ao seu dispor.", "Sistemas prontos,
+senhor. Em que posso ajudar?", "Tudo em ordem por aqui, senhor.", "Pronto quando o senhor estiver.").
+O "Em que posso ajudar?" da entrada saiu (falava junto). Pedir "bom dia" por voz também conta.
+
+**Janela do perfil (V5.4).** Cobre a tela inteira com o fundo escurecido, rola quando é mais alta que a
+tela, fecha com Esc, ✕ FECHAR ou clique fora; no celular os botões ficam em uma coluna. O rodapé mostra a
+versão de verdade ("J.A.R.V.I.S. v5.4.0", não mais "v4.0").
+
+**QR que abre o app conectado (V5.4).** O QR de Perfil › Acesso Mobile › App Android abre o app sozinho, já
+pareado, sem endereço nem PIN ("O app abre sozinho, já conectado a este PC"). Sem o app, a mesma página volta
+com "1 · INSTALE O APP" e "BAIXAR JARVIS.apk". Na tela de pareamento do app, uma dica com borda ciano aponta o
+QR como o jeito mais fácil; o endereço aceita vírgula no lugar do ponto, e só números ("192168158") dá
+"Faltaram os pontos no endereço. Digite como aparece no PC, ex.: 192.168.1.58.". O PIN nunca é mostrado: o PC
+guarda só o hash.
+
 ### Meus Sites, escudos e atualização (V5)
 
 **Meus Sites.** Nova aba em Configurações, no mesmo vidro azul das outras. Título "MEUS SITES" em
@@ -520,7 +559,7 @@ o PC tem um APK mais novo. Nada é baixado ou instalado sozinho.
 o orbe Núcleo girando devagar no topo (parado com "reduzir movimento"), "JARVIS" em Orbitron com brilho
 ciano, cartões de vidro azul-marinho com ícone em círculo de contorno (ciano; âmbar para segurança; verde
 para água e para o Modo Torcedor), capturas em moldura com cantos ciano e, no rodapé, o carimbo
-"J.A.R.V.I.S. · FOLHA · SITE · REV. v5.2.1" (a versão vem de `backend/version.py`). Botão principal ciano cheio ("VER NO GITHUB"); os outros só
+"J.A.R.V.I.S. · FOLHA · SITE · REV. v5.4.0" (a versão vem de `backend/version.py`). Botão principal ciano cheio ("VER NO GITHUB"); os outros só
 com borda. Logo abaixo, num quadro de borda tracejada âmbar, o botão "ABRIR MEU JARVIS" (borda âmbar, o "olhe aqui" da Sentinela), que abre a **mesma central do PC publicada no site** (`/app/`). Ela conversa com o JARVIS ligado no computador (backend em `127.0.0.1:8000`), então rosto, perfil, Modo Torcedor, rotina e agenda são os de sempre; na primeira vez, o Chrome pergunta se o site pode acessar a rede local (é o backend do próprio PC). Tom: o mesmo da central, e a página deixa claro que é só a vitrine ("O JARVIS roda no seu PC:
 voz, câmera, controle do sistema e os seus dados nunca passam por aqui."). A 404 diz "Procurei em toda a
 planta, senhor, e esta página não está aqui."
@@ -557,6 +596,8 @@ central completa, que agora conversa em cards.
 | **5.0 · o lançamento** | 09/11/2026 | Projeto no GitHub, com testes automáticos e o app Android nas Releases. **Meus Sites** (qualquer site por voz, com apelidos), escudos do Modo Torcedor sempre visíveis, jogo antigo que sai da tela no dia seguinte e aviso de versão nova no PC e no celular. |
 | **5.1 · na web e por voz** | 10 e 11/11/2026 | Central aberta pelo site, verificação rápida do rosto, botões LIGAR O JARVIS e ATUALIZAR, câmera lisa, pauta do briefing desde a saudação, "Jarvis" também com a central aberta, conversa contínua, pesquisa automática no Google pela IA, respostas curtas e educadas, **alarmes**, lembretes com horários naturais, **"Esqueci o PIN"**, app Android 5.x servido pelo PC e este livro legível no celular. |
 | **5.2 · direto ao ponto** | 11/11/2026 | Quem já entrou abre a central direto, tela curta de "reconectando" com o PC desligado, conexão que se refaz sozinha (site e app Android, sem pedir o PIN de novo) e central enxuta no celular, com o Canal Ativo logo abaixo do orbe. |
+| **5.3 · o briefing pessoal** | 11/11/2026 | Saudação que segue o relógio, clima com conselho e ícone do tempo, agenda pelo próximo compromisso, prioridades do dia, jogo do time e despertador de amanhã no briefing. |
+| **5.4 · sem repetição** | 11/11/2026 | Briefing e saudação de entrada decididos no PC para todos os aparelhos, janela do perfil que cobre a tela e rola, e o QR que abre o app já conectado, sem PIN. |
 
 O que atravessou todas as versões: tudo roda no PC do dono, o rosto é a chave, a voz é em
 português e o reator (depois Núcleo) fica no centro da tela.

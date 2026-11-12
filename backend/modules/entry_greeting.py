@@ -1,0 +1,79 @@
+"""V5.4: o que o JARVIS faz ao entrar na central, decidido NO PC (vale para site, PC e app juntos).
+
+Antes, "já fiz o briefing hoje" ficava no navegador: o site, a central do PC e o app tinham cada um a sua
+memória, então cada aparelho repetia o briefing inteiro, e toda reentrada perguntava de novo "quer que eu
+repita?", junto com o "Em que posso ajudar?". Agora:
+
+- 1ª entrada do dia (em qualquer aparelho): o briefing ("bom dia" ou, depois das 18h, "boa noite");
+- 2ª entrada: pergunta UMA vez se repete o briefing ou pula;
+- dali em diante: uma saudação curta, sempre diferente da última (ou nada no modo silencioso).
+Pedir "bom dia" por voz também conta como briefing feito.
+"""
+from __future__ import annotations
+
+import random
+from datetime import datetime
+from typing import Optional
+
+from modules import prefs
+
+QUICK_WELCOMES = [
+    "Bem-vindo de volta, senhor.",
+    "De volta à central, senhor. Ao seu dispor.",
+    "Sistemas prontos, senhor. Em que posso ajudar?",
+    "Tudo em ordem por aqui, senhor.",
+    "Pronto quando o senhor estiver.",
+]
+ASK_TEXT = "Bem-vindo de volta, senhor. Quer que eu repita o briefing de hoje ou prefere pular?"
+
+
+def _today(now: datetime) -> str:
+    return now.strftime("%Y-%m-%d")
+
+
+def _state(now: datetime) -> dict:
+    st = prefs._load().get("briefing_entry") or {}
+    if st.get("date") != _today(now):
+        st = {"date": _today(now), "briefed": False, "asked": False, "last_welcome": st.get("last_welcome", -1)}
+    return st
+
+
+def _save(st: dict) -> None:
+    prefs.update(briefing_entry=st)
+
+
+def briefing_command(now: datetime) -> str:
+    return "boa noite" if now.hour >= 18 or now.hour < 4 else "bom dia"
+
+
+def mark_briefed(now: Optional[datetime] = None) -> None:
+    """Chamado quando um briefing completo roda (pela entrada ou pedido por voz)."""
+    now = now or datetime.now()
+    st = _state(now)
+    st["briefed"] = True
+    _save(st)
+
+
+def decide(now: Optional[datetime] = None, rng: Optional[random.Random] = None) -> dict:
+    """{"action": "briefing"|"ask"|"greet"|"none", "command"?, "text"?} e já registra a decisão."""
+    now = now or datetime.now()
+    mode = prefs._load().get("lock_daily_summary") or "first_login"
+    st = _state(now)
+    command = briefing_command(now)
+
+    if mode == "always" or (mode != "off" and not st["briefed"]):
+        st["briefed"] = True
+        _save(st)
+        return {"action": "briefing", "command": command}
+    if mode != "off" and not st["asked"]:
+        st["asked"] = True
+        _save(st)
+        return {"action": "ask", "command": command, "text": ASK_TEXT}
+
+    # Já fez o briefing e já perguntou hoje: saudação curta, nunca a mesma da última vez
+    rng = rng or random.Random()
+    choices = [i for i in range(len(QUICK_WELCOMES)) if i != st.get("last_welcome", -1)]
+    pick = rng.choice(choices)
+    st["last_welcome"] = pick
+    _save(st)
+    return {"action": "greet", "text": QUICK_WELCOMES[pick]}

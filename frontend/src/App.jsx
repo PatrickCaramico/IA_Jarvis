@@ -890,7 +890,8 @@ export default function App() {
     setMicrophoneId(selectedMicrophoneId);
     if (selectedMicrophoneId) localStorage.setItem("jarvis.microphone.id", selectedMicrophoneId);
     rememberLogin();
-    if (!options.resume) api("/api/enter", { method: "POST" }).catch(() => {});
+    // V5.4: em silêncio: a fala da entrada vem do briefing/saudação abaixo (antes saíam duas falas juntas)
+    if (!options.resume) api("/api/enter", { method: "POST", body: JSON.stringify({ silent: true }) }).catch(() => {});
     setSteps({});
     setResponse("");
     setError("");
@@ -927,19 +928,25 @@ export default function App() {
     const isFirstAccessOfDay = lastAccessDate !== todayStr;
     localStorage.setItem("jarvis_last_access_date", todayStr);
 
-    // V4.5: a central abre com o briefing. Primeira entrada do dia: começa sozinho. Nas próximas,
-    // pergunta se repete ou pula (caixa de diálogo, teclado ou voz). "off" nas Configurações desliga.
+    // V5.4: quem decide é o PC (vale para site, PC e app juntos): 1ª entrada do dia = briefing;
+    // 2ª = pergunta UMA vez se repete; depois, só uma saudação curta (sempre diferente). Antes cada
+    // navegador tinha a própria memória e o briefing se repetia em cada aparelho.
     const summaryMode = prefsNow.lock_daily_summary || "first_login";
     if (summaryMode !== "off") {
-      const hourNow = Number(new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", hour12: false }).format(timeNow));
-      const command = hourNow >= 18 || hourNow < 4 ? "boa noite" : "bom dia";
-      const briefedToday = localStorage.getItem("jarvis_briefing_date") === todayStr;
-      if (!briefedToday || summaryMode === "always") {
-        localStorage.setItem("jarvis_briefing_date", todayStr);
-        setPendingToRun(command);
-      } else {
-        setBriefingAsk({ command });
-        if (!prefsNow.silent_mode) speak("Bem-vindo de volta, senhor. Quer que eu repita o briefing de hoje ou prefere pular?").catch(() => {});
+      let decision = null;
+      try {
+        decision = await api("/api/briefing/entry", { method: "POST", timeout: 8000 });
+      } catch {
+        decision = null; // PC antigo ou sem resposta: segue sem falar nada
+      }
+      if (decision?.action === "briefing") {
+        setPendingToRun(decision.command);
+      } else if (decision?.action === "ask") {
+        setBriefingAsk({ command: decision.command });
+        if (!prefsNow.silent_mode) speak(decision.text).catch(() => {});
+      } else if (decision?.action === "greet" && !prefsNow.silent_mode) {
+        speak(decision.text).catch(() => {});
+        startIntroMusic();
       }
       return;
     }

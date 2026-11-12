@@ -475,3 +475,13 @@
   .bf-tab.is-active .bf-tab-bar b { animation: none; width: 100%; }
   .bf-bar i, .bf-tab, .bf-slot-open { transition: none; }
 }
+
+/* V5.3: conselho do clima e "próximo em" na agenda */
+.bf-tip {
+  grid-column: 1 / -1; margin: 2px 0 0; padding: 6px 10px; border-radius: 8px;
+  border-left: 2px solid var(--j-amber, #f59e0b); background: rgba(245, 158, 11, 0.08);
+  font-family: var(--font-text); font-size: 0.78rem; color: #fde68a;
+}
+.bf-card.is-mini .bf-tip, .bf-card.is-compact .bf-tip { display: none; }
+.bf-list .bf-next { list-style: none; padding: 0; border: 0; }
+.bf-card.is-mini .bf-next { display: none; }

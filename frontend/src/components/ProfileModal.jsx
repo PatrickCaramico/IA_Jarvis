@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
+import { APP_VERSION } from "../utils/version.js";
 
 export default function ProfileModal({
   photoUrl,
@@ -26,6 +28,13 @@ export default function ProfileModal({
     { key: "spotify", label: "Controles Spotify", desc: "Player multimídia de música" },
     { key: "about", label: "Sobre Mim", desc: "Dados personalizados do usuário" },
   ];
+
+  // Esc fecha a janela
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
 
   const speak = (text) => {
     if (api) {
@@ -55,8 +64,18 @@ export default function ProfileModal({
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 select-none animate-fadeIn">
+  // V5.4: desenhada direto no <body> (portal). Dentro do cabeçalho, que tem efeito de vidro, o
+  // "fixed" ficava preso a ele: a janela aparecia cortada no topo em vez de cobrir a tela.
+  return createPortal(
+    // V5.4: a janela rola quando é mais alta que a tela (antes ficava centralizada e o topo sumia)
+    <div
+      className="fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-black/80 backdrop-blur-md select-none animate-fadeIn"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Perfil e controles"
+    >
+     <div className="flex min-h-full items-center justify-center p-4 sm:p-6" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="relative w-full max-w-2xl rounded-xl border border-cyan-500/40 bg-gradient-to-b from-[#082037]/95 via-[#041224]/95 to-[#020813]/98 p-6 shadow-[0_0_50px_rgba(31,194,245,0.3)]">
         {/* Cantos Táticos */}
         <div className="absolute top-2 left-2 w-3.5 h-3.5 border-t-2 border-l-2 border-cyan-400 pointer-events-none" />
@@ -123,7 +142,7 @@ export default function ProfileModal({
             <span className="text-xs font-['Orbitron'] tracking-wider text-cyan-300 block mb-2">
               PAINÉIS DO SISTEMA
             </span>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <button
                 onClick={() => {
                   speak("Abrindo configurações gerais do JARVIS.");
@@ -193,7 +212,7 @@ export default function ProfileModal({
             <span className="text-xs font-['Orbitron'] tracking-wider text-cyan-300 block mb-1">
               SELEÇÃO DE WIDGETS ATIVOS
             </span>
-            <div className="grid grid-cols-2 gap-2 max-h-56 overflow-y-auto pr-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-56 overflow-y-auto pr-1">
               {allWidgets.map((w) => {
                 const isActive = activeWidgets.includes(w.key);
                 return (
@@ -228,7 +247,7 @@ export default function ProfileModal({
             <span className="text-xs font-['Orbitron'] tracking-wider text-cyan-300 block mb-1">
               COMANDOS RÁPIDOS DE ENTRETENIMENTO
             </span>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <button
                 onClick={() => {
                   onClose();
@@ -283,9 +302,11 @@ export default function ProfileModal({
         {/* Rodapé */}
         <footer className="mt-5 pt-3 border-t border-cyan-500/20 flex justify-between items-center text-[10px] text-cyan-400/50 font-['Orbitron']">
           <span>JARVIS · INTERFACE INTERATIVA COM VOZ</span>
-          <span>J.A.R.V.I.S. v4.0</span>
+          <span>J.A.R.V.I.S. v{APP_VERSION}</span>
         </footer>
       </div>
-    </div>
+     </div>
+    </div>,
+    document.body,
   );
 }

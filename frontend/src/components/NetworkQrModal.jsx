@@ -64,9 +64,10 @@ export default function NetworkQrModal({ api, initialUrl = "", onClose }) {
             </div>
             {tab === "app" ? (
               <ol className="mt-4 space-y-1 text-left text-xs leading-relaxed text-arc-200">
-                <li>1. Ainda não tem o app? Escaneie o QR pequeno da tela de bloqueio e instale o JARVIS.apk.</li>
-                <li>2. Escaneie este QR com a câmera e toque em <b>Abrir no app JARVIS</b>.</li>
-                <li>3. Pronto: o app guarda a conexão e abre a central em tela cheia.</li>
+                {/* V5.4: o QR abre o app sozinho, já conectado: sem digitar endereço nem PIN */}
+                <li>1. Aponte a câmera do celular para este QR e toque no link.</li>
+                <li>2. O app <b>abre sozinho, já conectado</b> a este PC: sem digitar endereço nem PIN.</li>
+                <li>3. Ainda sem o app? A mesma página oferece baixar o JARVIS.apk; instale e leia o QR de novo.</li>
               </ol>
             ) : (
               <p className="mt-4 break-all text-xs text-arc-200">{value}</p>

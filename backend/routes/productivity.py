@@ -202,6 +202,14 @@ async def get_briefing() -> dict:
     return {"status": "ok", "briefing": text}
 
 
+@router.post("/api/briefing/entry")
+async def briefing_entry() -> dict:
+    """V5.4: ao entrar na central, o PC decide (para todos os aparelhos juntos): briefing, perguntar ou saudar."""
+    from modules import entry_greeting
+
+    return entry_greeting.decide()
+
+
 @router.post("/api/briefing/skip")
 async def skip_briefing_part() -> dict:
     """V4.3: pula para o próximo assunto do briefing em andamento (corta só a fala atual)."""

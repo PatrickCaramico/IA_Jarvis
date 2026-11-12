@@ -39,6 +39,7 @@ _DEFAULTS: dict[str, Any] = {
     "clap_relock_on_fail": False,  # bloqueia a tela se a reverificação por palma falhar
     # --- Tela de bloqueio (seção 17) ---
     "lock_daily_summary": "first_login",  # "off" | "first_login" | "always"
+    "briefing_entry": {},                 # V5.4: briefing/pergunta do dia já feitos (vale para todos os aparelhos)
     "lock_cards": ["clock", "weather", "spotify"],   # cartões visíveis na tela de bloqueio
     "lock_auto_relock_minutes": 0,        # 0 (desligado), 5, 10, 15 ou 30
     "lock_presence_check": False,         # checagem rápida de rosto antes de bloquear

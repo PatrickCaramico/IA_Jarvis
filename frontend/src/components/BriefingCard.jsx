@@ -28,7 +28,7 @@ function WeatherBody({ c }) {
     <div className="bf-weather-body">
       <div className="bf-weather-left">
         <div className="bf-weather-main">
-          <span className="bf-weather-icon" aria-hidden="true">☀</span>
+          <span className="bf-weather-icon" aria-hidden="true">{c.icon || "☀"}</span>
           <span className="bf-weather-temp">{num(c.temperature)}°</span>
           <span className="bf-weather-desc">{c.description}</span>
         </div>
@@ -42,6 +42,8 @@ function WeatherBody({ c }) {
         <div><dt>☂ Chuva</dt><dd>{c.rain_probability ?? "—"}%</dd></div>
         {c.wind != null && <div><dt>≋ Vento</dt><dd>{num(c.wind)} km/h</dd></div>}
       </dl>
+      {/* V5.3: conselho prático (guarda-chuva, calor, frio, trovoada) */}
+      {c.tip && <p className="bf-tip">{c.tip}</p>}
     </div>
   );
 }
@@ -57,6 +59,8 @@ function AgendaBody({ c }) {
   }
   return (
     <ul className="bf-list">
+      {/* V5.3: o próximo compromisso de hoje, se for nas próximas 2 horas */}
+      {c.next_in != null && <li className="bf-next"><span className="bf-chip is-warn">PRÓXIMO EM {c.next_in < 60 ? `${c.next_in} MIN` : `${Math.floor(c.next_in / 60)}H${String(c.next_in % 60).padStart(2, "0")}`}</span></li>}
       {c.items.map((it, i) => (
         <li key={i}>
           <span className="bf-num">{it.time}</span>
@@ -227,7 +231,7 @@ export default function BriefingCard({ card, compact = false, mini = false, wide
   return (
     <article className={`bf-card bf-${card.kind}${size}${entering ? " is-entering" : ""}`}>
       <header className="bf-card-head">
-        <span className="bf-icon" aria-hidden="true">{ICONS[card.kind]}</span>
+        <span className="bf-icon" aria-hidden="true">{card.badge || ICONS[card.kind]}</span>
         <span className="bf-label">{card.label}</span>
       </header>
       <h3 className="bf-title">{card.title}</h3>

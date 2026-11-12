@@ -45,6 +45,7 @@
   @media (prefers-reduced-motion: reduce) { .reconnect .ring { animation: none; } }
   .linkbtn { background: none; border: 0; color: var(--muted); text-decoration: underline; font-weight: 500; letter-spacing: .04em; margin-top: 8px; padding: 8px; }
   .hidden { display: none; }
+  .tip { margin-top: -4px; padding: 8px 10px; border-left: 2px solid var(--core); background: rgba(34,211,238,.08); border-radius: 8px; font-size: .8rem; }
   .stamp { margin: 26px auto 0; width: fit-content; border: 1px solid rgba(220,240,255,.45); font-size: .6rem; letter-spacing: .16em; }
   .stamp div { padding: 5px 10px; } .stamp div + div { border-top: 1px solid rgba(220,240,255,.3); color: var(--muted); }
 </style>
@@ -69,8 +70,9 @@
   <form class="card" id="f">
     <h2 id="title">CONECTAR COM O PC</h2>
     <p class="muted" id="intro">Digite o <b>PIN</b> do perfil principal do JARVIS. O celular precisa estar na mesma Wi-Fi do PC.</p>
+    <p class="muted tip">Mais fácil: no PC, abra o perfil › <b>Acesso Mobile</b> e leia o QR com a câmera. O app entra sozinho, sem endereço nem PIN.</p>
     <label for="host">ENDEREÇO DO PC</label>
-    <input id="host" inputmode="decimal" autocomplete="off" placeholder="192.168.0.10">
+    <input id="host" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="192.168.0.10">
     <label for="pin">PIN</label>
     <input id="pin" class="pin" type="password" inputmode="numeric" autocomplete="off" maxlength="8">
     <button id="go" type="submit">ENTRAR</button>
@@ -127,7 +129,10 @@
   };
   document.getElementById("f").addEventListener("submit", function (e) {
     e.preventDefault();
-    var host = hostEl.value.trim().replace(/^https?:\/\//, "").replace(/[:\/].*$/, "");
+    // V5.4: vírgula e espaço viram ponto (teclados sem "."); só números = faltaram os pontos
+    var host = hostEl.value.trim().replace(/^https?:\/\//, "").replace(/[,\s]+/g, ".").replace(/[:\/].*$/, "");
+    hostEl.value = host;
+    if (/^\d{7,12}$/.test(host)) { show("Faltaram os pontos no endereço. Digite como aparece no PC, ex.: 192.168.1.58.", false); return; }
     var pin = pinEl.value.trim();
     if (!/^[\w.-]+$/.test(host)) { show("Digite o endereço do PC (ex.: 192.168.0.10).", false); return; }
     if (!/^\d{4,8}$/.test(pin)) { show("O PIN tem de 4 a 8 números.", false); return; }

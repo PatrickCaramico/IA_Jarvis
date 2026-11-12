@@ -15,16 +15,22 @@ import "../briefing.css";
 const TABS = [
   { id: "clima", label: "Clima" },
   { id: "agenda", label: "Agenda" },
+  { id: "tarefas", label: "Tarefas" },
+  { id: "jogo", label: "Jogo" },
   { id: "email", label: "E-mails" },
   { id: "noticias", label: "Notícias" },
   { id: "saude", label: "Prioridades" },
 ];
 
 const SEGMENTS = [
-  { tab: "clima", progress: "Lendo o clima de hoje...", speech: "Em Maragogi, 27 graus e predomínio de sol, com mínima de 23 e máxima de 28. A chance de chuva é de 62 por cento.",
-    card: { kind: "weather", label: "PANORAMA · CLIMA", title: "Maragogi", temperature: 26.7, description: "predomínio de sol", minimum: 23.3, maximum: 27.5, apparent: 30, rain_probability: 62, wind: 18.3, footer: "Open-Meteo · 07:42" } },
-  { tab: "agenda", progress: "Conferindo a agenda de hoje...", speech: "Sua agenda está livre hoje.",
-    card: { kind: "agenda", label: "AGENDA · HOJE", title: "Agenda livre", items: [], more: 0, empty_text: "Nenhum compromisso registrado", empty_sub: "Seu horário permanece disponível", footer: "Lembretes do JARVIS" } },
+  { tab: "clima", progress: "Lendo o clima de hoje...", speech: "Em Maragogi, 27 graus e predomínio de sol, com mínima de 23 e máxima de 28. A chance de chuva é de 62 por cento. Vale levar um guarda-chuva.",
+    card: { kind: "weather", label: "PANORAMA · CLIMA", icon: "☂", tip: "Vale levar um guarda-chuva.", title: "Maragogi", temperature: 26.7, description: "chuva fraca", minimum: 23.3, maximum: 27.5, apparent: 30, rain_probability: 62, wind: 18.3, footer: "Open-Meteo · 07:42" } },
+  { tab: "agenda", progress: "Conferindo a agenda de hoje...", speech: "Você tem 2 compromissos hoje. O primeiro é Reunião com o time, às 09:30, daqui a 45 minutos. Depois, Dentista às 15:00.",
+    card: { kind: "agenda", label: "AGENDA · HOJE", title: "2 compromissos", next_in: 45, items: [{ time: "09:30", title: "Reunião com o time", location: "Google Meet" }, { time: "15:00", title: "Dentista", location: "Lembrete" }], more: 0, footer: "Google Agenda + lembretes" } },
+  { tab: "tarefas", progress: "Montando as prioridades do dia...", speech: "Você tem 4 tarefas pendentes. Sugiro começar por Pagar a luz, e depois Revisar o contrato.",
+    card: { kind: "tasks", label: "PRIORIDADES · HOJE", title: "Comece por: Pagar a luz", items: [{ text: "Pagar a luz" }, { text: "Revisar o contrato" }, { text: "Ligar para o banco" }], more: 1, total: 4, footer: "As mais antigas primeiro · diga \"concluir tarefa\" ao terminar" } },
+  { tab: "jogo", progress: "Conferindo o jogo de hoje...", speech: "E hoje tem Palmeiras, contra Remo, às 21:30.",
+    card: { kind: "metrics", badge: "◉", label: "MODO TORCEDOR · HOJE", title: "Palmeiras x Remo", items: [{ label: "Adversário", value: "Remo" }, { label: "Horário", value: "21:30" }, { label: "Competição", value: "Brasileirão" }, { label: "Local", value: "Allianz Parque" }], footer: "Agenda do time · ESPN" } },
   { tab: "email", progress: "Verificando e-mails importantes...", speech: "Chegaram 20 e-mails desde ontem, e 5 pedem uma ação sua, a começar por Stripe, Santander.",
     card: { kind: "email", label: "COMUNICAÇÕES · E-MAIL", title: "Pedem sua atenção", connected: true, received: 20, to_act: 5, more: 3,
       items: [{ sender: "Stripe", summary: "Sua fatura de novembro vence em 3 dias" }, { sender: "Santander", summary: "Confirme o novo acesso ao aplicativo" }],
