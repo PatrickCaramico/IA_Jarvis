@@ -544,7 +544,9 @@ def _open_target(target: str) -> None:
     if not target:
         return
     if re.match(r"^https?://", target):
-        webbrowser.open(target)
+        from modules import browser_window  # V6.5.8: janela média, arrastável
+
+        browser_window.open_url(target)
     elif os.name == "nt":
         try:
             os.startfile(target)  # type: ignore[attr-defined]
@@ -943,6 +945,13 @@ def _fetch_web_results(query: str) -> tuple[list[str], list[dict]]:
 
 def _open_in_default_browser(url: str) -> None:
     """Abre a URL garantindo o navegador padrão do Windows."""
+    try:  # V6.5.8: numa janela média, arrastável, no canto da tela
+        from modules import browser_window
+
+        browser_window.open_url(url)
+        return
+    except Exception:  # noqa: BLE001
+        log.exception("Janela média falhou; abrindo do jeito antigo.")
     try:
         opened = webbrowser.open(url, new=2, autoraise=True)
         if not opened and os.name == "nt":
@@ -1153,6 +1162,58 @@ _WMO = {0: "céu limpo", 1: "céu predominantemente limpo", 2: "tempo parcialmen
         95: "trovoadas", 96: "trovoadas com granizo", 99: "trovoadas com granizo forte"}
 
 
+LAST_WEATHER: Optional[dict] = None
+_WEEKDAYS_SHORT = ("Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom")
+
+
+def weather_card(result: Optional[dict]) -> Optional[dict]:
+    """V6.5.8: cartão do clima para a mini janela: agora, hoje e os próximos dias (até 7)."""
+    from datetime import date
+
+    if not result:
+        return None
+    from modules.briefing import weather_icon
+
+    data, place = result.get("data") or {}, result.get("place") or ""
+    cur, daily = data.get("current") or {}, data.get("daily") or {}
+
+    def at(key, i):
+        try:
+            v = (daily.get(key) or [])[i]
+        except IndexError:
+            return None
+        return v
+
+    def r(v):
+        return round(v) if isinstance(v, (int, float)) else None
+
+    days = []
+    for i, iso in enumerate(daily.get("time") or []):
+        try:
+            d = date.fromisoformat(iso)
+        except (TypeError, ValueError):
+            continue
+        label = "Hoje" if i == 0 else "Amanhã" if i == 1 else f"{_WEEKDAYS_SHORT[d.weekday()]} {d.day}"
+        code = at("weather_code", i)
+        days.append({"label": label, "max": r(at("temperature_2m_max", i)), "min": r(at("temperature_2m_min", i)),
+                     "rain": r(at("precipitation_probability_max", i)), "icon": weather_icon(code),
+                     "desc": _WMO.get(code, "tempo variável")})
+    code_now = cur.get("weather_code", at("weather_code", 0))
+    sunrise, sunset = at("sunrise", 0), at("sunset", 0)
+    return {
+        "kind": "weather",
+        "title": f"Clima em {place}" if place else "Clima",
+        "now": {"temp": r(cur.get("temperature_2m")), "feels": r(cur.get("apparent_temperature")),
+                "desc": _WMO.get(code_now, "tempo variável"), "icon": weather_icon(code_now),
+                "humidity": r(cur.get("relative_humidity_2m")), "wind": r(cur.get("wind_speed_10m"))},
+        "today": {"max": days[0]["max"] if days else None, "min": days[0]["min"] if days else None,
+                  "rain": days[0]["rain"] if days else None,
+                  "sunrise": sunrise[11:16] if isinstance(sunrise, str) else None,
+                  "sunset": sunset[11:16] if isinstance(sunset, str) else None},
+        "days": days,
+    }
+
+
 def _fetch_weather(city: str) -> Optional[dict]:
     # a posição da cidade quase nunca muda (cache de 1 dia); a previsão, a cada 10 minutos
     geo = http_client.get_json(
@@ -1169,7 +1230,7 @@ def _fetch_weather(city: str) -> Optional[dict]:
         "current": "temperature_2m,apparent_temperature,weather_code,wind_speed_10m,relative_humidity_2m",
         # V5.6.3: nascer e pôr do sol para o cartão HOJE do bloqueio
         "daily": "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset",
-        "timezone": "auto", "forecast_days": 2,
+        "timezone": "auto", "forecast_days": 7,  # V6.5.8: a semana (mini janela do bloqueio)
     }, timeout=10, ttl=600)
     if not forecast.get("current") or not forecast.get("daily"):
         raise ValueError("A API de clima retornou uma previsão incompleta.")
@@ -1194,6 +1255,8 @@ async def _h_weather(message: str, norm: str, words: int, name: str) -> Optional
 
     data, place = result["data"], result["place"]
     daily, cur = data.get("daily", {}), data.get("current", {})
+    global LAST_WEATHER
+    LAST_WEATHER = result  # V6.5.8: a mini janela do bloqueio monta o cartão com a mesma consulta
     idx = 1 if tomorrow else 0
     try:
         tmax, tmin = round(daily["temperature_2m_max"][idx]), round(daily["temperature_2m_min"][idx])
@@ -1296,7 +1359,7 @@ async def _h_custom_shortcut(message: str, norm: str, words: int, name: str) -> 
                 errors.append(app)
         for url in urls:
             try:
-                await asyncio.to_thread(webbrowser.open, url)
+                await asyncio.to_thread(_open_target, url)
                 opened.append(url)
             except Exception:  # noqa: BLE001
                 errors.append(url)

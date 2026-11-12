@@ -192,10 +192,34 @@ def _to_cache(text: str, volume: str, path: str) -> None:
         _seen_counts.clear()
 
 
+_mixer_device: Optional[str] = None  # V6.5.8: aparelho em que o mixer foi aberto ("" = padrão)
+
+
+def _ensure_mixer() -> None:
+    """Abre (ou reabre) o som na caixa escolhida no botão de áudio do bloqueio."""
+    global _mixer_device
+    try:
+        from modules import prefs
+
+        wanted = prefs.get_all().get("audio_output_device") or ""
+    except Exception:  # noqa: BLE001
+        wanted = ""
+    if pygame.mixer.get_init() and wanted == (_mixer_device or ""):
+        return
+    if pygame.mixer.get_init():
+        pygame.mixer.quit()
+    try:
+        pygame.mixer.init(devicename=wanted) if wanted else pygame.mixer.init()
+        _mixer_device = wanted
+    except pygame.error:
+        log.warning("Saída de áudio %r indisponível; usando a padrão.", wanted)
+        pygame.mixer.init()
+        _mixer_device = ""
+
+
 def _play_audio_blocking(path: str) -> None:
     """Toca o arquivo de áudio e só retorna quando terminar (rodar em thread)."""
-    if not pygame.mixer.get_init():
-        pygame.mixer.init()
+    _ensure_mixer()
     pygame.mixer.music.load(path)
     pygame.mixer.music.play()
     clock = pygame.time.Clock()

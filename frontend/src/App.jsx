@@ -9,6 +9,8 @@ import ProfileMenu from "./components/ProfileMenu.jsx";
 import TodoWidget from "./components/TodoWidget.jsx";
 import FocusWidget from "./components/FocusWidget.jsx";
 import MicrophoneSelectModal from "./components/MicrophoneSelectModal.jsx";
+import AudioSettingsModal from "./components/AudioSettingsModal.jsx";
+import LockAnswer from "./components/LockAnswer.jsx";
 import WeatherWidget from "./components/WeatherWidget.jsx";
 import AudioWaveformWidget from "./components/AudioWaveformWidget.jsx";
 import DigitalClockWidget from "./components/DigitalClockWidget.jsx";
@@ -146,6 +148,8 @@ export default function App() {
   const [failCount, setFailCount] = useState(0);
   const [autoEntering, setAutoEntering] = useState(false);
   const [sentinelReply, setSentinelReply] = useState("");
+  const [lockAnswer, setLockAnswer] = useState(null); // V6.5.8: mini janela da resposta no bloqueio
+  const [audioOpen, setAudioOpen] = useState(false); // V6.5.8: botão ÁUDIO do bloqueio
   const [sentinelUnlock, setSentinelUnlock] = useState(false);
   // V4.2.2: na tela de bloqueio o microfone (escuta do Sentinela e palmas) começa SILENCIADO;
   // liga com clique no botão do microfone ou com a tecla P.
@@ -560,6 +564,7 @@ export default function App() {
         break;
       case "sentinel_reply":
         setSentinelReply(msg.text || "");
+        if (msg.card) setLockAnswer({ question: msg.question || "", card: msg.card, at: Date.now() }); // V6.5.8
         break;
       case "water_updated":
         // Mantém o texto da resposta igual ao cartão de água (seção 18)
@@ -2415,6 +2420,7 @@ export default function App() {
           phoneApp={REMOTE_SCREEN}
           onBiometric={IS_JARVIS_APP && (() => { try { return window.JarvisApp?.hasBiometric?.(); } catch { return false; } })()
             ? () => window.JarvisApp.biometricUnlock() : null}
+          audioToggle={{ onOpen: () => setAudioOpen(true) }}
           bgToggle={{
             value: appPrefs.background_style || "blueprint",
             onCycle: () => {
@@ -2479,6 +2485,8 @@ export default function App() {
             onClose={() => setShowMicrophoneSelect(false)}
           />
         )}
+        {audioOpen && <AudioSettingsModal api={api} onClose={() => setAudioOpen(false)} onMicChange={setMicrophoneId} />}
+        {lockAnswer && <LockAnswer answer={lockAnswer} onClose={() => setLockAnswer(null)} />}
         {fanModeEnabled && <FanGoalOverlay event={fanEvent} onDone={clearFanEvent} />}
       </>
     );

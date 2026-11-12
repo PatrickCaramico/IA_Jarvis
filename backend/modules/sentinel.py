@@ -98,14 +98,22 @@ def is_unlock_only(norm: str) -> bool:
     return bool(norm) and not re.fullmatch(r"abrir|abre|abra", norm) and bool(_UNLOCK_ONLY.fullmatch(norm))
 
 
+def answer_card(question: str, reply: str) -> dict:
+    """V6.5.8: mini janela simples: a pergunta e a resposta."""
+    q = re.sub(r"^\s*(?:ei\s+)?jarvis[\s,!.]*", "", (question or "").strip(), flags=re.I)
+    q = (q[:1].upper() + q[1:]) if q else "Resposta"
+    return {"kind": "answer", "title": q[:80], "text": reply}
+
+
 async def classify_and_answer(message: str, state: str, wake_words: Optional[list[str]] = None) -> dict[str, Any]:
     wake_words = wake_words or ["jarvis", "ei jarvis", "ta acordado"]
     raw_norm = _norm(message)
     norm = strip_wake_words(raw_norm, wake_words)
     guest = state == "guest"
 
-    def public(reply: str, action: Optional[str] = None) -> dict[str, Any]:
-        return {"reply": reply, "public": True, "requires_unlock": False, "action": action}
+    def public(reply: str, action: Optional[str] = None, card: Optional[dict] = None) -> dict[str, Any]:
+        # V6.5.8: card = mini janela da resposta no bloqueio (clima da semana, ou o texto explicado)
+        return {"reply": reply, "public": True, "requires_unlock": False, "action": action, "card": card}
 
     def protected(reply: Optional[str] = None) -> dict[str, Any]:
         if guest:
@@ -146,13 +154,16 @@ async def classify_and_answer(message: str, state: str, wake_words: Optional[lis
             return public(reply)
 
     for handler in (tools._h_timer, tools._h_calc, tools._h_weather, tools._h_focus):
+        if handler is tools._h_weather:
+            tools.LAST_WEATHER = None
         reply = await _local(handler, message, norm)
         if reply:
-            return public(reply)
+            card = tools.weather_card(tools.LAST_WEATHER) if handler is tools._h_weather else None
+            return public(reply, card=card or answer_card(message, reply))
 
     quick = _quick_public(message, norm)
     if quick:
-        return public(quick)
+        return public(quick, card=answer_card(message, quick))
 
     if _NEWS.search(norm):
         return protected("Há novidades no radar, senhor. Para ler as manchetes, preciso liberar a central.")

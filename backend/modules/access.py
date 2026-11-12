@@ -136,6 +136,9 @@ _PUBLIC_EXACT = {
     ("GET", "/api/fan/match"),
     ("POST", "/api/fan/toggle"),      # V4.4: botão do Modo Torcedor no bloqueio (só o visual do clube)
     ("POST", "/api/background"),      # V5.9.1: botão de fundo no bloqueio (só o visual)
+    ("GET", "/api/audio"),            # V6.5.8: botão de áudio do bloqueio (caixa de som e microfone do PC)
+    ("POST", "/api/audio"),
+    ("POST", "/api/audio/test"),
     ("GET", "/api/mobile"),           # V4.5: página de download do app Android (sem token, sem dados)
     ("GET", "/api/mobile/app.apk"),
     ("GET", "/api/mobile/info"),      # QR de download da Sentinela

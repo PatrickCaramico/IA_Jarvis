@@ -265,6 +265,42 @@ async def tts_audio(req: TtsRequest):
     return Response(content=data, media_type="audio/mpeg", headers={"Cache-Control": "no-store"})
 
 
+class AudioChoice(BaseModel):
+    output: str | None = None
+    input: str | None = None
+
+
+@router.get("/api/audio")
+async def audio_devices_list() -> dict:
+    """V6.5.8: caixas de som e microfones do PC (botão de áudio da tela de bloqueio)."""
+    from modules import audio_devices
+
+    return await asyncio.to_thread(audio_devices.snapshot)
+
+
+@router.post("/api/audio")
+async def audio_devices_choose(req: AudioChoice) -> dict:
+    from modules import audio_devices
+
+    try:
+        return await asyncio.to_thread(audio_devices.choose, req.output, req.input)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post("/api/audio/test")
+async def audio_test() -> dict:
+    """Fala uma frase curta na caixa escolhida (sempre no PC, mesmo pedindo pelo celular)."""
+    from core import voice_route
+
+    token = voice_route.set_target(None)
+    try:
+        runtime.track(speech.speak("Teste de áudio. Esta é a minha voz, senhor.", release_busy=False))
+    finally:
+        voice_route.reset(token)
+    return {"status": "ok"}
+
+
 class PlayedRequest(BaseModel):
     say_id: str
 

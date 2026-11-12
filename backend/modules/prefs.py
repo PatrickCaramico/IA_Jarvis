@@ -44,6 +44,9 @@ _DEFAULTS: dict[str, Any] = {
     "briefing_news_themes": [],           # V6.2: temas de notícias do "bom dia" ([] = padrões, com Marvel)
     "voice_listener_enabled": True,       # V6.3: ouvido offline ("Jarvis, ..." sem o navegador)
     "news_notify_enabled": True,          # V6.5: manchetes novas dos temas viram aviso no celular
+    "audio_output_device": "",            # V6.5.8: caixa de som da voz no PC ("" = padrão do Windows)
+    "voice_input_device": "",             # V6.5.8: microfone do ouvido offline ("" = padrão do Windows)
+    "site_window_mode": "compact",        # V6.5.8: "abra o youtube" numa janela média ("compact") ou aba ("tab")
     "calendar_ics_url": "",               # V5.6: endereço secreto iCal do Google Agenda (alternativa ao OAuth)
     "countdowns": [],                     # V5.6: contagens regressivas na tela [{id, title, target, all_day}]                 # V5.4: briefing/pergunta do dia já feitos (vale para todos os aparelhos)
     "lock_cards": ["clock", "weather", "spotify"],   # cartões visíveis na tela de bloqueio
@@ -95,6 +98,7 @@ PUBLIC_KEYS = {
     "water_vessel", "sfx_volume", "sfx_mode",
     "a11y_text_scale", "a11y_high_contrast", "a11y_reduce_motion",
     "voice_listener_enabled",  # V6.3: o ouvido offline lê sem a chave (nada pessoal)
+    "audio_output_device", "voice_input_device",  # V6.5.8: botão de áudio do bloqueio
 }
 
 LOCK_CARD_KEYS = ("clock", "weather", "spotify", "fan_match", "water")

@@ -73,6 +73,8 @@ async def handle_restricted_turn(message: str) -> dict:
         {
             "type": "sentinel_reply",
             "text": reply,
+            "question": message,
+            "card": result.get("card"),  # V6.5.8: mini janela da resposta
             "requires_unlock": result["requires_unlock"],
             "access": state,
         }
@@ -87,6 +89,7 @@ async def handle_restricted_turn(message: str) -> dict:
         "public": result["public"],
         "requires_unlock": result["requires_unlock"],
         "action": result.get("action"),
+        "card": result.get("card"),
     }
 
 

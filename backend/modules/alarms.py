@@ -138,6 +138,9 @@ def _public_label(a: dict) -> str:
 _tone = None
 
 
+_tone_device = None  # V6.5.8: caixa em que o bipe foi criado
+
+
 def _play_tone() -> None:
     """Três bipes curtos num canal próprio (não interrompe a voz). Sem som disponível, segue mudo."""
     global _tone
@@ -145,8 +148,13 @@ def _play_tone() -> None:
         import numpy as np
         import pygame
 
-        if not pygame.mixer.get_init():
-            pygame.mixer.init()
+        from modules import tts
+
+        global _tone_device
+        tts._ensure_mixer()  # noqa: SLF001 - V6.5.8: o alarme toca na mesma caixa escolhida para a voz
+        if tts._mixer_device != _tone_device:  # noqa: SLF001 - o som foi reaberto em outra caixa: refaz o bipe
+            _tone = None
+            _tone_device = tts._mixer_device  # noqa: SLF001
         if _tone is None:
             freq, _fmt, channels = pygame.mixer.get_init()
             beep_t = np.linspace(0, 0.14, int(freq * 0.14), endpoint=False)

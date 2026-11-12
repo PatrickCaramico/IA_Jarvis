@@ -1,6 +1,6 @@
 # JARVIS — Comandos do dia a dia
 
-**Versão do projeto:** 6.5.7 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
+**Versão do projeto:** 6.5.8 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
 
 > Montado a partir do código do projeto. Se algum comando não responder como descrito, me avise que eu ajusto o guia.
 > Para a lista técnica de rotas, veja [API.md](API.md); para o `.env`, [CONFIGURACAO.md](CONFIGURACAO.md).
@@ -75,7 +75,7 @@ Fale naturalmente; os exemplos abaixo são modelos, não frases exatas.
 | Exemplo | O que faz |
 | --- | --- |
 | "Bom dia" / "Resumo do dia" | Briefing em etapas: abertura (há algo urgente?), clima, agenda, e-mails, notícias (tecnologia, IA, política) e saúde sob demanda, um card por assunto, e uma recomendação do dia no fim. **→** ou PRÓXIMO ▸ pula o assunto; Esc ou ✕ CANCELAR interrompe. |
-| "Modo bloqueio" / "Ativa o modo bloqueio" / "Volta pra tela de bloqueio" / "Bloqueia a central" (V6.5.7) | Leva a central para a tela de bloqueio (PC e celular). "Modo sentinela" faz o mesmo e fica ouvindo "Jarvis". "Bloquear a tela" bloqueia o Windows. |
+| "Modo bloqueio" / "Ativa o modo bloqueio" / "Volta pra tela de bloqueio" / "Bloqueia a central" (V6.5.8) | Leva a central para a tela de bloqueio (PC e celular). "Modo sentinela" faz o mesmo e fica ouvindo "Jarvis". "Bloquear a tela" bloqueia o Windows. |
 | "Boa tarde" / "Resumo da tarde" (V6.5) | Resumo da tarde em etapas: o que falta da agenda de hoje, tarefas pendentes, clima, água, e-mails e as notícias dos seus temas. "Resumo" sozinho entre 12h e 18h também abre a tarde. |
 | Botão **NOTÍCIAS** (rodapé) ou tocar em "notícias" (V6.5) | Janela de notícias: os temas do briefing em abas, busca de outro assunto e "Avisar no celular quando sair notícia nova". |
 | "Boa noite" / "Fechar o dia" / "Boa noite, resumo do dia" | Fechamento do dia em etapas, no mesmo formato do "bom dia": tarefas pendentes, agenda de amanhã, clima de amanhã, água de hoje e anotações de hoje, um card por assunto, e uma dica para a noite. |

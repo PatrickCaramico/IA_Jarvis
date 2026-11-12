@@ -44,3 +44,15 @@ def test_should_listen_gates():
     assert not vl.should_listen({"status": "online", "speaking": True}, None, True)
     assert not vl.should_listen(ok, None, False)
     assert not vl.should_listen(None, None, True)
+
+
+def test_match_input_prefers_mme_and_truncated_names():
+    devs = [
+        {"name": "Mapeador de som da Microsoft - Input", "hostapi": 0, "max_input_channels": 2},
+        {"name": "Microfone (USB PnP Audio Device", "hostapi": 0, "max_input_channels": 1},
+        {"name": "Alto-falantes (USB PnP Audio Device)", "hostapi": 0, "max_input_channels": 0},
+        {"name": "Microfone (USB PnP Audio Device)", "hostapi": 1, "max_input_channels": 1},
+    ]
+    assert vl.match_input("Microfone (USB PnP Audio Device)", devs) == 1
+    assert vl.match_input("", devs) is None
+    assert vl.match_input("Headset que não existe", devs) is None

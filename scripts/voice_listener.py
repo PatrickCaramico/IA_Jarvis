@@ -102,6 +102,31 @@ def should_listen(health: Optional[dict], status: Optional[dict], enabled: bool)
     return True
 
 
+def match_input(wanted: str, devices: list[dict]) -> Optional[int]:
+    """V6.5.8: índice do microfone escolhido no botão de áudio (nome do Windows) entre os do sounddevice.
+    Prefere o MME (hostapi 0, que converte para 16 kHz sozinho); o MME corta o nome em 31 letras."""
+    if not wanted:
+        return None
+    target = wanted.strip().lower()
+    best = None
+    for i, dev in enumerate(devices):
+        if int(dev.get("max_input_channels", 0)) <= 0:
+            continue
+        name = str(dev.get("name", "")).strip().lower()
+        if not name:
+            continue
+        if name == target or target.startswith(name) or name.startswith(target[:31]):
+            if int(dev.get("hostapi", 0)) == 0:
+                return i
+            if best is None:
+                best = i
+    return best
+
+
+class DeviceChanged(Exception):
+    """O microfone escolhido mudou: reabre o ouvido no novo."""
+
+
 # ------------------------------------------------------------------ backend
 def _get(path: str) -> Optional[dict]:
     try:
@@ -142,6 +167,7 @@ class Gate:
     def __init__(self) -> None:
         self.at = 0.0
         self.open = False
+        self.device = None  # V6.5.8: microfone escolhido ("" = padrão); None = ainda não leu
 
     def check(self) -> bool:
         now = time.monotonic()
@@ -154,6 +180,7 @@ class Gate:
             if isinstance(prefs, dict):
                 data = prefs.get("prefs", prefs)
                 enabled = bool(data.get("voice_listener_enabled", True))
+                self.device = str(data.get("voice_input_device") or "")
             self.open = should_listen(health, status, enabled)
         return self.open
 
@@ -191,13 +218,19 @@ def run(test: bool) -> int:
         except queue.Full:
             pass
 
-    log.info("Ouvido offline ligado (modelo %s).", MODEL_DIR.name)
-    with sd.RawInputStream(samplerate=SAMPLE_RATE, blocksize=4000, dtype="int16", channels=1, callback=on_audio):
+    gate.check()
+    chosen = gate.device or ""
+    index = match_input(chosen, list(sd.query_devices())) if chosen else None
+    log.info("Ouvido offline ligado (modelo %s, microfone %s).", MODEL_DIR.name, chosen or "padrão do Windows")
+    with sd.RawInputStream(samplerate=SAMPLE_RATE, blocksize=4000, dtype="int16", channels=1, callback=on_audio,
+                           device=index):
         was_open = None
         closed = False
         while True:
             chunk = audio.get()
             is_open = test or gate.check()
+            if gate.device is not None and gate.device != chosen:
+                raise DeviceChanged
             if is_open != was_open:
                 log.info("Ouvindo." if is_open else "Em espera (central aberta, JARVIS falando ou desligado).")
                 was_open = is_open
@@ -271,6 +304,9 @@ def main() -> int:
             return run(args.test)
         except KeyboardInterrupt:
             return 0
+        except DeviceChanged:
+            log.info("Microfone trocado; reabrindo o ouvido.")
+            continue
         except Exception as exc:  # noqa: BLE001 - microfone sumiu etc.: tenta de novo em 30 s
             log.warning("Ouvido parou (%s); tentando de novo em 30 s.", exc)
             time.sleep(30)

@@ -78,11 +78,32 @@ function BgToggle({ bg }) {
   );
 }
 
+// V6.5.8: botão ÁUDIO (microfone e saída de áudio), ao lado do FUNDO
+function AudioToggle({ audio }) {
+  if (!audio?.onOpen) return null;
+  return (
+    <button
+      type="button"
+      className="bp-fan-btn bp-audio-btn"
+      onClick={(e) => { e.stopPropagation(); e.currentTarget.blur(); audio.onOpen(); }}
+      title="Microfone e saída de áudio"
+      aria-label="Áudio: microfone e saída de som"
+    >
+      <span className="bp-fan-ball bp-bg-icon" aria-hidden="true">🎧</span>
+      <span className="bp-fan-txt">
+        <b>ÁUDIO</b>
+        <small>MIC · SAÍDA</small>
+      </span>
+    </button>
+  );
+}
+
 // V4.4: carimbo de planta técnica (só aparece com o fundo blueprint; ver blueprint.css).
 // O canto também leva o botão do Modo Torcedor e (V5.9.1) o do fundo, que aparecem em todos os fundos.
-export function BlueprintStamp({ sheet = "BLOQUEIO", fan = null, bg = null }) {
+export function BlueprintStamp({ sheet = "BLOQUEIO", fan = null, bg = null, audio = null }) {
   return (
     <div className="bp-corner">
+      <AudioToggle audio={audio} />
       <BgToggle bg={bg} />
       <FanToggle fan={fan} />
       <div className="bp-stamp" aria-hidden="true">
@@ -121,6 +142,7 @@ export default function LockScreen({
   silent = false,
   fanToggle = null, // V4.4: { enabled, busy, onToggle } — botão do Modo Torcedor ao lado do carimbo
   bgToggle = null, // V5.9.1: { value, onCycle } — botão de fundo ao lado do Modo Torcedor
+  audioToggle = null, // V6.5.8: { onOpen } — botão ÁUDIO (microfone e saída) ao lado do fundo
   onBiometric = null, // V6.0: no app com a digital ativada, "ENTRAR COM A DIGITAL"
   onNewProfile = null, // V4.5: "＋ NOVA PESSOA" (perfil próprio: rosto, PIN e preferências)
   onUpdate = null, // botão ATUALIZAR: no PC baixa a versão nova e reinicia; no app, atualiza o app (V5.7.1)
@@ -327,7 +349,7 @@ export default function LockScreen({
             alterar foto
           </button>
         )}
-        {phase !== "scanning" && phase !== "pin" ? <BlueprintStamp sheet="SENTINELA" fan={fanToggle} bg={bgToggle} /> : <BlueprintStamp sheet="SENTINELA" />}
+        {phase !== "scanning" && phase !== "pin" ? <BlueprintStamp sheet="SENTINELA" fan={fanToggle} bg={bgToggle} audio={audioToggle} /> : <BlueprintStamp sheet="SENTINELA" />}
         {/* V4.5: QR pequeno para baixar o app Android (só no modo rede) */}
         {cards?.api && phase !== "scanning" && phase !== "pin" && !phoneApp && <MobileAppQr api={cards.api} />}
       </div>
@@ -459,7 +481,7 @@ export default function LockScreen({
       <footer className="ls-footer">
         <span>JARVIS · NÚCLEO DE PROTOCOLOS AUTÔNOMOS · BRASÍLIA BR</span>
       </footer>
-      {phase !== "scanning" && phase !== "pin" ? <BlueprintStamp fan={fanToggle} bg={bgToggle} /> : <BlueprintStamp />}
+      {phase !== "scanning" && phase !== "pin" ? <BlueprintStamp fan={fanToggle} bg={bgToggle} audio={audioToggle} /> : <BlueprintStamp />}
     </div>
   );
 }
