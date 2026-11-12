@@ -71,4 +71,4 @@ def test_lock_public_info_works_locked(monkeypatch):
     access.reset_for_tests(access.LOCKED)
     data = TestClient(main.app).get("/api/lock/public-info").json()
     assert data["rates"][0]["code"] == "USD" and data["rates"][0]["bid"] == 5.5
-    assert data["headline"] == {"title": "Manchete X", "source": "g1", "published": "", "category": "brasil"}
+    assert data["headline"] == {"title": "Manchete X", "source": "g1", "published": "", "category": "brasil", "more": []}

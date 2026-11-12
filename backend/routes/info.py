@@ -57,6 +57,21 @@ async def set_system_volume(req: VolumeRequest) -> dict:
     }
 
 
+def _tomorrow(daily: dict) -> dict | None:
+    """Previsão de amanhã (índice 1 do Open-Meteo), ou None se a API não mandar."""
+    try:
+        code = (daily.get("weather_code") or [None, None])[1]
+        rain = (daily.get("precipitation_probability_max") or [None, None])[1]
+        return {
+            "minimum": round(daily["temperature_2m_min"][1]),
+            "maximum": round(daily["temperature_2m_max"][1]),
+            "description": tools._WMO.get(code, "tempo variável"),
+            "rain_probability": round(rain) if rain is not None else None,
+        }
+    except (KeyError, IndexError, TypeError, ValueError):
+        return None
+
+
 @router.get("/api/weather")
 async def get_weather(city: str | None = Query(default=None, max_length=80)) -> dict:
     """Retorna dados estruturados para o widget de clima."""
@@ -87,6 +102,8 @@ async def get_weather(city: str | None = Query(default=None, max_length=80)) -> 
             "wind": current.get("wind_speed_10m"),
             "sunrise": ((daily.get("sunrise") or [""])[0] or "")[11:16] or None,
             "sunset": ((daily.get("sunset") or [""])[0] or "")[11:16] or None,
+            # V5.9: janela de detalhes do clima no bloqueio (previsão de amanhã)
+            "tomorrow": _tomorrow(daily),
         }
     except (KeyError, IndexError, TypeError, ValueError) as exc:
         log.warning("Resposta de clima incompleta para %s: %s", requested_city, exc)

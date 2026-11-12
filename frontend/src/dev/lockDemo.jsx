@@ -69,7 +69,7 @@ const lockExtras = (path) => (path === "/api/health"
   : path === "/api/lock/status"
     ? Promise.resolve({ devices: 2, phones: 1, next_alarm: "amanhã às 07:00" })
     : path === "/api/weather"
-      ? Promise.resolve({ place: "São Paulo", temperature: 19, description: "Tempo parcialmente nublado", rain_probability: 67, humidity: 89, wind: 11, sunrise: "05:15", sunset: "18:26" })
+      ? Promise.resolve({ place: "São Paulo", temperature: 19, description: "Tempo parcialmente nublado", rain_probability: 67, humidity: 89, wind: 11, sunrise: "05:15", sunset: "18:26", apparent_temperature: 18, minimum: 16, maximum: 24, tomorrow: { minimum: 17, maximum: 27, description: "Céu limpo", rain_probability: 10 } })
       : path === "/api/lock/public-info"
         ? Promise.resolve({
           rates: [
@@ -77,7 +77,8 @@ const lockExtras = (path) => (path === "/api/health"
             { pair: "EURBRL", code: "EUR", bid: 6.1806, pctChange: -0.21 },
             { pair: "BTCBRL", code: "BTC", bid: 413502, pctChange: 0.46 },
           ],
-          headline: { title: "Governo anuncia novo pacote de investimentos em infraestrutura para 2027", source: "g1", category: "brasil" },
+          headline: { title: "Governo anuncia novo pacote de investimentos em infraestrutura para 2027", source: "g1", category: "brasil",
+            more: [{ title: "Chuvas devem continuar no Sudeste até o fim de semana", source: "CNN Brasil" }, { title: "Inflação desacelera pelo terceiro mês seguido", source: "Valor" }] },
         })
       : path === "/api/integrations/spotify/track"
         ? Promise.resolve(q.get("music") === "1"

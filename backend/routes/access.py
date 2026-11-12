@@ -413,7 +413,9 @@ async def lock_public_info() -> dict:
             if items:
                 top = items[0]
                 return {"title": top.get("title", ""), "source": top.get("source", ""),
-                        "published": top.get("published", ""), "category": category}
+                        "published": top.get("published", ""), "category": category,
+                        # V5.9: mais manchetes para a janela de detalhes
+                        "more": [{"title": i.get("title", ""), "source": i.get("source", "")} for i in items[1:3]]}
         return None
 
     r, h = await asyncio.gather(rates(), headline())

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { startPolling } from "../hooks/usePolling.js";
 import useNow from "../hooks/useNow.js";
 import NowPlaying, { useNowPlaying } from "./NowPlaying.jsx";
+import LockDetail from "./LockDetail.jsx";
 
 // Cartões somente leitura da tela de bloqueio (seção 17.4). Nada pessoal antes do acesso:
 // só relógio, clima, próximo jogo (Modo Torcedor) e água de hoje.
@@ -15,6 +16,8 @@ export default function LockCards({ api, cards = [], fanModeEnabled = false, hid
   const [status, setStatus] = useState(null);
   // V5.8: lado direito: cotações (em cima do clima) e a manchete do momento (embaixo). Informação pública.
   const [info, setInfo] = useState(null);
+  // V5.9: cartão tocado -> mini janela com mais detalhes (LockDetail)
+  const [detail, setDetail] = useState(null);
   const want = (key) => cards.includes(key);
 
   const now = useNow(want("clock"));
@@ -125,10 +128,30 @@ export default function LockCards({ api, cards = [], fanModeEnabled = false, hid
     .sort((a, b) => RIGHT.indexOf(a.key) - RIGHT.indexOf(b.key));
   const left = allRight ? [] : items.filter((el) => !RIGHT.includes(el.key))
     .sort((a, b) => LEFT_ORDER.indexOf(a.key) - LEFT_ORDER.indexOf(b.key));
+  // V5.9: cada cartão abre a mini janela de detalhes (toque, clique, Enter ou espaço com o foco nele)
+  const NAMES = { status: "sistemas", spotify: "Spotify", today: "hoje", clock: "agora", weather: "clima", fan: "próximo jogo", water: "água", rates: "mercado", headline: "manchetes" };
+  const clickable = (el) => (
+    <div
+      key={el.key}
+      className="lc-click"
+      role="button"
+      tabIndex={0}
+      aria-label={`Ver detalhes: ${NAMES[el.key] || el.key}`}
+      onClick={(e) => { e.stopPropagation(); setDetail(el.key); }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); setDetail(el.key); }
+      }}
+    >
+      {el}
+    </div>
+  );
   return (
     <div className="lc-wrap" aria-label="Informações da tela de bloqueio">
-      {left.length > 0 && <div className="lc-row lc-left">{left}</div>}
-      {right.length > 0 && <div className="lc-row lc-right">{right}</div>}
+      {left.length > 0 && <div className="lc-row lc-left">{left.map(clickable)}</div>}
+      {right.length > 0 && <div className="lc-row lc-right">{right.map(clickable)}</div>}
+      {detail && (
+        <LockDetail kind={detail} api={api} data={{ health, status, weather, info, water, match }} onClose={() => setDetail(null)} />
+      )}
     </div>
   );
 }

@@ -2,6 +2,11 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 5.9.0 — 12 de novembro de 2026
+
+- **Mini janelas de detalhes no bloqueio** (`LockDetail.jsx`): tocar em qualquer cartão (sistemas, Spotify, hoje, clima, mercado, manchete, água, jogo) abre uma janela com mais informações; fecha no ✕, Esc ou tocando fora; no celular sobe de baixo. O clique não chega à tela de bloqueio (não dispara a verificação).
+- `/api/weather` traz a previsão de amanhã (`tomorrow`) e `/api/lock/public-info` mais duas manchetes (`headline.more`).
+
 ## 5.8.0 — 12 de novembro de 2026
 
 - **Fundo Universo:** nova opção em Configurações › Geral › Fundo (`background_style: "space"`): céu com nebulosas e estrelas em CSS, com os painéis de vidro da planta; no bloqueio, estrelas piscando devagar.
