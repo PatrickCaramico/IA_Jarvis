@@ -2,6 +2,10 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 6.5.2 — 12 de novembro de 2026
+
+- **ATUALIZAR APP resolve tudo dentro do app:** quase toda atualização é só da central (site), sem APK novo. Agora, quando o app já está em dia, o botão diz "App em dia (versão). Carregando a central mais nova…" e recarrega a tela. Quando há APK novo no PC, o app baixa e instala sozinho, como antes (desde o 6.5.0 também pelo túnel). Sem APK novo nesta versão.
+
 ## 6.5.1 — 12 de novembro de 2026
 
 - **Briefing sem atraso nas notícias:** a voz de cada parte só começava a ser gerada quando chegava a vez dela; nas notícias (as falas mais longas) eram até ~9 s de silêncio com o card já na tela. Agora todas as partes começam a ser geradas no início do briefing (`tts.prefetch`, até 3 de cada vez) e cada fala só espera o que faltar.

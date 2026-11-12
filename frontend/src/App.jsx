@@ -895,6 +895,14 @@ export default function App() {
     if (!IS_JARVIS_APP) return undefined;
     const onResult = (e) => {
       const d = e.detail || {};
+      // V6.5.2: o app já está em dia: o mesmo botão traz a central mais nova (quase toda
+      // atualização é só da central, sem APK) — recarrega a tela, sem baixar nada.
+      if (d.status === "latest") {
+        setAppUpdateNote(`App em dia (${d.version || "ok"}). Carregando a central mais nova…`);
+        setAppUpdatePct(null);
+        setTimeout(() => window.location.reload(), 1500);
+        return;
+      }
       setAppUpdateNote(d.message || "");
       setAppUpdatePct(typeof d.pct === "number" ? d.pct : d.status === "updating" ? 0 : null);
     };
