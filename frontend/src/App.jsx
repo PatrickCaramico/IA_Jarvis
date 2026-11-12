@@ -777,22 +777,31 @@ export default function App() {
   // O navegador não avisa se o atalho jarvis:// existe. Truque: quando ele existe, abre a pergunta
   // "Abrir Iniciar JARVIS?" ou a janela do programa, e esta página perde o foco. Sem isso em ~2,5 s,
   // o atalho não está instalado neste PC e a tela explica como instalar (em vez de "não acontecer nada").
+  // V5.2.1: o Chrome novo pergunta "Abrir …?" num quadro DENTRO da página, sem tirar o foco dela.
+  // Então não dá para concluir "atalho não instalado" em 2,5 s (a pergunta ainda está esperando o clique).
+  // Agora: logo depois do toque, a tela pede para clicar em "Abrir"; se a janela perder o foco, está ligando;
+  // só depois de 30 s sem o JARVIS responder aparece a ajuda de instalar o atalho.
+  const launchTimerRef = useRef(null);
   const launchJarvis = useCallback(() => {
+    clearTimeout(launchTimerRef.current);
     setLaunchState("trying");
     let opened = false;
     const onBlur = () => {
       opened = true;
-      markLauncherWorks(); // V5.2: o atalho existe aqui; da próxima vez não mostra o "não está ativado"
+      markLauncherWorks(); // o atalho existe aqui
       setLaunchState("opening");
     };
     window.addEventListener("blur", onBlur, { once: true });
     window.location.href = "jarvis://iniciar";
     setTimeout(() => {
+      if (!opened) setLaunchState(launcherWorks() ? "opening" : "asked");
+    }, 1200);
+    launchTimerRef.current = setTimeout(() => {
       window.removeEventListener("blur", onBlur);
-      // Atalho já usado antes com "sempre permitir": o Chrome abre sem perder o foco, então não é "faltando"
-      if (!opened && document.hasFocus()) setLaunchState(launcherWorks() ? "opening" : "missing");
-    }, 2500);
+      if (screenRef.current === "boot") setLaunchState("missing");
+    }, 30_000);
   }, []);
+  useEffect(() => () => clearTimeout(launchTimerRef.current), []);
 
   // Botão ATUALIZAR (tela de bloqueio): baixa a versão nova, o JARVIS avisa por voz e reinicia.
   // A tela espera o backend novo subir (boot_id diferente) e recarrega a página com a versão nova.
@@ -2026,7 +2035,7 @@ export default function App() {
               {/* V5.2: quem já usa o JARVIS aqui não vê o manual: só "reconectando", e entra sozinho */}
               <div className="ls-title">RECONECTANDO AO SEU JARVIS</div>
               <p className="ls-hint ls-boot-wait" style={{ margin: "6px auto 0" }}>
-                {launchState === "opening" ? "Ligando o JARVIS do PC… pode levar 1 ou 2 minutos." : "Assim que o JARVIS do PC responder, eu entro sozinho."}
+                {launchState === "opening" ? "Ligando o JARVIS do PC… pode levar 1 ou 2 minutos." : launchState === "asked" ? "O Chrome perguntou se pode abrir o programa? Clique em Abrir." : "Assim que o JARVIS do PC responder, eu entro sozinho."}
               </p>
               <div className="ls-boot-actions">
                 <button type="button" onClick={launchJarvis} disabled={launchState === "trying"} className="ls-btn-main">
@@ -2036,8 +2045,8 @@ export default function App() {
               </div>
               {launchState === "missing" && (
                 <div className="ls-launch-missing" role="alert">
-                  <b>O botão LIGAR não está ativado neste PC.</b>
-                  <span>Dê duplo clique em <b>Instalar-Botao-Ligar.bat</b> (só uma vez) ou ligue pelo <b>Iniciar-JARVIS.bat</b>.</span>
+                  <b>O JARVIS ainda não respondeu.</b>
+                  <span>Se o Chrome não perguntou nada ao tocar em LIGAR, dê duplo clique em <b>Instalar-Botao-Ligar.bat</b> (só uma vez). Ou ligue pelo <b>Iniciar-JARVIS.bat</b>: esta página entra sozinha.</span>
                 </div>
               )}
               <details className="ls-boot-help">
@@ -2063,12 +2072,12 @@ export default function App() {
               </div>
               {launchState === "missing" ? (
                 <div className="ls-launch-missing" role="alert">
-                  <b>O botão ainda não está ativado neste PC.</b>
-                  <span>Na pasta do JARVIS, dê duplo clique em <b>Instalar-Botao-Ligar.bat</b> (só uma vez) e toque em LIGAR O JARVIS de novo. Ou ligue agora pelo <b>Iniciar-JARVIS.bat</b>: esta página entra sozinha.</span>
+                  <b>O JARVIS ainda não respondeu.</b>
+                  <span>Se o Chrome não perguntou nada ao tocar em LIGAR, o botão não está ativado neste PC: na pasta do JARVIS, dê duplo clique em <b>Instalar-Botao-Ligar.bat</b> (só uma vez) e toque de novo. Ou ligue pelo <b>Iniciar-JARVIS.bat</b>: esta página entra sozinha.</span>
                 </div>
               ) : (
                 <p className="ls-hint ls-boot-wait" style={{ marginTop: "4px" }}>
-                  {launchState === "opening" ? "Ligando o JARVIS… pode levar 1 ou 2 minutos." : "Aguardando o JARVIS responder…"}
+                  {launchState === "opening" ? "Ligando o JARVIS… pode levar 1 ou 2 minutos." : launchState === "asked" ? "O Chrome perguntou se pode abrir o programa? Clique em Abrir (e marque para sempre permitir)." : "Aguardando o JARVIS responder…"}
                 </p>
               )}
               <details className="ls-boot-help">

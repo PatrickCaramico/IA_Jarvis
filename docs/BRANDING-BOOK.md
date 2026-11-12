@@ -1,4 +1,4 @@
-# Branding Book do JARVIS (v1.10, atualizado na V5.2.0 em 11/11/2026: entrada direta para quem já usa, reconexão sozinha e central enxuta no celular)
+# Branding Book do JARVIS (v1.11, atualizado na V5.2.1 em 11/11/2026: entrada direta para quem já usa, reconexão sozinha e central enxuta no celular)
 
 Versão aprovada do Branding Book proposto no plano da 4.2. Há também uma versão ilustrada e animada: abra `docs/branding-book.html` no navegador. Tudo aqui já está aplicado no projeto;
 no fim de cada seção há onde isso vive no código.
@@ -60,7 +60,7 @@ nos módulos do backend.
 | --- | --- |
 | Assistente | JARVIS (o nome da IA pode ser trocado em Configurações) |
 | Módulo de escuta contínua | **Modo Sentinela** (mantido; as siglas propostas não foram adotadas) |
-| Versão exibida na central | `v5.2.0` (sem referências a marcas de terceiros, como "Stark") |
+| Versão exibida na central | `v5.2.1` (sem referências a marcas de terceiros, como "Stark") |
 | Lista de sites abertos por voz | **Meus Sites** (Configurações > Meus Sites) |
 | Resumo da manhã | **Briefing** (disparado por "bom dia") |
 | Resumo da noite | **Fechamento do dia** (disparado por "boa noite") |
@@ -468,7 +468,10 @@ caminho normal. Com o PC desligado, quem já usa o JARVIS não vê mais o manual
 entrando?". Na primeira vez, título âmbar "VAMOS LIGAR O SEU JARVIS" com três passos numerados em círculos
 turquesa (Toque em LIGAR O JARVIS · Deixe esta página aberta · Da próxima vez eu entro sozinho) e "Já está ligado
 e não entra?" recolhido. A página confere o PC a cada 2 s (5 s depois de 2 min) e na hora em que a aba volta ao
-foco ou a rede volta. Se o botão LIGAR já funcionou neste navegador, nunca mais aparece "não está ativado".
+foco ou a rede volta. Se o botão LIGAR já funcionou neste navegador, nunca mais aparece "não está ativado". **V5.2.1:** o Chrome novo
+pergunta "Abrir …?" num quadro dentro da página, então, logo depois do toque, a linha piscando vira "O Chrome
+perguntou se pode abrir o programa? Clique em Abrir."; o quadro âmbar tracejado só aparece depois de 30 s sem
+resposta, com o título "O JARVIS ainda não respondeu." (nunca mais o falso "O botão ainda não está ativado").
 Na central, a faixa âmbar de queda ganha o chip "RECONECTAR"; a conexão tenta de novo em 1, 2, 4, 8 e 10 s,
 na hora quando a rede/aba volta, e derruba sozinha uma conexão parada (sem "pong" em 45 s).
 
@@ -517,7 +520,7 @@ o PC tem um APK mais novo. Nada é baixado ou instalado sozinho.
 o orbe Núcleo girando devagar no topo (parado com "reduzir movimento"), "JARVIS" em Orbitron com brilho
 ciano, cartões de vidro azul-marinho com ícone em círculo de contorno (ciano; âmbar para segurança; verde
 para água e para o Modo Torcedor), capturas em moldura com cantos ciano e, no rodapé, o carimbo
-"J.A.R.V.I.S. · FOLHA · SITE · REV. v5.2.0" (a versão vem de `backend/version.py`). Botão principal ciano cheio ("VER NO GITHUB"); os outros só
+"J.A.R.V.I.S. · FOLHA · SITE · REV. v5.2.1" (a versão vem de `backend/version.py`). Botão principal ciano cheio ("VER NO GITHUB"); os outros só
 com borda. Logo abaixo, num quadro de borda tracejada âmbar, o botão "ABRIR MEU JARVIS" (borda âmbar, o "olhe aqui" da Sentinela), que abre a **mesma central do PC publicada no site** (`/app/`). Ela conversa com o JARVIS ligado no computador (backend em `127.0.0.1:8000`), então rosto, perfil, Modo Torcedor, rotina e agenda são os de sempre; na primeira vez, o Chrome pergunta se o site pode acessar a rede local (é o backend do próprio PC). Tom: o mesmo da central, e a página deixa claro que é só a vitrine ("O JARVIS roda no seu PC:
 voz, câmera, controle do sistema e os seus dados nunca passam por aqui."). A 404 diz "Procurei em toda a
 planta, senhor, e esta página não está aqui."

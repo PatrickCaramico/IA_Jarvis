@@ -2,6 +2,10 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 5.2.1 — 11 de novembro de 2026
+
+- **Botão LIGAR O JARVIS sem aviso falso:** o Chrome novo pergunta "Abrir …?" num quadro dentro da página, sem tirar o foco dela, e a central concluía em 2,5 s que o atalho `jarvis://` não estava instalado ("O botão ainda não está ativado neste PC") mesmo com ele instalado e a pergunta esperando o clique. Agora, logo depois do toque, a tela pede "Clique em Abrir"; a ajuda de instalar o atalho só aparece depois de 30 s sem o JARVIS responder, com o título "O JARVIS ainda não respondeu.".
+
 ## 5.2.0 — 11 de novembro de 2026
 
 - **Entrada direta para quem já usa:** o navegador lembra a última entrada (`utils/session.js`). Reabrir a central até 12 h depois, com o JARVIS do PC ainda liberado, vai direto para a central (sem bloqueio, sem nova verificação e sem repetir a saudação). Bloqueado ou visitante: caminho normal.
