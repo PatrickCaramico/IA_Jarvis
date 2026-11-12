@@ -30,6 +30,22 @@ ACCESS_TOKEN = get_or_create_access_token()
 
 
 LOCAL_HOSTS = {"127.0.0.1", "::1", "localhost", "testclient"}
+# V6.3: túneis (Cloudflare, ngrok, proxies) entregam a conexão a partir de 127.0.0.1, mas o pedido veio
+# da internet. Com estes cabeçalhos, a conexão NUNCA conta como "este PC" (exige a chave, não ganha a chave).
+_PROXY_HEADERS = ("cf-connecting-ip", "cf-ray", "x-forwarded-for", "x-forwarded-host", "x-real-ip", "forwarded")
+
+
+def is_local_conn(conn) -> bool:
+    """O pedido (HTTP ou WebSocket) veio mesmo deste PC? Falso para qualquer coisa que passou por túnel."""
+    client = getattr(conn, "client", None)
+    host = client.host if client else ""
+    if host not in LOCAL_HOSTS:
+        return False
+    try:
+        headers = conn.headers
+        return not any(h in headers for h in _PROXY_HEADERS)
+    except Exception:  # noqa: BLE001
+        return True
 
 
 def describe_device(ip: str, user_agent: str, local: bool) -> dict:
@@ -65,8 +81,7 @@ class ConnectionManager:
 
     @staticmethod
     def is_local(ws: WebSocket) -> bool:
-        host = ws.client.host if getattr(ws, "client", None) else ""
-        return host in LOCAL_HOSTS
+        return is_local_conn(ws)
 
     async def send_local(self, event: dict) -> int:
         """Envia SOMENTE para conexões deste computador (câmera ao vivo nunca vai para a rede)."""
@@ -89,7 +104,7 @@ class ConnectionManager:
             ua = ws.headers.get("user-agent", "")
         except Exception:  # noqa: BLE001
             ua = ""
-        self.meta[id(ws)] = describe_device(host, ua, host in LOCAL_HOSTS)
+        self.meta[id(ws)] = describe_device(host, ua, is_local_conn(ws))
 
     def disconnect(self, ws: WebSocket) -> None:
         self.connections.discard(ws)

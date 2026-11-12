@@ -67,8 +67,7 @@ async def system_update(req: UpdateRequest, request: Request) -> dict:
 
     Só no próprio PC e só pela central: pedido de outra máquina, de outro site ou sem JSON é recusado.
     """
-    client = request.client.host if request.client else ""
-    if client not in _LOOPBACK:
+    if not runtime.is_local_conn(request):  # V6.3: nem pelo túnel
         raise HTTPException(status_code=403, detail="A atualização só pode ser pedida no próprio PC.")
     origin = request.headers.get("origin")
     if origin and origin not in settings.CORS_ORIGINS:
@@ -95,8 +94,7 @@ async def system_update(req: UpdateRequest, request: Request) -> dict:
 @router.get("/api/auth/token")
 async def get_auth_token(request: Request) -> dict:
     """Retorna o token de acesso (permitido apenas para requisições locais)."""
-    client_ip = request.client.host if request.client else ""
-    if client_ip not in {"127.0.0.1", "::1", "localhost", "testclient"}:
+    if not runtime.is_local_conn(request):  # V6.3: a chave nunca sai pelo túnel
         raise HTTPException(status_code=403, detail="Acesso restrito ao computador local.")
     return {"token": runtime.ACCESS_TOKEN}
 
@@ -199,8 +197,7 @@ async def trigger_jarvis(req: TriggerRequest) -> dict:
 
 @router.websocket("/ws")
 async def websocket_endpoint(ws: WebSocket) -> None:
-    client_ip = ws.client.host if ws.client else ""
-    is_local = client_ip in {"127.0.0.1", "::1", "localhost", "testclient"}
+    is_local = runtime.is_local_conn(ws)  # V6.3: túnel não conta como "este PC"
     if not is_local:
         if not settings.NETWORK_MODE:
             await ws.close(code=1008, reason="Acesso externo desativado")

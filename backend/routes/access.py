@@ -330,8 +330,7 @@ async def pin_reset(req: PinResetRequest, request: Request) -> dict:
     Só no próprio PC (o rosto é lido pela webcam dele) e só até 3 min depois da confirmação.
     Vale para a pessoa ativa (o rosto escolheu o perfil).
     """
-    client = request.client.host if request.client else ""
-    if client not in {"127.0.0.1", "::1", "localhost", "testclient"}:
+    if not runtime.is_local_conn(request):  # V6.3: nem pelo túnel
         raise HTTPException(status_code=403, detail="Redefinir o PIN só pode ser feito no próprio PC.")
     if not session.face_ok_at or time.monotonic() - session.face_ok_at > PIN_RESET_WINDOW_S:
         raise HTTPException(status_code=403, detail="Confirme o seu rosto primeiro (botão Esqueci o PIN).")

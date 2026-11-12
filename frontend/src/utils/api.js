@@ -1,6 +1,29 @@
 // Cliente do backend (refatoração 4.2): endereço, token de acesso e chamadas JSON em um só lugar.
 
-export const API_URL = import.meta.env.VITE_API_URL
+// V6.3: acesso de longe por um túnel temporário (Cloudflare). O link traz ?api=https://….trycloudflare.com;
+// o endereço fica guardado neste navegador até "?api=reset". Só aceita túneis da Cloudflare (https), para um
+// link estranho não conseguir mandar a central falar com outro servidor.
+const API_KEY_STORE = "jarvis.api_url";
+function tunnelApi() {
+  if (typeof window === "undefined") return null;
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const asked = params.get("api");
+    if (asked !== null) {
+      if (asked === "reset") localStorage.removeItem(API_KEY_STORE);
+      else if (/^https:\/\/[a-z0-9-]+\.trycloudflare\.com\/?$/i.test(asked)) localStorage.setItem(API_KEY_STORE, asked.replace(/\/$/, ""));
+      params.delete("api");
+      const clean = params.toString() ? `?${params.toString()}` : "";
+      window.history.replaceState({}, "", `${window.location.pathname}${clean}${window.location.hash}`);
+    }
+    return localStorage.getItem(API_KEY_STORE) || null;
+  } catch {
+    return null;
+  }
+}
+
+export const API_URL = tunnelApi()
+  ?? import.meta.env.VITE_API_URL
   ?? `${window.location.protocol}//${window.location.hostname}:8000`;
 export const WS_URL = API_URL.replace(/^http/, "ws") + "/ws";
 

@@ -62,8 +62,7 @@ async def security_middleware(request: Request, call_next):
     if request.method == "OPTIONS":
         return await call_next(request)
 
-    client_ip = request.client.host if request.client else ""
-    is_local = client_ip in {"127.0.0.1", "::1", "localhost", "testclient"}
+    is_local = runtime.is_local_conn(request)  # V6.3: túnel não conta como "este PC"
 
     if not is_local:
         if not settings.NETWORK_MODE:
