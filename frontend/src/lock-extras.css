@@ -750,3 +750,9 @@
 .bc-remember { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 0.8rem; color: rgba(201, 246, 255, 0.8); cursor: pointer; }
 .bc-remember input { accent-color: #5eead4; }
 .bc-hint { margin: 6px 0 0; font-size: 0.72rem; color: rgba(201, 246, 255, 0.5); }
+
+/* V6.5.13: no PC, a faixa "MIC SILENCIADO · ESPAÇO = LIBERAR" sobe acima da fileira de botões do rodapé
+   (Áudio, Fundo, Modo Torcedor, Celular), que agora vai mais para o centro (selo do Netlify). */
+@media (min-width: 901px) and (min-height: 621px) {
+  .snt-footer { bottom: 84px; }
+}

@@ -2,6 +2,10 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 6.5.13 — 12 de novembro de 2026
+
+- **Rodapé do bloqueio sem encavalar:** com os botões da direita mais para o centro (por causa do selo do Netlify), o ÁUDIO ficava por cima de "ESPAÇO = LIBERAR". No PC, a faixa do microfone agora fica numa linha própria, logo acima da fileira de botões.
+
 ## 6.5.12 — 12 de novembro de 2026
 
 - **Bloquear pelo celular:** o botão do topo virou "🔒 BLOQUEAR" (antes "⏻ SAIR", que não deixava claro que volta à tela de bloqueio) e o painel CONTROLES ganhou "BLOQUEAR" em Sistema & HUD (no celular, o CONTROLES fica no rodapé). "Modo bloqueio" por voz continua valendo.
