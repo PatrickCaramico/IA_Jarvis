@@ -16,15 +16,16 @@ def _one_screen_at_a_time(monkeypatch):
     monkeypatch.setattr(entry_greeting, "_last_decision_at", 0.0)
 
 
-def test_first_entry_runs_briefing_then_asks_once_then_greets():
+def test_first_entry_runs_briefing_then_asks_once_then_stays_quiet():
     assert entry_greeting.decide(MORNING) == {"action": "briefing", "command": "bom dia"}
     second = entry_greeting.decide(MORNING)
     assert second["action"] == "ask" and second["command"] == "bom dia"
-    third = entry_greeting.decide(MORNING)
-    assert third["action"] == "greet" and third["text"] in entry_greeting.QUICK_WELCOMES
+    assert "Bem-vindo" not in second["text"]  # V6.1: o desbloqueio já cumprimentou
+    assert entry_greeting.decide(MORNING) == {"action": "none"}
 
 
-def test_greeting_never_repeats_the_last_one():
+def test_greeting_never_repeats_the_last_one(monkeypatch):
+    monkeypatch.setattr(entry_greeting, "GREET_AFTER_UNLOCK", True)  # saudação extra (desligada por padrão)
     entry_greeting.mark_briefed(MORNING)
     prefs.update(briefing_entry={**prefs._load()["briefing_entry"], "asked": True})
     rng = random.Random(1)
@@ -49,7 +50,13 @@ def test_evening_command_and_modes():
     assert entry_greeting.decide(MORNING)["action"] == "briefing"
     assert entry_greeting.decide(MORNING)["action"] == "briefing"
     prefs.update(lock_daily_summary="off")
-    assert entry_greeting.decide(datetime(2026, 11, 14, 8, 0))["action"] == "greet"
+    assert entry_greeting.decide(datetime(2026, 11, 14, 8, 0))["action"] == "none"
+
+
+def test_briefing_pending_tells_unlock_not_to_greet():
+    assert entry_greeting.briefing_pending(MORNING) is True
+    entry_greeting.decide(MORNING)
+    assert entry_greeting.briefing_pending(MORNING) is False
 
 
 def test_two_screens_entering_together_speak_once(monkeypatch):

@@ -138,7 +138,13 @@ async def auth_verify(req: Optional[VerifyRequest] = None) -> dict:
                         f"reconhecida{'s' if failures != 1 else ''} desde o último acesso."
                     )
                 who = f", {name}" if name else ""
-                message = f"Olá... {speech.time_greeting().lower()}{who}, tudo bem?{failures_note}"
+                from modules import entry_greeting
+
+                if entry_greeting.briefing_pending():
+                    # V6.1: o briefing vem logo em seguida com "Bom dia, Patrick..."; aqui só confirma
+                    message = f"Identidade confirmada{who}.{failures_note}"
+                else:
+                    message = f"Olá, {speech.time_greeting().lower()}{who}. Tudo bem?{failures_note}"
             else:
                 message = f"Identidade confirmada{', ' + name if name else ''}."
         else:
@@ -241,6 +247,10 @@ async def device_unlock(req: DeviceUnlockRequest) -> dict:
     access.unlock("device")
     await speech.broadcast_access()
     name = face.get_name()
+    from modules import entry_greeting
+
+    if not entry_greeting.briefing_pending():
+        runtime.track(speech.speak(f"Olá, {speech.time_greeting().lower()}{', ' + name if name else ''}."))
     return {"verified": True, "name": name, "message": f"Acesso liberado pela digital{', ' + name if name else ''}."}
 
 

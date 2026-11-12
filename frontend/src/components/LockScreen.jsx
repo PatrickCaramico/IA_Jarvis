@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import ArcReactorHUD from "./ArcReactorHUD.jsx";
 import { FaceScanStatus } from "./FaceScanOverlay.jsx";
 import LockCards from "./LockCards.jsx";
+import ProgressBar from "./ProgressBar.jsx";
 import PinPad from "./PinPad.jsx";
 import { soundManager } from "../utils/soundEffects.js";
 import { CLAP_STATUS_TEXT } from "../hooks/useClapDetector.js";
@@ -124,6 +125,7 @@ export default function LockScreen({
   onNewProfile = null, // V4.5: "＋ NOVA PESSOA" (perfil próprio: rosto, PIN e preferências)
   onUpdate = null, // botão ATUALIZAR: no PC baixa a versão nova e reinicia; no app, atualiza o app (V5.7.1)
   updateNote = "", // V5.7.1: resposta do ATUALIZAR APP ("O app já está na versão mais nova…")
+  updateProgress = null, // V6.1: 0–100 enquanto o app baixa a versão nova
   phoneApp = false, // V4.5: dentro do app do celular (o rosto usaria a webcam do PC: entra pelo PIN)
 }) {
   const scanning = phase === "scanning";
@@ -209,6 +211,9 @@ export default function LockScreen({
           title={phoneApp ? "Procurar e instalar a versão nova do app" : "Baixar a versão mais nova do JARVIS e reiniciar"}>
           {phoneApp ? "⟳ ATUALIZAR APP" : "⟳ ATUALIZAR"}
         </button>
+      )}
+      {updateProgress != null && (
+        <div className="ls-update-progress"><ProgressBar pct={updateProgress} label="Atualizando o app" /></div>
       )}
       {updateNote && <p className="ls-update-note" role="status">{updateNote}</p>}
     </div>

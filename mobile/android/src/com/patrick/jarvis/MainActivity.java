@@ -521,6 +521,16 @@ public class MainActivity extends Activity {
         }
     }
 
+    /** V6.1: progresso do download da atualização (a tela de bloqueio desenha a barra 0–100%). */
+    private void updateProgress(int pct, String message) {
+        try {
+            JSONObject d = new JSONObject().put("status", "downloading").put("pct", pct).put("message", message);
+            String js = "window.dispatchEvent(new CustomEvent('jarvis-app-update',{detail:" + d + "}))";
+            runOnUiThread(() -> web.evaluateJavascript(js, null));
+        } catch (Exception ignored) {
+        }
+    }
+
     private void checkForUpdate(String appUrl, boolean manual) {
         Uri paired = Uri.parse(appUrl);
         String host = paired.getHost();
@@ -612,19 +622,36 @@ public class MainActivity extends Activity {
                 c.setConnectTimeout(8000);
                 c.setReadTimeout(30000);
                 if (c.getResponseCode() != 200) throw new java.io.IOException("HTTP " + c.getResponseCode());
+                // V6.1: progresso real do download (0–100%) para a barra da tela de bloqueio
+                long total = c.getContentLength();
+                long done = 0;
+                int lastPct = -1;
+                updateProgress(0, "Baixando a versão " + pcVersion + "…");
                 try (java.io.InputStream in = c.getInputStream();
                      java.io.OutputStream out = new java.io.FileOutputStream(apk)) {
                     byte[] buf = new byte[16384];
                     int n;
-                    while ((n = in.read(buf)) > 0) out.write(buf, 0, n);
+                    while ((n = in.read(buf)) > 0) {
+                        out.write(buf, 0, n);
+                        done += n;
+                        if (total > 0) {
+                            int pct = (int) Math.min(99, done * 100 / total);
+                            if (pct >= lastPct + 2) {
+                                lastPct = pct;
+                                updateProgress(pct, "Baixando a versão " + pcVersion + "… " + pct + "%");
+                            }
+                        }
+                    }
                 } finally {
                     c.disconnect();
                 }
+                updateProgress(100, "Instalando… se o Android pedir, toque em Atualizar.");
                 installApk(apk);
             } catch (Exception e) {
                 // V5.6: nunca mais abre o navegador para baixar: tenta de novo sozinho na próxima abertura
                 updateInProgress = false;
                 lastUpdateCheck = System.currentTimeMillis();
+                reportUpdate(true, "error", "Não consegui atualizar agora. Tento de novo sozinho mais tarde.");
                 runOnUiThread(() -> Toast.makeText(this,
                         "Não consegui atualizar agora. Tento de novo sozinho mais tarde.", Toast.LENGTH_SHORT).show());
             }

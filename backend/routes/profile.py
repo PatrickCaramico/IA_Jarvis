@@ -76,6 +76,7 @@ async def save_profile(req: ProfileRequest) -> dict:
 
 # ---------------------------------------------------------------- preferências (Fase 1 e ajustes)
 class PrefsRequest(BaseModel):
+    voice_style: str | None = None  # V6.1
     ai_name: str | None = None
     color_theme: str | None = None
     background_style: str | None = None
@@ -169,6 +170,11 @@ async def update_prefs(req: PrefsRequest) -> dict:
         )
     if "a11y_text_scale" in patch and patch["a11y_text_scale"] not in prefs.A11Y_TEXT_SCALES:
         raise HTTPException(status_code=400, detail="a11y_text_scale inválido. Use 100, 115 ou 130.")
+    if "voice_style" in patch:
+        from modules.tts import VOICE_STYLES
+
+        if patch["voice_style"] not in VOICE_STYLES:
+            raise HTTPException(status_code=400, detail="Estilo de voz inválido.")
     if "background_style" in patch and patch["background_style"] not in {"blueprint", "classic", "space"}:
         raise HTTPException(status_code=400, detail="background_style inválido. Use 'blueprint', 'space' ou 'classic'.")
     if "llm_provider" in patch and patch["llm_provider"] not in {

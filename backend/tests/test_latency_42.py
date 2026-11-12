@@ -10,22 +10,21 @@ from modules import tts
 BACKEND = Path(__file__).resolve().parent.parent
 
 
-def test_long_first_sentence_is_split_at_comma():
-    text = ("Senhor, analisei os dados de clima, agenda e mercado e preparei um resumo completo para hoje. "
-            "Segunda frase. Terceira.")
+def test_short_reply_goes_in_one_piece():
+    """V6.1: fala curta vai inteira (entonação contínua, sem soar picotada)."""
+    assert tts._split_chunks("Bom dia, senhor. Tudo pronto.") == ["Bom dia, senhor. Tudo pronto."]
+
+
+def test_long_reply_goes_in_blocks_of_whole_sentences():
+    text = " ".join(f"Esta é a frase número {i} de um texto longo do JARVIS." for i in range(12))
     chunks = tts._split_chunks(text)
-    assert len(chunks[0]) <= tts.FIRST_CHUNK_MAX
-    assert chunks[0].endswith(",")
+    assert 1 < len(chunks) <= 4
     assert " ".join(chunks) == text
+    assert all(c.endswith(".") for c in chunks)  # nunca corta no meio da frase
 
 
-def test_short_text_is_unchanged():
-    assert tts._split_chunks("Bom dia, senhor. Tudo pronto.") == ["Bom dia, senhor.", "Tudo pronto."]
-
-
-def test_never_more_than_four_chunks():
-    text = " ".join(f"Frase número {i}." for i in range(10))
-    assert len(tts._split_chunks(text)) == 4
+def test_ellipsis_becomes_short_pause():
+    assert tts._clean_for_speech("Olá... tudo bem?") == "Olá, tudo bem?"
 
 
 @pytest.fixture
@@ -68,9 +67,10 @@ def test_playback_starts_after_first_chunk(tts_sandbox):
     async def on_start():
         events.append(("start", list(tts_sandbox)))
 
-    asyncio.run(tts.generate_and_play_speech("Primeira. Segunda. Terceira.", on_playback_start=on_start))
+    long_text = " ".join(f"Esta é a frase número {i} de um texto longo do JARVIS." for i in range(12))
+    asyncio.run(tts.generate_and_play_speech(long_text, on_playback_start=on_start))
     assert events and events[0][0] == "start"
-    assert events[0][1][0] == "Primeira."
+    assert events[0][1][0] == tts._split_chunks(long_text)[0]
 
 
 # Funções que fazem rede ou medem a CPU e não podem ser chamadas direto dentro de "async def":

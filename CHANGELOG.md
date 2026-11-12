@@ -2,6 +2,12 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 6.1.0 — 12 de novembro de 2026
+
+- **Vozes duplicadas ao entrar:** o desbloqueio já cumprimentava ("Olá... boa noite, tudo bem?") e a entrada falava de novo ("Bem-vindo de volta" ou o "Bom dia" do briefing). Agora fala só um: com briefing pendente, o rosto só confirma e o briefing cumprimenta; sem briefing, a entrada fica em silêncio. A pergunta "repetir o briefing?" vem sem o "Bem-vindo de volta". A digital também ganha a sua saudação curta.
+- **Voz menos robótica:** fala de até 280 caracteres vai inteira (antes a primeira frase saía sozinha e cada pedaço recomeçava a entonação); falas longas em blocos de frases inteiras; reticências viram pausa curta. Estilos de voz (`voice_style`): Natural (padrão), Grave, Clássica, Thalita e Andrew, em Configurações › Mídia & Foco, com exemplo falado.
+- **Barra de progresso 0–100%** no ATUALIZAR do PC (por etapa: baixando, preparando, reiniciando, carregando) e no ATUALIZAR APP (download real do APK, depois "Instalando…"). APK 6.1.0.
+
 ## 6.0.0 — 12 de novembro de 2026
 
 O dia a dia.

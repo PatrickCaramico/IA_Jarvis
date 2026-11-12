@@ -25,12 +25,14 @@ QUICK_WELCOMES = [
     "Tudo em ordem por aqui, senhor.",
     "Pronto quando o senhor estiver.",
 ]
-ASK_TEXT = "Bem-vindo de volta, senhor. Quer que eu repita o briefing de hoje ou prefere pular?"
+# V6.1: o desbloqueio (rosto/PIN) já cumprimentou; a pergunta vem sem um segundo "bem-vindo"
+ASK_TEXT = "Quer que eu repita o briefing de hoje ou prefere pular?"
 
 # V5.6.2: duas telas entrando juntas (aba antiga que reconectou + aba nova do Iniciar-JARVIS.bat, ou PC e
 # celular) recebiam cada uma a sua fala: a primeira o briefing, a segunda "quer que eu repita?". Agora, uma
 # entrada nos últimos SAME_ENTRY_SECONDS conta como a MESMA entrada: a segunda tela entra em silêncio.
 SAME_ENTRY_SECONDS = 120
+GREET_AFTER_UNLOCK = False  # V6.1: a saudação curta extra saiu (o desbloqueio já cumprimenta)
 _last_decision_at = 0.0
 
 
@@ -51,6 +53,15 @@ def _save(st: dict) -> None:
 
 def briefing_command(now: datetime) -> str:
     return "boa noite" if now.hour >= 18 or now.hour < 4 else "bom dia"
+
+
+def briefing_pending(now: Optional[datetime] = None) -> bool:
+    """V6.1: a próxima entrada vai fazer o briefing? (aí o desbloqueio não diz "bom dia", o briefing diz)"""
+    now = now or datetime.now()
+    mode = prefs._load().get("lock_daily_summary") or "first_login"
+    if mode == "off":
+        return False
+    return mode == "always" or not _state(now)["briefed"]
 
 
 def mark_briefed(now: Optional[datetime] = None) -> None:
@@ -83,7 +94,10 @@ def decide(now: Optional[datetime] = None, rng: Optional[random.Random] = None) 
         _save(st)
         return {"action": "ask", "command": command, "text": ASK_TEXT}
 
-    # Já fez o briefing e já perguntou hoje: saudação curta, nunca a mesma da última vez
+    # V6.1: já fez o briefing e já perguntou hoje: o desbloqueio já cumprimentou, então a entrada fica em
+    # silêncio (antes vinha "Bem-vindo de volta" logo depois do "Olá... tudo bem?": duas saudações)
+    if not GREET_AFTER_UNLOCK:
+        return {"action": "none"}
     rng = rng or random.Random()
     choices = [i for i in range(len(QUICK_WELCOMES)) if i != st.get("last_welcome", -1)]
     pick = rng.choice(choices)

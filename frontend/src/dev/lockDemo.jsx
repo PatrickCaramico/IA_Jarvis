@@ -92,6 +92,7 @@ function Demo() {
   // ?app=1: como aparece dentro do app do celular (botão ATUALIZAR APP)
   const phoneApp = q.get("app") === "1";
   const [note, setNote] = React.useState("");
+  const [pct, setPct] = React.useState(null);
   const [bgVal, setBgVal] = React.useState(q.get("bg") === "space" ? "space" : q.get("bg") === "classic" ? "classic" : "blueprint");
   const toggle = () => setFan((v) => { applyFanMode(!v); return !v; });
   if (q.get("screen") === "newprofile") return <NewProfileScreen api={baseApi} onCancel={() => {}} onCreated={() => {}} />;
@@ -118,8 +119,20 @@ function Demo() {
       setBgVal(next);
     } }}
     onNewProfile={() => {}}
-    onUpdate={() => { setNote("Procurando atualização no PC…"); setTimeout(() => setNote("O app já está na versão mais nova (5.7.1)."), 900); }}
+    onUpdate={() => {
+      // V6.1: simula o download do APK com a barra 0–100%
+      let p = 0;
+      setPct(0);
+      setNote("Baixando a versão 6.1.0…");
+      const t = setInterval(() => {
+        p += 7;
+        if (p >= 100) { clearInterval(t); setPct(100); setNote("Instalando… se o Android pedir, toque em Atualizar."); return; }
+        setPct(p);
+        setNote(`Baixando a versão 6.1.0… ${p}%`);
+      }, 250);
+    }}
     updateNote={note}
+    updateProgress={pct}
     phoneApp={phoneApp}
     hasPin={phoneApp}
     onBiometric={phoneApp && q.get("bio") === "1" ? () => setNote("Digital confirmada (demo).") : null}

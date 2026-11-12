@@ -46,6 +46,7 @@ import WaterAutoClose from "./components/WaterAutoClose.jsx";
 import NotificationTray from "./components/NotificationTray.jsx";
 import lazyComponent from "./utils/lazyComponent.jsx";
 import OfflineBanner from "./components/ui/OfflineBanner.jsx";
+import ProgressBar, { useCreepingProgress } from "./components/ProgressBar.jsx";
 import WelcomeLogo from "./components/WelcomeLogo.jsx";
 import { APP_VERSION } from "./utils/version.js";
 import { tabTitle } from "./utils/tabTitle.js";
@@ -830,8 +831,10 @@ export default function App() {
 
   // Botão ATUALIZAR (tela de bloqueio): baixa a versão nova, o JARVIS avisa por voz e reinicia.
   // A tela espera o backend novo subir (boot_id diferente) e recarrega a página com a versão nova.
+  // V6.1: barra 0–100% por etapa real: baixar (até 30) -> aviso por voz (até 50) -> reiniciando (até 85)
+  // -> versão nova no ar (95) -> recarregando (100)
   const updateJarvis = useCallback(async () => {
-    setUpdating({ message: "Baixando a versão mais nova…" });
+    setUpdating({ message: "Baixando a versão mais nova…", stage: "Baixando", target: 30 });
     setScreen("boot");
     let res;
     try {
@@ -849,36 +852,48 @@ export default function App() {
       setScreen("lock");
       return;
     }
-    setUpdating({
-      message: res.changed ? `Versão nova baixada (${res.after}). Reiniciando os sistemas…` : "Já estava na versão mais nova. Reiniciando os sistemas…",
-    });
+    const base = res.changed ? `Versão nova baixada (${res.after}).` : "Já estava na versão mais nova.";
+    setUpdating({ message: `${base} Avisando e preparando o reinício…`, stage: "Preparando", target: 50 });
     const oldBoot = res.boot_id;
     const started = Date.now();
+    let wentDown = false;
     const poll = setInterval(async () => {
       try {
         const r = await fetch(`${API_URL}/api/health`, { cache: "no-store" });
         const h = await r.json();
         if (h.boot_id && h.boot_id !== oldBoot) {
           clearInterval(poll);
-          window.location.reload(); // pega também a interface nova
+          setUpdating({ message: "Versão nova no ar. Carregando a central…", stage: "Carregando", target: 100 });
+          setTimeout(() => window.location.reload(), 900); // pega também a interface nova
+          return;
         }
       } catch {
         // reiniciando: o backend some por alguns segundos
+        if (!wentDown) {
+          wentDown = true;
+          setUpdating({ message: `${base} Reiniciando os sistemas…`, stage: "Reiniciando", target: 85 });
+        }
       }
       if (Date.now() - started > 4 * 60 * 1000) {
         clearInterval(poll);
-        setUpdating({ message: "Está demorando mais que o normal. Se não voltar, abra o Iniciar-JARVIS.bat no PC.", slow: true });
+        setUpdating({ message: "Está demorando mais que o normal. Se não voltar, abra o Iniciar-JARVIS.bat no PC.", slow: true, stage: "Demorando", target: 90 });
       }
-    }, 2000);
+    }, 1500);
   }, []);
+  const updatePct = useCreepingProgress(updating?.target ?? 0, updating?.target === 100); // no fim, salta para 100
 
   // V5.7.1: botão ATUALIZAR APP (bloqueio, só no app do celular). O app procura versão nova no PC
   // e responde (evento "jarvis-app-update"); app antigo sem esse recurso: recarrega pelo link
   // jarvis://open, que também confere a atualização.
   const [appUpdateNote, setAppUpdateNote] = useState("");
+  const [appUpdatePct, setAppUpdatePct] = useState(null); // V6.1: 0–100 durante o download do APK
   useEffect(() => {
     if (!IS_JARVIS_APP) return undefined;
-    const onResult = (e) => setAppUpdateNote(e.detail?.message || "");
+    const onResult = (e) => {
+      const d = e.detail || {};
+      setAppUpdateNote(d.message || "");
+      setAppUpdatePct(typeof d.pct === "number" ? d.pct : d.status === "updating" ? 0 : null);
+    };
     window.addEventListener("jarvis-app-update", onResult);
     return () => window.removeEventListener("jarvis-app-update", onResult);
   }, []);
@@ -2208,6 +2223,7 @@ export default function App() {
           {updating ? (
             <>
               <div className="ls-title is-amber">ATUALIZANDO O JARVIS</div>
+              <ProgressBar pct={updatePct} label={updating.stage || "Atualizando"} />
               <p className="ls-hint" style={{ margin: "8px auto", maxWidth: "34rem" }}>{updating.message}</p>
               {!updating.slow && <p className="ls-hint ls-boot-wait" style={{ marginTop: "10px" }}>Volto em instantes e faço a verificação do seu rosto…</p>}
             </>
@@ -2374,6 +2390,7 @@ export default function App() {
           onNewProfile={IS_JARVIS_APP ? null : () => setScreen("newprofile")}
           onUpdate={IS_JARVIS_APP ? updateApp : BACKEND_ON_THIS_PC ? updateJarvis : null}
           updateNote={appUpdateNote}
+          updateProgress={appUpdatePct}
           phoneApp={IS_JARVIS_APP}
           onBiometric={IS_JARVIS_APP && (() => { try { return window.JarvisApp?.hasBiometric?.(); } catch { return false; } })()
             ? () => window.JarvisApp.biometricUnlock() : null}

@@ -40,6 +40,7 @@ _DEFAULTS: dict[str, Any] = {
     # --- Tela de bloqueio (seção 17) ---
     "lock_daily_summary": "first_login",  # "off" | "first_login" | "always"
     "briefing_entry": {},
+    "voice_style": "natural",             # V6.1: natural | grave | classica | thalita | andrew
     "calendar_ics_url": "",               # V5.6: endereço secreto iCal do Google Agenda (alternativa ao OAuth)
     "countdowns": [],                     # V5.6: contagens regressivas na tela [{id, title, target, all_day}]                 # V5.4: briefing/pergunta do dia já feitos (vale para todos os aparelhos)
     "lock_cards": ["clock", "weather", "spotify"],   # cartões visíveis na tela de bloqueio

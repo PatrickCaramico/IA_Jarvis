@@ -56,6 +56,8 @@ _playback_lock = asyncio.Lock()
 def _clean_for_speech(text: str) -> str:
     """Remove marcações Markdown que a voz leria em voz alta (asteriscos, #, crases...)."""
     text = re.sub(r"[*_`#>]+", "", text)
+    text = re.sub(r"\.{3,}|…", ",", text)  # V6.1: "Olá... tudo bem" soava arrastado; vira uma pausa curta
+    text = re.sub(r",\s*,", ",", text)
     return re.sub(r"\s+", " ", text).strip()
 
 
@@ -71,13 +73,27 @@ def _split_first(sentence: str) -> list[str]:
     return [m.group(1), m.group(2)] if m else [sentence]
 
 
+ONE_PIECE_MAX = 280  # V6.1: até aqui a fala vai inteira (entonação contínua, sem "recomeçar" a cada frase)
+
+
 def _split_chunks(text: str, max_chunks: int = 4) -> list[str]:
+    """V6.1: fala curta vai inteira; fala longa vai em blocos de frases inteiras (~240 caracteres).
+
+    Antes a primeira frase saía sozinha (para começar mais rápido) e cada pedaço recomeçava a entonação,
+    o que deixava a voz picotada e robótica.
+    """
+    if len(text) <= ONE_PIECE_MAX:
+        return [text] if text else []
     parts = [p.strip() for p in re.split(r"(?<=[.!?…])\s+", text) if p.strip()]
-    if parts:
-        parts = _split_first(parts[0]) + parts[1:]
-    if len(parts) <= max_chunks:
-        return parts
-    return parts[: max_chunks - 1] + [" ".join(parts[max_chunks - 1:])]
+    chunks: list[str] = []
+    for p in parts:
+        if chunks and len(chunks[-1]) + 1 + len(p) <= 240:
+            chunks[-1] = f"{chunks[-1]} {p}"
+        else:
+            chunks.append(p)
+    if len(chunks) <= max_chunks:
+        return chunks
+    return chunks[: max_chunks - 1] + [" ".join(chunks[max_chunks - 1:])]
 
 
 # ---- cache de frases fixas e repetidas --------------------------------------------------------
@@ -101,8 +117,31 @@ def register_phrases(phrases) -> None:
             _preset_phrases.add(chunk)
 
 
+# V6.1: estilos de voz (Configurações › Voz). "natural" é o padrão: o mesmo Antonio, um pouco mais grave e
+# mais calmo, como um mordomo. Quem definiu TTS_VOICE/TTS_RATE no .env continua com eles em "classica".
+VOICE_STYLES = {
+    "natural": {"label": "Natural (padrão)", "voice": None, "rate": "-4%", "pitch": "-3Hz"},
+    "grave": {"label": "Grave", "voice": None, "rate": "-7%", "pitch": "-9Hz"},
+    "classica": {"label": "Clássica (como antes)", "voice": None, "rate": None, "pitch": "+0Hz"},
+    "thalita": {"label": "Thalita (feminina)", "voice": "pt-BR-ThalitaMultilingualNeural", "rate": "-2%", "pitch": "+0Hz"},
+    "andrew": {"label": "Andrew (multilíngue)", "voice": "en-US-AndrewMultilingualNeural", "rate": "-3%", "pitch": "+0Hz"},
+}
+
+
+def voice_params() -> tuple[str, str, str]:
+    """(voz, velocidade, tom) do estilo escolhido nas preferências."""
+    try:
+        from modules import prefs
+
+        style = VOICE_STYLES.get(prefs._load().get("voice_style") or "natural") or VOICE_STYLES["natural"]
+    except Exception:  # noqa: BLE001
+        style = VOICE_STYLES["natural"]
+    return (style["voice"] or settings.TTS_VOICE, style["rate"] or settings.TTS_RATE, style["pitch"])
+
+
 def _cache_key(text: str, volume: str) -> str:
-    return hashlib.sha1(f"{settings.TTS_VOICE}|{settings.TTS_RATE}|{volume}|{text}".encode("utf-8")).hexdigest()
+    voice, rate, pitch = voice_params()
+    return hashlib.sha1(f"{voice}|{rate}|{pitch}|{volume}|{text}".encode("utf-8")).hexdigest()
 
 
 def _trim_disk_cache() -> None:
@@ -195,10 +234,8 @@ async def _synthesize(text: str, path: str) -> None:
 
 async def _synthesize_remote(text: str, path: str, volume: str) -> None:
     edge_tts = _get_edge_tts() if _edge_tts is not None else await asyncio.to_thread(_get_edge_tts)
-    if volume == "+0%":
-        await edge_tts.Communicate(text, settings.TTS_VOICE, rate=settings.TTS_RATE).save(path)
-    else:
-        await edge_tts.Communicate(text, settings.TTS_VOICE, rate=settings.TTS_RATE, volume=volume).save(path)
+    voice, rate, pitch = voice_params()
+    await edge_tts.Communicate(text, voice, rate=rate, volume=volume, pitch=pitch).save(path)
 
 
 async def generate_and_play_speech(

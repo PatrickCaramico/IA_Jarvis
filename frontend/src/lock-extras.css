@@ -581,3 +581,17 @@
 .bp-bg-icon { display: grid; place-items: center; font-size: 0.95rem; color: #c9f6ff; }
 .bp-bg-btn.is-space .bp-bg-icon { color: #c4b5fd; text-shadow: 0 0 8px rgba(196, 181, 253, 0.8); }
 .bp-bg-btn.is-classic .bp-bg-icon { color: #94a3b8; }
+
+/* V6.1: barra de progresso das atualizações */
+.pg-wrap { width: min(420px, 90%); margin: 12px auto 4px; }
+.pg-track { height: 10px; border-radius: 999px; background: rgba(2, 8, 19, 0.6); border: 1px solid rgba(94, 234, 212, 0.35); overflow: hidden; }
+.pg-fill {
+  display: block; height: 100%; border-radius: 999px; transition: width 200ms linear;
+  background: linear-gradient(90deg, #0ea5e9, #5eead4); box-shadow: 0 0 12px rgba(94, 234, 212, 0.6);
+  background-size: 200% 100%; animation: pg-flow 1.4s linear infinite;
+}
+@keyframes pg-flow { from { background-position: 0 0; } to { background-position: 200% 0; } }
+.pg-row { display: flex; justify-content: space-between; margin-top: 6px; font-size: 0.8rem; color: rgba(201, 246, 255, 0.75); }
+.pg-num { font-family: "JetBrains Mono", Consolas, monospace; color: #e6fffb; font-weight: 600; }
+.ls-update-progress { flex-basis: 100%; width: 100%; }
+@media (prefers-reduced-motion: reduce) { .pg-fill { animation: none; } }
