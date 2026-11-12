@@ -183,7 +183,7 @@ async def handle_turn(message: str, routine: bool, force_deep: bool = False) -> 
         await speech.broadcast_access()
         if "sentinela" in norm_cmd:
             return await finish_local("Bloqueando, senhor. Modo sentinela ativo.")
-        return await finish_local("Central bloqueada, senhor. Até logo.")
+        return await finish_local("Bloqueando a central, senhor. Até logo.")
     if norm_cmd in {
         "modo silencioso",
         "ativar modo silencioso",
