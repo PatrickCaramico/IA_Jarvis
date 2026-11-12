@@ -202,6 +202,37 @@ async def get_briefing() -> dict:
     return {"status": "ok", "briefing": text}
 
 
+class IcsRequest(BaseModel):
+    url: str = ""
+
+
+@router.post("/api/calendar/ics")
+async def set_calendar_ics(req: IcsRequest) -> dict:
+    """V5.6: conecta a agenda pelo endereço secreto iCal (ou desconecta com url vazia)."""
+    from modules import calendar_hub
+
+    try:
+        return await asyncio.to_thread(calendar_hub.set_ics_url, req.url)
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=400, detail=f"Não consegui ler essa agenda: {exc}") from exc
+
+
+@router.get("/api/countdowns")
+async def get_countdowns() -> dict:
+    from modules import countdowns
+
+    return {"items": countdowns.list_countdowns()}
+
+
+@router.delete("/api/countdowns/{countdown_id}")
+async def delete_countdown(countdown_id: int) -> dict:
+    from modules import countdowns
+
+    removed = countdowns.remove(countdown_id=countdown_id)
+    await countdowns._announce()  # noqa: SLF001
+    return {"removed": removed, "items": countdowns.list_countdowns()}
+
+
 @router.post("/api/briefing/entry")
 async def briefing_entry() -> dict:
     """V5.4: ao entrar na central, o PC decide (para todos os aparelhos juntos): briefing, perguntar ou saudar."""

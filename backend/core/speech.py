@@ -125,6 +125,11 @@ reminders.set_announcer(announce)
 # V5.1: alarmes avisam a tela e falam a hora; com a central bloqueada, sem o rótulo
 alarms.configure(broadcast=runtime.manager.broadcast, speak=say_quietly, is_restricted=access.is_restricted)
 
+# V5.6: contagens regressivas avisam as telas (widget) quando mudam
+from modules import countdowns as _countdowns  # noqa: E402
+
+_countdowns.configure(broadcast=runtime.manager.broadcast)
+
 
 focus.set_focus_announcer(announce)
 

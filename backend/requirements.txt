@@ -10,3 +10,7 @@ pygame>=2.5
 requests>=2.31
 psutil>=6.0
 pycaw>=20230407
+
+# V5.6: agenda pelo endereço iCal (Google Agenda sem OAuth), com eventos repetidos
+icalendar>=6,<7
+recurring-ical-events>=3,<4

@@ -5,7 +5,7 @@ import asyncio
 from fastapi import HTTPException, Query
 from pydantic import BaseModel
 from config import settings
-from modules import tools, system_monitor, system_control, google_calendar, spotify
+from modules import tools, system_monitor, system_control, spotify
 from modules import news_radar
 from fastapi import APIRouter
 from services import quotes
@@ -138,7 +138,9 @@ async def get_finance_data() -> dict:
 @router.get("/api/datasources")
 async def get_datasources() -> dict:
     """Catálogo unificado de fontes de dados e canais do JARVIS."""
-    cal_conn = google_calendar.connected()
+    from modules import calendar_hub
+
+    cal_conn = calendar_hub.connected()  # V5.6: Google pela API ou endereço iCal
     return {
         "sources": [
             {

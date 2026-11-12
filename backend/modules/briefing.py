@@ -10,7 +10,7 @@ import logging
 from datetime import datetime, timedelta
 from urllib.parse import urlparse
 
-from modules import email_triage, face, google_calendar, health, news, news_radar, reminders, tasks, water
+from modules import calendar_hub, email_triage, face, google_calendar, health, news, news_radar, reminders, tasks, water  # noqa: F401
 from config import settings
 
 log = logging.getLogger("jarvis.briefing")
@@ -24,6 +24,7 @@ _MONTHS = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho",
 TABS = [
     {"id": "clima", "label": "Clima"},
     {"id": "agenda", "label": "Agenda"},
+    {"id": "proximos", "label": "Próximos dias"},  # V5.6: agenda dos próximos 3 dias e contagens
     {"id": "tarefas", "label": "Tarefas"},   # V5.3: só aparece com tarefas pendentes
     {"id": "jogo", "label": "Jogo"},         # V5.3: só em dia de jogo do time do Modo Torcedor
     {"id": "email", "label": "E-mails"},
@@ -214,7 +215,7 @@ def _agenda_segment(day: datetime, calendar_events: list[dict], when: str = "hoj
             items.append({"time": data_hora[11:16], "title": r.get("texto", "Lembrete"), "location": "Lembrete"})
     items.sort(key=lambda i: i["time"])
 
-    source = "Google Agenda + lembretes" if google_calendar.connected() else "Lembretes do JARVIS"
+    source = f"{calendar_hub.source_name()} + lembretes" if calendar_hub.connected() else "Lembretes do JARVIS"
     card = {"kind": "agenda", "label": f"AGENDA · {when.upper()}", "items": items[:5],
             "more": max(0, len(items) - 5), "footer": source}
     if not items:
@@ -324,6 +325,55 @@ def _health_segment(tele: dict) -> tuple[dict, dict | None]:
             "footer": f"{tele.get('device_name', 'Relógio')} · {tele.get('last_sync', '')}",
         }
     return segment, readiness
+
+
+def _days_word(days: int) -> str:
+    return "amanhã" if days == 1 else "depois de amanhã" if days == 2 else f"em {days} dias"
+
+
+def _upcoming_segment(now: datetime, calendar_events: list[dict], ahead: int = 3) -> dict | None:
+    """V5.6: compromissos dos próximos 3 dias (agenda + lembretes), com quanto falta, e as contagens."""
+    from modules import countdowns
+
+    items = []
+    for ev in calendar_events:
+        start = calendar_hub.event_start(ev)
+        if not start:
+            continue
+        days = (start.date() - now.date()).days
+        if 1 <= days <= ahead:
+            hm = start.strftime("%H:%M") if "T" in (ev.get("start") or "") else ""
+            items.append({"days": days, "hm": hm, "title": ev.get("title", "Compromisso"), "when": start})
+    for r in reminders.get_reminders(only_pending=True):
+        try:
+            start = datetime.strptime(r.get("data_hora", ""), "%Y-%m-%d %H:%M")
+        except ValueError:
+            continue
+        days = (start.date() - now.date()).days
+        if 1 <= days <= ahead:
+            items.append({"days": days, "hm": start.strftime("%H:%M"), "title": r.get("texto", "Lembrete"), "when": start})
+    items.sort(key=lambda i: i["when"])
+    counting = countdowns.briefing_lines(now)
+    if not items and not counting:
+        return None
+
+    rows = [{"time": "AMANHÃ" if i["days"] == 1 else f"EM {i['days']}D",
+             "title": i["title"],
+             "location": f"{_WEEKDAYS[i['when'].weekday()]}" + (f", {i['hm']}" if i["hm"] else ", dia todo")}
+            for i in items]
+    card = {"kind": "agenda", "badge": "◷", "label": "PRÓXIMOS 3 DIAS",
+            "title": f"{len(items)} compromisso{'s' if len(items) != 1 else ''} chegando" if items else "Contagem regressiva",
+            "items": rows[:5], "more": max(0, len(rows) - 5),
+            "footer": " · ".join(counting[:2]) if counting else (calendar_hub.source_name() or "Lembretes do JARVIS")}
+    if not items:
+        card.update(empty_text="Nada marcado nos próximos 3 dias", empty_sub="As contagens seguem abaixo")
+
+    parts = []
+    if items:
+        spoken = [f"{_days_word(i['days'])}, {i['title']}" + (f" às {i['hm']}" if i["hm"] else "") for i in items[:3]]
+        parts.append("Nos próximos dias: " + "; ".join(spoken) + ".")
+    parts += counting[:2]
+    return {"tab": "proximos", "progress": "Olhando os próximos dias...", "speech": " ".join(parts), "card": card}
 
 
 def _focus_segment(pending: list[dict]) -> dict | None:
@@ -461,7 +511,8 @@ async def build_morning_briefing() -> dict:
     from modules.tools import _fetch_weather
 
     def calendar_events() -> list[dict]:
-        return google_calendar.upcoming_events(days=1, limit=10) if google_calendar.connected() else []
+        # V5.6: 4 dias (hoje + os próximos 3) e qualquer agenda conectada (Google ou iCal)
+        return calendar_hub.upcoming_events(days=4, limit=30) if calendar_hub.connected() else []
 
     def news_for(theme: dict) -> list[dict]:
         if "topic" in theme:
@@ -481,6 +532,9 @@ async def build_morning_briefing() -> dict:
         segments.append(weather_seg)
     agenda_seg = _agenda_segment(now, events or [])
     segments.append(agenda_seg)
+    upcoming_seg = _upcoming_segment(now, events or [])
+    if upcoming_seg:
+        segments.append(upcoming_seg)
     pending_list = tasks.get_tasks(include_completed=False)
     for extra in (_focus_segment(pending_list), _match_segment(now)):
         if extra:
@@ -726,7 +780,7 @@ async def build_evening_briefing() -> dict:
             return default
 
     def calendar_events() -> list[dict]:
-        return google_calendar.upcoming_events(days=2, limit=15) if google_calendar.connected() else []
+        return calendar_hub.upcoming_events(days=2, limit=15) if calendar_hub.connected() else []
 
     weather_res, events = await asyncio.gather(
         safe(_fetch_weather, settings.WEATHER_CITY),

@@ -42,6 +42,23 @@ def apk_available() -> bool:
     return APK_PATH.exists() and APK_PATH.stat().st_size > 0
 
 
+def apk_version() -> str:
+    """V5.6: versão do APK gerado (arquivo JARVIS.apk.version ao lado dele).
+
+    O app compara com a dele para decidir se atualiza. Antes o PC mandava a versão do JARVIS inteiro, e o
+    celular se atualizava a cada mudança do PC, mesmo sem o app ter mudado (ou ficava tentando de novo
+    quando o APK era mais antigo que o JARVIS). Sem o arquivo (APK antigo), usa a versão do JARVIS.
+    """
+    try:
+        side = APK_PATH.with_name(APK_PATH.name + ".version")
+        text = side.read_text(encoding="ascii").strip()
+        if text:
+            return text
+    except (OSError, AttributeError, ValueError):
+        pass
+    return VERSION
+
+
 @router.get("/api/mobile/info")
 async def mobile_info() -> dict:
     """Pública (tela de bloqueio): dá o QR de download, sem token."""
@@ -50,7 +67,7 @@ async def mobile_info() -> dict:
         "available": apk_available(),
         "network_mode": settings.NETWORK_MODE,
         "download_url": f"http://{ip}:8000/api/mobile" if ip else "",
-        "version": VERSION,
+        "version": apk_version(),
         "size_kb": round(APK_PATH.stat().st_size / 1024) if apk_available() else 0,
     }
 
@@ -80,7 +97,7 @@ async def mobile_page(request: Request) -> HTMLResponse:
         size = round(APK_PATH.stat().st_size / 1024)
         download = (
             '<div class="c"><h2>1 · INSTALAR O APP</h2>'
-            f'<a class="btn" href="/api/mobile/app.apk" download="JARVIS.apk">BAIXAR JARVIS.apk · v{escape(VERSION)} · {size} KB</a>'
+            f'<a class="btn" href="/api/mobile/app.apk" download="JARVIS.apk">BAIXAR JARVIS.apk · v{escape(apk_version())} · {size} KB</a>'
             '<p class="m">Ao abrir o arquivo, o Android pede para <b>permitir instalar apps desta fonte</b> '
             '(o navegador). Permita só desta vez. O app é o seu JARVIS: não vem da Play Store porque é feito para '
             'este PC.</p></div>'

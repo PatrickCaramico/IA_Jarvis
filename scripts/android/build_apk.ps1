@@ -125,5 +125,8 @@ Run "$Bt\apksigner.bat" @("sign", "--ks", $ks, "--ks-key-alias", "jarvis", "--ks
 Run "$Bt\apksigner.bat" @("verify", "$Out\JARVIS.apk")
 Remove-Item -Force "$Out\JARVIS.apk.idsig" -ErrorAction SilentlyContinue
 
+# V5.6: a versão do APK fica ao lado dele. O PC anuncia ESTA versão ao app (não a do JARVIS), então o
+# celular só se atualiza quando o app em si mudou e foi gerado de novo.
+Set-Content -Path "$Out\JARVIS.apk.version" -Value $versionName -Encoding ascii -NoNewline
 $size = [math]::Round((Get-Item "$Out\JARVIS.apk").Length / 1KB)
 Write-Host "  [OK] $Out\JARVIS.apk ($size KB)"

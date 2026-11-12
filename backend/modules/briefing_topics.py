@@ -12,7 +12,7 @@ import logging
 from collections import Counter
 
 from config import settings
-from modules import briefing, email_triage, google_calendar, health, news_radar, notifications, prefs, tasks
+from modules import briefing, email_triage, health, news_radar, notifications, prefs, tasks
 from modules.briefing import _fmt
 
 log = logging.getLogger("jarvis.briefing_topics")
@@ -187,7 +187,9 @@ async def _agenda() -> dict:
     from datetime import datetime
 
     def events():
-        return google_calendar.upcoming_events(days=1, limit=10) if google_calendar.connected() else []
+        from modules import calendar_hub
+
+        return calendar_hub.upcoming_events(days=1, limit=10) if calendar_hub.connected() else []
 
     seg = briefing._agenda_segment(datetime.now(), await _thread(events, default=[]) or [])
     return _wrap("agenda", [seg], "Agenda de hoje", seg["card"]["footer"], "", "")

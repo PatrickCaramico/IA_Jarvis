@@ -438,11 +438,11 @@ public class MainActivity extends Activity {
                 }
                 installApk(apk);
             } catch (Exception e) {
+                // V5.6: nunca mais abre o navegador para baixar: tenta de novo sozinho na próxima abertura
                 updateInProgress = false;
-                runOnUiThread(() -> {
-                    Toast.makeText(this, "Não consegui baixar a atualização. Abrindo o download.", Toast.LENGTH_LONG).show();
-                    downloadApk(host);
-                });
+                lastUpdateCheck = System.currentTimeMillis();
+                runOnUiThread(() -> Toast.makeText(this,
+                        "Não consegui atualizar agora. Tento de novo sozinho mais tarde.", Toast.LENGTH_SHORT).show());
             }
         }, "jarvis-self-update").start();
     }

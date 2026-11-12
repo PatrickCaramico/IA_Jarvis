@@ -2,6 +2,16 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 5.6.0 — 11 de novembro de 2026
+
+A agenda.
+
+- **App sem baixar toda hora:** o PC anunciava ao app a versão do JARVIS inteiro, então o celular se atualizava a cada mudança do PC (ou ficava tentando de novo, quando o APK era mais antigo). Agora o `build_apk.ps1` grava `JARVIS.apk.version` e `/api/mobile/info` anuncia a versão do APK: o app só se atualiza quando o app mudou. Falhou a atualização: tenta de novo sozinho depois, sem abrir o navegador.
+- **Agenda pelo endereço iCal:** `modules/calendar_hub.py` junta o Google Calendar (OAuth) e o "endereço secreto no formato iCal" do Google Agenda (colado em Fontes de Dados, `POST /api/calendar/ics`), com eventos repetidos (`icalendar` + `recurring-ical-events`, novas dependências).
+- **Próximos 3 dias no "bom dia":** card "PRÓXIMOS 3 DIAS" com quanto falta (amanhã, em 2 dias, em 3 dias), agenda + lembretes.
+- **Contagem regressiva por voz** (`modules/countdowns.py`): "contagem regressiva para a viagem" / "até dia 20 de dezembro" põe um widget com dias, horas, minutos e segundos abaixo do orbe (evento `countdowns`, `GET/DELETE /api/countdowns`); "quanto falta para o natal?" só responde; "apaga a contagem regressiva" tira. As ativas entram no "bom dia". Timer de cozinha ("contagem regressiva de 5 minutos") continua com o timer.
+- Testes em `backend/tests/test_calendar_56.py`. APK 5.6.0 gerado no PC.
+
 ## 5.5.0 — 11 de novembro de 2026
 
 O celular de verdade.

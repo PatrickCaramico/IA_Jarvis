@@ -1,4 +1,5 @@
 import NowPlaying from "./NowPlaying.jsx";
+import CountdownWidget from "./CountdownWidget.jsx";
 import { onSpeakingChange, setSpeakerOn, speakerOn, speakHere, stopHere } from "../utils/speakHere.js";
 import { IS_JARVIS_APP, appNotificationsEnabled, setAppNotifications } from "../utils/device.js";
 import { APP_VERSION } from "../utils/version.js";
@@ -689,6 +690,8 @@ export default function HudLayout({
   onSkipBriefing,
   photoUrl = "",
   devices = [],
+  countdowns = [],
+  onRemoveCountdown,
 }) {
   const [clock, todayLabel] = useBrasiliaClock();
   const [screensOpen, setScreensOpen] = useState(false);
@@ -995,6 +998,8 @@ export default function HudLayout({
             </button>
           )}
         </div>
+        {/* V5.6: contagens regressivas pedidas por voz, logo abaixo do orbe */}
+        {!briefing && <CountdownWidget items={countdowns} onRemove={onRemoveCountdown} />}
         {!briefing && <div className="hl-quote"><MotivationWidget /></div>}
         {!briefing && !busy && <VoiceHints onSay={onCommand} />}
         <BriefingStage briefing={briefing} onClose={onCloseBriefing} onSkip={onSkipBriefing} onSay={onCommand} />

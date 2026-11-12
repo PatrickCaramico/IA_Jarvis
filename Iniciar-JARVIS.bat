@@ -52,7 +52,11 @@ if not exist "%BACKEND%\venv\Scripts\python.exe" (
 )
 
 rem ---------- 2. Dependencias do Backend ----------
-if not exist "%BACKEND%\venv\Lib\site-packages\uvicorn" (
+rem V5.6: tambem instala quando falta uma dependencia nova (ex.: icalendar, da agenda por iCal)
+set "NEED_PIP="
+if not exist "%BACKEND%\venv\Lib\site-packages\uvicorn" set "NEED_PIP=1"
+if not exist "%BACKEND%\venv\Lib\site-packages\icalendar" set "NEED_PIP=1"
+if defined NEED_PIP (
   echo  [2/5] Instalando dependencias do backend...
   "%BACKEND%\venv\Scripts\python.exe" -m pip install -r "%BACKEND%\requirements.txt"
   if errorlevel 1 (

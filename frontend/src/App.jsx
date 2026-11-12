@@ -191,6 +191,7 @@ export default function App() {
   const [notifItems, setNotifItems] = useState([]);
   // V5.5: aparelhos com a central aberta (evento "devices" do WebSocket)
   const [devices, setDevices] = useState([]);
+  const [countdowns, setCountdowns] = useState([]); // V5.6
   const devicesRef = useRef(null);
   const [orbFlash, setOrbFlash] = useState(null); // Branding 4.2: "success" | "error" por um instante
   const orbFlashTimer = useRef(null);
@@ -498,6 +499,9 @@ export default function App() {
           readiness: msg.readiness,
           closing: msg.closing,
         }));
+        break;
+      case "countdowns":
+        setCountdowns(Array.isArray(msg.items) ? msg.items : []); // V5.6: widget de contagem regressiva
         break;
       case "devices": {
         // V5.5: aparelhos conectados; avisa quando um celular acaba de entrar
@@ -919,6 +923,7 @@ export default function App() {
     setSentinelReply("");
     setScreen("main");
     loadPrefs(); // agora com acesso liberado: widgets, layout e demais preferências
+    api("/api/countdowns").then((r) => setCountdowns(r.items || [])).catch(() => {}); // V5.6
     api("/api/network-access").then((data) => setNetworkAccessUrl(data.url ?? "")).catch(() => {});
 
     const prefsNow = appPrefsRef.current || {};
@@ -2665,6 +2670,8 @@ export default function App() {
 
       <HudLayout
         devices={devices}
+        countdowns={countdowns}
+        onRemoveCountdown={(id) => api(`/api/countdowns/${id}`, { method: "DELETE" }).then((r) => setCountdowns(r.items || [])).catch(() => {})}
         fanModeEnabled={fanModeEnabled}
         fanTeam={fanTeam}
         aiName={aiName}

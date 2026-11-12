@@ -986,3 +986,37 @@
   .hl-chat-tool { font-size: 0.6rem; padding: 8px 12px; } /* alvo de toque maior no celular */
   .hl-speak { width: 34px; height: 28px; font-size: 0.85rem; }
 }
+
+/* V5.6: agenda por iCal (Fontes de Dados) */
+.hs-ics { margin-top: 10px; padding-top: 10px; border-top: 1px dashed rgba(201, 246, 255, 0.2); }
+.hs-ics-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.hs-ics-row input {
+  flex: 1 1 220px; min-width: 0; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--hl-line);
+  background: rgba(0, 0, 0, 0.35); color: #fff; font-size: 0.8rem;
+}
+.hs-ics-msg { margin: 6px 0 0; font-size: 0.75rem; color: #fca5a5; }
+.hs-ics-msg.is-ok { color: #6ee7b7; }
+
+/* V5.6: contagem regressiva (widget abaixo do orbe) */
+.cd-wrap { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin: 4px auto 6px; max-width: 760px; }
+.cd-card {
+  min-width: 240px; padding: 10px 14px 8px; border-radius: 14px; text-align: center;
+  border: 1px solid rgba(94, 234, 212, 0.45);
+  background: linear-gradient(180deg, rgba(6, 26, 62, 0.86), rgba(3, 14, 38, 0.92));
+  box-shadow: 0 0 22px rgba(94, 234, 212, 0.16); animation: cd-in 0.35s ease-out both;
+}
+.cd-card.is-done { border-color: rgba(251, 191, 36, 0.75); box-shadow: 0 0 22px rgba(251, 191, 36, 0.3); }
+.cd-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.cd-label { font-family: "JetBrains Mono", Consolas, monospace; font-size: 0.55rem; letter-spacing: 0.18em; color: #5eead4; }
+.cd-x { border: 0; background: none; color: rgba(201, 246, 255, 0.55); cursor: pointer; font-size: 0.8rem; padding: 2px 4px; }
+.cd-x:hover { color: #fff; }
+.cd-title { margin: 4px 0 6px; font-family: var(--font-text, "Rajdhani", sans-serif); font-size: 1rem; color: #fff; }
+.cd-digits { display: flex; justify-content: center; gap: 10px; }
+.cd-digits span { display: grid; min-width: 44px; }
+.cd-digits b { font-family: "JetBrains Mono", Consolas, monospace; font-size: 1.6rem; font-weight: 600; color: #e6fffb; text-shadow: 0 0 12px rgba(94, 234, 212, 0.5); }
+.cd-digits small { font-family: "Orbitron", sans-serif; font-size: 0.5rem; letter-spacing: 0.16em; color: rgba(201, 246, 255, 0.6); }
+.cd-today { display: block; font-family: "Orbitron", sans-serif; font-size: 1.2rem; letter-spacing: 0.2em; color: #fbbf24; }
+.cd-foot { margin-top: 4px; font-size: 0.65rem; color: rgba(201, 246, 255, 0.6); text-transform: capitalize; }
+@keyframes cd-in { from { opacity: 0; transform: translateY(6px) scale(0.98); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .cd-card { animation: none; } }
+@media (max-width: 760px) { .cd-card { min-width: 0; width: 100%; } .cd-digits b { font-size: 1.4rem; } }
