@@ -351,9 +351,31 @@ public class MainActivity extends Activity {
     }
 
     private void checkForUpdate(String appUrl) {
+        checkForUpdate(appUrl, false);
+    }
+
+    /** V5.7.1: resposta do botão ATUALIZAR APP para a tela (latest | updating | error). */
+    private void reportUpdate(boolean manual, String status, String message) {
+        if (!manual) return;
+        try {
+            JSONObject d = new JSONObject().put("status", status).put("message", message).put("version", installedVersion());
+            String js = "window.dispatchEvent(new CustomEvent('jarvis-app-update',{detail:" + d + "}))";
+            runOnUiThread(() -> web.evaluateJavascript(js, null));
+        } catch (Exception ignored) {
+        }
+    }
+
+    private void checkForUpdate(String appUrl, boolean manual) {
         Uri paired = Uri.parse(appUrl);
         String host = paired.getHost();
-        if (!isHttp(appUrl) || host == null || host.isEmpty() || updateInProgress) return;
+        if (updateInProgress) {
+            reportUpdate(manual, "updating", "A atualização já está em andamento.");
+            return;
+        }
+        if (!isHttp(appUrl) || host == null || host.isEmpty()) {
+            reportUpdate(manual, "error", "Este celular ainda não está conectado a um PC.");
+            return;
+        }
         lastUpdateCheck = System.currentTimeMillis();
 
         new Thread(() -> {
@@ -368,6 +390,7 @@ public class MainActivity extends Activity {
                 int status = connection.getResponseCode();
                 if (status != 200) {
                     connection.disconnect();
+                    reportUpdate(manual, "error", "O PC não respondeu agora. Tente de novo.");
                     return;
                 }
                 StringBuilder body = new StringBuilder();
@@ -381,12 +404,15 @@ public class MainActivity extends Activity {
                 String pcVersion = info.optString("version", "");
                 String phoneVersion = installedVersion();
                 if (info.optBoolean("available") && compareVersions(pcVersion, phoneVersion) > 0) {
+                    reportUpdate(manual, "updating", "Atualizando o app para a versão " + pcVersion + "…");
                     runOnUiThread(() -> startSelfUpdate(host, pcVersion));
                 } else {
                     pendingUpdateHost = null;
+                    reportUpdate(manual, "latest", "O app já está na versão mais nova (" + phoneVersion + ").");
                 }
-            } catch (Exception ignored) {
+            } catch (Exception e) {
                 // Sem conexão ou sem APK novo: não interrompe a abertura do JARVIS.
+                reportUpdate(manual, "error", "Não consegui falar com o PC agora. Confira a Wi-Fi.");
             }
         }, "jarvis-update-check").start();
     }
@@ -699,6 +725,13 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public String version() {
             return installedVersion();
+        }
+
+        /** V5.7.1: botão ATUALIZAR APP (tela de bloqueio): procura versão nova no PC agora e responde à tela. */
+        @JavascriptInterface
+        public void checkUpdate() {
+            if (!fromJarvis()) return;
+            runOnUiThread(() -> checkForUpdate(prefs.getString(KEY_URL, ""), true));
         }
 
         @JavascriptInterface

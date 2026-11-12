@@ -60,7 +60,7 @@ nos módulos do backend.
 | --- | --- |
 | Assistente | JARVIS (o nome da IA pode ser trocado em Configurações) |
 | Módulo de escuta contínua | **Modo Sentinela** (mantido; as siglas propostas não foram adotadas) |
-| Versão exibida na central | `v5.7.0` (sem referências a marcas de terceiros, como "Stark") |
+| Versão exibida na central | `v5.7.1` (sem referências a marcas de terceiros, como "Stark") |
 | Lista de sites abertos por voz | **Meus Sites** (Configurações > Meus Sites) |
 | Resumo da manhã | **Briefing** (disparado por "bom dia") |
 | Resumo da noite | **Fechamento do dia** (disparado por "boa noite") |
@@ -585,6 +585,10 @@ direita.
   ☀ Bom dia · 💧 +250 ml · ☑ Tarefas · ⏰ Alarmes · ☁ Clima · ⏸ Pausar música · 🔒 Bloquear PC (este pede
   confirmação). Um toque manda o pedido como se você tivesse falado.
 - O 🔊 de cada resposta continua lendo aquela resposta no aparelho.
+- **ATUALIZAR APP (V5.7.1):** no bloqueio do app, o chip "⟳ ATUALIZAR APP" (o mesmo estilo do ATUALIZAR do PC)
+  procura a versão nova no PC na hora; a resposta aparece em verde embaixo ("O app já está na versão mais nova
+  (5.7.1)." ou "Atualizando o app para a versão …"). No bloqueio do celular, os cartões ficam com a mesma
+  largura e o Modo Torcedor vai para o fim da página (não flutua mais por cima dos cartões).
 
 ### Meus Sites, escudos e atualização (V5)
 
@@ -618,7 +622,7 @@ o PC tem um APK mais novo. Nada é baixado ou instalado sozinho.
 o orbe Núcleo girando devagar no topo (parado com "reduzir movimento"), "JARVIS" em Orbitron com brilho
 ciano, cartões de vidro azul-marinho com ícone em círculo de contorno (ciano; âmbar para segurança; verde
 para água e para o Modo Torcedor), capturas em moldura com cantos ciano e, no rodapé, o carimbo
-"J.A.R.V.I.S. · FOLHA · SITE · REV. v5.7.0" (a versão vem de `backend/version.py`). Botão principal ciano cheio ("VER NO GITHUB"); os outros só
+"J.A.R.V.I.S. · FOLHA · SITE · REV. v5.7.1" (a versão vem de `backend/version.py`). Botão principal ciano cheio ("VER NO GITHUB"); os outros só
 com borda. Logo abaixo, num quadro de borda tracejada âmbar, o botão "ABRIR MEU JARVIS" (borda âmbar, o "olhe aqui" da Sentinela), que abre a **mesma central do PC publicada no site** (`/app/`). Ela conversa com o JARVIS ligado no computador (backend em `127.0.0.1:8000`), então rosto, perfil, Modo Torcedor, rotina e agenda são os de sempre; na primeira vez, o Chrome pergunta se o site pode acessar a rede local (é o backend do próprio PC). Tom: o mesmo da central, e a página deixa claro que é só a vitrine ("O JARVIS roda no seu PC:
 voz, câmera, controle do sistema e os seus dados nunca passam por aqui."). A 404 diz "Procurei em toda a
 planta, senhor, e esta página não está aqui."

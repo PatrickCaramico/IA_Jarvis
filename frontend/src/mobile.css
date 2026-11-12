@@ -121,3 +121,12 @@
   .ls-boot-steps { font-size: 0.88rem; padding-inline: 4px; }
   .ls-container .ls-title { font-size: 0.95rem; letter-spacing: 0.14em; text-align: center; }
 }
+
+/* V5.7.1: bloqueio no celular — cartões com a mesma largura e o botão do Modo Torcedor no fluxo
+   (antes ele flutuava fixo e cobria o cartão HOJE ao rolar) */
+@media (max-width: 760px) {
+  .ls-container .lc-wrap { width: 100%; max-width: 420px; margin-inline: auto; }
+  .ls-container .lc-row { display: flex; flex-direction: column; gap: 12px; width: 100%; }
+  .ls-container .lc-card, .ls-container .np { width: 100%; box-sizing: border-box; }
+  .ls-container .bp-corner { position: static !important; display: flex; justify-content: center; margin: 4px auto 0; transform: none !important; }
+}

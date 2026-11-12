@@ -96,7 +96,8 @@ export default function LockScreen({
   silent = false,
   fanToggle = null, // V4.4: { enabled, busy, onToggle } — botão do Modo Torcedor ao lado do carimbo
   onNewProfile = null, // V4.5: "＋ NOVA PESSOA" (perfil próprio: rosto, PIN e preferências)
-  onUpdate = null, // botão ATUALIZAR: baixa a versão nova e reinicia (só no próprio PC)
+  onUpdate = null, // botão ATUALIZAR: no PC baixa a versão nova e reinicia; no app, atualiza o app (V5.7.1)
+  updateNote = "", // V5.7.1: resposta do ATUALIZAR APP ("O app já está na versão mais nova…")
   phoneApp = false, // V4.5: dentro do app do celular (o rosto usaria a webcam do PC: entra pelo PIN)
 }) {
   const scanning = phase === "scanning";
@@ -173,10 +174,11 @@ export default function LockScreen({
       )}
       {onUpdate && (phase === "ready" || phase === "failed") && (
         <button type="button" className="ls-chip" onClick={(e) => { e.stopPropagation(); onUpdate(); }}
-          title="Baixar a versão mais nova do JARVIS e reiniciar">
-          ⟳ ATUALIZAR
+          title={phoneApp ? "Procurar e instalar a versão nova do app" : "Baixar a versão mais nova do JARVIS e reiniciar"}>
+          {phoneApp ? "⟳ ATUALIZAR APP" : "⟳ ATUALIZAR"}
         </button>
       )}
+      {updateNote && <p className="ls-update-note" role="status">{updateNote}</p>}
     </div>
     </>
   );

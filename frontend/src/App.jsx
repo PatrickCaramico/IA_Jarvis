@@ -871,6 +871,34 @@ export default function App() {
     }, 2000);
   }, []);
 
+  // V5.7.1: botão ATUALIZAR APP (bloqueio, só no app do celular). O app procura versão nova no PC
+  // e responde (evento "jarvis-app-update"); app antigo sem esse recurso: recarrega pelo link
+  // jarvis://open, que também confere a atualização.
+  const [appUpdateNote, setAppUpdateNote] = useState("");
+  useEffect(() => {
+    if (!IS_JARVIS_APP) return undefined;
+    const onResult = (e) => setAppUpdateNote(e.detail?.message || "");
+    window.addEventListener("jarvis-app-update", onResult);
+    return () => window.removeEventListener("jarvis-app-update", onResult);
+  }, []);
+  useEffect(() => {
+    if (!appUpdateNote || appUpdateNote.endsWith("…")) return undefined;
+    const t = setTimeout(() => setAppUpdateNote(""), 8000);
+    return () => clearTimeout(t);
+  }, [appUpdateNote]);
+  const updateApp = useCallback(() => {
+    setAppUpdateNote("Procurando atualização no PC…");
+    try {
+      if (window.JarvisApp?.checkUpdate) {
+        window.JarvisApp.checkUpdate();
+        return;
+      }
+    } catch {
+      /* app antigo: cai no link abaixo */
+    }
+    window.location.href = "jarvis://open";
+  }, []);
+
   // V5.1: alarme. Ao abrir (ou reconectar), confere se já tem um tocando; os botões chamam o backend.
   useEffect(() => {
     if (screen === "boot") return;
@@ -2223,7 +2251,8 @@ export default function App() {
           guestEnabled={Boolean(appPrefs.lock_guest_enabled)}
           onGuest={enterGuest}
           onNewProfile={IS_JARVIS_APP ? null : () => setScreen("newprofile")}
-          onUpdate={BACKEND_ON_THIS_PC && !IS_JARVIS_APP ? updateJarvis : null}
+          onUpdate={IS_JARVIS_APP ? updateApp : BACKEND_ON_THIS_PC ? updateJarvis : null}
+          updateNote={appUpdateNote}
           phoneApp={IS_JARVIS_APP}
           fanToggle={{
             enabled: fanModeEnabled,

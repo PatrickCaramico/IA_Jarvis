@@ -15,6 +15,7 @@ import "../brand.css";
 import "../feedback.css";
 import "../blueprint.css";
 import "../alarm.css";
+import "../mobile.css"; // V5.7.1: a demo também mostra o layout do celular
 import { applyFanMode, initialAccessibility } from "../utils/theme.js";
 
 initialAccessibility();
@@ -77,6 +78,9 @@ const baseApi = (path) => demoInfo(path) || lockExtras(path) || offline();
 
 function Demo() {
   const [fan, setFan] = React.useState(fanOn);
+  // ?app=1: como aparece dentro do app do celular (botão ATUALIZAR APP)
+  const phoneApp = q.get("app") === "1";
+  const [note, setNote] = React.useState("");
   const toggle = () => setFan((v) => { applyFanMode(!v); return !v; });
   if (q.get("screen") === "newprofile") return <NewProfileScreen api={baseApi} onCancel={() => {}} onCreated={() => {}} />;
   if (q.get("screen") === "welcome") return <ProfileWelcome api={baseApi} name="Maria" onDone={() => {}} />;
@@ -95,7 +99,9 @@ function Demo() {
     silent
     fanToggle={{ enabled: fan, busy: false, onToggle: toggle }}
     onNewProfile={() => {}}
-    onUpdate={() => {}}
+    onUpdate={() => { setNote("Procurando atualização no PC…"); setTimeout(() => setNote("O app já está na versão mais nova (5.7.1)."), 900); }}
+    updateNote={note}
+    phoneApp={phoneApp}
     cards={{ api: fan ? fanApi : baseApi, list: fan ? ["clock", "weather"] : ["clock", "weather", "spotify"], fanModeEnabled: fan }}
     mic={sentinelOn ? null : { muted: true, onToggle: () => {} }}
     sentinel={sentinelOn ? {

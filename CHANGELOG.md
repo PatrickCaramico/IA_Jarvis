@@ -2,6 +2,11 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 5.7.1 — 11 de novembro de 2026
+
+- **Botão ATUALIZAR APP** na tela de bloqueio do app: procura a versão nova no PC na hora (sem esperar os 30 minutos) e mostra a resposta ("O app já está na versão mais nova", "Atualizando o app…", ou o erro). Ponte nova `JarvisApp.checkUpdate()`; no app antigo, o botão recarrega pelo `jarvis://open`, que também confere. APK 5.7.1.
+- **Bloqueio no celular:** cartões com a mesma largura e o botão do Modo Torcedor no fim da página, em vez de flutuar sobre os cartões.
+
 ## 5.7.0 — 11 de novembro de 2026
 
 Uma voz só, e o celular com atalhos.
