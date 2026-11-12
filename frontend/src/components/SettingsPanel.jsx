@@ -367,6 +367,7 @@ export default function SettingsPanel({ api, onClose, onPrefsChange, onOpenMicro
                 >
                   <option value="direto">Direto / Tático</option>
                   <option value="descontraido">Descontraído</option>
+                  <option value="alexa">Estilo Alexa (curto e direto)</option>
                   <option value="formal">Mordomo Britânico</option>
                 </select>
               </div>

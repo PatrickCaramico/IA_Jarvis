@@ -1,6 +1,6 @@
 # JARVIS — Comandos do dia a dia
 
-**Versão do projeto:** 6.5.13 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
+**Versão do projeto:** 6.5.14 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
 
 > Montado a partir do código do projeto. Se algum comando não responder como descrito, me avise que eu ajusto o guia.
 > Para a lista técnica de rotas, veja [API.md](API.md); para o `.env`, [CONFIGURACAO.md](CONFIGURACAO.md).
@@ -76,6 +76,7 @@ Fale naturalmente; os exemplos abaixo são modelos, não frases exatas.
 | --- | --- |
 | "Bom dia" / "Resumo do dia" | Briefing em etapas: abertura (há algo urgente?), clima, agenda, e-mails, notícias (tecnologia, IA, política) e saúde sob demanda, um card por assunto, e uma recomendação do dia no fim. **→** ou PRÓXIMO ▸ pula o assunto; Esc ou ✕ CANCELAR interrompe. |
 | Na tela de bloqueio: "Jarvis, como está o clima?" (V6.5.8) | Responde falando e abre uma mini janela: agora, hoje (máx/mín, chuva, sol) e os próximos dias. Contas, timers e outras perguntas públicas mostram a pergunta e a resposta. |
+| Só o nome: "YouTube", "Netflix", "vai no YouTube", "entra no Netflix" (V6.5.14) | Abre como "abra o YouTube" (o reconhecimento às vezes corta o "abre"). Nomes mal ouvidos ("iutubi", "espotifai", "netflx") também são entendidos. |
 | "Abra o YouTube" / "Abra o Google" (V6.5.8) | Abre numa janela média do navegador, no canto da tela, que dá para arrastar. |
 | Resposta a "Em qual navegador?" (V6.5.11): "no Chrome", "Edge", "o padrão", "sempre no Chrome", "cancela" | Abre no navegador escolhido; com "sempre", não pergunta mais (volta a perguntar em Configurações › Mídia & Foco › NAVEGADOR DOS SITES). Também dá para tocar na lista que aparece. |
 | "Modo bloqueio" / "Ativa o modo bloqueio" / "Volta pra tela de bloqueio" / "Bloqueia a central" (V6.5.7) | Leva a central para a tela de bloqueio (PC e celular). "Modo sentinela" faz o mesmo e fica ouvindo "Jarvis". "Bloquear a tela" bloqueia o Windows. |

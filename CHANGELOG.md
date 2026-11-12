@@ -2,6 +2,12 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 6.5.14 — 12 de novembro de 2026
+
+- **"YouTube" pela segunda vez não abria:** o reconhecimento de voz entregou só "YouTube" (sem o "abre"), e a frase ia para a IA, que só conversava. Agora o nome de um site/app sozinho abre (como na Alexa), inclusive "vai no YouTube", "entra no Netflix" e "o Netflix aí".
+- **Entende melhor a voz:** `modules/voice_fix.py` corrige trocas comuns do reconhecimento ("iutubi", "you tube", "espotifai", "netiflix", "uatsap", "chat gpt", "abri o" → "abre o") e aproxima nomes parecidos com os conhecidos ("netflx" → Netflix), sem mexer em frases longas nem em outros comandos.
+- **Estilo Alexa:** nova personalidade "Estilo Alexa (curto e direto)" em Configurações › IA: respostas de 1 ou 2 frases curtas, a informação primeiro, oferecendo detalhes. Ligada para o perfil principal.
+
 ## 6.5.13 — 12 de novembro de 2026
 
 - **Rodapé do bloqueio sem encavalar:** com os botões da direita mais para o centro (por causa do selo do Netlify), o ÁUDIO ficava por cima de "ESPAÇO = LIBERAR". No PC, a faixa do microfone agora fica numa linha própria, logo acima da fileira de botões.

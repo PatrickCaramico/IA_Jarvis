@@ -204,6 +204,7 @@ async def update_prefs(req: PrefsRequest) -> dict:
     if "personality_mode" in patch and patch["personality_mode"] not in {
         "direto",
         "descontraido",
+        "alexa",
         "formal",
     }:
         raise HTTPException(status_code=400, detail="Modo de personalidade inválido.")

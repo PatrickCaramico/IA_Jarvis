@@ -78,6 +78,10 @@ PERSONALITY_PROMPTS = {
     "direto": "Seja objetivo e natural.",
     "descontraido": "Use um tom leve, próximo e bem-humorado, sem exagerar.",
     "formal": "Use um tom profissional, claro e respeitoso.",
+    # V6.5.14: como uma assistente de voz (Alexa): curtinho, natural e direto ao ponto
+    "alexa": ("Responda como uma assistente de voz de casa (estilo Alexa): no máximo 1 ou 2 frases bem curtas, "
+              "a informação primeiro, linguagem do dia a dia, sem rodeios e sem 'senhor' em toda resposta. "
+              "Se precisar de mais detalhes, ofereça em uma frase ('Quer que eu detalhe?')."),
 }
 
 _WEEKDAYS = ["segunda-feira", "terça-feira", "quarta-feira", "quinta-feira",

@@ -21,7 +21,7 @@ _DEFAULTS: dict[str, Any] = {
     "custom_shortcuts": {},       # atalhos personalizados: {"nome": {"apps": [...], "urls": [...]}}
     "camera_index": 0,            # índice da webcam (0 = padrão)
     "llm_provider": "openai",     # provedor usado nas próximas conversas
-    "personality_mode": "direto", # direto | descontraido | formal
+    "personality_mode": "direto", # direto | descontraido | formal | alexa (V6.5.14)
     "search_mode": "auto",        # "auto" (como a Alexa: IA + busca no Google) | "browser" | "ask" | "api"
     "default_search_mode": "browser", # modo padrão caso expire timeout (10s)
     "deep_search_allowed": False, # trava geral: pesquisa profunda com IA (Gemini+web) desativada por padrão

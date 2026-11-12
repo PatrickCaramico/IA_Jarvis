@@ -719,6 +719,11 @@ async def _h_open(message: str, norm: str, words: int, name: str) -> Optional[st
             log.exception("Falha ao abrir o aplicativo Spotify")
             return "Não consegui abrir o aplicativo do Spotify neste computador, senhor."
 
+    from modules import voice_fix
+
+    near = voice_fix.closest(wanted, known_targets()) if wanted not in known_targets() else None
+    if near:  # V6.5.14: "abre o netflx" -> netflix
+        wanted = near
     site_hit = _lookup_site(wanted)
     if site_hit is not None:
         label, site = site_hit
@@ -1666,11 +1671,30 @@ _HANDLERS = (
 )
 
 
+def known_targets() -> list[str]:
+    """V6.5.14: nomes que dá para abrir (sites conhecidos, atalhos e Meus Sites), normalizados."""
+    names = set(_SMART_WEB_SERVICES) | {_norm(k) for k in _load_shortcuts()}
+    try:
+        names |= {_norm(s.get("name", "")) for s in list_sites() if s.get("name")}
+    except Exception:  # noqa: BLE001
+        pass
+    return sorted(n for n in names if n)
+
+
 async def run(message: str, name: str = "") -> Optional[str]:
     """Tenta resolver o pedido com uma função local. Devolve o texto falado, ou None."""
     norm = _norm(message)
     if not norm:
         return None
+    # V6.5.14: corrige nomes mal ouvidos e, se veio só o nome ("YouTube"), entende como "abrir YouTube"
+    from modules import voice_fix
+
+    fixed = voice_fix.apply_fixes(norm)
+    target = voice_fix.bare_target(fixed, known_targets())
+    if target:
+        fixed = f"abrir {target}"
+    if fixed != norm:
+        norm, message = fixed, fixed
     words = len(norm.split())
     for handler in _HANDLERS:
         try:
