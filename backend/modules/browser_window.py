@@ -27,9 +27,10 @@ _CANDIDATES = {
                 r"%ProgramFiles(x86)%\Mozilla Firefox\firefox.exe"],
     "brave": [r"%ProgramFiles%\BraveSoftware\Brave-Browser\Application\brave.exe",
               r"%LocalAppData%\BraveSoftware\Brave-Browser\Application\brave.exe"],
+    "opera": [r"%LocalAppData%\Programs\Opera\opera.exe", r"%LocalAppData%\Programs\Opera GX\opera.exe"],
 }
 _WINDOW_CLASS = {"chrome": "Chrome_WidgetWin_1", "edge": "Chrome_WidgetWin_1", "brave": "Chrome_WidgetWin_1",
-                 "firefox": "MozillaWindowClass"}
+                 "opera": "Chrome_WidgetWin_1", "firefox": "MozillaWindowClass"}
 
 
 def compact_rect(work: tuple[int, int, int, int], scale: float = 0.6, margin: int = 24) -> tuple[int, int, int, int]:
@@ -58,6 +59,11 @@ def _default_browser() -> str:
     if "brave" in prog:
         return "brave"
     return "edge"
+
+
+def exe_for(kind: str) -> str | None:
+    """V6.5.11: caminho do navegador instalado (ou None)."""
+    return _exe(kind)
 
 
 def _exe(kind: str) -> str | None:
@@ -107,24 +113,44 @@ def _place(hwnd: int) -> None:
     user32.SetForegroundWindow(hwnd)
 
 
-def open_url(url: str) -> bool:
-    """Abre a URL numa janela média do navegador. True se deu certo do jeito novo."""
+def open_url(url: str, browser: str | None = None, force: bool = False) -> bool:
+    """Abre a URL numa janela média do navegador. True se deu certo do jeito novo.
+
+    V6.5.11: browser = "chrome"/"edge"/... escolhe o navegador. Sem ele, segue a preferência "site_browser":
+    "ask" guarda a URL e o JARVIS pergunta em qual abrir (modules/browser_choice.py); force=True pula a pergunta.
+    """
     try:
         from modules import prefs
 
-        mode = prefs.get_all().get("site_window_mode") or "compact"
+        p = prefs.get_all()
+        mode = p.get("site_window_mode") or "compact"
+        chosen = str(p.get("site_browser") or "ask")
     except Exception:  # noqa: BLE001
-        mode = "compact"
-    if mode != "compact" or os.name != "nt":
+        mode, chosen = "compact", "default"
+    if browser is None and not force:
+        from modules import browser_choice
+
+        if chosen == "ask" and browser_choice.should_ask():
+            browser_choice.request(url)
+            return False
+        if chosen not in ("ask", "default") and _exe(chosen):
+            browser = chosen
+    if os.name != "nt":
         webbrowser.open(url, new=2, autoraise=True)
         return False
-    kind = _default_browser()
+    if mode != "compact" and not browser:
+        webbrowser.open(url, new=2, autoraise=True)
+        return False
+    kind = browser or _default_browser()
     exe = _exe(kind) or _exe("edge")
     if not exe:
         webbrowser.open(url, new=2, autoraise=True)
         return False
     kind = {"chrome.exe": "chrome", "msedge.exe": "edge", "firefox.exe": "firefox",
-            "brave.exe": "brave"}.get(os.path.basename(exe).lower(), kind)
+            "brave.exe": "brave", "opera.exe": "opera"}.get(os.path.basename(exe).lower(), kind)
+    if mode != "compact":  # navegador escolhido, mas sem a janela média: abre normal nele
+        subprocess.Popen([exe, url], close_fds=True)  # noqa: S603
+        return False
     cls = _WINDOW_CLASS.get(kind, "Chrome_WidgetWin_1")
     try:
         before = _windows_of(cls)

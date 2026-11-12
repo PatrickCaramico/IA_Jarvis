@@ -4,6 +4,7 @@ import LockSettings from "./settings/LockSettings.jsx";
 import WaterSettings from "./settings/WaterSettings.jsx";
 import SoundSettings from "./settings/SoundSettings.jsx";
 import VoiceSettings from "./settings/VoiceSettings.jsx";
+import BrowserSettings from "./settings/BrowserSettings.jsx";
 import BriefingNewsSettings from "./settings/BriefingNewsSettings.jsx";
 import MaintenanceSettings from "./settings/MaintenanceSettings.jsx";
 import AutomationSettings from "./settings/AutomationSettings.jsx";
@@ -524,6 +525,7 @@ export default function SettingsPanel({ api, onClose, onPrefsChange, onOpenMicro
               </button>
             )}
             {prefs && <VoiceSettings prefs={prefs} onPatch={patchPrefs} api={api} />}
+            <BrowserSettings api={api} />
             {prefs && <SoundSettings prefs={prefs} onPatch={patchPrefs} />}
             <div>
               <label className="mb-1 block font-['Orbitron'] text-xs tracking-wider text-cyan-300">

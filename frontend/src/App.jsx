@@ -11,6 +11,7 @@ import FocusWidget from "./components/FocusWidget.jsx";
 import MicrophoneSelectModal from "./components/MicrophoneSelectModal.jsx";
 import AudioSettingsModal from "./components/AudioSettingsModal.jsx";
 import LockAnswer from "./components/LockAnswer.jsx";
+import BrowserChooser from "./components/BrowserChooser.jsx";
 import WeatherWidget from "./components/WeatherWidget.jsx";
 import AudioWaveformWidget from "./components/AudioWaveformWidget.jsx";
 import DigitalClockWidget from "./components/DigitalClockWidget.jsx";
@@ -150,6 +151,8 @@ export default function App() {
   const [sentinelReply, setSentinelReply] = useState("");
   const [lockAnswer, setLockAnswer] = useState(null); // V6.5.8: mini janela da resposta no bloqueio
   const [audioOpen, setAudioOpen] = useState(false); // V6.5.8: botão ÁUDIO do bloqueio
+  const [browserChoice, setBrowserChoice] = useState(null); // V6.5.11: "Em qual navegador?"
+  const closeBrowserChoice = useCallback(() => setBrowserChoice(null), []);
   const [sentinelUnlock, setSentinelUnlock] = useState(false);
   // V4.2.2: na tela de bloqueio o microfone (escuta do Sentinela e palmas) começa SILENCIADO;
   // liga com clique no botão do microfone ou com a tecla P.
@@ -515,6 +518,12 @@ export default function App() {
           readiness: msg.readiness,
           closing: msg.closing,
         }));
+        break;
+      case "browser_choice": // V6.5.11
+        setBrowserChoice(Array.isArray(msg.browsers) ? msg.browsers : []);
+        break;
+      case "browser_choice_done":
+        setBrowserChoice(null);
         break;
       case "speech_stop": // V6.5.3: pular/cancelar também cala a voz deste aparelho
         stopSpeech(msg.say_id || null);
@@ -2837,6 +2846,7 @@ export default function App() {
       )}
 
       {/* Modal de seleção de microfone (quando aberto pelo Perfil ou Configurações) */}
+      {browserChoice && <BrowserChooser api={api} browsers={browserChoice} onClose={closeBrowserChoice} />}
       {showMicrophoneSelect && (
         <MicrophoneSelectModal
           onConfirm={(selectedId) => {

@@ -2,6 +2,10 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 6.5.11 — 12 de novembro de 2026
+
+- **Em qual navegador?** Ao abrir um site ("abra o YouTube"), o JARVIS pergunta em qual navegador, mostra a lista dos instalados (Chrome, Edge, Firefox, Brave, Opera e "Padrão do Windows") e abre no escolhido, falando ("no Chrome", "sempre no Edge", "tanto faz", "cancela") ou tocando. "Sempre…" ou a caixinha "Lembrar a escolha" grava a preferência (`site_browser`: "ask", "default" ou o navegador), que também fica em Configurações › Mídia & Foco › NAVEGADOR DOS SITES. Com um navegador só instalado, não pergunta. `modules/browser_choice.py`, `GET /api/browser`, `POST /api/browser/choose`, `components/BrowserChooser.jsx`.
+
 ## 6.5.10 — 12 de novembro de 2026
 
 - **Rodapé do bloqueio invertido (PC):** o carimbo J.A.R.V.I.S. foi para o canto inferior esquerdo e o CELULAR para a direita, ao lado do Modo Torcedor (também deixa de ficar embaixo do selo do Netlify). No celular e em telas pequenas, nada muda.

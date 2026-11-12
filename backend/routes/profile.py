@@ -80,6 +80,7 @@ class PrefsRequest(BaseModel):
     briefing_news_themes: list[dict] | None = None  # V6.2
     voice_listener_enabled: bool | None = None  # V6.3: ouvido offline
     news_notify_enabled: bool | None = None  # V6.5: notícias no celular
+    site_browser: str | None = None  # V6.5.11: navegador dos sites ("ask", "default", "chrome"...)
     ai_name: str | None = None
     color_theme: str | None = None
     background_style: str | None = None
@@ -184,6 +185,11 @@ async def update_prefs(req: PrefsRequest) -> dict:
 
         if patch["voice_style"] not in VOICE_STYLES:
             raise HTTPException(status_code=400, detail="Estilo de voz inválido.")
+    if "site_browser" in patch:  # V6.5.11
+        from modules.browser_choice import NAMES
+
+        if patch["site_browser"] not in {"ask", "default", *NAMES}:
+            raise HTTPException(status_code=400, detail="Navegador inválido.")
     if "background_style" in patch and patch["background_style"] not in {"blueprint", "classic", "space"}:
         raise HTTPException(status_code=400, detail="background_style inválido. Use 'blueprint', 'space' ou 'classic'.")
     if "llm_provider" in patch and patch["llm_provider"] not in {

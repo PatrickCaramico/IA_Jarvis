@@ -47,6 +47,7 @@ _DEFAULTS: dict[str, Any] = {
     "audio_output_device": "",            # V6.5.8: caixa de som da voz no PC ("" = padrão do Windows)
     "voice_input_device": "",             # V6.5.8: microfone do ouvido offline ("" = padrão do Windows)
     "site_window_mode": "compact",        # V6.5.8: "abra o youtube" numa janela média ("compact") ou aba ("tab")
+    "site_browser": "ask",                # V6.5.11: "ask" (pergunta), "default" ou "chrome"/"edge"/"firefox"/...
     "calendar_ics_url": "",               # V5.6: endereço secreto iCal do Google Agenda (alternativa ao OAuth)
     "countdowns": [],                     # V5.6: contagens regressivas na tela [{id, title, target, all_day}]                 # V5.4: briefing/pergunta do dia já feitos (vale para todos os aparelhos)
     "lock_cards": ["clock", "weather", "spotify"],   # cartões visíveis na tela de bloqueio

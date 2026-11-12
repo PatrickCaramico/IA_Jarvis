@@ -265,6 +265,34 @@ async def tts_audio(req: TtsRequest):
     return Response(content=data, media_type="audio/mpeg", headers={"Cache-Control": "no-store"})
 
 
+class BrowserPick(BaseModel):
+    browser: str
+    remember: bool = False
+
+
+@router.get("/api/browser")
+async def browser_list() -> dict:
+    """V6.5.11: navegadores instalados e a preferência (perguntar, padrão ou um deles)."""
+    from modules import browser_choice
+
+    return {"browsers": await asyncio.to_thread(browser_choice.installed), "mode": browser_choice.mode(),
+            "pending": browser_choice.pending()}
+
+
+@router.post("/api/browser/choose")
+async def browser_choose(req: BrowserPick) -> dict:
+    """V6.5.11: tocar num navegador da lista "Em qual navegador?"."""
+    from modules import browser_choice
+
+    if req.browser not in (*browser_choice.NAMES, "default", "cancel"):
+        raise HTTPException(status_code=400, detail="Navegador desconhecido.")
+    reply = await asyncio.to_thread(browser_choice.choose, req.browser, req.remember)
+    await runtime.manager.broadcast({"type": "browser_choice_done"})
+    await runtime.manager.broadcast({"type": "response", "text": reply, "cards": [], "local": True})
+    runtime.track(speech.speak(reply))
+    return {"status": "ok", "response": reply}
+
+
 class AudioChoice(BaseModel):
     output: str | None = None
     input: str | None = None

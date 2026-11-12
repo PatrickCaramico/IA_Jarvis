@@ -731,3 +731,22 @@
 }
 .np-lock .np-cover { width: 56px; height: 56px; border-radius: 8px; box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45); }
 @media (prefers-reduced-motion: reduce) { .lc-spotify.is-idle .lc-vinyl { animation: none; } }
+
+/* V6.5.11: "Em qual navegador?" */
+.bc-window {
+  position: fixed; left: 50%; bottom: 110px; transform: translateX(-50%); z-index: 9100;
+  width: min(380px, calc(100vw - 32px)); padding: 14px 16px; border-radius: 16px;
+  border: 1px solid rgba(94, 234, 212, 0.5); background: linear-gradient(180deg, rgba(6, 26, 62, 0.97), rgba(3, 14, 38, 0.98));
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5), 0 0 24px rgba(94, 234, 212, 0.2); color: #e6f7fb; animation: la-in 200ms ease-out;
+}
+.bc-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; font-family: "Orbitron", sans-serif; font-size: 0.66rem; letter-spacing: 0.14em; color: #5eead4; }
+.bc-list { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.bc-opt {
+  display: flex; align-items: center; gap: 8px; padding: 10px; border-radius: 10px; cursor: pointer; text-align: left;
+  border: 1px solid rgba(201, 246, 255, 0.18); background: rgba(2, 8, 19, 0.45); color: #e6f7fb; font-size: 0.9rem;
+}
+.bc-opt:hover:not(:disabled), .bc-opt:focus-visible { border-color: #5eead4; background: rgba(94, 234, 212, 0.12); }
+.bc-opt small { color: #a7f3d0; }
+.bc-remember { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 0.8rem; color: rgba(201, 246, 255, 0.8); cursor: pointer; }
+.bc-remember input { accent-color: #5eead4; }
+.bc-hint { margin: 6px 0 0; font-size: 0.72rem; color: rgba(201, 246, 255, 0.5); }

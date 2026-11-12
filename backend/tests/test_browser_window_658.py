@@ -17,7 +17,7 @@ def test_tab_mode_uses_old_behaviour(monkeypatch):
     from modules import prefs
 
     opened = []
-    monkeypatch.setattr(prefs, "get_all", lambda: {"site_window_mode": "tab"})
+    monkeypatch.setattr(prefs, "get_all", lambda: {"site_window_mode": "tab", "site_browser": "default"})
     monkeypatch.setattr(bw.webbrowser, "open", lambda url, new=0, autoraise=True: opened.append(url))
     assert bw.open_url("https://www.youtube.com") is False
     assert opened == ["https://www.youtube.com"]

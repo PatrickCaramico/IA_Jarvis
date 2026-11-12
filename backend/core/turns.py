@@ -133,6 +133,18 @@ async def handle_turn(message: str, routine: bool, force_deep: bool = False) -> 
         runtime.track(speech.speak(reply))
         return {"status": "ok", "response": reply, "cards": cards, "source": "local"}
 
+    # V6.5.11: resposta a "Em qual navegador, senhor?"
+    from modules import browser_choice
+
+    if browser_choice.pending():
+        picked, remember = browser_choice.parse(message)
+        if picked:
+            reply = await asyncio.to_thread(browser_choice.choose, picked, remember)
+            await runtime.manager.broadcast({"type": "browser_choice_done"})
+            return await finish_local(reply)
+        browser_choice.clear()  # falou de outra coisa: esquece o pedido e segue
+        await runtime.manager.broadcast({"type": "browser_choice_done"})
+
     # 4.2: resposta a uma ação pendente (sugestão da rotina, organizar pasta)
     if confirm.pending():
         confirm_reply = await confirm.answer(quick_replies._norm(message))
@@ -480,6 +492,10 @@ async def handle_turn(message: str, routine: bool, force_deep: bool = False) -> 
             raise HTTPException(status_code=500, detail="Não foi possível executar essa ação.") from exc
         if speech.canceled(turn):
             return {"status": "canceled"}
+        if tool_reply and browser_choice.take_new():
+            # V6.5.11: o pedido ia abrir um site: antes, pergunta em qual navegador (a lista aparece na tela)
+            await runtime.manager.broadcast({"type": "browser_choice", "browsers": browser_choice.installed()})
+            return await finish_local(browser_choice.question())
         if tool_reply:
             if "Não consegui ler os resultados, senhor. Quer que eu use a pesquisa profunda?" in tool_reply:
                 session.pending_deep_search_query = tools.extract_search_query(message) or message
