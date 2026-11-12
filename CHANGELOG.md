@@ -2,6 +2,12 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 6.5.8 — 12 de novembro de 2026
+
+- **Botão ÁUDIO na tela de bloqueio** (🎧, ao lado do FUNDO): escolher onde o JARVIS fala (no celular: aqui ou no PC), a caixa de som do PC (com 🔊 TESTAR), o microfone do PC (o ouvido offline reabre na hora no microfone novo) e o microfone desta tela (palmas e escuta). `GET/POST /api/audio`, `POST /api/audio/test`, `modules/audio_devices.py`; preferências `audio_output_device` e `voice_input_device`. O alarme toca na mesma caixa da voz.
+- **Mini janela das respostas no bloqueio:** cada pergunta pública respondida na tela de bloqueio abre uma mini janela (`components/LockAnswer.jsx`). Clima: agora (temperatura, sensação, umidade, vento), hoje (máx/mín, chuva, nascer e pôr do sol) e os próximos 6 dias (previsão de 7 dias, `tools.weather_card`). Outras: a pergunta e a resposta. Fecha sozinha em 30 s sem toque.
+- **Sites numa janela média e arrastável:** "abra o YouTube" (e os outros sites e atalhos) abre uma janela própria do navegador padrão (Chrome, Edge, Firefox ou Brave), com ~60% da tela, no canto inferior direito, em vez de uma aba em tela cheia (`modules/browser_window.py`; `site_window_mode` = "tab" volta ao jeito antigo).
+
 ## 6.5.7 — 12 de novembro de 2026
 
 - **Atualização do app parada em 100%:** no Android 14+ e em celulares Xiaomi/HyperOS, a tela "Atualizar o JARVIS?" aberta pelo instalador em segundo plano era bloqueada em silêncio. Agora quem abre a confirmação é a própria tela do JARVIS, e de reserva aparece o aviso "Concluir atualização do JARVIS" para tocar; se nada acontecer em 2 minutos, o botão destrava com uma explicação. APK 6.5.7.
