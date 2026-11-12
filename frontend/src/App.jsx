@@ -40,6 +40,10 @@ import { enqueueHere } from "./utils/speakHere.js";
 import { scheduleDailyUpdateCheck } from "./utils/updateCheck.js";
 import { applyAccessibility, applyBackground, applyFanMode, applyTheme } from "./utils/theme.js";
 import { IS_JARVIS_APP } from "./utils/device.js";
+
+// V6.3: tela longe do PC (app do celular, ou navegador por túnel/rede): a câmera do PC não vê quem está
+// usando, então a entrada é pelo PIN (e a digital, no app) em vez da verificação do rosto.
+const REMOTE_SCREEN = IS_JARVIS_APP || !BACKEND_ON_THIS_PC;
 import useJarvisSocket from "./hooks/useJarvisSocket.js";
 import useSearchIndicator from "./hooks/useSearchIndicator.js";
 import WaterAutoClose from "./components/WaterAutoClose.jsx";
@@ -730,7 +734,7 @@ export default function App() {
         // Verificação rápida: ao abrir (pelo site ou no PC), já lê o rosto uma vez.
         // É você: entra direto na sua central. Não é: a tela oferece criar um perfil novo.
         // No app do celular a câmera seria a do PC, então lá continua pelo PIN.
-        if (!wakeHandledRef.current && !IS_JARVIS_APP) {
+        if (!wakeHandledRef.current && !REMOTE_SCREEN) {
           wakeHandledRef.current = true;
           quickEnterRef.current = true;
           verify({ trigger: wake ? "wake" : "button" });
@@ -1079,7 +1083,7 @@ export default function App() {
 
   const handleLockContinue = useCallback(() => {
     // V4.5: no app do celular o rosto usaria a webcam do PC, então a entrada é pelo PIN
-    if (IS_JARVIS_APP && hasPin && (lockPhase === "ready" || lockPhase === "failed")) {
+    if (REMOTE_SCREEN && hasPin && (lockPhase === "ready" || lockPhase === "failed")) {
       loadPinStatus();
       setPinState((cur) => ({ ...cur, message: "", busy: false }));
       setLockPhase("pin");
@@ -2387,11 +2391,11 @@ export default function App() {
           }}
           guestEnabled={Boolean(appPrefs.lock_guest_enabled)}
           onGuest={enterGuest}
-          onNewProfile={IS_JARVIS_APP ? null : () => setScreen("newprofile")}
+          onNewProfile={REMOTE_SCREEN ? null : () => setScreen("newprofile")}
           onUpdate={IS_JARVIS_APP ? updateApp : BACKEND_ON_THIS_PC ? updateJarvis : null}
           updateNote={appUpdateNote}
           updateProgress={appUpdatePct}
-          phoneApp={IS_JARVIS_APP}
+          phoneApp={REMOTE_SCREEN}
           onBiometric={IS_JARVIS_APP && (() => { try { return window.JarvisApp?.hasBiometric?.(); } catch { return false; } })()
             ? () => window.JarvisApp.biometricUnlock() : null}
           bgToggle={{
