@@ -143,16 +143,40 @@ import time  # noqa: E402
 
 _notify_ids = itertools.count(1)
 NOTIFY_FEED: collections.deque[dict] = collections.deque(maxlen=50)
+_feed_loaded = False
+
+
+def _ensure_feed() -> None:
+    """V6.5.4: na primeira vez, recupera do disco os avisos de antes do reinício (e continua a numeração)."""
+    global _feed_loaded, _notify_ids
+    if _feed_loaded:
+        return
+    _feed_loaded = True
+    from modules import phone_feed
+
+    saved = phone_feed.load()
+    if saved:
+        known = {n["id"] for n in NOTIFY_FEED}
+        merged = sorted([n for n in saved if n["id"] not in known] + list(NOTIFY_FEED), key=lambda n: n["id"])
+        NOTIFY_FEED.clear()
+        NOTIFY_FEED.extend(merged[-NOTIFY_FEED.maxlen:])
+    top = max((n["id"] for n in NOTIFY_FEED), default=0)
+    _notify_ids = itertools.count(top + 1)
 
 
 def notify(kind: str, title: str, body: str) -> dict:
     """Guarda um aviso para o celular. kind: reminder | water | trigger | fan | news."""
+    _ensure_feed()
     item = {"id": next(_notify_ids), "ts": time.time(), "kind": kind, "title": title, "body": (body or "").strip()}
     NOTIFY_FEED.append(item)
+    from modules import phone_feed
+
+    phone_feed.save(NOTIFY_FEED)
     return item
 
 
 def notifications_since(since: int) -> dict:
+    _ensure_feed()
     items = [n for n in NOTIFY_FEED if n["id"] > since]
     latest = NOTIFY_FEED[-1]["id"] if NOTIFY_FEED else 0
     return {"items": items, "latest": latest}

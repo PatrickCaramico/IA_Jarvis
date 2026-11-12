@@ -14,6 +14,7 @@ existem com o modo rede ligado (Iniciar-JARVIS-Rede.bat).
 
 import asyncio
 import json
+import logging
 import re
 import secrets
 from html import escape
@@ -30,6 +31,7 @@ from routes.system import local_ip, tailscale_ip
 from version import VERSION
 
 router = APIRouter()
+log = logging.getLogger("jarvis.mobile")
 
 APK_PATH = Path(__file__).resolve().parents[2] / "mobile" / "dist" / "JARVIS.apk"
 PACKAGE = "com.patrick.jarvis"
@@ -195,6 +197,30 @@ async def mobile_pair_pin(req: PairPinRequest, request: Request) -> dict:
     return {"url": f"http://{ip}:5173/?token={runtime.ACCESS_TOKEN}"}
 
 
+_POLLERS: dict[str, float] = {}
+
+
+def _note_poll(request: Request) -> None:
+    """V6.5.4: registra (uma vez por hora) que o celular está buscando avisos, com a versão do app e o caminho."""
+    import time as _time
+
+    ua = request.headers.get("user-agent", "")
+    m = re.search(r"JarvisApp/[\w.]+", ua)
+    who = m.group(0) if m else (ua[:40] or "?")
+    via = "túnel" if tunnel_origin(request) else ("este PC" if runtime.is_local_conn(request) else "rede")
+    key = f"{who}|{via}"
+    now = _time.time()
+    if now - _POLLERS.get(key, 0) > 3600:
+        log.info("Celular buscando avisos: %s via %s", who, via)
+    _POLLERS[key] = now
+
+
+def last_poll_seconds() -> float | None:
+    import time as _time
+
+    return (_time.time() - max(_POLLERS.values())) if _POLLERS else None
+
+
 @router.get("/api/mobile/notifications")
 async def mobile_notifications(request: Request, since: int = -1) -> dict:
     """Avisos para o app Android (lembretes, água, gatilhos, Modo Torcedor).
@@ -206,6 +232,7 @@ async def mobile_notifications(request: Request, since: int = -1) -> dict:
     token = request.headers.get("X-Jarvis-Token") or request.query_params.get("token") or ""
     if not secrets.compare_digest(token, runtime.ACCESS_TOKEN):
         raise HTTPException(status_code=401, detail="Chave de pareamento ausente ou inválida.")
+    _note_poll(request)
     feed = runtime.notifications_since(max(since, 0))
     if since < 0:
         return {"items": [], "latest": feed["latest"]}

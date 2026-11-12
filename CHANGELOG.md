@@ -2,6 +2,10 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 6.5.4 — 12 de novembro de 2026
+
+- **Notícias que não chegavam no celular:** a fila de avisos do celular ficava só na memória; cada reinício do JARVIS (toda atualização publicada reinicia) apagava os avisos que o celular ainda não tinha buscado, e as notícias já marcadas como avisadas não voltavam. Agora a fila fica em disco (`modules/phone_feed.py`, `data/avisos_celular.json`) e a numeração continua depois do reinício. O log registra quando o celular busca avisos ("Celular buscando avisos … via túnel/rede").
+
 ## 6.5.3 — 12 de novembro de 2026
 
 - **Pular continuava falando / Cancelar fechava mas a voz seguia:** com a voz no celular, os dois só calavam a caixa do PC. Agora o PC manda `speech_stop` ao aparelho: "pular" cala só a fala atual (a próxima parte segue), "cancelar" cala tudo e esvazia a fila; o botão Cancelar também cala o aparelho na hora, e uma voz que ainda estava baixando não toca mais depois.
