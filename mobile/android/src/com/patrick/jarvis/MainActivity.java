@@ -58,6 +58,38 @@ public class MainActivity extends Activity {
     static volatile boolean visible = false;
     // V5.1.1: atualização automática (o app baixa o APK do PC e se instala pelo PackageInstaller)
     static volatile boolean updateInProgress = false;
+    // V6.5.7: a tela viva (o InstallReceiver pede para ELA abrir a confirmação da instalação)
+    private static java.lang.ref.WeakReference<MainActivity> live = new java.lang.ref.WeakReference<>(null);
+
+    static MainActivity current() {
+        return live.get();
+    }
+
+    /** Abre a tela "Atualizar o JARVIS?" do Android a partir da tela que está na frente. */
+    void openInstallConfirm(Intent confirm) {
+        runOnUiThread(() -> {
+            try {
+                startActivity(confirm);
+                reportUpdate(true, "confirm", "Toque em Atualizar na janela do Android.");
+            } catch (Exception e) {
+                reportUpdate(true, "confirm", "Toque no aviso \"Concluir atualização do JARVIS\" para terminar.");
+            }
+        });
+    }
+
+    /** Fim da instalação (falhou ou foi cancelada): a barra some e o botão volta a funcionar. */
+    void updateFinished(boolean ok, String message) {
+        retryHandler.removeCallbacks(updateWatchdog);
+        updateInProgress = false;
+        reportUpdate(true, ok ? "latest" : "error", message);
+    }
+
+    // Se nada acontecer em 2 minutos (confirmação nunca apareceu), destrava o botão
+    private final Runnable updateWatchdog = () -> {
+        if (!updateInProgress) return;
+        updateInProgress = false;
+        reportUpdate(true, "error", "A instalação não terminou. Toque no aviso \"Concluir atualização do JARVIS\" ou em ATUALIZAR APP de novo.");
+    };
     private volatile long lastUpdateCheck = 0;
     private volatile String pendingUpdateHost = null; // esperando a permissão "instalar apps"
 
@@ -89,6 +121,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        live = new java.lang.ref.WeakReference<>(this);
         prefs = getSharedPreferences(PREFS, MODE_PRIVATE);
         NotifyService.createChannels(this);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -749,6 +782,8 @@ public class MainActivity extends Activity {
                 }
                 updateProgress(100, "Instalando… se o Android pedir, toque em Atualizar.");
                 installApk(apk);
+                retryHandler.removeCallbacks(updateWatchdog);
+                retryHandler.postDelayed(updateWatchdog, 120_000L);
             } catch (Exception e) {
                 // V5.6: nunca mais abre o navegador para baixar: tenta de novo sozinho na próxima abertura
                 updateInProgress = false;

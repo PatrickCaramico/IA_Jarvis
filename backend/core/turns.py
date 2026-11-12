@@ -35,8 +35,12 @@ MAX_HISTORY = 12  # mensagens lembradas na conversa
 
 
 JARVIS_LOCK_CMD = re.compile(
-    r"^(?:jarvis\s+)?(?:(?:pode\s+)?(?:bloquear|bloqueie|bloqueia|trancar|tranque|tranca)(?:\s+(?:o|a)?\s*(?:jarvis|central|sistema))?"
-    r"|(?:ativar\s+|ative\s+|entrar\s+em\s+|entre\s+em\s+)?modo\s+(?:sentinela|bloqueio))$"
+    r"^(?:jarvis\s+)?(?:(?:pode\s+)?(?:bloquear|bloqueie|bloqueia|trancar|tranque|tranca)(?:\s+(?:o|a)?\s*(?:jarvis|central|sistema|sessao))?"
+    # V6.5.7: "ativa o modo bloqueio", "entra no modo de bloqueio", "liga o modo sentinela"...
+    r"|(?:(?:pode\s+)?(?:ativar|ativa|ative|entrar|entra|entre|ligar|liga|ligue|coloca|coloque|colocar|vai|ir|vamos)"
+    r"(?:\s+(?:o|a|em|no|na|pro|pra|para|para\s+o))*\s+)?modo\s+(?:de\s+)?(?:sentinela|bloqueio|bloqueado)"
+    # "volta pra tela de bloqueio", "tela de bloqueio"
+    r"|(?:(?:volta|voltar|volte|vai|ir|vamos)(?:\s+(?:pra|para|a|na|pro))*\s+)?(?:a\s+)?tela\s+de\s+bloqueio)$"
 )
 
 
@@ -177,7 +181,9 @@ async def handle_turn(message: str, routine: bool, force_deep: bool = False) -> 
         access.lock("voice")
         lock_log.add("voice", "lock")
         await speech.broadcast_access()
-        return await finish_local("Bloqueando, senhor. Modo sentinela ativo.")
+        if "sentinela" in norm_cmd:
+            return await finish_local("Bloqueando, senhor. Modo sentinela ativo.")
+        return await finish_local("Central bloqueada, senhor. Até logo.")
     if norm_cmd in {
         "modo silencioso",
         "ativar modo silencioso",

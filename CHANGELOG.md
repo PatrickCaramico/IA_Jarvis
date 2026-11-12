@@ -2,6 +2,11 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 6.5.7 — 12 de novembro de 2026
+
+- **Atualização do app parada em 100%:** no Android 14+ e em celulares Xiaomi/HyperOS, a tela "Atualizar o JARVIS?" aberta pelo instalador em segundo plano era bloqueada em silêncio. Agora quem abre a confirmação é a própria tela do JARVIS, e de reserva aparece o aviso "Concluir atualização do JARVIS" para tocar; se nada acontecer em 2 minutos, o botão destrava com uma explicação. APK 6.5.7.
+- **"Modo bloqueio" por voz:** mais jeitos de dizer levam a central para a tela de bloqueio ("ativa o modo bloqueio", "entra no modo de bloqueio", "volta pra tela de bloqueio", "bloqueia a central"…), com a resposta "Central bloqueada, senhor." ("bloquear a tela" continua bloqueando o Windows). Teste em `test_lock_voice_657.py`.
+
 ## 6.5.6 — 12 de novembro de 2026
 
 - **Janela da pesquisa fecha sozinha:** sem nenhuma interação, ela fecha 25 s depois (`AUTO_CLOSE_MS`), sempre esperando o JARVIS terminar de ler a resposta ("LENDO…"). Uma barra fininha no topo mostra o tempo; tocar, rolar ou digitar recomeça a contagem, e "FECHA EM Xs" → "📌 FIXADA" mantém aberta.
