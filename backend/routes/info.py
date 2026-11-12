@@ -82,6 +82,11 @@ async def get_weather(city: str | None = Query(default=None, max_length=80)) -> 
             "maximum": round(daily["temperature_2m_max"][0]),
             "minimum": round(daily["temperature_2m_min"][0]),
             "rain_probability": round(probability) if probability is not None else None,
+            # V5.6.3: cartão HOJE do bloqueio (campos opcionais: some se a API não mandar)
+            "humidity": current.get("relative_humidity_2m"),
+            "wind": current.get("wind_speed_10m"),
+            "sunrise": ((daily.get("sunrise") or [""])[0] or "")[11:16] or None,
+            "sunset": ((daily.get("sunset") or [""])[0] or "")[11:16] or None,
         }
     except (KeyError, IndexError, TypeError, ValueError) as exc:
         log.warning("Resposta de clima incompleta para %s: %s", requested_city, exc)

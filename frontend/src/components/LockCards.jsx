@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { startPolling } from "../hooks/usePolling.js";
 import useNow from "../hooks/useNow.js";
-import NowPlaying from "./NowPlaying.jsx";
+import NowPlaying, { useNowPlaying } from "./NowPlaying.jsx";
 
 // Cartões somente leitura da tela de bloqueio (seção 17.4). Nada pessoal antes do acesso:
 // só relógio, clima, próximo jogo (Modo Torcedor) e água de hoje.
@@ -20,7 +20,7 @@ export default function LockCards({ api, cards = [], fanModeEnabled = false, hid
   useEffect(() => {
     let active = true;
     const load = () => {
-      if (want("weather")) api("/api/weather").then((d) => active && setWeather(d)).catch(() => active && setWeather(null));
+      api("/api/weather").then((d) => active && setWeather(d)).catch(() => active && setWeather(null));
       if (want("fan_match") && fanModeEnabled) api("/api/fan/match").then((d) => active && setMatch(d?.match || null)).catch(() => {});
       if (want("water")) api("/api/water").then((d) => active && setWater(d)).catch(() => {});
     };
@@ -83,8 +83,11 @@ export default function LockCards({ api, cards = [], fanModeEnabled = false, hid
     );
   }
   if (want("spotify")) {
-    // V4.2.2: sem botões no bloqueio; o componente some se nada estiver tocando
-    items.push(<NowPlaying key="spotify" api={api} variant="lock" />);
+    // V5.6.3: à esquerda, embaixo do SISTEMAS. Tocando: a faixa; parado ou desconectado: o estado (não some)
+    items.push(<LockSpotify key="spotify" api={api} />);
+  }
+  if (!allRight && weather?.sunrise) {
+    items.push(<TodayCard key="today" weather={weather} />);
   }
   if (want("fan_match") && fanModeEnabled && match?.opponent) {
     const d = new Date(match.date);
@@ -108,14 +111,71 @@ export default function LockCards({ api, cards = [], fanModeEnabled = false, hid
     );
   }
   if (!items.length) return null;
-  // Clima à direita do orbe; relógio, jogo e água à esquerda (em telas estreitas, tudo embaixo)
-  const right = allRight ? items : items.filter((el) => el.key === "weather" || el.key === "spotify");
-  // (o cartão SISTEMAS vai à esquerda, junto com relógio, jogo e água)
-  const left = allRight ? [] : items.filter((el) => el.key !== "weather" && el.key !== "spotify");
+  // Clima à direita do orbe; à esquerda, de cima para baixo: SISTEMAS, Spotify, HOJE, relógio, jogo e água
+  // (em telas estreitas, tudo embaixo)
+  const LEFT_ORDER = ["status", "spotify", "today", "clock", "fan", "water"];
+  const right = allRight ? items : items.filter((el) => el.key === "weather");
+  const left = allRight ? [] : items.filter((el) => el.key !== "weather")
+    .sort((a, b) => LEFT_ORDER.indexOf(a.key) - LEFT_ORDER.indexOf(b.key));
   return (
     <div className="lc-wrap" aria-label="Informações da tela de bloqueio">
       {left.length > 0 && <div className="lc-row lc-left">{left}</div>}
       {right.length > 0 && <div className="lc-row lc-right">{right}</div>}
+    </div>
+  );
+}
+
+// V5.6.3: Spotify no bloqueio. Tocando ou pausado: o cartão "Tocando agora"; senão, o estado da conexão.
+function LockSpotify({ api }) {
+  const { track } = useNowPlaying(api);
+  if (track && (track.state === "playing" || track.state === "paused")) return <NowPlaying api={api} variant="lock" />;
+  const off = !track || track.state === "off" || track.state === "error";
+  return (
+    <div className={`lc-card lc-spotify${off ? " is-off" : ""}`}>
+      <div className="lc-label">SPOTIFY</div>
+      <div className="lc-spotify-row">
+        <span className="lc-spotify-logo" aria-hidden="true">♫</span>
+        <div>
+          <div className="lc-value lc-small">{off ? "Não conectado" : "Conectado"}</div>
+          <div className="lc-sub lc-nocap">{off ? "Conecte em TELAS › Fontes de Dados" : "Nada tocando agora"}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// V5.6.3: cartão HOJE: nascer e pôr do sol, umidade, vento, quanto do dia já passou e a semana do ano.
+function weekOfYear(d) {
+  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const day = t.getUTCDay() || 7;
+  t.setUTCDate(t.getUTCDate() + 4 - day);
+  const start = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
+  return Math.ceil(((t - start) / 86400000 + 1) / 7);
+}
+
+function TodayCard({ weather }) {
+  const now = useNow(true);
+  const minutes = now.getHours() * 60 + now.getMinutes();
+  const dayPct = Math.round((minutes / 1440) * 100);
+  const toMin = (hm) => { const [h, m] = String(hm || "").split(":").map(Number); return h * 60 + m; };
+  const sunUp = toMin(weather.sunrise);
+  const sunDown = toMin(weather.sunset);
+  const isDay = minutes >= sunUp && minutes < sunDown;
+  const sunLeft = isDay ? sunDown - minutes : null;
+  return (
+    <div className="lc-card lc-today">
+      <div className="lc-label">HOJE · SEMANA {weekOfYear(now)}</div>
+      <div className="lc-today-sun">
+        <span><b>☀</b>{weather.sunrise}<small>nascer</small></span>
+        <span><b>☾</b>{weather.sunset}<small>pôr do sol</small></span>
+      </div>
+      <dl className="lc-today-grid">
+        {weather.humidity != null && <div><dt>Umidade</dt><dd>{Math.round(weather.humidity)}%</dd></div>}
+        {weather.wind != null && <div><dt>Vento</dt><dd>{Math.round(weather.wind)} km/h</dd></div>}
+        {sunLeft != null && <div><dt>Luz do dia</dt><dd>{Math.floor(sunLeft / 60)}h{String(sunLeft % 60).padStart(2, "0")}</dd></div>}
+      </dl>
+      <div className="lc-bar" title={`${dayPct}% do dia`}><span style={{ width: `${dayPct}%` }} /></div>
+      <div className="lc-sub lc-nocap">{dayPct}% do dia já passou</div>
     </div>
   );
 }

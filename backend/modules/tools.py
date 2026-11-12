@@ -1166,8 +1166,9 @@ def _fetch_weather(city: str) -> Optional[dict]:
     place = results[0]
     forecast = http_client.get_json(_FC_URL, params={
         "latitude": place["latitude"], "longitude": place["longitude"],
-        "current": "temperature_2m,apparent_temperature,weather_code,wind_speed_10m",
-        "daily": "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max",
+        "current": "temperature_2m,apparent_temperature,weather_code,wind_speed_10m,relative_humidity_2m",
+        # V5.6.3: nascer e pôr do sol para o cartão HOJE do bloqueio
+        "daily": "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset",
         "timezone": "auto", "forecast_days": 2,
     }, timeout=10, ttl=600)
     if not forecast.get("current") or not forecast.get("daily"):

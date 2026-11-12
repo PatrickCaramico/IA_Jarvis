@@ -60,7 +60,7 @@ nos módulos do backend.
 | --- | --- |
 | Assistente | JARVIS (o nome da IA pode ser trocado em Configurações) |
 | Módulo de escuta contínua | **Modo Sentinela** (mantido; as siglas propostas não foram adotadas) |
-| Versão exibida na central | `v5.6.2` (sem referências a marcas de terceiros, como "Stark") |
+| Versão exibida na central | `v5.6.3` (sem referências a marcas de terceiros, como "Stark") |
 | Lista de sites abertos por voz | **Meus Sites** (Configurações > Meus Sites) |
 | Resumo da manhã | **Briefing** (disparado por "bom dia") |
 | Resumo da noite | **Fechamento do dia** (disparado por "boa noite") |
@@ -567,6 +567,12 @@ vidro igual ao do clima (que fica à direita), rótulo "SISTEMAS · J.A.R.V.I.S.
 14min", "📱 Celular conectado" (ou "Nenhum celular conectado") e "◷ Alarme amanhã às 07:00". Uma faixa de luz
 turquesa desce devagar pelo cartão (desligada com "menos movimento"). Nada pessoal: sem nomes de aparelhos e
 sem o rótulo do alarme, porque a tela está bloqueada.
+**V5.6.3:** a coluna esquerda cresceu (de cima para baixo, largura 280–310 px): SISTEMAS; o **Spotify** — tocando,
+o cartão "Tocando agora" com capa e barra; parado, círculo verde "♫" e "Conectado · Nada tocando agora";
+desconectado, círculo apagado e "Não conectado · Conecte em TELAS › Fontes de Dados" (não some mais); e o
+cartão **HOJE · SEMANA 46**: nascer (☀ âmbar) e pôr do sol (☾ lilás) em JetBrains Mono, umidade, vento, "Luz
+do dia" (quanto falta para o sol se pôr, só de dia) e a barra de quanto do dia já passou. O clima fica sozinho à
+direita.
 
 ### Meus Sites, escudos e atualização (V5)
 
@@ -600,7 +606,7 @@ o PC tem um APK mais novo. Nada é baixado ou instalado sozinho.
 o orbe Núcleo girando devagar no topo (parado com "reduzir movimento"), "JARVIS" em Orbitron com brilho
 ciano, cartões de vidro azul-marinho com ícone em círculo de contorno (ciano; âmbar para segurança; verde
 para água e para o Modo Torcedor), capturas em moldura com cantos ciano e, no rodapé, o carimbo
-"J.A.R.V.I.S. · FOLHA · SITE · REV. v5.6.2" (a versão vem de `backend/version.py`). Botão principal ciano cheio ("VER NO GITHUB"); os outros só
+"J.A.R.V.I.S. · FOLHA · SITE · REV. v5.6.3" (a versão vem de `backend/version.py`). Botão principal ciano cheio ("VER NO GITHUB"); os outros só
 com borda. Logo abaixo, num quadro de borda tracejada âmbar, o botão "ABRIR MEU JARVIS" (borda âmbar, o "olhe aqui" da Sentinela), que abre a **mesma central do PC publicada no site** (`/app/`). Ela conversa com o JARVIS ligado no computador (backend em `127.0.0.1:8000`), então rosto, perfil, Modo Torcedor, rotina e agenda são os de sempre; na primeira vez, o Chrome pergunta se o site pode acessar a rede local (é o backend do próprio PC). Tom: o mesmo da central, e a página deixa claro que é só a vitrine ("O JARVIS roda no seu PC:
 voz, câmera, controle do sistema e os seus dados nunca passam por aqui."). A 404 diz "Procurei em toda a
 planta, senhor, e esta página não está aqui."

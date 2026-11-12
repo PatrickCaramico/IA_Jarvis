@@ -1,6 +1,6 @@
 # JARVIS — Comandos do dia a dia
 
-**Versão do projeto:** 5.6.2 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
+**Versão do projeto:** 5.6.3 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
 
 > Montado a partir do código do projeto. Se algum comando não responder como descrito, me avise que eu ajusto o guia.
 > Para a lista técnica de rotas, veja [API.md](API.md); para o `.env`, [CONFIGURACAO.md](CONFIGURACAO.md).

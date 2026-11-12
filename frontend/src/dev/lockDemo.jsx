@@ -67,8 +67,12 @@ const lockExtras = (path) => (path === "/api/health"
   : path === "/api/lock/status"
     ? Promise.resolve({ devices: 2, phones: 1, next_alarm: "amanhã às 07:00" })
     : path === "/api/weather"
-      ? Promise.resolve({ place: "São Paulo", temperature: 19, description: "Tempo parcialmente nublado", rain_probability: 67 })
-      : null);
+      ? Promise.resolve({ place: "São Paulo", temperature: 19, description: "Tempo parcialmente nublado", rain_probability: 67, humidity: 89, wind: 11, sunrise: "05:15", sunset: "18:26" })
+      : path === "/api/integrations/spotify/track"
+        ? Promise.resolve(q.get("music") === "1"
+          ? { state: "playing", title: "Back in Black", artist: "AC/DC", duration_ms: 255000, progress_ms: 61000 }
+          : { state: "off" })
+        : null);
 const baseApi = (path) => demoInfo(path) || lockExtras(path) || offline();
 
 function Demo() {
@@ -92,7 +96,7 @@ function Demo() {
     fanToggle={{ enabled: fan, busy: false, onToggle: toggle }}
     onNewProfile={() => {}}
     onUpdate={() => {}}
-    cards={{ api: fan ? fanApi : baseApi, list: fan ? ["clock", "weather"] : ["clock", "weather"], fanModeEnabled: fan }}
+    cards={{ api: fan ? fanApi : baseApi, list: fan ? ["clock", "weather"] : ["clock", "weather", "spotify"], fanModeEnabled: fan }}
     mic={sentinelOn ? null : { muted: true, onToggle: () => {} }}
     sentinel={sentinelOn ? {
       enabled: true,

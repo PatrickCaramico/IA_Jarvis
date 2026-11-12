@@ -2,6 +2,10 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 5.6.3 — 11 de novembro de 2026
+
+- **Coluna esquerda do bloqueio mais completa:** embaixo do SISTEMAS, o Spotify (tocando, conectado sem música ou "Não conectado", em vez de sumir) e o cartão HOJE (nascer e pôr do sol, umidade, vento, luz do dia que resta e quanto do dia já passou, com a semana do ano). O clima de `/api/weather` passou a trazer `sunrise`, `sunset`, `humidity` e `wind`.
+
 ## 5.6.2 — 11 de novembro de 2026
 
 - **Briefing e falas repetidas ao entrar:** quando o `Iniciar-JARVIS.bat` rodava com a central já aberta, a aba antiga reconectava e entrava sozinha, e a aba nova entrava também: uma recebia o briefing e a outra o "quer que eu repita?", cada uma falando. Agora entradas com menos de 2 minutos de diferença contam como uma só (a segunda tela entra em silêncio), e o `Iniciar-JARVIS.bat` não abre outra aba quando a central já estava aberta (espera até 8 s ela reconectar).
