@@ -14,6 +14,7 @@ import android.hardware.biometrics.BiometricPrompt;
 import android.os.CancellationSignal;
 import android.net.ConnectivityManager;
 import android.net.Network;
+import android.net.NetworkCapabilities;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -75,6 +76,7 @@ public class MainActivity extends Activity {
     private volatile boolean mainFrameFailed = false;
     private boolean offlineScreen = false;
     private ConnectivityManager.NetworkCallback networkCallback;
+    private long pausedAt = 0; // V6.4: para avisar a rede só quando o app é "aberto" de novo
 
     // V6.0: acesso fora de casa (Tailscale): endereço do PC que o PC informa em /api/mobile/info
     private static final String KEY_REMOTE = "remote_host";
@@ -305,7 +307,18 @@ public class MainActivity extends Activity {
             if (cm == null) return;
             networkCallback = new ConnectivityManager.NetworkCallback() {
                 @Override
+                public void onCapabilitiesChanged(Network network, NetworkCapabilities caps) {
+                    netCheckSoon(); // V6.4: trocou Wi-Fi <-> dados móveis
+                }
+
+                @Override
+                public void onLost(Network network) {
+                    netCheckSoon();
+                }
+
+                @Override
                 public void onAvailable(Network network) {
+                    netCheckSoon();
                     retryHandler.postDelayed(() -> {
                         if (offlineScreen) {
                             retryAttempt = 0;
@@ -320,10 +333,63 @@ public class MainActivity extends Activity {
         }
     }
 
+    // ------------------------------------------------------------------ V6.4: Wi-Fi ou dados móveis
+    private String lastNetEmitted = null;
+    private final Runnable netCheck = () -> {
+        String now = currentNetType();
+        if (now.equals(lastNetEmitted)) return;
+        lastNetEmitted = now;
+        emitNetwork("change");
+    };
+
+    /** Espera a rede assentar (a troca dispara vários avisos seguidos) e confere uma vez só. */
+    private void netCheckSoon() {
+        retryHandler.removeCallbacks(netCheck);
+        retryHandler.postDelayed(netCheck, 2500);
+    }
+
+    /** "wifi", "cellular", "ethernet", "none" ou "other". Com VPN (Tailscale), olha a rede por baixo dela. */
+    private String currentNetType() {
+        try {
+            ConnectivityManager cm = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
+            if (cm == null) return "other";
+            String t = netTypeOf(cm.getNetworkCapabilities(cm.getActiveNetwork()));
+            if (!"vpn".equals(t)) return t;
+            String best = "other";
+            for (Network n : cm.getAllNetworks()) {
+                String u = netTypeOf(cm.getNetworkCapabilities(n));
+                if ("wifi".equals(u) || "ethernet".equals(u)) return u;
+                if ("cellular".equals(u)) best = u;
+            }
+            return best;
+        } catch (Exception e) {
+            return "other";
+        }
+    }
+
+    private static String netTypeOf(NetworkCapabilities c) {
+        if (c == null) return "none";
+        if (c.hasTransport(NetworkCapabilities.TRANSPORT_VPN)) return "vpn";
+        if (c.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) return "wifi";
+        if (c.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)) return "ethernet";
+        if (c.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)) return "cellular";
+        return "other";
+    }
+
+    private void emitNetwork(String reason) {
+        try {
+            String js = event("jarvis-app-network", new JSONObject().put("reason", reason).put("type", currentNetType()));
+            runOnUiThread(() -> web.evaluateJavascript(js, null));
+        } catch (Exception ignored) {
+        }
+    }
+
     @Override
     protected void onResume() {
         super.onResume();
         visible = true;
+        // V6.4: abriu o app de novo: a central confere a rede (avisa dados móveis ou a troca de rede)
+        if (pausedAt > 0 && System.currentTimeMillis() - pausedAt > 60_000L) emitNetwork("open");
         // V5.2: voltou para o app com a tela "reconectando": tenta na hora
         if (offlineScreen) {
             retryAttempt = 0;
@@ -339,6 +405,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onPause() {
         visible = false;
+        pausedAt = System.currentTimeMillis();
         super.onPause();
     }
 
@@ -906,6 +973,21 @@ public class MainActivity extends Activity {
         public void pairWithPin(String host, String pin) {
             if (fromSetup() && host != null && host.matches("[\\w.-]+") && pin != null && pin.matches("\\d{4,8}")) {
                 MainActivity.this.pairWithPin(host, pin);
+            }
+        }
+
+        /** V6.4: rede de agora e a da última vez que a central perguntou ("wifi" -> "cellular"...).
+         *  Fica no app (não na página), então vale mesmo quando a página troca de endereço com a rede. */
+        @JavascriptInterface
+        public String networkNotice() {
+            String now = currentNetType();
+            String prev = prefs.getString("net_seen", "");
+            if (!"none".equals(now) && !"other".equals(now)) prefs.edit().putString("net_seen", now).apply();
+            lastNetEmitted = now;
+            try {
+                return new JSONObject().put("type", now).put("prev", prev).toString();
+            } catch (Exception e) {
+                return "{}";
             }
         }
 

@@ -209,6 +209,14 @@
   border: 1px solid rgba(79, 220, 255, 0.35); color: rgba(201, 246, 255, 0.85);
   font-family: "Rajdhani", sans-serif; font-size: 0.9rem; animation: frp-in 220ms ease-out;
 }
+/* V6.4: aviso de rede do app (Wi-Fi / dados móveis): no topo, centralizado, acima do bloqueio */
+.notice-toast.network-notice {
+  left: 50%; right: auto; top: calc(14px + env(safe-area-inset-top, 0px)); transform: translateX(-50%);
+  z-index: 1200; max-width: calc(100vw - 32px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-family: "Orbitron", sans-serif; font-size: 0.72rem; letter-spacing: 0.08em; color: #c9f6ff;
+  box-shadow: 0 0 14px rgba(31, 194, 245, 0.25); animation: net-in 260ms ease-out;
+}
+@keyframes net-in { from { transform: translate(-50%, -12px); opacity: 0; } to { transform: translateX(-50%); opacity: 1; } }
 .summary-skip {
   position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 70;
   padding: 7px 16px; border-radius: 999px; cursor: pointer;

@@ -2,6 +2,10 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 6.4.0 — 12 de novembro de 2026
+
+- **Aviso de rede no app:** ao abrir o app nos dados móveis, o JARVIS avisa "O senhor está conectado pela rede de dados móveis."; quando a rede muda (com o app aberto ou ao reabrir), "Mudança de rede, senhor. Agora o senhor está no Wi-Fi." (ou nos dados móveis). Aviso no topo da tela e voz no celular; no Wi-Fi de sempre, silêncio. O app Android informa a rede (`JarvisApp.networkNotice()`, evento `jarvis-app-network`; com a VPN do Tailscale ligada, olha a rede por baixo dela) e lembra a anterior. `components/NetworkNotice.jsx`, `utils/networkNotice.js`, teste `networkNotice.test.js`. APK 6.4.0.
+
 ## 6.3.0 — 12 de novembro de 2026
 
 - **Ouvido offline:** "Jarvis, que horas são?" com o navegador **fechado**. `scripts/voice_listener.py` (Vosk, modelo pt-BR pequeno em `%USERPROFILE%\.jarvis-voice`, nada sai do PC) acorda com "Jarvis" e manda o pedido para `/api/chat`; a resposta sai pela caixa do PC. Fica quieto com a central aberta numa aba do PC (a página já atende), enquanto o JARVIS fala (`/api/health` ganhou `speaking`) e com a opção desligada (Configurações › Mídia & Foco, `voice_listener_enabled`). Só "Jarvis"? Bipa e ouve o pedido na frase seguinte. O `Iniciar-JARVIS.bat` liga quando o modelo existe; o `Parar-JARVIS.bat` desliga. Log em `logs/ouvido.log`. Pacotes: `scripts/requirements-ouvido.txt`.

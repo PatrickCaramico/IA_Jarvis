@@ -13,7 +13,8 @@ import "./accessibility.css";
 import "./alarm.css";
 import lazyComponent from "./utils/lazyComponent.jsx";
 import { initialAccessibility, initialBackground } from "./utils/theme.js";
-import { markDevice } from "./utils/device.js";
+import { IS_JARVIS_APP, markDevice } from "./utils/device.js";
+import NetworkNotice from "./components/NetworkNotice.jsx";
 import "./mobile.css";
 
 initialBackground(); // V4.4: fundo blueprint/clássico antes do primeiro desenho
@@ -28,5 +29,6 @@ const isPopout = window.location.pathname.endsWith("/display") || window.locatio
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     {isPopout ? <ScreensPopout /> : <App />}
+    {IS_JARVIS_APP && !isPopout && <NetworkNotice />}
   </React.StrictMode>
 );
