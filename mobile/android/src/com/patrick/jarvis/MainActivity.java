@@ -1290,6 +1290,25 @@ public class MainActivity extends Activity {
             runOnUiThread(() -> speak(t));
         }
 
+        /** V6.6.5: TRANSMITIR: abre a transmissão de tela do Android (Chromecast, Smart TV, Miracast). */
+        @JavascriptInterface
+        public void cast() {
+            if (!fromJarvis()) return;
+            runOnUiThread(() -> {
+                String[] actions = {"android.settings.CAST_SETTINGS", "android.settings.WIFI_DISPLAY_SETTINGS",
+                        android.provider.Settings.ACTION_DISPLAY_SETTINGS};
+                for (String action : actions) {
+                    try {
+                        startActivity(new Intent(action));
+                        Toast.makeText(MainActivity.this, "Escolha a TV na lista. Depois, volte ao JARVIS.", Toast.LENGTH_LONG).show();
+                        return;
+                    } catch (Exception ignored) {
+                    }
+                }
+                Toast.makeText(MainActivity.this, "Use \"Transmitir tela\" nos atalhos rápidos do Android.", Toast.LENGTH_LONG).show();
+            });
+        }
+
         @JavascriptInterface
         public boolean notificationsEnabled() {
             return (fromJarvis() || fromSetup()) && notificationsOn();

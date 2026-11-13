@@ -2,6 +2,12 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 6.6.5 — 13 de novembro de 2026
+
+- **Modo nuvem com a central de sempre:** com o notebook desligado, o celular (Chrome ou app) abre a **mesma central** do app e do site (orbe, Canal Ativo, lista de compras, água, tarefas, clima, notícias, CONTROLES, Área Limpa), em vez da tela simplificada. Depois do PIN da nuvem, um adaptador (`utils/cloudShim.js`) responde no lugar do PC: conversa com a IA da nuvem (com voz do aparelho), compras, tarefas, lembretes, alarmes, água, notícias, clima e os avisos. O que só existe no PC (câmera, Spotify, volume, controle do Windows) responde "precisa do notebook ligado". Um aviso discreto no topo mostra "☁ MODO NUVEM · notebook desligado" e quando o PC foi visto pela última vez. O "Primeiros passos" não aparece na nuvem.
+- **Selo "Powered by Netlify" por cima dos botões:** no celular, a barra de baixo (TELAS, NOTÍCIAS, microfone, CONTROLES) sobe acima do selo; no PC, o texto do canto sai de baixo dele.
+- **TRANSMITIR (app Android):** em CONTROLES › SISTEMA & HUD, abre a transmissão de tela do Android para espelhar o JARVIS numa TV (Chromecast, Smart TV, Miracast). Precisa do APK 6.6.5.
+
 ## 6.6.4 — 13 de novembro de 2026
 
 - **Tela final do resumo (bom dia / boa tarde / boa noite) reorganizada no PC:** antes, o orbe ocupava o meio e os cards ficavam espremidos numa fileira só de 200 px, por cima das linhas do orbe. Agora o orbe fica menor no alto e os cards vão para um painel de vidro embaixo, em no máximo 2 fileiras (8 assuntos = 4×2; 10 = 5×2; tela média até 3 colunas), maiores (até 300 px) e sem passar por cima do orbe (o painel tem altura máxima e rola por dentro se precisar). A frase final do JARVIS aparece inteira (até 2 linhas) e a prontidão fisiológica ficou compacta, com o anel ao lado dos números. No celular, nada muda.

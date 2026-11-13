@@ -200,3 +200,15 @@
   .hl-ctrl-mobile .hl-btn { padding: 6px 10px; font-size: 0.6rem; }
   .hl-ctrl-mobile .hl-controls-panel { max-height: calc(100dvh - 150px); }
 }
+
+/* V6.6.5: no site (Netlify) aparece o selo "Powered by Netlify" no canto inferior direito.
+   No celular, a barra de baixo (TELAS, NOTÍCIAS, microfone, CONTROLES) sobe acima dele. */
+@media (max-width: 760px) {
+  [data-netlify] .hl-bottom { padding-bottom: calc(62px + env(safe-area-inset-bottom)); }
+  [data-netlify] .hl-root { padding-bottom: calc(154px + env(safe-area-inset-bottom)); }
+  [data-netlify] .cm-root { padding-bottom: 62px; }
+}
+/* no PC, o texto do canto direito da barra de baixo sai de baixo do selo */
+@media (min-width: 761px) {
+  [data-netlify] .hl-bottom .hl-muted { margin-right: 200px; }
+}

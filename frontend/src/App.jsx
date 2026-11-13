@@ -44,6 +44,7 @@ import { scheduleDailyUpdateCheck } from "./utils/updateCheck.js";
 import { applyAccessibility, applyBackground, applyFanMode, applyTheme } from "./utils/theme.js";
 import { IS_JARVIS_APP } from "./utils/device.js";
 import { CLOUD_AVAILABLE, cloudRequested, isPhone } from "./utils/cloudApi.js";
+import { installCloudShim } from "./utils/cloudShim.js";
 
 // V6.3: tela longe do PC (app do celular, ou navegador por túnel/rede): a câmera do PC não vê quem está
 // usando, então a entrada é pelo PIN (e a digital, no app) em vez da verificação do rosto.
@@ -84,6 +85,7 @@ export default function App() {
   const [bootOffline, setBootOffline] = useState(false); // backend do PC desligado (sem resposta)
   // V6.6: modo nuvem (funções do Netlify) com o notebook desligado. "?nuvem=1" (o app usa) entra direto.
   const [cloudMode, setCloudMode] = useState(cloudRequested);
+  const [cloudActive, setCloudActive] = useState(false); // V6.6.5: a central de sempre rodando pela nuvem
   // Botão LIGAR O JARVIS (atalho jarvis://): "" | "trying" | "opening" | "missing"
   const [launchState, setLaunchState] = useState("");
   // V5.1: alarme tocando (evento "alarm" do backend): { id, hora, rotulo, snooze_minutes } ou null
@@ -2302,10 +2304,17 @@ export default function App() {
   ] : [];
 
   // ================= Telas =================
-  if (cloudMode && CLOUD_AVAILABLE && screen === "boot") {
+  if (cloudMode && !cloudActive && CLOUD_AVAILABLE && screen === "boot") {
     return (
       <CloudMode
-        onPcBack={() => { setCloudMode(false); boot(); }}
+        onReady={(info) => {
+          // V6.6.5: a central de sempre, com a nuvem no lugar do PC
+          installCloudShim(info);
+          rememberLogin();
+          setShowOnboarding(false); // quem usa a nuvem já conhece o JARVIS
+          setCloudActive(true);
+          setTimeout(() => boot(), 0);
+        }}
         onBack={cloudRequested() ? null : () => setCloudMode(false)}
       />
     );
