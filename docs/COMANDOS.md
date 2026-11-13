@@ -1,6 +1,6 @@
 # JARVIS — Comandos do dia a dia
 
-**Versão do projeto:** 7.0.0 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
+**Versão do projeto:** 7.1.0 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
 
 > Montado a partir do código do projeto. Se algum comando não responder como descrito, me avise que eu ajusto o guia.
 > Para a lista técnica de rotas, veja [API.md](API.md); para o `.env`, [CONFIGURACAO.md](CONFIGURACAO.md).
@@ -341,6 +341,18 @@ Avisos automáticos (gatilhos): chuva amanhã (à noite), jogo começando (com o
 | "Abre a câmera e analisa esse item" / "analisa isso" (V7) | Abre a câmera, espera a imagem firmar e faz o **diagnóstico**: uma janela com o nome do item, categoria, confiança, resumo, detalhes (marca, modelo, nome científico, preço médio…), ⚠ alertas e 💡 dicas. A fala continua curta. |
 
 "O que você está vendo?" (sem abrir a câmera) continua usando a webcam do PC.
+
+### HOLOGRAMA: pesquisa vira tela viva (V7.1)
+
+| Fale | O que acontece |
+|---|---|
+| "Me explica como funciona um buraco negro" / "como funcionam as vacinas" / "pesquisa sobre o Egito" / "me ensina…" | Abre o **holograma**: 4 a 6 cenas animadas (ícone, título, legenda palavra a palavra, tópicos e um número marcante que sobe na tela) **narradas pela voz do JARVIS**. Cada cena avança quando ele termina de falar. No fim, um resumo com as cenas para rever. |
+| "Receita de bolo de cenoura" / "como fazer um brigadeiro" | Abre a **receita viva**: ingredientes para marcar (os que faltam vão para a lista de compras com um toque), passo a passo grande e o **modo cozinha**. A tela não apaga enquanto está aberta. |
+| "Próximo passo" / "passo anterior" / "repete" | Com o holograma aberto: anda, volta ou repete (cena ou passo). |
+| "Pausa" / "continua" / "fecha" | Pausa a narração, continua ou fecha. |
+| ⏱ INICIAR TIMER (no passo) | O passo que tem tempo de forno/descanso ganha o botão do timer. |
+
+Pedidos com YouTube, Google, Maps, música ou notícias continuam no caminho de sempre. Funciona em casa e fora (nuvem). A foto de fundo vem da Wikipédia, quando existe.
 
 ### Olho de Deus: trânsito ao vivo (V7)
 

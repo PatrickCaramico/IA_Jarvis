@@ -33,6 +33,7 @@ import { applyAccessibility, applyBackground, applyFanMode, applyTheme } from ".
 import { IS_JARVIS_APP } from "./utils/device.js";
 import { CLOUD_AVAILABLE, cloudRequested, isPhone } from "./utils/cloudApi.js";
 import { installCloudShim } from "./utils/cloudShim.js";
+import { holoCommand, holoIntent } from "./utils/holoIntent.js";
 
 // V6.3: tela longe do PC (app do celular, ou navegador por túnel/rede): a câmera do PC não vê quem está
 // usando, então a entrada é pelo PIN (e a digital, no app) em vez da verificação do rosto.
@@ -72,6 +73,7 @@ const MonitorPanel = lazyComponent(() => import("./components/MonitorPanel.jsx")
 const CloudMode = lazyComponent(() => import("./components/CloudMode.jsx"));
 const CameraWindow = lazyComponent(() => import("./components/CameraWindow.jsx")); // V6.8.2
 const AgentsHub = lazyComponent(() => import("./components/AgentsHub.jsx")); // V6.8.3
+const HoloStage = lazyComponent(() => import("./components/HoloStage.jsx")); // V7.1
 const LogReportWidget = lazyComponent(() => import("./components/LogReportWidget.jsx"));
 const Onboarding = lazyComponent(() => import("./components/Onboarding.jsx"));
 const BioScanModal = lazyComponent(() => import("./components/BioScanModal.jsx"));
@@ -229,6 +231,10 @@ export default function App() {
   }, []);
   const cameraWinRef = useRef(null);
   cameraWinRef.current = cameraWin;
+  // V7.1: HOLOGRAMA (pesquisa vira tela viva: apresentação narrada ou receita com modo cozinha)
+  const [holo, setHolo] = useState(null);
+  const holoRef = useRef(null);
+  holoRef.current = holo;
   // V6.8: link aberto por um agente que o navegador bloqueou (aparece como botão por 20 s)
   const [agentLink, setAgentLink] = useState(null);
   useEffect(() => {
@@ -1504,6 +1510,25 @@ export default function App() {
     if (cameraWinRef.current && /\b(analisa|analise|analisar|diagnostico|identifica|identifique|o que e isso|o que e isto|que (planta|bicho|animal|coisa|objeto|produto|prato|lugar) e (esse|essa|este|esta)|o que (voce|vc) (ve|esta vendo)|isso e o que|le (isso|o que esta escrito))\b/.test(normalized)) {
       setUserText(text);
       window.dispatchEvent(new CustomEvent("jarvis-camera-ask", { detail: text }));
+      return;
+    }
+    // V7.1: com o holograma aberto, "próximo passo", "repete", "pausa", "fecha" controlam a tela
+    if (holoRef.current) {
+      const cmd = holoCommand(text);
+      if (cmd) {
+        setUserText(text);
+        window.dispatchEvent(new CustomEvent("jarvis-holo-cmd", { detail: cmd }));
+        if (cmd === "close") setHolo(null);
+        return;
+      }
+    }
+    // V7.1: "receita de bolo", "me explica como funciona…", "pesquisa sobre…" viram holograma
+    const holoAsk = holoIntent(text);
+    if (holoAsk) {
+      keepHubClean();
+      setUserText(text);
+      setHolo({ ...holoAsk, at: Date.now() });
+      setResponse(holoAsk.kind === "receita" ? "Montando a receita na tela, senhor." : "Preparando o holograma, senhor.");
       return;
     }
     if (/\b(abrir|abra|mostrar|mostre)\b.*\b(celular|telemóvel|telefone)\b|\b(celular|telemóvel|telefone)\b.*\b(abrir|acessar|mostrar)\b/.test(normalized)) {
@@ -2795,6 +2820,16 @@ export default function App() {
         />
       )}
       {notice && <div className="notice-toast" role="status">{notice}</div>}
+      {holo && (
+        <HoloStage
+          api={api}
+          request={holo}
+          onClose={() => setHolo(null)}
+          onSend={(t) => send(t)}
+          onSpeak={(t) => api("/api/speak", { method: "POST", body: JSON.stringify({ text: t }) }).catch(() => {})}
+          onStop={() => api("/api/cancel", { method: "POST" }).catch(() => {})}
+        />
+      )}
       {agentsOpen && <AgentsHub api={api} onSend={(t) => send(t)} onClose={() => setAgentsOpen(false)} />}
       {cameraWin && (
         <CameraWindow

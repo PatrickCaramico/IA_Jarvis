@@ -771,7 +771,7 @@ async function callLlm(fetchFn, cfg, system, history) {
     headers: { "Content-Type": "application/json", "x-api-key": cfg.key, "anthropic-version": "2023-06-01" },
     body: JSON.stringify({
       model: cfg.model,
-      max_tokens: 800,
+      max_tokens: 1400, // V7.1: o holograma é um JSON maior que a conversa
       system,
       messages: history.map((m) => ({ role: m.role === "user" ? "user" : "assistant", content: m.text })),
     }),
@@ -779,6 +779,68 @@ async function callLlm(fetchFn, cfg, system, history) {
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new HttpError(502, `A IA (Claude) recusou: ${data.error?.message || res.status}`);
   return (data.content || []).filter((b) => b.type === "text").map((b) => b.text).join("");
+}
+
+// --------------------------------------------------------------------------- V7.1: HOLOGRAMA
+// A pesquisa vira uma tela viva: apresentação narrada (cenas) ou receita viva. Igual ao PC (backend/modules/holo.py).
+const HOLO_KINDS = ["receita", "apresentacao"];
+export const guessHoloKind = (q) => (/\breceitas?\b/i.test(q || "") ? "receita" : "apresentacao");
+
+export function holoPrompt(query, kind) {
+  const q = clean(query, 240);
+  if (kind === "receita") {
+    return `Monte uma RECEITA para a tela do JARVIS (assistente em português do Brasil). Pedido do usuário: "${q}".\n`
+      + "Responda SOMENTE com um JSON compacto: "
+      + '{"tipo": "receita", "titulo": "nome da receita", "wiki": "nome do prato como título de artigo da Wikipédia", '
+      + '"fala": "1 frase curta apresentando a receita", "rende": "ex.: 8 fatias", "tempo": "ex.: 1h10", "dificuldade": "fácil|média|difícil", '
+      + '"ingredientes": ["quantidade + ingrediente, curto"], "passos": [{"texto": "passo curto", "minutos": 0}], "dica": "1 dica de ouro"}. '
+      + 'Até 12 ingredientes e 8 passos. Em "minutos", o tempo de espera do passo (forno, descanso) ou 0. Receita real e testada.';
+  }
+  return `Monte uma APRESENTAÇÃO curta e impressionante para a tela holográfica do JARVIS (português do Brasil), explicando: "${q}".\n`
+    + "Responda SOMENTE com um JSON compacto: "
+    + '{"tipo": "apresentacao", "titulo": "título curto", "wiki": "assunto como título de artigo da Wikipédia", '
+    + '"cenas": [{"icone": "1 emoji", "titulo": "até 6 palavras", "fala": "1 ou 2 frases narradas, tom de documentário, tratando o usuário por senhor", '
+    + '"pontos": ["até 3 tópicos curtos"], "numero": {"valor": 0, "unidade": "ex.: anos-luz", "rotulo": "o que significa"}}]}. '
+    + 'De 4 a 6 cenas: gancho curioso, do simples ao surpreendente, fecha com uma curiosidade. "numero" só com dado real e marcante (senão null). Nada inventado.';
+}
+
+const holoNumber = (v) => {
+  if (typeof v === "number") return Number.isFinite(v) ? v : null;
+  if (typeof v !== "string" || !v.trim()) return null;
+  const t = v.includes(",") || /^\s*-?\d{1,3}(\.\d{3})+\s*$/.test(v) ? v.replace(/\./g, "").replace(",", ".") : v; // "1.234,5" e "384.400"
+  const n = Number(t.trim());
+  return Number.isFinite(n) ? n : null;
+};
+
+export function parseHolo(raw, kind) {
+  const m = String(raw || "").match(/\{[\s\S]*\}/);
+  let data;
+  try { data = m ? JSON.parse(m[0]) : null; } catch { data = null; }
+  if (!data || typeof data !== "object") throw new HttpError(502, "A IA não devolveu a tela. Tente de novo, senhor.");
+  const tipo = HOLO_KINDS.includes(data.tipo) ? data.tipo : kind;
+  const base = { tipo, titulo: short(data.titulo, 80), wiki: short(data.wiki, 80) };
+  if (!base.titulo) throw new HttpError(502, "A IA não devolveu a tela. Tente de novo, senhor.");
+  const arr = (v) => (Array.isArray(v) ? v : []);
+  if (tipo === "receita") {
+    const passos = arr(data.passos).map((p) => (typeof p === "string" ? { texto: p } : p))
+      .filter((p) => p && short(p.texto, 300))
+      .map((p) => ({ texto: short(p.texto, 300), minutos: Math.round(Math.max(0, Math.min(holoNumber(p.minutos) || 0, 1440))) })).slice(0, 10);
+    const ingredientes = arr(data.ingredientes).filter((i) => typeof i === "string" && i.trim()).map((i) => short(i, 90)).slice(0, 14);
+    if (!passos.length || !ingredientes.length) throw new HttpError(502, "A receita veio sem passos. Tente de novo, senhor.");
+    return { ...base, fala: short(data.fala, 300), rende: short(data.rende, 30), tempo: short(data.tempo, 30), dificuldade: short(data.dificuldade, 15), ingredientes, passos, dica: short(data.dica, 240) };
+  }
+  const cenas = arr(data.cenas).filter((c) => c && short(c.fala, 400)).map((c) => {
+    const valor = c.numero && typeof c.numero === "object" ? holoNumber(c.numero.valor) : null;
+    return {
+      icone: short(c.icone, 8) || "✦",
+      titulo: short(c.titulo, 70),
+      fala: short(c.fala, 400),
+      pontos: arr(c.pontos).filter((p) => typeof p === "string" && p.trim()).map((p) => short(p, 120)).slice(0, 3),
+      numero: valor === null ? null : { valor, unidade: short(c.numero.unidade, 30), rotulo: short(c.numero.rotulo, 60) },
+    };
+  }).slice(0, 7);
+  if (cenas.length < 2) throw new HttpError(502, "A apresentação veio vazia. Tente de novo, senhor.");
+  return { ...base, cenas };
 }
 
 // --------------------------------------------------------------------------- V6.8.2: "o que é isso?" pela câmera
@@ -1118,6 +1180,15 @@ export async function handle(req, { store, env, fetchFn = fetch, nowDate = new D
       if (!cfg) throw new HttpError(503, "A nuvem ainda não tem a chave da IA.");
       const r = parseVision(await askVision(fetchFn, cfg, cleanImage(image), question));
       return json({ text: r.text || "Não consegui ver direito, senhor. Tente aproximar ou iluminar melhor.", diagnostico: r.diagnostico });
+    }
+    if (path === "/holo" && method === "POST") { // V7.1: HOLOGRAMA
+      const { query, kind } = await body(req);
+      const q = clean(query, 240);
+      if (!q) throw new HttpError(400, "Diga o assunto.");
+      const cfg = llmConfig(env);
+      if (!cfg) throw new HttpError(503, "A nuvem ainda não tem a chave da IA.");
+      const k = HOLO_KINDS.includes(kind) ? kind : guessHoloKind(q);
+      return json(parseHolo(await callLlm(fetchFn, cfg, holoPrompt(q, k), [{ role: "user", text: q }]), k));
     }
     if (path === "/chat/clear" && method === "POST") {
       await store.set("conversa", []);

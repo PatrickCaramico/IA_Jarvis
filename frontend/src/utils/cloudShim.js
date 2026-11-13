@@ -282,6 +282,8 @@ async function route(method, path, query, body) {
       await change({ op: "place_set", nome: body.name, endereco: body.address });
       return ok({ places: (await refresh()).lugares || {} });
     }
+    case "POST /api/holo": // V7.1: HOLOGRAMA fora de casa
+      return ok(await cloud("/holo", { method: "POST", body: { query: body.query, kind: body.kind }, timeout: 60000 }));
     case "POST /api/camera/ask":
       // V6.8.2: "o que é isso?" pela câmera do celular, fora de casa
       return ok(await cloud("/vision", { method: "POST", body: { image: body.image, question: body.question }, timeout: 45000 }));

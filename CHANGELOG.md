@@ -2,6 +2,12 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 7.1.0 — 13 de novembro de 2026
+
+- **HOLOGRAMA**: pesquisas viram uma tela viva. "Me explica como funciona…", "pesquisa sobre…", "me ensina…" abrem uma apresentação de 4 a 6 cenas animadas (ícone em anéis, título com efeito holográfico, legenda palavra a palavra, tópicos e número em destaque que sobe na tela), narrada pela voz do JARVIS: cada cena avança quando ele termina de falar. Barra de progresso por cena, pausa, voltar, avançar e um resumo no fim. Foto de fundo da Wikipédia.
+- **Receita viva com modo cozinha**: "receita de bolo de cenoura" mostra ingredientes para marcar (os que faltam vão para a lista de compras), passo a passo grande, dica de ouro e timer do passo com um toque. Por voz: "próximo passo", "repete", "passo anterior", "fecha". A tela não apaga enquanto a receita está aberta.
+- Funciona no PC e pela nuvem (fora de casa).
+
 ## 7.0.0 — 13 de novembro de 2026
 
 - **Diagnóstico pela câmera**: "abre a câmera e analisa esse item" abre a câmera, espera a imagem firmar e analisa sozinho. A resposta vem numa janela de diagnóstico (nome, categoria, confiança, resumo, detalhes, alertas e dicas) além da fala curta. Funciona no PC e pela nuvem; a foto não é guardada.
