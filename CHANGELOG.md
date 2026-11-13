@@ -2,6 +2,10 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 6.8.1 — 13 de novembro de 2026
+
+- **Google Agenda nos Ajustes:** a conexão da agenda só existia em Menu › Fontes de Dados, difícil de achar. Agora há a seção **GOOGLE AGENDA** em Ajustes › Geral, com o status (conectada ou não), o passo a passo para copiar o endereço secreto iCal no Google Agenda, o campo para colar e o botão para desconectar (`GET /api/calendar/status`).
+
 ## 6.8.0 — 13 de novembro de 2026
 
 - **Sub-agentes** (`modules/agents.py`): o JARVIS entrega pedidos a agentes especialistas, que aparecem na tela enquanto trabalham (evento `agent`) e abrem o resultado no aparelho que pediu (evento `open_url` para o celular; navegador do PC quando o pedido veio do PC). Novo agente cabe numa classe com `match`/`run`.

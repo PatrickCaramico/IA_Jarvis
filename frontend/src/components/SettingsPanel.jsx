@@ -7,6 +7,7 @@ import VoiceSettings from "./settings/VoiceSettings.jsx";
 import BrowserSettings from "./settings/BrowserSettings.jsx";
 import BriefingNewsSettings from "./settings/BriefingNewsSettings.jsx";
 import MaintenanceSettings from "./settings/MaintenanceSettings.jsx";
+import CalendarSettings from "./settings/CalendarSettings.jsx";
 import AutomationSettings from "./settings/AutomationSettings.jsx";
 import PeopleSettings from "./settings/PeopleSettings.jsx";
 import AccessibilitySettings from "./settings/AccessibilitySettings.jsx";
@@ -434,6 +435,8 @@ export default function SettingsPanel({ api, onClose, onPrefsChange, onOpenMicro
             </button>
             {/* V6.2: temas de notícias do "bom dia" (ex.: Marvel com as 3 principais) */}
             <BriefingNewsSettings api={api} />
+            {/* V6.8.1: Google Agenda (antes só em Menu › Fontes de Dados) */}
+            <CalendarSettings api={api} />
             <MaintenanceSettings api={api} onImported={(data) => { applyPrefs(data); onPrefsChange(data); }} />
           </div>
         )}

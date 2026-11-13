@@ -79,3 +79,17 @@ def test_remaining_text():
     assert countdowns.remaining_text(NOW + timedelta(days=1), NOW) == "falta 1 dia"
     assert countdowns.remaining_text(NOW + timedelta(hours=2, minutes=5), NOW) == "faltam 2 horas e 5 minutos"
     assert countdowns.remaining_text(datetime(2026, 11, 12), NOW, all_day=True) == "é hoje"
+
+
+def test_calendar_status_route_68():
+    """V6.8.1: seção Google Agenda dos Ajustes mostra se está conectada."""
+    from fastapi.testclient import TestClient
+
+    import main
+    from modules import access, prefs
+
+    access.reset_for_tests(access.UNLOCKED)
+    c = TestClient(main.app)
+    assert c.get("/api/calendar/status").json() == {"connected": False, "source": "", "ics": False}
+    prefs.update(calendar_ics_url="https://calendar.google.com/calendar/ical/x/basic.ics")
+    assert c.get("/api/calendar/status").json() == {"connected": True, "source": "Agenda (iCal)", "ics": True}

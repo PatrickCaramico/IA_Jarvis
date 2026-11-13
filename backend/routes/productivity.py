@@ -206,6 +206,14 @@ class IcsRequest(BaseModel):
     url: str = ""
 
 
+@router.get("/api/calendar/status")
+async def calendar_status() -> dict:
+    """V6.8.1: a agenda está conectada? (seção Google Agenda dos Ajustes)"""
+    from modules import calendar_hub
+
+    return {"connected": calendar_hub.connected(), "source": calendar_hub.source_name(), "ics": bool(calendar_hub.ics_url())}
+
+
 @router.post("/api/calendar/ics")
 async def set_calendar_ics(req: IcsRequest) -> dict:
     """V5.6: conecta a agenda pelo endereço secreto iCal (ou desconecta com url vazia)."""

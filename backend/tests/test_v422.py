@@ -20,7 +20,7 @@ def client(isolated_data):
 
 
 def test_version_is_the_same_everywhere(client):
-    assert VERSION == "6.8.0"
+    assert VERSION == "6.8.1"
     assert client.get("/api/health").json()["version"] == VERSION
     assert main.app.version == VERSION
     front = (ROOT / "frontend/src/utils/version.js").read_text(encoding="utf-8")
