@@ -35,8 +35,9 @@ export default function MaintenanceSettings({ api, onImported }) {
       const result = await checkForUpdate(api);
       saveUpdateResult(result);
       setUpdateResult(result);
+      window.dispatchEvent(new CustomEvent("jarvis-update-check", { detail: result })); // bolinha do ATUALIZAR na hora
     } catch {
-      const result = { error: "Não foi possível verificar atualizações agora. Confira sua conexão e tente novamente." };
+      const result = { error: "Não consegui conferir agora (o JARVIS do PC precisa estar ligado e com internet). Tente de novo em instantes." };
       saveUpdateResult(result);
       setUpdateResult(result);
     } finally {
@@ -110,11 +111,11 @@ export default function MaintenanceSettings({ api, onImported }) {
             <p>{updateResult.error}</p>
           ) : updateResult.updateAvailable ? (
             <>
-              <p className="font-semibold">Versão {updateResult.latestVersion} disponível (atual: {updateResult.currentVersion}).</p>
-              <a className="mt-1 inline-block underline hover:text-white" href={updateResult.url} target="_blank" rel="noopener noreferrer">
-                Abrir página da release
-              </a>
-              <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap font-sans text-cyan-100/75">{updateResult.notes}</pre>
+              <p className="font-semibold">
+                {updateResult.count > 1 ? `${updateResult.count} versões novas` : "Versão nova"} disponível: {updateResult.latestVersion} (este PC: {updateResult.currentVersion}).
+              </p>
+              <p className="mt-1">Toque em ⟳ ATUALIZAR no topo da central (ou na tela de bloqueio).</p>
+              {updateResult.notes && <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap font-sans text-cyan-100/75">{updateResult.notes}</pre>}
             </>
           ) : (
             <p>Você está na versão mais nova (v{updateResult.currentVersion}).</p>

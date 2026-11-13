@@ -40,7 +40,6 @@ import { subscribeNow } from "./hooks/useNow.js";
 import { soundManager } from "./utils/soundEffects.js";
 import { API_URL, BACKEND_ON_THIS_PC, api, clientId, getJarvisToken, hasMemoryToken, publicUrl, setJarvisToken, voiceHere } from "./utils/api.js";
 import { enqueueHere, stopSpeech } from "./utils/speakHere.js";
-import { scheduleDailyUpdateCheck } from "./utils/updateCheck.js";
 import { applyAccessibility, applyBackground, applyFanMode, applyTheme } from "./utils/theme.js";
 import { IS_JARVIS_APP } from "./utils/device.js";
 import { CLOUD_AVAILABLE, cloudRequested, isPhone } from "./utils/cloudApi.js";
@@ -223,10 +222,7 @@ export default function App() {
   const clearFanEvent = useCallback(() => setFanEvent(null), []);
   const [fanBusy, setFanBusy] = useState(false);
   const [fanError, setFanError] = useState("");
-  useEffect(() => {
-    if (IS_JARVIS_APP) return undefined;
-    return scheduleDailyUpdateCheck(api);
-  }, []);
+  // V6.7.4: a conferência diária antiga (Releases do GitHub) saiu: a bolinha do ATUALIZAR confere a cada 30 min
   useEffect(() => {
     if (!fanError) return undefined;
     const t = setTimeout(() => setFanError(""), 5000);
@@ -910,9 +906,18 @@ export default function App() {
       .catch(() => {});
     check();
     const t = setInterval(check, 30 * 60 * 1000);
+    // "Verificar atualizações" (Ajustes) atualiza a bolinha na hora
+    const onManual = (e) => {
+      const d = e.detail || {};
+      if (typeof d.updateAvailable === "boolean") {
+        setUpdateInfo({ available: d.updateAvailable, count: d.count || 0, latest: d.latestVersion, current: d.currentVersion, notes: (d.notes || "").split("\n").filter(Boolean) });
+      }
+    };
+    window.addEventListener("jarvis-update-check", onManual);
     return () => {
       alive = false;
       clearInterval(t);
+      window.removeEventListener("jarvis-update-check", onManual);
     };
   }, [canSelfUpdate, updateScreen]);
 
