@@ -136,6 +136,7 @@ _PUBLIC_EXACT = {
     ("GET", "/api/fan/match"),
     ("POST", "/api/fan/toggle"),      # V4.4: botão do Modo Torcedor no bloqueio (só o visual do clube)
     ("POST", "/api/background"),      # V5.9.1: botão de fundo no bloqueio (só o visual)
+    ("POST", "/api/lock/mic"),        # V6.5.20: microfone do bloqueio lembra se ficou ligado (só esse ajuste)
     ("GET", "/api/audio"),            # V6.5.8: botão de áudio do bloqueio (caixa de som e microfone do PC)
     ("POST", "/api/audio"),
     ("POST", "/api/audio/test"),

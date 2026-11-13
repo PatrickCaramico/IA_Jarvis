@@ -265,6 +265,19 @@ async def tts_audio(req: TtsRequest):
     return Response(content=data, media_type="audio/mpeg", headers={"Cache-Control": "no-store"})
 
 
+class LockMic(BaseModel):
+    on: bool
+
+
+@router.post("/api/lock/mic")
+async def lock_mic(req: LockMic) -> dict:
+    """V6.5.20: liga/desliga o microfone do bloqueio e lembra a escolha (vale com a central bloqueada)."""
+    from modules import prefs
+
+    prefs.update(lock_mic_on=bool(req.on))
+    return {"lock_mic_on": bool(req.on)}
+
+
 class ChatClear(BaseModel):
     scope: str = "today"  # "today" | "all"
 

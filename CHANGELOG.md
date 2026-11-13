@@ -2,6 +2,10 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 6.5.20 — 12 de novembro de 2026
+
+- **Perguntas no bloqueio não respondiam:** toda vez que a central voltava para a tela de bloqueio, o microfone recomeçava silenciado (privacidade), então "Jarvis, como está o clima?" nem era ouvido (nenhum pedido chegava ao PC). Agora o microfone do bloqueio lembra a última escolha (P ou clique em MIC): ligado fica ligado nos próximos bloqueios (`lock_mic_on`, `POST /api/lock/mic`). Ligado para o perfil principal.
+
 ## 6.5.19 — 12 de novembro de 2026
 
 - **O JARVIS se religa sozinho se cair:** o backend parou sozinho às 20:42 (sem erro no log nem suspensão do PC) e a central ficou em "Reconectando". Agora o ouvido offline, que já confere o JARVIS a cada 2 s, liga de novo pelo `Iniciar-JARVIS.bat site` quando ele fica 45 s fora do ar (no máximo uma vez a cada 10 min). Parar pelo `Parar-JARVIS.bat` encerra o ouvido antes, então parar de propósito não religa. Testado: derrubado às 21:14:29, de volta às 21:15:31.

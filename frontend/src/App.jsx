@@ -166,6 +166,15 @@ export default function App() {
   // V4.2.2: na tela de bloqueio o microfone (escuta do Sentinela e palmas) começa SILENCIADO;
   // liga com clique no botão do microfone ou com a tecla P.
   const [sentinelMuted, setSentinelMuted] = useState(true);
+  // V6.5.20: ligar/desligar o microfone do bloqueio e lembrar a escolha no PC
+  const toggleLockMicRef = useRef(() => {});
+  toggleLockMicRef.current = () => {
+    setSentinelMuted((muted) => {
+      const on = muted; // estava silenciado -> liga
+      api("/api/lock/mic", { method: "POST", body: JSON.stringify({ on }) }).catch(() => {});
+      return !muted;
+    });
+  };
   const [sentinelCooldown, setSentinelCooldown] = useState(false);
   const [pendingRequest, setPendingRequest] = useState(null);
   const [pendingToRun, setPendingToRun] = useState(null);
@@ -1814,7 +1823,7 @@ export default function App() {
         const typing = ["INPUT", "TEXTAREA"].includes(e.target?.tagName);
         if (!typing) {
           e.preventDefault();
-          setSentinelMuted((v) => !v);
+          toggleLockMicRef.current();
         }
         return;
       }
@@ -1863,10 +1872,14 @@ export default function App() {
     document.title = tabTitle({ name: aiName, screen, state: jarvisState, listening, connected });
   }, [aiName, screen, jarvisState, listening, connected]);
 
-  // V4.2.2: toda vez que a central volta para a tela de bloqueio, o microfone recomeça silenciado
+  // V4.2.2: ao voltar para a tela de bloqueio, o microfone recomeçava sempre silenciado.
+  // V6.5.20: agora lembra a última escolha (P ou clique): ligado fica ligado nos próximos bloqueios.
   useEffect(() => {
-    if (screen === "lock") setSentinelMuted(true);
+    if (screen === "lock") setSentinelMuted(!appPrefsRef.current?.lock_mic_on);
   }, [screen]);
+  useEffect(() => {
+    if (screenRef.current === "lock" && appPrefs.lock_mic_on !== undefined) setSentinelMuted(!appPrefs.lock_mic_on);
+  }, [appPrefs.lock_mic_on]);
 
   // ================= Seção 14/16: palmas =================
   const handleDoubleClap = useCallback(() => {
@@ -2418,7 +2431,7 @@ export default function App() {
             setScreen("enroll");
           }}
           liveScan={faceScan.mode === "recheck" ? null : faceScan}
-          mic={!IS_JARVIS_APP && (clapOn || appPrefs.sentinel_enabled) ? { muted: sentinelMuted, onToggle: () => setSentinelMuted((v) => !v) } : null}
+          mic={!IS_JARVIS_APP && (clapOn || appPrefs.sentinel_enabled) ? { muted: sentinelMuted, onToggle: () => toggleLockMicRef.current() } : null}
           clap={clapOn ? { enabled: true, status: clap.status, level: clap.level, needsGesture: clap.needsGesture, pulse: clapPulse, autoEntering } : { enabled: false, autoEntering }}
           cards={{ list: appPrefs.lock_cards || [], api, fanModeEnabled, fanRefresh }}
           hasPin={hasPin}
@@ -2496,7 +2509,7 @@ export default function App() {
             interim: sentinel.interim,
             micStatus: sentinelMuted ? "off" : sentinel.status,
             muted: sentinelMuted,
-            onToggleMute: () => setSentinelMuted((v) => !v),
+            onToggleMute: () => toggleLockMicRef.current(),
             showClock: appPrefs.sentinel_show_clock !== false,
             nightDim: appPrefs.sentinel_night_dim !== false,
             wakeLabel: (aiName || "Jarvis").replace(/\./g, "").replace(/^\w/, (c) => c.toUpperCase()).replace(/\B\w+/, (w) => w.toLowerCase()),
