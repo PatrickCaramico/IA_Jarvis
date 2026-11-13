@@ -349,6 +349,9 @@ export async function receiveSnapshot(store, { ack = 0, snapshot = {} }, now = s
 
 // V6.6.2: configurações da central que valem no modo nuvem (validadas: vêm do PC, mas nunca confie cego)
 const HEX = /^#[0-9a-f]{3,8}$/i;
+const VOICE_NAME = /^[a-z]{2}-[A-Z]{2}-[A-Za-z]+Neural$/;
+// V6.6.9: a voz padrão do JARVIS no PC (estilo "Natural"), usada até o PC sincronizar a dele
+export const DEFAULT_VOICE = { name: "pt-BR-AntonioNeural", rate: "-4%", pitch: "-3Hz" };
 export function cleanPrefs(p) {
   if (!p || typeof p !== "object") return {};
   const out = {};
@@ -375,6 +378,14 @@ export function cleanPrefs(p) {
     if (ml.length) out.water_quick_ml = ml;
   }
   if (["all", "important", "off"].includes(p.sfx_mode)) out.sfx_mode = p.sfx_mode;
+  const v = p.voice;
+  if (v && typeof v === "object" && VOICE_NAME.test(v.name || "")) {
+    out.voice = {
+      name: v.name,
+      rate: /^[+-]\d{1,2}%$/.test(v.rate || "") ? v.rate : "+0%",
+      pitch: /^[+-]\d{1,2}Hz$/.test(v.pitch || "") ? v.pitch : "+0Hz",
+    };
+  }
   return out;
 }
 
@@ -743,7 +754,7 @@ function clientIp(req) {
   return req.headers.get("x-nf-client-connection-ip") || req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "?";
 }
 
-export async function handle(req, { store, env, fetchFn = fetch, nowDate = new Date() }) {
+export async function handle(req, { store, env, fetchFn = fetch, nowDate = new Date(), synth = null }) {
   const url = new URL(req.url);
   const path = url.pathname.replace(/^\/api\/cloud/, "").replace(/\/+$/, "") || "/";
   const method = req.method.toUpperCase();
@@ -839,6 +850,17 @@ export async function handle(req, { store, env, fetchFn = fetch, nowDate = new D
       if (!allowed.includes(op.op)) throw new HttpError(400, "Operação desconhecida.");
       const { result } = await change(store, op, now);
       return json({ ok: true, result });
+    }
+    // V6.6.9: a mesma voz do PC (vozes neurais da Microsoft), em MP3
+    if (path === "/tts" && method === "POST") {
+      const { text } = await body(req);
+      const clean = String(text || "").replace(/\s+/g, " ").trim().slice(0, 700);
+      if (!clean) throw new HttpError(400, "Texto vazio.");
+      if (!synth) throw new HttpError(503, "Voz indisponível.");
+      const perfil = (await store.get("perfil")) || {};
+      const voice = perfil.prefs?.voice || DEFAULT_VOICE;
+      const audio = await synth(clean, voice);
+      return new Response(audio, { status: 200, headers: { "Content-Type": "audio/mpeg", "Cache-Control": "no-store" } });
     }
     if (path === "/news" && method === "GET") return json(await getNews(fetchFn, url.searchParams.get("q") || ""));
     if (path === "/weather" && method === "GET") {

@@ -148,6 +148,13 @@ def snapshot() -> dict:
         assistant, all_prefs = "JARVIS", {}
     # V6.6.2: as configurações da central valem também no modo nuvem (só as de aparência, voz e IA)
     shared = {k: all_prefs[k] for k in CLOUD_PREF_KEYS if k in all_prefs}
+    try:  # V6.6.9: a mesma voz do PC (estilo escolhido em Ajustes: nome, velocidade e tom) na nuvem
+        from modules import tts
+
+        name, rate, pitch = tts.voice_params()
+        shared["voice"] = {"name": name, "rate": rate, "pitch": pitch}
+    except Exception:  # noqa: BLE001
+        pass
     try:  # temas de notícias do "bom dia" (os seus ou os padrões) viram atalhos na aba NOTÍCIAS da nuvem
         from modules import briefing
 
