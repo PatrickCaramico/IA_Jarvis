@@ -202,16 +202,91 @@ def _clean_label(rest: str) -> str:
 
 _timers: dict[int, dict] = {}
 _timer_seq = 0
+_TIMERS_PATH = settings.DATA_DIR / "timers.json"  # V6.7.1: timers sobrevivem ao reinício (cada atualização reinicia)
 
 
-async def _timer_job(tid: int, seconds: int, label: str) -> None:
+def _save_timers() -> None:
+    items = [{"id": tid, "label": j["label"], "ends_at": j["ends_at"], "total_seconds": j["total_seconds"]}
+             for tid, j in _timers.items()]
     try:
-        await asyncio.sleep(seconds)
-        text = f"Lembrete: {label}." if label else f"Seu timer de {_fmt_duration(seconds)} terminou."
+        _TIMERS_PATH.write_text(json.dumps(items, ensure_ascii=False), encoding="utf-8")
+    except OSError as exc:
+        log.debug("Não consegui guardar os timers: %s", exc)
+
+
+async def _timer_job(tid: int, seconds: float, label: str, total: int) -> None:
+    try:
+        await asyncio.sleep(max(0.0, seconds))
+        text = f"Lembrete: {label}." if label else f"Seu timer de {_fmt_duration(total)} terminou."
         if _announce:
             await _announce(text)
     finally:
-        _timers.pop(tid, None)
+        if _timers.get(tid, {}).get("task") is asyncio.current_task():
+            _timers.pop(tid, None)
+            _save_timers()
+
+
+def _start_timer(seconds: float, label: str, total: Optional[int] = None, tid: Optional[int] = None) -> int:
+    global _timer_seq
+    if tid is None:
+        _timer_seq += 1
+        tid = _timer_seq
+    else:
+        _timer_seq = max(_timer_seq, tid)
+    total = int(total or seconds)
+    task = asyncio.create_task(_timer_job(tid, seconds, label, total))
+    _timers[tid] = {"task": task, "ends": time.monotonic() + seconds, "ends_at": time.time() + seconds,
+                    "label": label, "total_seconds": total}
+    _save_timers()
+    return tid
+
+
+def _cancel_timer(tid: int) -> None:
+    job = _timers.pop(tid, None)
+    if job:
+        job["task"].cancel()
+    _save_timers()
+
+
+async def restore_timers() -> None:
+    """Ao ligar: retoma os timers que ainda não acabaram; avisa os que acabaram há pouco (até 10 min)."""
+    try:
+        items = json.loads(_TIMERS_PATH.read_text(encoding="utf-8")) if _TIMERS_PATH.exists() else []
+    except (OSError, ValueError):
+        items = []
+    now = time.time()
+    missed = []
+    for it in items if isinstance(items, list) else []:
+        try:
+            left = float(it["ends_at"]) - now
+            if left > 0:
+                _start_timer(left, str(it.get("label") or ""), int(it.get("total_seconds") or left), int(it["id"]))
+            elif left > -600:
+                missed.append(str(it.get("label") or ""))
+        except (KeyError, TypeError, ValueError):
+            continue
+    _save_timers()
+    if missed and _announce:
+        what = ", ".join(m for m in missed if m) or "um timer"
+        await _announce(f"Enquanto eu reiniciava, terminou: {what}.")
+
+
+def _find_timer(norm: str) -> Optional[int]:
+    """Timer cujo nome aparece na frase ("cancela o timer do arroz" -> o do arroz)."""
+    words = set(re.findall(r"\w{3,}", norm)) - {"timer", "timers", "temporizador", "cancela", "cancele", "cancelar",
+                                                   "quanto", "falta", "faltam", "para", "pro", "minutos", "segundos"}
+    best, score = None, 0
+    for tid, job in _timers.items():
+        label_words = set(re.findall(r"\w{3,}", _norm(job["label"] or "")))
+        hit = len(words & label_words)
+        if hit > score:
+            best, score = tid, hit
+    return best
+
+
+def _left_text(job: dict) -> str:
+    left = max(int(job["ends"] - time.monotonic()), 0)
+    return _fmt_duration(left) if left else "poucos segundos"
 
 
 def active_timers() -> int:
@@ -236,11 +311,45 @@ async def _h_timer(message: str, norm: str, words: int, name: str) -> Optional[s
     has_timer_noun = any(re.search(rf"\b{w}s?\b", norm) for w in ("timer", "temporizador", "alarme", "lembrete", "despertador"))
 
     if has_timer_noun and re.search(r"\b(?:cancele|cancela|cancelar|pare|apague|desligue|remova|exclua)\b", norm):
+        if not _timers:
+            return "Não há nenhum timer ativo."
+        # V6.7.1: "cancela o timer do arroz" cancela só o do arroz (antes cancelava todos)
+        tid = _find_timer(norm)
+        if tid is not None and not re.search(r"\b(?:todos|todas|tudo)\b", norm):
+            label = _timers[tid]["label"]
+            _cancel_timer(tid)
+            return f"Cancelei o timer de {label}." if label else "Timer cancelado."
+        if len(_timers) > 1 and not re.search(r"\b(?:todos|todas|tudo|os timers|os temporizadores)\b", norm):
+            names = "; ".join(f"{j['label'] or 'sem nome'}, faltam {_left_text(j)}" for j in _timers.values())
+            return f"Qual deles, senhor? Você tem: {names}. Diga, por exemplo, cancela o timer do {next((j['label'] for j in _timers.values() if j['label']), 'primeiro')}, ou cancela todos."
         count = len(_timers)
-        for job in list(_timers.values()):
+        for tid in list(_timers):
+            _cancel_timer(tid)
+        return f"Cancelei {count} {_plural(count, 'timer', 'timers')}."
+
+    # V6.7.1: "aumenta 5 minutos no timer do arroz" / "mais 2 minutos no timer"
+    if _timers and re.search(r"\b(?:aumenta|aumente|adiciona|adicione|acrescenta|acrescente|mais|estende|estenda|prorroga)\b", norm) \
+            and re.search(r"\b(?:timer|temporizador)\b", norm):
+        extra, _ = _extract_duration(norm)
+        tid = _find_timer(norm) if len(_timers) > 1 else next(iter(_timers))
+        if extra > 0 and tid is not None:
+            job = _timers[tid]
+            left = max(job["ends"] - time.monotonic(), 0) + extra
+            label, total = job["label"], job["total_seconds"] + extra
             job["task"].cancel()
-        _timers.clear()
-        return f"Cancelei {count} {_plural(count, 'timer', 'timers')}." if count else "Não há nenhum timer ativo."
+            _start_timer(left, label, total, tid)
+            return f"Pronto, mais {_fmt_duration(extra)}{' no timer de ' + label if label else ''}. Agora faltam {_fmt_duration(int(left))}."
+        if extra > 0:
+            return "Em qual timer, senhor? Diga o nome, por exemplo: mais 5 minutos no timer do arroz."
+
+    # V6.7.1: "quanto falta pro arroz?" / "quanto falta no timer do bolo?"
+    if _timers and re.search(r"\bquanto (?:tempo )?falta\b", norm):
+        tid = _find_timer(norm)
+        if tid is not None:
+            job = _timers[tid]
+            return f"Faltam {_left_text(job)} para {job['label']}." if job["label"] else f"Faltam {_left_text(job)}."
+        if len(_timers) == 1 and has_timer_noun:
+            return f"Faltam {_left_text(next(iter(_timers.values())))}."
 
     if has_timer_noun and re.search(r"\b(?:quais|meus|quantos|ativos|quanto falta|tem algum)\b", norm):
         if not _timers:
@@ -262,12 +371,8 @@ async def _h_timer(message: str, norm: str, words: int, name: str) -> Optional[s
     if seconds > 86400:
         return "Prefiro timers de até 24 horas."
 
-    global _timer_seq
-    _timer_seq += 1
-    tid = _timer_seq
     label = _clean_label(rest)
-    task = asyncio.create_task(_timer_job(tid, seconds, label))
-    _timers[tid] = {"task": task, "ends": time.monotonic() + seconds, "label": label, "total_seconds": seconds}
+    _start_timer(seconds, label, seconds)
     if label:
         return f"Combinado. Em {_fmt_duration(seconds)} eu lembro você de {label}."
     return f"Timer de {_fmt_duration(seconds)} iniciado."

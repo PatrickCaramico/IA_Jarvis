@@ -119,6 +119,16 @@ async def announce(text: str) -> None:
     if access.is_restricted():
         text = LOCKED_ALERT
     await runtime.manager.broadcast({"type": "alert", "text": text})
+    # V6.7.1: os celulares com a central aberta também falam (o timer pedido na cozinha toca lá)
+    await runtime.manager.broadcast({"type": "speak_everywhere", "text": text})
+    await say_quietly(text)
+
+
+async def announce_everywhere(text: str) -> None:
+    """V6.7.1: "avisa em todos os aparelhos que...": tela e voz no PC e nos celulares, e notificação no app."""
+    runtime.notify("announce", "Aviso do JARVIS", text)
+    await runtime.manager.broadcast({"type": "alert", "text": text})
+    await runtime.manager.broadcast({"type": "speak_everywhere", "text": text})
     await say_quietly(text)
 
 

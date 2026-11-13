@@ -1,6 +1,6 @@
 # JARVIS — Comandos do dia a dia
 
-**Versão do projeto:** 6.7.0 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
+**Versão do projeto:** 6.7.1 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
 
 > Montado a partir do código do projeto. Se algum comando não responder como descrito, me avise que eu ajusto o guia.
 > Para a lista técnica de rotas, veja [API.md](API.md); para o `.env`, [CONFIGURACAO.md](CONFIGURACAO.md).
@@ -327,6 +327,18 @@ Avisos automáticos (gatilhos): chuva amanhã (à noite), jogo começando (com o
 | "Gastei 45 reais no mercado" / "Recebi 3000 de salário" | Anota (sem banco). |
 | "Quanto eu gastei esse mês?" / "hoje" / "essa semana" | Total e as categorias que mais pesaram. Também na tela **Finanças**. |
 | "Apaga o último gasto" | Desfaz o último lançamento. |
+
+### Timers e avisos para todos (V6.7.1)
+
+| Diga | O que acontece |
+|---|---|
+| "Timer de 15 minutos para o arroz" | Timer com nome (pode ter vários ao mesmo tempo). Quando acaba, aparece em todas as telas, fala no PC **e nos celulares com a central aberta**, e o app recebe notificação. |
+| "Quanto falta pro arroz?" | Quanto falta daquele timer. |
+| "Aumenta 5 minutos no timer do arroz" | Estica o timer. |
+| "Cancela o timer do arroz" / "cancela todos os timers" | Cancela só o do arroz, ou todos. Com vários e sem dizer qual, ele pergunta. |
+| "Avisa em todos os aparelhos que o almoço está pronto" / "anuncia que estou saindo" | Fala o aviso no PC e nos celulares, mostra em todas as telas e notifica o app. |
+
+Timers continuam correndo depois de o JARVIS reiniciar (cada atualização reinicia); se algum acabou durante o reinício, ele avisa.
 
 ### Bem-estar (V6.7)
 

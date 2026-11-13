@@ -50,6 +50,9 @@ async def lifespan(app: FastAPI):
     runtime.track_service(watchers.news_watcher_loop())  # V6.5: notícias novas no celular
     runtime.track_service(cloud_sync.sync_loop())  # V6.6: modo nuvem (celular com o notebook desligado)
     runtime.track(tts.preload())  # V4.4: voz carrega depois que o servidor já está no ar
+    from modules import tools
+
+    runtime.track(tools.restore_timers())  # V6.7.1: timers que estavam correndo antes do reinício
     yield
     for task in list(runtime.service_tasks):
         if not task.done():

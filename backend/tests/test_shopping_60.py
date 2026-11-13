@@ -28,7 +28,7 @@ def test_does_not_steal_tasks_or_other_phrases():
     assert say("comprei") is None
 
 
-def test_routes():
+def test_routes(credentials):
     access.reset_for_tests(access.UNLOCKED)
     c = TestClient(main.app)
     r = c.post("/api/shopping", json={"texto": "café e açúcar"}).json()

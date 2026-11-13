@@ -2,6 +2,13 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 6.7.1 — 13 de novembro de 2026
+
+- **Timers com nome de verdade:** "cancela o timer do arroz" cancelava **todos** os timers; agora cancela só aquele (com vários e sem nome, pergunta qual; "cancela todos" continua valendo). Novos: "quanto falta pro arroz?" e "aumenta 5 minutos no timer do arroz". Os timers ficam em `data/timers.json` e voltam depois de o JARVIS reiniciar; os que acabaram durante o reinício (até 10 min) são avisados.
+- **Aviso em todos os aparelhos:** "avisa em todos os aparelhos que o almoço está pronto", "avisa todo mundo que…", "anuncia que…", "faz um anúncio: …" (`modules/announce.py`): todas as telas, voz no PC e nos celulares com a central aberta, e notificação no app.
+- **Timers e lembretes falam também no celular:** o evento novo `speak_everywhere` faz os aparelhos que não são o PC falarem o aviso (o timer pedido na cozinha toca lá).
+- **Testes estáveis no CI:** os 4 testes que falhavam fora do PC do dono dependiam de existir uma foto real em `data/`; agora usam a fixture `credentials`. 380 testes passando, `ruff` limpo.
+
 ## 6.7.0 — 13 de novembro de 2026
 
 - **Modo bem-estar** (`modules/wellbeing.py`): o JARVIS como um mordomo atento, não um psicólogo. Respiração guiada 4-7-8 e quadrada, aterramento 5-4-3-2-1, registro do humor do dia (1 a 5, em `data/humor.json`, um por pessoa) e resumo da semana ("como foi meu humor essa semana?"). A IA recebe orientações de escuta ativa (acolher, validar, uma pergunta, depois algo prático; nunca diagnosticar; sugerir psicólogo se persistir) e o humor recente para ajustar o tom.
