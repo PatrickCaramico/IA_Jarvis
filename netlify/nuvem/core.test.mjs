@@ -168,3 +168,30 @@ test("RSS do Google Notícias", () => {
   assert.equal(items[0].source, "g1");
   assert.equal(items[1].title, "Dólar & bolsa hoje");
 });
+
+test("configurações da central chegam ao modo nuvem (validadas) e a personalidade vale na conversa", async () => {
+  const store = memStore();
+  const sync = { "X-Jarvis-Nuvem": ENV.JARVIS_NUVEM_CHAVE };
+  const prefs = {
+    ai_name: "Sexta-Feira", color_theme: "purple", theme_colors: { primary: "#a855f7", secondary: "#7c3aed", bg: "url(javascript:x)" },
+    background_style: "space", personality_mode: "alexa", silent_mode: true, a11y_text_scale: 130, a11y_high_contrast: true,
+    briefing_news_themes: [{ title: "Marvel", q: "Marvel" }, { title: "" }], water_quick_ml: [300, 9999], camera_index: 2,
+  };
+  await call(store, "/sync", { method: "POST", headers: sync, body: { ack: 0, snapshot: { perfil: { nome: "Patrick", assistente: "Sexta-Feira", prefs } } } });
+  const { data } = await call(store, "/status");
+  assert.equal(data.prefs.background_style, "space");
+  assert.equal(data.prefs.personality_mode, "alexa");
+  assert.deepEqual(data.prefs.theme_colors, { primary: "#a855f7", secondary: "#7c3aed" }); // cor inválida descartada
+  assert.deepEqual(data.prefs.briefing_news_themes, [{ title: "Marvel", q: "Marvel" }]);
+  assert.deepEqual(data.prefs.water_quick_ml, [300]);
+  assert.equal(data.prefs.camera_index, undefined); // só as chaves da lista
+  const token = await login(store);
+  let system = "";
+  const fetchFn = async (_url, init) => {
+    system = JSON.parse(init.body).systemInstruction.parts[0].text;
+    return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: '{"resposta":"Ok.","acoes":[]}' }] } }] }));
+  };
+  await handle(req("/chat", { method: "POST", token, body: { message: "oi" } }), { store, env: { ...ENV, GEMINI_API_KEY: "g" }, fetchFn, nowDate: NOW });
+  assert.match(system, /estilo Alexa/);
+  assert.match(system, /Seu nome aqui é Sexta-Feira/);
+});

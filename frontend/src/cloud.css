@@ -1,5 +1,6 @@
 /* V6.6: MODO NUVEM (components/CloudMode.jsx). Mesma planta azul do JARVIS, pensada para o celular. */
 .cm-root {
+  --cm-accent: var(--color-arc-primary, #67e8f9);
   position: fixed;
   inset: 0;
   z-index: 60;
@@ -26,7 +27,7 @@
   border-bottom: 1px solid rgba(205, 235, 255, 0.18);
 }
 .cm-brand { font-family: "Orbitron", "Rajdhani", sans-serif; font-size: 1.05rem; letter-spacing: 0.12em; color: #fff; }
-.cm-brand span { color: #67e8f9; font-size: 0.8rem; }
+.cm-brand span { color: var(--cm-accent); font-size: 0.8rem; }
 .cm-sub { font-size: 0.9rem; opacity: 0.9; margin-top: 2px; }
 .cm-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #fbbf24; margin-right: 6px; box-shadow: 0 0 8px #fbbf24; }
 .cm-header-btns { display: flex; gap: 8px; flex-shrink: 0; }
@@ -65,7 +66,7 @@
   cursor: pointer;
 }
 .cm-tabs button span { font-size: 1.15rem; }
-.cm-tabs button.is-on { color: #67e8f9; box-shadow: inset 0 2px 0 #67e8f9; }
+.cm-tabs button.is-on { color: var(--cm-accent); box-shadow: inset 0 2px 0 var(--cm-accent); }
 
 .cm-card {
   background: rgba(6, 26, 62, 0.72);
@@ -104,7 +105,7 @@
 }
 .cm-input input::placeholder, .cm-add input::placeholder { color: rgba(227, 244, 255, 0.5); }
 .cm-mic, .cm-send, .cm-add button, .cm-water-btns button {
-  border: 1px solid #67e8f9;
+  border: 1px solid var(--cm-accent);
   background: rgba(103, 232, 249, 0.15);
   color: #e0fbff;
   border-radius: 10px;
@@ -130,7 +131,7 @@
 .cm-list button { background: none; border: 0; color: rgba(227, 244, 255, 0.6); font-size: 1rem; padding: 4px 8px; cursor: pointer; }
 .cm-days { display: flex; gap: 4px; flex-wrap: wrap; }
 .cm-days button { padding: 6px 8px; font-size: 0.8rem; background: transparent; border-color: rgba(205, 235, 255, 0.35); }
-.cm-days button.is-on { background: rgba(103, 232, 249, 0.3); border-color: #67e8f9; }
+.cm-days button.is-on { background: rgba(103, 232, 249, 0.3); border-color: var(--cm-accent); }
 
 .cm-water { display: flex; flex-direction: column; align-items: center; gap: 12px; }
 .cm-ring {
@@ -173,3 +174,20 @@
   .cm-header-btns { flex-direction: column; }
 }
 @media (prefers-reduced-motion: reduce) { .cm-mic.is-on { animation: none; } }
+
+/* V6.6.2: o fundo e as preferências da central valem no modo nuvem */
+[data-bg="classic"] .cm-root {
+  background:
+    linear-gradient(rgba(31, 194, 245, 0.05) 1px, transparent 1px) 0 0 / 48px 48px,
+    linear-gradient(90deg, rgba(31, 194, 245, 0.05) 1px, transparent 1px) 0 0 / 48px 48px,
+    radial-gradient(ellipse 75% 60% at 50% 45%, rgba(6, 32, 60, 0.95) 0%, rgba(2, 8, 19, 1) 75%), #020813;
+}
+[data-sky="space"] .cm-root {
+  background: var(--sky-stars-1), var(--sky-stars-2), var(--sky-stars-3), var(--sky-stars-4), var(--sky-nebula), #02040e;
+}
+[data-contrast="high"] .cm-card, [data-contrast="high"] .cm-msg.is-jarvis { background: rgba(0, 0, 0, 0.88); border-color: rgba(255, 255, 255, 0.55); }
+[data-text="115"] .cm-root { font-size: 115%; }
+[data-text="130"] .cm-root { font-size: 130%; }
+[data-motion="reduce"] .cm-mic.is-on { animation: none; }
+.cm-themes { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.cm-chip.is-on { border-color: var(--cm-accent); background: rgba(103, 232, 249, 0.2); }

@@ -340,11 +340,50 @@ export async function receiveSnapshot(store, { ack = 0, snapshot = {} }, now = s
       assistente: clean(p.assistente, 30) || "JARVIS",
       cidade: clean(p.cidade, 60),
       sobre: clean(p.sobre, 600),
+      prefs: cleanPrefs(p.prefs),
       atualizado_em: now.stamp,
     });
   }
   return { pending: log.items.length };
 }
+
+// V6.6.2: configurações da central que valem no modo nuvem (validadas: vêm do PC, mas nunca confie cego)
+const HEX = /^#[0-9a-f]{3,8}$/i;
+export function cleanPrefs(p) {
+  if (!p || typeof p !== "object") return {};
+  const out = {};
+  if (typeof p.ai_name === "string") out.ai_name = clean(p.ai_name, 30);
+  if (["blue", "green", "purple", "orange", "red"].includes(p.color_theme)) out.color_theme = p.color_theme;
+  if (p.theme_colors && typeof p.theme_colors === "object") {
+    const c = {};
+    for (const k of ["primary", "secondary", "bg"]) if (HEX.test(p.theme_colors[k] || "")) c[k] = p.theme_colors[k];
+    if (Object.keys(c).length) out.theme_colors = c;
+  }
+  if (["blueprint", "classic", "space"].includes(p.background_style)) out.background_style = p.background_style;
+  if (["direto", "descontraido", "formal", "alexa"].includes(p.personality_mode)) out.personality_mode = p.personality_mode;
+  if (typeof p.silent_mode === "boolean") out.silent_mode = p.silent_mode;
+  if ([100, 115, 130].includes(Number(p.a11y_text_scale))) out.a11y_text_scale = Number(p.a11y_text_scale);
+  for (const k of ["a11y_high_contrast", "a11y_reduce_motion"]) if (typeof p[k] === "boolean") out[k] = p[k];
+  if (Array.isArray(p.briefing_news_themes)) {
+    out.briefing_news_themes = p.briefing_news_themes
+      .map((t) => ({ title: clean(t?.title, 40), q: clean(t?.q || t?.query || t?.topic || t?.title, 80) }))
+      .filter((t) => t.title && t.q)
+      .slice(0, 8);
+  }
+  if (Array.isArray(p.water_quick_ml)) {
+    const ml = p.water_quick_ml.map(Number).filter((n) => n > 0 && n <= 3000).slice(0, 4);
+    if (ml.length) out.water_quick_ml = ml;
+  }
+  if (["all", "important", "off"].includes(p.sfx_mode)) out.sfx_mode = p.sfx_mode;
+  return out;
+}
+
+const PERSONALITY = {
+  direto: "Seja objetivo e natural.",
+  descontraido: "Use um tom leve, próximo e bem-humorado, sem exagerar.",
+  formal: "Use um tom profissional, claro e respeitoso.",
+  alexa: "Responda como uma assistente de voz de casa (estilo Alexa): no máximo 1 ou 2 frases bem curtas, a informação primeiro, sem 'senhor' em toda resposta.",
+};
 
 // --------------------------------------------------------------------------- avisos (notificações do celular)
 async function pushNotice(store, notice, now) {
@@ -674,7 +713,8 @@ export async function chat({ store, env, fetchFn, message, now = spNow() }) {
   }
   const history = ((await store.get("conversa")) || []).slice(-MAX_HISTORY);
   history.push({ role: "user", text, at: now.stamp });
-  const system = [PERSONA, perfil.assistente && perfil.assistente !== "JARVIS" ? `Seu nome aqui é ${perfil.assistente}.` : "", FORMAT, "Contexto:", describeState(state, now, perfil), ...extra].filter(Boolean).join("\n\n");
+  const personality = PERSONALITY[perfil.prefs?.personality_mode] || "";
+  const system = [PERSONA, personality, perfil.assistente && perfil.assistente !== "JARVIS" ? `Seu nome aqui é ${perfil.assistente}.` : "", FORMAT, "Contexto:", describeState(state, now, perfil), ...extra].filter(Boolean).join("\n\n");
   const parsed = parseReply(await callLlm(fetchFn, cfg, system, history.map(({ role, text: t }) => ({ role, text: t }))));
   const actions = [];
   for (const a of parsed.acoes.slice(0, 8)) actions.push(await runAction(store, a, now));
@@ -723,6 +763,7 @@ export async function handle(req, { store, env, fetchFn = fetch, nowDate = new D
         nome: perfil.nome || "",
         assistente: perfil.assistente || "JARVIS",
         sincronizado_em: perfil.atualizado_em || null,
+        prefs: perfil.prefs || {},
       });
     }
 

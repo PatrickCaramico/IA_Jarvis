@@ -63,3 +63,13 @@ def test_sync_once_pulls_and_pushes(monkeypatch):
 def test_disabled_without_key(monkeypatch):
     monkeypatch.delenv("JARVIS_NUVEM_CHAVE", raising=False)
     assert cloud_sync.enabled() is False
+
+
+def test_snapshot_shares_only_safe_prefs():
+    from modules import prefs
+
+    prefs.update(background_style="space", personality_mode="alexa", camera_index=3)
+    shared = cloud_sync.snapshot()["perfil"]["prefs"]
+    assert shared["background_style"] == "space" and shared["personality_mode"] == "alexa"
+    assert "camera_index" not in shared and "custom_shortcuts" not in shared
+    assert shared["briefing_news_themes"] and {"title", "q"} <= set(shared["briefing_news_themes"][0])
