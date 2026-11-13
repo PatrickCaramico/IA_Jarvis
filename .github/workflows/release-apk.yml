@@ -1,16 +1,46 @@
 name: Release Android APK
 
+# V6.7.7: o app do celular se atualiza de qualquer lugar. A cada versão nova na main (backend/version.py
+# mudou), o GitHub gera o APK assinado com a MESMA chave do PC e publica numa Release; o app procura ali
+# quando não acha o PC. Sem a chave configurada (secrets ANDROID_KEYSTORE_BASE64 e ANDROID_KEYSTORE_PASSWORD,
+# veja o Preparar-App-no-GitHub.bat), o processo só avisa e pula, sem erro. Uma versão já publicada é pulada.
 on:
   push:
-    tags:
-      - "v*"
+    branches: [main]
+    paths: ["backend/version.py"]
+  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
+  gate:
+    name: Conferir versão e chave
+    runs-on: ubuntu-latest
+    outputs:
+      go: ${{ steps.check.outputs.go }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HAS_KEY: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' && secrets.ANDROID_KEYSTORE_PASSWORD != '' }}
+        run: |
+          version=$(sed -n 's/^VERSION *= *"\([0-9.]*\)".*/\1/p' backend/version.py)
+          if [ "$HAS_KEY" != "true" ]; then
+            echo "::notice::Chave do app ainda não configurada no GitHub (rode o Preparar-App-no-GitHub.bat). APK não gerado."
+            echo "go=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          if gh release view "v$version" >/dev/null 2>&1; then
+            echo "::notice::A versão v$version já foi publicada."
+            echo "go=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          echo "go=true" >> "$GITHUB_OUTPUT"
+
   build-and-release:
     name: Build and publish APK
+    needs: gate
+    if: needs.gate.outputs.go == 'true'
     runs-on: windows-latest
     steps:
       - name: Checkout
@@ -43,9 +73,6 @@ jobs:
             throw "Não consegui ler VERSION em backend/version.py."
           }
           $version = "$($Matches[1]).$($Matches[2]).$($Matches[3])"
-          if ($env:GITHUB_REF_NAME -ne "v$version") {
-            throw "A tag deve corresponder a backend/version.py (esperado: v$version)."
-          }
           $changelog = Get-Content "CHANGELOG.md" -Raw
           $escapedVersion = [regex]::Escape($version)
           $pattern = "(?ms)^##\s+\[?$escapedVersion\]?(?:\s|$)[^\r\n]*\r?\n(.*?)(?=^##\s+|\z)"
@@ -105,7 +132,8 @@ jobs:
       - name: Publicar release e APK
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: ${{ github.ref_name }}
+          tag_name: v${{ steps.release-metadata.outputs.version }}
+          target_commitish: ${{ github.sha }}
           name: JARVIS v${{ steps.release-metadata.outputs.version }}
           body_path: ${{ runner.temp }}/release-notes.md
           files: mobile/dist/JARVIS-${{ steps.release-metadata.outputs.version }}.apk

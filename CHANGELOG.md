@@ -2,6 +2,10 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 6.7.7 — 13 de novembro de 2026
+
+- **App que se atualiza de qualquer lugar:** o app procurava versão nova só no PC (Wi-Fi de casa). Agora, se não acha o PC (fora de casa, PC desligado) ou o PC não tem APK mais novo, procura nas **Releases do GitHub** e se instala dali (só aceita APK publicado neste repositório). O GitHub gera o APK sozinho a cada versão nova na main (`release-apk.yml` dispara quando `backend/version.py` muda; versão já publicada é pulada), assinado com a **mesma chave do PC**, que precisa ir para os secrets do repositório uma vez: rode o **`Preparar-App-no-GitHub.bat`** (abre a página e põe a chave e a senha na área de transferência para colar; não envia nada sozinho). Sem a chave, o processo só avisa e pula. Precisa do APK 6.7.7 (a última vez gerado no PC).
+
 ## 6.7.6 — 13 de novembro de 2026
 
 - **Tela preta ao abrir os Ajustes (site):** com a central aberta durante uma publicação nova no Netlify, abrir uma parte carregada sob demanda (Ajustes, widgets, modais) pedia um arquivo da versão antiga, que não existe mais; o Netlify respondia com a página da central no lugar do código e a tela inteira ficava preta. Agora: (1) a central recarrega sozinha uma vez e pega a versão nova; (2) se ainda falhar, só aquela parte mostra "Esta parte não carregou" com RECARREGAR, e a central continua de pé; (3) qualquer erro na tela vira "O JARVIS precisa recarregar a tela" com o botão RECARREGAR, nunca mais a tela preta; (4) no Netlify, arquivo antigo de `/app/assets/` responde 404 em vez da página da central.

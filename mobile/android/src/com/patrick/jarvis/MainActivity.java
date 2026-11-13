@@ -810,11 +810,11 @@ public class MainActivity extends Activity {
             reportUpdate(manual, "updating", "A atualização já está em andamento.");
             return;
         }
+        lastUpdateCheck = System.currentTimeMillis();
         if (!isHttp(appUrl) || base == null) {
-            reportUpdate(manual, "error", "Este celular ainda não está conectado a um PC.");
+            checkGitHubRelease(manual); // V6.7.7: sem PC pareado, procura no GitHub
             return;
         }
-        lastUpdateCheck = System.currentTimeMillis();
 
         new Thread(() -> {
             try {
@@ -828,7 +828,7 @@ public class MainActivity extends Activity {
                 int status = connection.getResponseCode();
                 if (status != 200) {
                     connection.disconnect();
-                    reportUpdate(manual, "error", "O PC não respondeu agora. Tente de novo.");
+                    checkGitHubRelease(manual); // V6.7.7: fora de casa (ou PC desligado): procura no GitHub
                     return;
                 }
                 StringBuilder body = new StringBuilder();
@@ -848,14 +848,67 @@ public class MainActivity extends Activity {
                     String apkUrl = base + "/api/mobile/app.apk" + PcAddress.tokenQuery(paired);
                     runOnUiThread(() -> startSelfUpdate(apkUrl, pcVersion));
                 } else {
-                    pendingUpdateHost = null;
-                    reportUpdate(manual, "latest", "O app já está na versão mais nova (" + phoneVersion + ").");
+                    // V6.7.7: o PC não tem APK mais novo (ou ainda não gerou): confere também o GitHub
+                    checkGitHubRelease(manual);
                 }
             } catch (Exception e) {
-                // Sem conexão ou sem APK novo: não interrompe a abertura do JARVIS.
-                reportUpdate(manual, "error", "Não consegui falar com o PC agora. Confira a Wi-Fi.");
+                // Sem conexão com o PC (fora de casa, PC desligado): procura no GitHub
+                checkGitHubRelease(manual);
             }
         }, "jarvis-update-check").start();
+    }
+
+    // ------------------------------------------------------------------ V6.7.7: atualizar de qualquer lugar
+    static final String GITHUB_LATEST = "https://api.github.com/repos/PatrickCaramico/IA_Jarvis/releases/latest";
+
+    /**
+     * Procura a versão mais nova do app nas Releases do GitHub (o GitHub gera o APK sozinho a cada versão,
+     * assinado com a mesma chave do PC). Roda numa thread de fundo. Mais nova que a instalada: baixa e instala.
+     */
+    private void checkGitHubRelease(boolean manual) {
+        try {
+            java.net.HttpURLConnection c = (java.net.HttpURLConnection) new java.net.URL(GITHUB_LATEST).openConnection();
+            c.setConnectTimeout(6000);
+            c.setReadTimeout(10000);
+            c.setRequestProperty("Accept", "application/vnd.github+json");
+            c.setRequestProperty("User-Agent", "JarvisApp/" + installedVersion());
+            if (c.getResponseCode() != 200) {
+                c.disconnect();
+                reportUpdate(manual, "error", "Não consegui procurar a versão nova agora. Tento de novo mais tarde.");
+                return;
+            }
+            StringBuilder body = new StringBuilder();
+            try (java.io.BufferedReader r = new java.io.BufferedReader(new java.io.InputStreamReader(c.getInputStream(), "UTF-8"))) {
+                String line;
+                while ((line = r.readLine()) != null) body.append(line);
+            }
+            c.disconnect();
+            JSONObject rel = new JSONObject(body.toString());
+            String version = rel.optString("tag_name", "").replaceFirst("^v", "");
+            String apkUrl = null;
+            org.json.JSONArray assets = rel.optJSONArray("assets");
+            for (int i = 0; assets != null && i < assets.length(); i++) {
+                JSONObject a = assets.getJSONObject(i);
+                String name = a.optString("name", "");
+                String url = a.optString("browser_download_url", "");
+                // só aceita APK publicado neste repositório (nada de link de fora)
+                if (name.endsWith(".apk") && url.startsWith("https://github.com/PatrickCaramico/IA_Jarvis/releases/download/")) {
+                    apkUrl = url;
+                    break;
+                }
+            }
+            String phoneVersion = installedVersion();
+            if (apkUrl != null && !version.isEmpty() && compareVersions(version, phoneVersion) > 0) {
+                reportUpdate(manual, "updating", "Atualizando o app para a versão " + version + "…");
+                String finalUrl = apkUrl;
+                runOnUiThread(() -> startSelfUpdate(finalUrl, version));
+            } else {
+                pendingUpdateHost = null;
+                reportUpdate(manual, "latest", "O app já está na versão mais nova (" + phoneVersion + ").");
+            }
+        } catch (Exception e) {
+            reportUpdate(manual, "error", "Sem internet agora. Tento atualizar o app mais tarde.");
+        }
     }
 
     /**
