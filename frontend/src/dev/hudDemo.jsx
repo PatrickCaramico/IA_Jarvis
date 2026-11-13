@@ -38,6 +38,8 @@ const DATA = {
   "/api/tasks": { tasks: [] },
   "/api/notifications": { items: [] },
   "/api/health": { status: "ok" },
+  // V6.7.2: bolinha de atualização no ⟳ ATUALIZAR
+  "/api/system/update/status": { available: true, count: 1, current: "6.7.1", latest: "6.7.2", notes: ["JARVIS 6.7.2: bolinha de atualização"] },
   // V6.5.15: tela de espera (Área Limpa)
   "/api/weather": { place: "São Paulo", temperature: 21, description: "parcialmente nublado", maximum: 26, minimum: 17, rain_probability: 100, icon: "⛅",
     week: [["Hoje", 26, 17, "⛅"], ["Amanhã", 25, 18, "🌧"], ["Sáb 14", 27, 18, "⛅"], ["Dom 15", 28, 16, "🌦"], ["Seg 16", 26, 19, "☀"], ["Ter 17", 28, 18, "☀"]]

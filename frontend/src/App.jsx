@@ -897,6 +897,25 @@ export default function App() {
   }, []);
   useEffect(() => () => clearTimeout(launchTimerRef.current), []);
 
+  // V6.7.2: tem versão nova? O PC confere a branch no GitHub (a cada 30 min aqui; ele guarda 15 min) e a
+  // central mostra a bolinha com o número no botão ATUALIZAR (bloqueio e topo da central). Só no PC.
+  const [updateInfo, setUpdateInfo] = useState(null);
+  const canSelfUpdate = BACKEND_ON_THIS_PC && !IS_JARVIS_APP && !cloudActive;
+  const updateScreen = screen === "lock" || screen === "main";
+  useEffect(() => {
+    if (!canSelfUpdate || !updateScreen) return undefined;
+    let alive = true;
+    const check = () => api("/api/system/update/status", { timeout: 60_000 })
+      .then((info) => alive && setUpdateInfo(info))
+      .catch(() => {});
+    check();
+    const t = setInterval(check, 30 * 60 * 1000);
+    return () => {
+      alive = false;
+      clearInterval(t);
+    };
+  }, [canSelfUpdate, updateScreen]);
+
   // Botão ATUALIZAR (tela de bloqueio): baixa a versão nova, o JARVIS avisa por voz e reinicia.
   // A tela espera o backend novo subir (boot_id diferente) e recarrega a página com a versão nova.
   // V6.1: barra 0–100% por etapa real: baixar (até 30) -> aviso por voz (até 50) -> reiniciando (até 85)
@@ -2522,6 +2541,7 @@ export default function App() {
           onGuest={enterGuest}
           onNewProfile={REMOTE_SCREEN ? null : () => setScreen("newprofile")}
           onUpdate={IS_JARVIS_APP ? updateApp : BACKEND_ON_THIS_PC ? updateJarvis : null}
+          updateCount={updateInfo?.available ? updateInfo.count : 0}
           updateNote={appUpdateNote}
           updateProgress={appUpdatePct}
           phoneApp={REMOTE_SCREEN}
@@ -3030,6 +3050,8 @@ export default function App() {
 
       <HudLayout
         userName={name}
+        updateInfo={updateInfo?.available ? updateInfo : null}
+        onUpdate={canSelfUpdate ? updateJarvis : null}
         onChatActivity={pokeChat}
         devices={devices}
         countdowns={countdowns}

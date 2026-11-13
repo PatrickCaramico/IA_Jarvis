@@ -1174,3 +1174,27 @@
 .hl-chat-clear-ask button.is-danger:hover { background: rgba(248, 113, 113, 0.18); }
 .hl-chat-clear-ask button.is-ghost { border-color: transparent; color: rgba(201, 246, 255, 0.6); }
 .hl-chat-clear-note { font-size: 0.72rem; color: #a7f3d0; }
+
+/* V6.7.2: bolinha com o número de atualizações (botão ⟳ ATUALIZAR da central e do bloqueio) */
+.hl-btn-update, .ls-chip:has(> .upd-badge) { position: relative; }
+.hl-btn-update { border-color: rgba(251, 191, 36, 0.7) !important; color: #fde68a !important; }
+.upd-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #fff;
+  font: 700 0.68rem/18px system-ui, sans-serif;
+  letter-spacing: 0;
+  text-align: center;
+  box-shadow: 0 0 0 2px rgba(3, 14, 38, 0.9), 0 0 10px rgba(239, 68, 68, 0.6);
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .upd-badge { animation: upd-pop 2.4s ease-in-out infinite; }
+}
+@keyframes upd-pop { 0%, 85%, 100% { transform: scale(1); } 92% { transform: scale(1.18); } }

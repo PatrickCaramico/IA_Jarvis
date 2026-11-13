@@ -80,3 +80,52 @@ def restart() -> bool:
     )
     log.info("Reiniciando o JARVIS pelo Iniciar-JARVIS.bat (modo site).")
     return True
+
+
+# ------------------------------------------------------------------ V6.7.2: tem atualização?
+import re as _re  # noqa: E402
+
+_CHECK_TTL = 15 * 60
+_last_check: dict = {"at": 0.0, "result": None}
+_VERSION_RE = _re.compile(r'^VERSION\s*=\s*"([^"]+)"', _re.M)
+_RELEASE_RE = _re.compile(r"^JARVIS (\d+\.\d+\.\d+)\b")
+
+
+def _current_version() -> str:
+    try:
+        return _VERSION_RE.search((ROOT / "backend" / "version.py").read_text(encoding="utf-8")).group(1)
+    except (OSError, AttributeError):
+        return ""
+
+
+def check(force: bool = False) -> dict:
+    """Quantas versões novas há na branch que o ATUALIZAR baixa (git fetch + comparação). Guarda por 15 min.
+
+    Retorna {available, count, current, latest, notes, message}. Roda fora do loop (to_thread).
+    """
+    now = time.time()
+    if not force and _last_check["result"] and now - _last_check["at"] < _CHECK_TTL:
+        return _last_check["result"]
+    current = _current_version()
+    base = {"available": False, "count": 0, "current": current, "latest": current, "notes": [], "message": ""}
+    if not shutil.which("git") or not (ROOT / ".git").exists():
+        return {**base, "message": "Sem Git nesta pasta."}
+    try:
+        fetched = _git("fetch", "--quiet")
+        if fetched.returncode != 0:
+            return {**base, "message": "Não consegui falar com o GitHub agora."}
+        upstream = _git("rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}").stdout.strip() or "origin/main"
+        behind = int((_git("rev-list", "--count", f"HEAD..{upstream}").stdout or "0").strip() or 0)
+        subjects = [s for s in _git("log", "--no-merges", "--format=%s", f"HEAD..{upstream}").stdout.splitlines() if s.strip()]
+        latest_src = _git("show", f"{upstream}:backend/version.py").stdout
+    except (subprocess.TimeoutExpired, OSError, ValueError) as exc:
+        return {**base, "message": f"Não consegui conferir: {exc}"}
+    m = _VERSION_RE.search(latest_src or "")
+    latest = m.group(1) if m else current
+    releases = [s for s in subjects if _RELEASE_RE.match(s)]
+    count = len(releases) or (1 if behind else 0)
+    result = {**base, "available": behind > 0, "count": count, "latest": latest,
+              "notes": [s for s in (releases or subjects)][:5],
+              "message": f"Versão {latest} disponível." if behind else "Você já está na versão mais nova."}
+    _last_check.update(at=now, result=result)
+    return result

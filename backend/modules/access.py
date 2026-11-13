@@ -115,6 +115,7 @@ def reset_for_tests(state: str = LOCKED) -> None:
 # Tudo o que começa com /api e não está aqui exige acesso liberado (negação por padrão).
 _PUBLIC_EXACT = {
     ("GET", "/api/health"),
+    ("GET", "/api/system/update/status"),  # V6.7.2: bolinha de atualização no botão ATUALIZAR do bloqueio
     ("GET", "/api/integrations/spotify/track"),  # V4.2.2: a rota confere se o cartão está ligado no bloqueio
     ("GET", "/api/presence"),
     ("GET", "/api/profile"),          # devolve só has_photo quando restrito (sem nome)

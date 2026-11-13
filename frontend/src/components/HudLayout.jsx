@@ -816,6 +816,8 @@ function HudControlsMenu({
 
 export default function HudLayout({
   aiName,
+  updateInfo = null, // V6.7.2: { count, latest, notes } quando há versão nova (bolinha no ⟳ ATUALIZAR)
+  onUpdate = null,
   userName = "", // V6.5.15: saudação da tela de espera
   onChatActivity = null, // V6.5.18: mexeu no chat (rolar, digitar): segura aberto na Área Limpa
   stateLabel,
@@ -1078,6 +1080,20 @@ export default function HudLayout({
               <i aria-hidden="true">▦</i>FUNDO
             </button>
           </span>
+          {/* V6.7.2: só aparece quando há versão nova; o número diz quantas */}
+          {updateInfo && onUpdate && (
+            <button
+              type="button"
+              className="hl-btn hl-btn-update"
+              onClick={() => {
+                if (window.confirm(`Atualizar o JARVIS para a versão ${updateInfo.latest}? Ele baixa a versão nova e reinicia (cerca de 1 minuto).`)) onUpdate();
+              }}
+              title={[`Versão ${updateInfo.latest} disponível`, ...(updateInfo.notes || [])].join("\n")}
+            >
+              ⟳ ATUALIZAR
+              <span className="upd-badge" aria-label={`${updateInfo.count} ${updateInfo.count === 1 ? "atualização disponível" : "atualizações disponíveis"}`}>{updateInfo.count}</span>
+            </button>
+          )}
           {(busy || listening) && (
             <button type="button" className="hl-btn hl-btn-danger" onClick={onCancel} title="Cancelar ação atual (Esc)">
               ✕ CANCELAR
