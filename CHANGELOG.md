@@ -2,6 +2,10 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 6.5.21 — 12 de novembro de 2026
+
+- **Pedido no bloqueio virava "entrar na central":** com o microfone do bloqueio ligado, a própria fala ("Jarvis, como está o clima?") era confundida com duas palmas, e duas palmas no bloqueio escaneiam o rosto e entram — a central desbloqueava em 2 s e o pedido se perdia (visto nos registros: bloqueia 21:28:17, entra 21:28:19). Agora a palma espera 0,9 s: se o reconhecimento de voz ouviu fala junto (evento `jarvis-heard`), é fala e a "palma" é ignorada.
+
 ## 6.5.20 — 12 de novembro de 2026
 
 - **Perguntas no bloqueio não respondiam:** toda vez que a central voltava para a tela de bloqueio, o microfone recomeçava silenciado (privacidade), então "Jarvis, como está o clima?" nem era ouvido (nenhum pedido chegava ao PC). Agora o microfone do bloqueio lembra a última escolha (P ou clique em MIC): ligado fica ligado nos próximos bloqueios (`lock_mic_on`, `POST /api/lock/mic`). Ligado para o perfil principal.

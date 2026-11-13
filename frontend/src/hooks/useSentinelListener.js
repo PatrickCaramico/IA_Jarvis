@@ -120,6 +120,12 @@ export default function useSentinelListener({ enabled, paused = false, wakeWords
       rec.continuous = true;
       rec.maxAlternatives = 1;
       rec.onresult = (event) => {
+        // V6.5.21: avisa que ouviu fala (as palmas esperam e se ignoram se houve fala junto)
+        try {
+          window.dispatchEvent(new CustomEvent("jarvis-heard"));
+        } catch {
+          /* sem eventos: segue */
+        }
         let partial = "";
         for (let i = event.resultIndex; i < event.results.length; i += 1) {
           const result = event.results[i];

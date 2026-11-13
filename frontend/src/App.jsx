@@ -1882,7 +1882,20 @@ export default function App() {
   }, [appPrefs.lock_mic_on]);
 
   // ================= Seção 14/16: palmas =================
+  // V6.5.21: falar perto do microfone ("Jarvis, ...") era confundido com duas palmas e entrava na central
+  // no meio do pedido. Agora a palma espera um instante: se apareceu fala junto, é fala, não palma.
+  const lastSpeechAtRef = useRef(0);
   const handleDoubleClap = useCallback(() => {
+    const at = Date.now();
+    setTimeout(() => {
+      if (lastSpeechAtRef.current > at - 1500) return; // houve fala: ignora a "palma"
+      handleRealClap();
+    }, 900);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const handleRealClapRef = useRef(() => {});
+  const handleRealClap = () => handleRealClapRef.current();
+  handleRealClapRef.current = () => {
     if (!appPrefsRef.current.silent_mode) soundManager.playChime();
     setClapPulse((n) => n + 1);
     if (screenRef.current === "lock") {
@@ -1891,7 +1904,7 @@ export default function App() {
       if (busyRef.current) return; // ocupado: ignora sem erro
       verify({ mode: "recheck", trigger: "clap" });
     }
-  }, [verify]);
+  };
 
   const clapOn = Boolean(appPrefs.clap_wake_enabled);
   const lockClap = clapOn && screen === "lock" && (lockPhase === "ready" || lockPhase === "failed") && !showMicrophoneSelect
@@ -1996,6 +2009,16 @@ export default function App() {
     onWake: askSentinel,
     onUnlock: unlockByVoice,
   });
+
+  // V6.5.21: qualquer fala ouvida (bloqueio ou central) marca a hora, para as palmas não confundirem
+  useEffect(() => {
+    if (sentinel.interim || central.interim) lastSpeechAtRef.current = Date.now();
+  }, [sentinel.interim, central.interim]);
+  useEffect(() => {
+    const heard = () => { lastSpeechAtRef.current = Date.now(); };
+    window.addEventListener("jarvis-heard", heard);
+    return () => window.removeEventListener("jarvis-heard", heard);
+  }, []);
 
   // Rosto não reconhecido no Sentinela: nega, descarta o pedido e volta a dormir
   useEffect(() => {
