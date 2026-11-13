@@ -890,3 +890,44 @@
   .rn.show-list .rn-detail { display: none; }
   .rn-back { display: inline-block; }
 }
+
+/* V7.4: 🩺 DIAGNÓSTICO */
+.dg-overlay { position: fixed; inset: 0; z-index: 97; display: grid; place-items: center; padding: 12px; background: rgba(2, 6, 14, 0.78); backdrop-filter: blur(4px); }
+.dg { width: min(560px, 100%); max-height: calc(100dvh - 24px); display: flex; flex-direction: column; border-radius: 16px; border: 1px solid rgba(34, 211, 238, 0.45); background: rgba(5, 14, 32, 0.97); color: #e0fbff; box-shadow: 0 0 40px rgba(34, 211, 238, 0.22); overflow: hidden; }
+.dg-head { display: flex; align-items: center; gap: 10px; padding: 12px 14px; font: 600 0.85rem "Orbitron", sans-serif; letter-spacing: 0.12em; color: #67e8f9; border-bottom: 1px solid rgba(34, 211, 238, 0.2); }
+.dg-head small { flex: 1; font: 0.72rem system-ui, sans-serif; letter-spacing: 0; color: rgba(224, 251, 255, 0.55); text-align: right; }
+.dg-x { border: 1px solid rgba(201, 246, 255, 0.3); background: transparent; color: #e0fbff; border-radius: 8px; width: 32px; height: 32px; cursor: pointer; }
+.dg-verdict { display: flex; gap: 12px; align-items: center; margin: 12px 14px 4px; padding: 12px; border-radius: 12px; border: 1px solid; }
+.dg-verdict i { flex: none; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-weight: 800; font-size: 1.2rem; }
+.dg-verdict strong { display: block; font: 700 0.95rem "Orbitron", sans-serif; letter-spacing: 0.06em; }
+.dg-verdict small { color: rgba(224, 251, 255, 0.65); font-size: 0.8rem; }
+.dg-verdict.is-ok { border-color: rgba(134, 239, 172, 0.5); background: rgba(134, 239, 172, 0.08); }
+.dg-verdict.is-ok i { background: #86efac; color: #052e16; }
+.dg-verdict.is-warn { border-color: rgba(253, 230, 138, 0.5); background: rgba(253, 230, 138, 0.08); }
+.dg-verdict.is-warn i { background: #fde68a; color: #422006; }
+.dg-verdict.is-fail { border-color: rgba(252, 165, 165, 0.6); background: rgba(252, 165, 165, 0.08); }
+.dg-verdict.is-fail i { background: #fca5a5; color: #450a0a; }
+.dg-verdict.is-run { border-color: rgba(103, 232, 249, 0.4); }
+.dg-spin { width: 22px; height: 22px; border-radius: 50%; border: 3px solid rgba(103, 232, 249, 0.25); border-top-color: #67e8f9; animation: dg-spin 0.9s linear infinite; }
+@keyframes dg-spin { to { transform: rotate(360deg); } }
+.dg-list { list-style: none; margin: 8px 0 0; padding: 0 14px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.dg-list li { display: flex; gap: 10px; padding: 9px 10px; border-radius: 10px; background: rgba(103, 232, 249, 0.04); border: 1px solid rgba(103, 232, 249, 0.12); opacity: 0; animation: dg-in 300ms ease-out forwards; }
+@keyframes dg-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.dg-list li i { flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-weight: 800; font-size: 0.75rem; }
+.dg-list li.is-ok i { background: rgba(134, 239, 172, 0.2); color: #86efac; }
+.dg-list li.is-warn i { background: rgba(253, 230, 138, 0.2); color: #fde68a; }
+.dg-list li.is-fail i { background: rgba(252, 165, 165, 0.2); color: #fca5a5; }
+.dg-list li.is-fail { border-color: rgba(252, 165, 165, 0.35); }
+.dg-list li div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.dg-list li b { font-size: 0.9rem; }
+.dg-list li span { font-size: 0.82rem; color: rgba(224, 251, 255, 0.7); overflow-wrap: anywhere; }
+.dg-list li em { font-style: normal; font-size: 0.8rem; color: #fde68a; }
+.dg-actions { display: flex; gap: 8px; padding: 12px 14px; border-top: 1px solid rgba(34, 211, 238, 0.15); margin-top: 10px; }
+.dg-actions button { flex: 1; padding: 10px; border-radius: 10px; border: 1px solid rgba(103, 232, 249, 0.45); background: rgba(103, 232, 249, 0.1); color: #e0fbff; font: 600 0.72rem "Orbitron", sans-serif; letter-spacing: 0.06em; cursor: pointer; }
+.dg-actions button:disabled { opacity: 0.45; cursor: default; }
+
+/* V7.4: tela de bloqueio no celular: o título cabe inteiro e o rodapé decorativo não cobre os cartões */
+@media (max-width: 640px) {
+  .ls-brand { font-size: clamp(1.35rem, 8vw, 2rem); letter-spacing: 0.16em; padding-left: 0.16em; }
+  .ls-footer { display: none; }
+}

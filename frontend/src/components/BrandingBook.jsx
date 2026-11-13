@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { createPortal } from "react-dom";
+import useEscape from "../hooks/useEscape.js";
 
 // V7.2: 📘 BRANDING BOOK dentro do JARVIS (botão na central, em CONTROLES e na tela de bloqueio).
 // O livro ilustrado (docs/branding-book.html) vai junto com a central; sem ele, abre o do site.
@@ -8,11 +9,7 @@ const SITE = "https://projeto-jarvis-ia.netlify.app/branding";
 
 export default function BrandingBook({ onClose }) {
   const [loaded, setLoaded] = useState(false);
-  useEffect(() => {
-    const onKey = (e) => e.key === "Escape" && onClose();
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  useEscape(onClose);
 
   return createPortal(
     <div className="bb-overlay" role="dialog" aria-modal="true" aria-label="Branding Book do JARVIS">

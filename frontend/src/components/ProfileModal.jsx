@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import useEscape from "../hooks/useEscape.js";
 import { APP_VERSION } from "../utils/version.js";
 
 import { checkForUpdate, saveUpdateResult } from "../utils/updateCheck.js";
@@ -50,12 +51,8 @@ export default function ProfileModal({
     { key: "about", label: "Sobre Mim", desc: "Dados personalizados do usuário" },
   ];
 
-  // Esc fecha a janela
-  useEffect(() => {
-    const onKey = (e) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  // Esc fecha a janela (V7.4: pela pilha de janelas, funciona mesmo com um botão focado)
+  useEscape(onClose);
 
   const speak = (text) => {
     if (api) {
@@ -246,6 +243,14 @@ export default function ProfileModal({
               >
                 <strong className="block text-sm font-['Orbitron'] text-white">📝 Notas da versão</strong>
                 <p className="text-xs text-cyan-200/60 mt-1">Cada versão e o que mudou nela (instalada: {APP_VERSION})</p>
+              </button>
+
+              <button
+                onClick={() => { onClose(); window.dispatchEvent(new CustomEvent("jarvis-open-diagnostic")); }}
+                className="p-3.5 rounded-lg border border-cyan-500/30 bg-black/40 hover:border-cyan-400 hover:bg-cyan-950/40 text-left transition"
+              >
+                <strong className="block text-sm font-['Orbitron'] text-white">🩺 Diagnóstico</strong>
+                <p className="text-xs text-cyan-200/60 mt-1">Testar IA, voz, internet, microfone e câmera</p>
               </button>
 
               {/* V6.8.3: verificar atualizações (mesma fonte do ⟳ ATUALIZAR) */}

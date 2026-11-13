@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import useEscape from "../hooks/useEscape.js";
 
 // V6.8.3: Central de Agentes (botão ao lado do Olho de Deus e em CONTROLES).
 // - os agentes do JARVIS, o que fazem e exemplos (tocar envia o pedido);
@@ -43,11 +44,7 @@ export default function AgentsHub({ api, onSend, onClose }) {
     endRef.current?.scrollIntoView({ block: "end" });
   }, [chat.length]);
 
-  useEffect(() => {
-    const onKey = (e) => e.key === "Escape" && onClose();
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  useEscape(onClose);
 
   const send = (t) => {
     const clean = String(t || "").trim();

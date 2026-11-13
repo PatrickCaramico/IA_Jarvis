@@ -6,6 +6,8 @@ export function norm(text) {
 }
 
 const NOT_HOLO = /\b(youtube|google|maps|spotify|waze|video|videos|musica|playlist|noticias?)\b/;
+// V7.4: pedidos pessoais seguem o caminho normal ("me fala sobre minha agenda", "como funciona meu alarme")
+const PERSONAL = /\b(meu|minha|meus|minhas|agenda|tarefas?|lembretes?|compras|agua|clima|previsao|alarmes?|timer|jarvis)\b/;
 const RECIPE = /\breceitas?\b|\bcomo (fazer|preparar) (um |uma |o |a )?(bolo|pao|torta|pudim|lasanha|brigadeiro|panqueca|risoto|macarrao|feijoada|mousse|biscoito|cookie|frango|carne|peixe|sopa|salada|molho|pizza|omelete|strogonoff|estrogonofe|coxinha|brownie)\b/;
 const EXPLAIN = /\b(me explica|me explique|explica pra mim|explique pra mim|explica como|explique como|me ensina|me ensine|como funciona|como funcionam|faz uma apresentacao|faca uma apresentacao|apresentacao sobre|apresenta sobre|aula sobre|me da uma aula|me mostra sobre|me conta sobre|me fala sobre|pesquisa sobre|pesquise sobre|pesquisa a respeito|holograma (de|do|da|sobre))\b/;
 
@@ -14,7 +16,7 @@ export function holoIntent(text) {
   const n = norm(text);
   if (!n || NOT_HOLO.test(n)) return null;
   if (RECIPE.test(n)) return { kind: "receita", query: String(text).trim() };
-  if (EXPLAIN.test(n) && n.split(" ").length >= 3) return { kind: "apresentacao", query: String(text).trim() };
+  if (EXPLAIN.test(n) && !PERSONAL.test(n) && n.split(" ").length >= 3) return { kind: "apresentacao", query: String(text).trim() };
   return null;
 }
 

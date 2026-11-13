@@ -406,6 +406,14 @@ async def speak_on_pc(req: SpeakRequest) -> dict:
     return {"status": "ok"}
 
 
+@router.get("/api/system/health-check")
+async def system_health_check() -> dict:
+    """V7.4: 🩺 DIAGNÓSTICO: testa de verdade IA, voz, internet, nuvem, disco, dados e erros recentes."""
+    from modules import health_check
+
+    return await health_check.run()
+
+
 @router.post("/api/system/optimize")
 async def system_optimize() -> dict:
     """V7.2: botão ⚡ OTIMIZAR: limpa sobras de áudio (falas interrompidas), cache de voz velho e libera memória."""

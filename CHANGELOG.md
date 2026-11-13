@@ -2,6 +2,17 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 7.4.0 — 13 de novembro de 2026
+
+- **🩺 DIAGNÓSTICO** (tela de bloqueio, ao lado do Olho de Deus, CONTROLES, perfil ou "Jarvis, roda um diagnóstico"): testa de verdade a IA (pergunta mínima, mede o tempo), a voz (gera um áudio), a internet, a sincronização com a nuvem, o espaço em disco, os arquivos de dados, os erros das últimas 24 h e, no aparelho, a conexão com o PC, o tempo real, a versão da tela e do PC, o microfone, a câmera e a fluidez. Cada item diz ok / atenção / falha e **o que fazer**. "COPIAR RELATÓRIO" copia tudo em texto (sem dados pessoais).
+- **Varredura completa antes da apresentação**:
+  - **Esc não fechava** as janelas novas (Agentes, Branding, Notas, Otimizar, Olho de Deus, perfil) quando um botão estava focado, e ainda mostrava "Ação cancelada". Agora o Esc fecha a janela de cima e não cancela nada;
+  - o **Otimizar** podia ligar o Modo leve por uma medição feita com a tela ainda carregando: agora confirma com uma segunda medição;
+  - o **Holograma** não pega mais pedidos pessoais ("me fala sobre minha agenda", "como funciona meu alarme");
+  - tela de bloqueio no celular: o título **J.A.R.V.I.S.** cortava nas laterais e o rodapé cobria o cartão do Spotify;
+  - o botão de entrar podia usar um microfone antigo depois de trocar o microfone no bloqueio;
+  - novo teste automático que chama **todas as 73 rotas** do PC e garante que nenhuma dá erro interno.
+
 ## 7.3.0 — 13 de novembro de 2026
 
 - **📝 NOTAS DA VERSÃO**: botão na tela de bloqueio, em CONTROLES e no menu do perfil (ou "Jarvis, o que mudou?" / "novidades"). Mostra todas as versões do JARVIS com a data e cada detalhe do que mudou, com busca (ex.: "câmera", "trânsito", "voz") e a marca **INSTALADA** na versão que está rodando. No celular, lista e detalhe ficam em telas separadas.
