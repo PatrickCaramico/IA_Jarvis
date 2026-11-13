@@ -70,6 +70,7 @@ const MonitorPanel = lazyComponent(() => import("./components/MonitorPanel.jsx")
 // V6.6: modo nuvem (notebook desligado): só carrega quando precisa
 const CloudMode = lazyComponent(() => import("./components/CloudMode.jsx"));
 const CameraWindow = lazyComponent(() => import("./components/CameraWindow.jsx")); // V6.8.2
+const AgentsHub = lazyComponent(() => import("./components/AgentsHub.jsx")); // V6.8.3
 const LogReportWidget = lazyComponent(() => import("./components/LogReportWidget.jsx"));
 const Onboarding = lazyComponent(() => import("./components/Onboarding.jsx"));
 const BioScanModal = lazyComponent(() => import("./components/BioScanModal.jsx"));
@@ -219,6 +220,12 @@ export default function App() {
   const [notice, setNotice] = useState("");
   // V6.8.2: câmera do aparelho (null | { auto })
   const [cameraWin, setCameraWin] = useState(null);
+  const [agentsOpen, setAgentsOpen] = useState(false); // V6.8.3: Central de Agentes
+  useEffect(() => {
+    const open = () => setAgentsOpen(true);
+    window.addEventListener("jarvis-open-agents", open);
+    return () => window.removeEventListener("jarvis-open-agents", open);
+  }, []);
   const cameraWinRef = useRef(null);
   cameraWinRef.current = cameraWin;
   // V6.8: link aberto por um agente que o navegador bloqueou (aparece como botão por 20 s)
@@ -1045,6 +1052,13 @@ export default function App() {
     }
     window.location.href = "jarvis://open";
   }, []);
+
+  // V6.8.3: "Atualizar agora" do menu do perfil
+  useEffect(() => {
+    const run = () => (IS_JARVIS_APP ? updateApp() : canSelfUpdate ? updateJarvis() : null);
+    window.addEventListener("jarvis-run-update", run);
+    return () => window.removeEventListener("jarvis-run-update", run);
+  }, [updateApp, updateJarvis, canSelfUpdate]);
 
   // V5.1: alarme. Ao abrir (ou reconectar), confere se já tem um tocando; os botões chamam o backend.
   useEffect(() => {
@@ -2766,6 +2780,7 @@ export default function App() {
         />
       )}
       {notice && <div className="notice-toast" role="status">{notice}</div>}
+      {agentsOpen && <AgentsHub api={api} onSend={(t) => send(t)} onClose={() => setAgentsOpen(false)} />}
       {cameraWin && (
         <CameraWindow
           api={api}
@@ -3170,6 +3185,7 @@ export default function App() {
           setGodsEyeOpen(true);
           soundManager.playSuccess();
         }}
+        onOpenAgents={() => setAgentsOpen(true)}
         onCommand={(cmd) => {
           if (cmd === "modo sentinela") {
             enterSentinelMode();

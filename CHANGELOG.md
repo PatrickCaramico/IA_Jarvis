@@ -2,6 +2,11 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 6.8.3 — 13 de novembro de 2026
+
+- **Central de Agentes**: botão 🤖 AGENTES ao lado do Olho de Deus (e em CONTROLES). Mostra cada agente, o que faz e exemplos (um toque envia o pedido), os lugares do agente de rotas (▶ ROTA com um toque, adicionar e apagar) e um chat com os agentes, onde aparece o que você pediu e o que eles fizeram. Funciona também pela nuvem (o lugar salvo fora de casa vai para o PC na sincronização).
+- **Verificar atualizações** no menu do perfil (Controle & Ações): confere no GitHub, mostra se está em dia ou quantas versões novas há, acende a bolinha do ATUALIZAR e oferece **Atualizar agora**.
+
 ## 6.8.2 — 13 de novembro de 2026
 
 - **Câmera do aparelho, como na Alexa** (`components/CameraWindow.jsx`): "abre a câmera" abre a câmera do aparelho em que você está (celular ou PC), ao vivo só ali; FOTO salva no aparelho, TROCAR alterna frontal/traseira, ⏱ 3 s; "tira uma foto" conta 3, 2, 1 e salva.

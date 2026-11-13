@@ -560,6 +560,7 @@ const CONTROL_SECTIONS = [
     title: "SISTEMA & HUD",
     items: [
       { id: "lock", icon: "🔒", label: "BLOQUEAR", sub: "Volta à tela de bloqueio", tone: "amber" },
+      { id: "agents", icon: "🤖", label: "AGENTES", sub: "Rotas, pesquisa e chat" },
       // V6.6.5: app Android: espelha a tela do JARVIS numa TV (Chromecast, Smart TV, Miracast)
       { id: "cast", icon: "📺", label: "TRANSMITIR", sub: "Para a TV ou outro aparelho" },
       { id: "silent", icon: "🤫", label: "SILENCIOSO" },
@@ -688,6 +689,10 @@ function HudControlsMenu({
       case "settings":
         if (onOpenSettings) onOpenSettings();
         setOpen(false);
+        break;
+      case "agents":
+        setOpen(false);
+        window.dispatchEvent(new CustomEvent("jarvis-open-agents"));
         break;
       case "cast":
         setOpen(false);
@@ -849,6 +854,7 @@ export default function HudLayout({
   onToggleZen,
   onOpenSettings,
   onOpenGodsEye,
+  onOpenAgents = null, // V6.8.3: Central de Agentes (ao lado do Olho de Deus)
   onCommand,
   showConversation = false,
   profileSlot,
@@ -1202,10 +1208,19 @@ export default function HudLayout({
               <img src={photoUrl} alt="" onError={(e) => { e.currentTarget.parentElement.style.display = "none"; }} />
             </span>
           )}
-          {onOpenGodsEye && (
-            <button type="button" className="hl-gods-eye-trigger" onClick={onOpenGodsEye} title="Abrir Olho de Deus (G)">
-              ◉ OLHO DE DEUS
-            </button>
+          {(onOpenGodsEye || onOpenAgents) && (
+            <div className="hl-orb-actions">
+              {onOpenGodsEye && (
+                <button type="button" className="hl-gods-eye-trigger" onClick={onOpenGodsEye} title="Abrir Olho de Deus (G)">
+                  ◉ OLHO DE DEUS
+                </button>
+              )}
+              {onOpenAgents && (
+                <button type="button" className="hl-agents-trigger" onClick={onOpenAgents} title="Central de Agentes: rotas, pesquisa e chat">
+                  🤖 AGENTES
+                </button>
+              )}
+            </div>
           )}
         </div>
         {/* V5.6: contagens regressivas pedidas por voz, logo abaixo do orbe */}

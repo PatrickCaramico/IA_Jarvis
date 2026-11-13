@@ -1198,3 +1198,44 @@
   .upd-badge { animation: upd-pop 2.4s ease-in-out infinite; }
 }
 @keyframes upd-pop { 0%, 85%, 100% { transform: scale(1); } 92% { transform: scale(1.18); } }
+
+/* V6.8.3: Olho de Deus + Central de Agentes, lado a lado embaixo do orbe */
+.hl-orb > .hl-orb-actions { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); display: flex; gap: 16px; align-items: center; }
+.hl-orb-actions > .hl-gods-eye-trigger { margin: 0; }
+.hl-agents-trigger { display: block; margin: 0; background: none; border: 0; cursor: pointer; color: rgba(103, 232, 249, 0.65); font: 9px "Orbitron", monospace; letter-spacing: 0.08em; transition: color 160ms ease, text-shadow 160ms ease; }
+.hl-agents-trigger:hover { color: #dffbff; text-shadow: 0 0 10px #22d3ee; }
+.hl-root.hl-briefing .hl-orb-actions { display: none !important; }
+
+/* Central de Agentes */
+.agh-overlay { position: fixed; inset: 0; z-index: 94; display: grid; place-items: center; padding: 12px; background: rgba(2, 6, 14, 0.72); backdrop-filter: blur(4px); }
+.agh { width: min(980px, 100%); max-height: calc(100dvh - 24px); display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: 16px; border: 1px solid rgba(34, 211, 238, 0.45); background: rgba(5, 14, 32, 0.96); color: #e0fbff; box-shadow: 0 0 40px rgba(34, 211, 238, 0.22); }
+.agh-head { display: flex; align-items: center; gap: 10px; font: 600 0.85rem "Orbitron", sans-serif; letter-spacing: 0.12em; color: #67e8f9; }
+.agh-head small { flex: 1; font: 0.72rem system-ui, sans-serif; letter-spacing: 0; color: rgba(224, 251, 255, 0.6); }
+.agh-x { border: 1px solid rgba(201, 246, 255, 0.3); background: transparent; color: #e0fbff; border-radius: 8px; width: 30px; height: 30px; cursor: pointer; }
+.agh-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 12px; min-height: 0; flex: 1; }
+.agh-col { display: flex; flex-direction: column; gap: 10px; overflow-y: auto; min-height: 0; }
+.agh-card { padding: 12px; border-radius: 12px; border: 1px solid rgba(34, 211, 238, 0.25); background: rgba(3, 10, 24, 0.7); }
+.agh-card h3 { margin: 0 0 4px; font: 600 0.9rem "Orbitron", sans-serif; letter-spacing: 0.06em; color: #fff; }
+.agh-card p { margin: 0 0 8px; font-size: 0.85rem; color: rgba(224, 251, 255, 0.8); }
+.agh-examples { display: flex; flex-wrap: wrap; gap: 6px; }
+.agh-examples button { border: 1px solid rgba(103, 232, 249, 0.4); background: rgba(103, 232, 249, 0.08); color: #cffafe; border-radius: 999px; padding: 4px 10px; font-size: 0.78rem; cursor: pointer; }
+.agh-places ul { list-style: none; margin: 10px 0 6px; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.agh-places li { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; }
+.agh-places li span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.agh-places li button, .agh-form button, .agh-input button { border: 1px solid #67e8f9; background: rgba(103, 232, 249, 0.14); color: #e0fbff; border-radius: 8px; padding: 5px 10px; font: 600 0.72rem system-ui, sans-serif; cursor: pointer; }
+.agh-places li .agh-del { border-color: rgba(248, 113, 113, 0.5); background: transparent; color: #fecaca; }
+.agh-form { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.agh-form input, .agh-input input { flex: 1; min-width: 120px; padding: 7px 10px; border-radius: 8px; border: 1px solid rgba(201, 246, 255, 0.3); background: rgba(2, 8, 19, 0.7); color: #fff; font: inherit; font-size: 0.85rem; }
+.agh-muted { margin: 4px 0; font-size: 0.8rem; color: rgba(224, 251, 255, 0.55); }
+.agh-chat { display: flex; flex-direction: column; min-height: 320px; border-radius: 12px; border: 1px solid rgba(34, 211, 238, 0.25); background: rgba(3, 10, 24, 0.7); padding: 10px; }
+.agh-log { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; min-height: 0; }
+.agh-msg { max-width: 90%; padding: 7px 10px; border-radius: 10px; font-size: 0.86rem; line-height: 1.35; }
+.agh-msg.is-me { align-self: flex-end; background: rgba(103, 232, 249, 0.18); border: 1px solid rgba(103, 232, 249, 0.45); }
+.agh-msg.is-jarvis { align-self: flex-start; background: rgba(2, 8, 19, 0.85); border: 1px solid rgba(201, 246, 255, 0.2); }
+.agh-msg.is-agent { align-self: flex-start; background: rgba(251, 191, 36, 0.1); border: 1px solid rgba(251, 191, 36, 0.4); color: #fef3c7; }
+.agh-input { display: flex; gap: 6px; margin-top: 8px; }
+.agh-input button:disabled { opacity: 0.45; cursor: default; }
+@media (max-width: 760px) {
+  .agh-grid { grid-template-columns: 1fr; overflow-y: auto; }
+  .agh-chat { min-height: 260px; }
+}
