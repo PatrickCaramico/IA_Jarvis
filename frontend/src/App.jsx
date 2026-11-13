@@ -69,6 +69,7 @@ const WidgetWorkspace = lazyComponent(() => import("./components/WidgetWorkspace
 const MonitorPanel = lazyComponent(() => import("./components/MonitorPanel.jsx"));
 // V6.6: modo nuvem (notebook desligado): só carrega quando precisa
 const CloudMode = lazyComponent(() => import("./components/CloudMode.jsx"));
+const CameraWindow = lazyComponent(() => import("./components/CameraWindow.jsx")); // V6.8.2
 const LogReportWidget = lazyComponent(() => import("./components/LogReportWidget.jsx"));
 const Onboarding = lazyComponent(() => import("./components/Onboarding.jsx"));
 const BioScanModal = lazyComponent(() => import("./components/BioScanModal.jsx"));
@@ -216,6 +217,10 @@ export default function App() {
   const [summaryActive, setSummaryActive] = useState(false);
   const [godsEyeOpen, setGodsEyeOpen] = useState(false);
   const [notice, setNotice] = useState("");
+  // V6.8.2: câmera do aparelho (null | { auto })
+  const [cameraWin, setCameraWin] = useState(null);
+  const cameraWinRef = useRef(null);
+  cameraWinRef.current = cameraWin;
   // V6.8: link aberto por um agente que o navegador bloqueou (aparece como botão por 20 s)
   const [agentLink, setAgentLink] = useState(null);
   useEffect(() => {
@@ -1448,6 +1453,28 @@ export default function App() {
       keepHubClean();
       setUserText(text);
       setDeviceTest("camera");
+      return;
+    }
+    // V6.8.2: câmera do aparelho, como na Alexa ("abre a câmera", "tira uma foto")
+    if (/\b(abre|abra|abrir|liga|ligue|ligar|mostra|mostre|ativa|ative)\b.*\b(camera|cameras)\b/.test(normalized)
+      && !/\b(seguranca|casa|pc|computador|notebook)\b/.test(normalized)) {
+      keepHubClean();
+      setUserText(text);
+      setCameraWin({ auto: false });
+      setResponse("Câmera aberta, senhor. Para perguntar sobre algo, aponte e toque em O QUE É ISSO.");
+      return;
+    }
+    if (/\b(tira|tire|tirar|bate|bata|bater)\b.*\b(foto|selfie|fotografia)\b/.test(normalized)) {
+      keepHubClean();
+      setUserText(text);
+      setCameraWin({ auto: true });
+      setResponse("Sorria, senhor. Em três, dois, um…");
+      return;
+    }
+    // "o que é isso?" com a câmera aberta: pergunta sobre o que ela está vendo
+    if (cameraWinRef.current && /\b(o que e isso|o que e isto|que (planta|bicho|animal|coisa|objeto|produto|prato|lugar) e (esse|essa|este|esta)|o que (voce|vc) (ve|esta vendo)|isso e o que|le (isso|o que esta escrito))\b/.test(normalized)) {
+      setUserText(text);
+      window.dispatchEvent(new CustomEvent("jarvis-camera-ask", { detail: text }));
       return;
     }
     if (/\b(abrir|abra|mostrar|mostre)\b.*\b(celular|telemóvel|telefone)\b|\b(celular|telemóvel|telefone)\b.*\b(abrir|acessar|mostrar)\b/.test(normalized)) {
@@ -2739,6 +2766,18 @@ export default function App() {
         />
       )}
       {notice && <div className="notice-toast" role="status">{notice}</div>}
+      {cameraWin && (
+        <CameraWindow
+          api={api}
+          autoShot={cameraWin.auto}
+          onClose={() => setCameraWin(null)}
+          onAnswer={(t) => {
+            if (!t) return;
+            setResponse(t);
+            api("/api/speak", { method: "POST", body: JSON.stringify({ text: t }) }).catch(() => {});
+          }}
+        />
+      )}
       {agentLink && (
         <a className="notice-toast agent-link" href={agentLink.url} target="_blank" rel="noreferrer" onClick={() => setAgentLink(null)}>
           {agentLink.label} ›

@@ -325,3 +325,23 @@ test("agentes na nuvem: rota com lugar salvo, salvar lugar e YouTube", async () 
   r = await chatMsg("pesquisa receita de pão no youtube");
   assert.equal(r.actions[0].url, "https://www.youtube.com/results?search_query=receita%20de%20p%C3%A3o");
 });
+
+test("o que é isso? pela câmera, na nuvem (foto validada; nada guardado)", async () => {
+  const store = memStore();
+  const token = await login(store);
+  const jpeg = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3, 4]).toString("base64");
+  let sent;
+  const fetchFn = async (_url, init) => {
+    sent = JSON.parse(init.body);
+    return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: "É uma jabuticabeira, senhor." }] } }] }));
+  };
+  const env = { ...ENV, GEMINI_API_KEY: "g" };
+  const ask = (image) => handle(req("/vision", { method: "POST", token, body: { image, question: "que planta é essa?" } }), { store, env, fetchFn, nowDate: NOW });
+  const r = await ask(`data:image/jpeg;base64,${jpeg}`);
+  assert.equal(r.status, 200);
+  assert.equal((await r.json()).text, "É uma jabuticabeira, senhor.");
+  assert.equal(sent.contents[0].parts[0].inlineData.mimeType, "image/jpeg");
+  assert.match(sent.contents[0].parts[1].text, /que planta é essa/);
+  assert.equal((await ask(Buffer.from("<html>").toString("base64"))).status, 400);
+  assert.deepEqual([...store.data.keys()].filter((k) => /foto|vision|image/.test(k)), []);
+});

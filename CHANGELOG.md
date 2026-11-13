@@ -2,6 +2,12 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 6.8.2 — 13 de novembro de 2026
+
+- **Câmera do aparelho, como na Alexa** (`components/CameraWindow.jsx`): "abre a câmera" abre a câmera do aparelho em que você está (celular ou PC), ao vivo só ali; FOTO salva no aparelho, TROCAR alterna frontal/traseira, ⏱ 3 s; "tira uma foto" conta 3, 2, 1 e salva.
+- **"O que é isso?"**: com a câmera aberta (falando ou pelo botão), manda só aquela foto à IA, que responde por voz. No PC: `POST /api/camera/ask` (foto validada, não guardada; rota pessoal); fora de casa: `POST /api/cloud/vision` (Gemini, OpenAI ou Claude, com imagem). Não identifica pessoas pelo rosto.
+- **App Android:** permissão de câmera (CAMERA) e a página recebe câmera e/ou microfone conforme o que o Android permitir. Precisa do APK 6.8.2.
+
 ## 6.8.1 — 13 de novembro de 2026
 
 - **Google Agenda nos Ajustes:** a conexão da agenda só existia em Menu › Fontes de Dados, difícil de achar. Agora há a seção **GOOGLE AGENDA** em Ajustes › Geral, com o status (conectada ou não), o passo a passo para copiar o endereço secreto iCal no Google Agenda, o campo para colar e o botão para desconectar (`GET /api/calendar/status`).

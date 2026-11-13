@@ -11,6 +11,9 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- Microfone para falar com o JARVIS pelo celular (pedido só quando você toca no microfone) -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- V6.8.2: "Jarvis, abre a câmera" (câmera do celular na central) -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
     <!-- Avisos no celular (lembretes, água, Modo Torcedor) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />

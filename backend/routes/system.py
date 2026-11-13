@@ -406,6 +406,29 @@ async def speak_on_pc(req: SpeakRequest) -> dict:
     return {"status": "ok"}
 
 
+class CameraAskRequest(BaseModel):
+    image: str
+    question: str = ""
+
+
+@router.post("/api/camera/ask")
+async def camera_ask(req: CameraAskRequest) -> dict:
+    """V6.8.2: "o que é isso?" com a foto da câmera do aparelho (celular ou PC). A foto não é guardada."""
+    from modules import camera_ask as cam
+    from services import llm_orchestrator
+
+    try:
+        image = cam.clean_image(req.image)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    try:
+        text = await asyncio.to_thread(llm_orchestrator.ask_with_image, cam.build_prompt(req.question), image)
+    except Exception as exc:  # noqa: BLE001
+        log.warning("Pergunta pela câmera falhou: %s", exc)
+        raise HTTPException(status_code=502, detail="Não consegui analisar a foto agora.") from exc
+    return {"text": (text or "").strip() or "Não consegui ver direito, senhor. Tente aproximar ou iluminar melhor."}
+
+
 @router.get("/api/cameras")
 async def get_cameras() -> dict:
     """Detecta webcams conectadas e retorna o índice selecionado."""
