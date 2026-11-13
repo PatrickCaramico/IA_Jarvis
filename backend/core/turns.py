@@ -639,6 +639,10 @@ async def handle_turn(message: str, routine: bool, force_deep: bool = False) -> 
     session.history.extend([{"role": "user", "content": message}, {"role": "assistant", "content": text}])
     memory.add_conversation(message, text)
     del session.history[:-MAX_HISTORY]
+    # V6.7.3: aprende sozinho fatos duradouros da frase (em segundo plano, não atrasa a resposta)
+    from modules import memory_learn
+
+    runtime.track(memory_learn.learn_from(message))
 
     await runtime.manager.broadcast({"type": "response", "text": text, "cards": cards})
     runtime.track(speech.speak(text))

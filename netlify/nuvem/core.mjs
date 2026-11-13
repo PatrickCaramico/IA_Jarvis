@@ -349,6 +349,8 @@ export async function receiveSnapshot(store, { ack = 0, snapshot = {} }, now = s
       cidade: clean(p.cidade, 60),
       sobre: clean(p.sobre, 600),
       prefs: cleanPrefs(p.prefs),
+      // V6.7.3: memórias que o PC aprendeu (a nuvem só lê; quem aprende é o PC)
+      memorias: Array.isArray(p.memorias) ? p.memorias.filter((m) => typeof m === "string").map((m) => clean(m, 140)).filter(Boolean).slice(-30) : [],
       atualizado_em: now.stamp,
     });
   }
@@ -634,6 +636,7 @@ function describeState(state, now, perfil) {
     `Agora: ${weekday}, ${now.date} ${now.time} (horário de Brasília).`,
     perfil?.nome ? `Nome do usuário: ${perfil.nome}.` : "",
     perfil?.sobre ? `O que ele contou sobre si: ${perfil.sobre}` : "",
+    perfil?.memorias?.length ? `Memórias do usuário (use com naturalidade quando ajudar, sem listar): ${perfil.memorias.join("; ")}.` : "",
     `Lista de compras (faltando): ${pending.join(", ") || "vazia"}.`,
     `Tarefas abertas: ${tasks.join("; ") || "nenhuma"}.`,
     `Lembretes: ${rems.join("; ") || "nenhum"}.`,

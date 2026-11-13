@@ -11,14 +11,20 @@ _PATH = settings.DATA_DIR / "memoria.json"
 _DEFAULTS = {"facts": [], "preferences": {}, "routine": [], "conversation": []}
 
 
+def _fresh() -> dict[str, Any]:
+    # V6.7.3: cópia nova a cada vez. Antes, _DEFAULTS.copy() (rasa) devolvia as MESMAS listas, e o primeiro
+    # "lembre que..." sem arquivo de memória gravava dentro do próprio padrão.
+    return json.loads(json.dumps(_DEFAULTS))
+
+
 def _load() -> dict[str, Any]:
     if not _PATH.exists():
-        return _DEFAULTS.copy()
+        return _fresh()
     try:
         data = json.loads(_PATH.read_text(encoding="utf-8"))
-        return {**_DEFAULTS, **data} if isinstance(data, dict) else _DEFAULTS.copy()
+        return {**_fresh(), **data} if isinstance(data, dict) else _fresh()
     except (OSError, ValueError):
-        return _DEFAULTS.copy()
+        return _fresh()
 
 
 def _save(data: dict[str, Any]) -> None:
@@ -29,11 +35,13 @@ def get_memory() -> dict[str, Any]:
     return _load()
 
 
-def remember(text: str, category: str = "facts") -> dict[str, Any]:
+def remember(text: str, category: str = "facts", source: str = "") -> dict[str, Any]:
     data = _load()
     if category not in {"facts", "routine"}:
         category = "facts"
     item = {"text": text.strip(), "created_at": datetime.now().isoformat(timespec="seconds")}
+    if source:
+        item["source"] = source  # V6.7.3: "auto" = aprendido sozinho nas conversas
     if item["text"] and item["text"] not in [x.get("text") for x in data[category]]:
         data[category].append(item)
         data[category] = data[category][-100:]
@@ -100,7 +108,8 @@ def prompt_context() -> str:
     data = _load()
     parts = []
     if data["facts"]:
-        parts.append("Memórias do usuário (ele te ensinou; use quando ajudar): " + "; ".join(x["text"] for x in data["facts"][-20:]))
+        parts.append("Memórias do usuário (ele te contou; use com naturalidade quando ajudar, sem listar): "
+                     + "; ".join(x["text"] for x in data["facts"][-30:]))
     if data["preferences"]:
         parts.append("Preferências: " + "; ".join(f"{k}={v}" for k, v in data["preferences"].items()))
     if data["routine"]:
@@ -143,10 +152,11 @@ def handle_voice(norm: str, original: str) -> Optional_str:
         remember(fact[0].upper() + fact[1:])
         return f"Guardado na memória, senhor: {fact}. Vou lembrar disso nas próximas conversas."
     if _RECALL_RE.match(norm):
-        items = facts(8)
+        items = facts(12)
         if not items:
             return "Ainda não tenho memórias suas, senhor. Diga, por exemplo: lembre que eu treino às 18h."
-        return "Eu lembro que: " + "; ".join(items) + "."
+        return ("Eu lembro que: " + "; ".join(items) + ". Se algo estiver errado ou o senhor preferir que eu "
+                "não guarde, diga esqueça e o assunto.")
     m = _FORGET_RE.match(norm)
     if m:
         removed = forget(m.group(1))

@@ -47,6 +47,7 @@ _DEFAULTS: dict[str, Any] = {
     "audio_output_device": "",            # V6.5.8: caixa de som da voz no PC ("" = padrão do Windows)
     "voice_input_device": "",             # V6.5.8: microfone do ouvido offline ("" = padrão do Windows)
     "site_window_mode": "compact",        # V6.5.8: "abra o youtube" numa janela média ("compact") ou aba ("tab")
+    "memory_auto_learn": True,            # V6.7.3: a memória aprende sozinha com as conversas
     "lock_mic_on": True,                  # V6.5.20: o microfone do bloqueio lembra se ficou ligado (P); V6.6.1: começa ligado
     "site_browser": "ask",                # V6.5.11: "ask" (pergunta), "default" ou "chrome"/"edge"/"firefox"/...
     "calendar_ics_url": "",               # V5.6: endereço secreto iCal do Google Agenda (alternativa ao OAuth)

@@ -1749,7 +1749,9 @@ async def _h_notifications(message: str, norm: str, words: int, name: str) -> Op
 async def _h_memory(message: str, norm: str, words: int, name: str) -> Optional[str]:
     from modules import memory
 
-    return memory.handle_voice(norm, message)
+    from modules import memory_learn
+
+    return memory_learn.handle_voice(norm) or memory.handle_voice(norm, message)
 
 
 async def _h_whatsapp(message: str, norm: str, words: int, name: str) -> Optional[str]:

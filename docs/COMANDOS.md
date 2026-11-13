@@ -1,6 +1,6 @@
 # JARVIS — Comandos do dia a dia
 
-**Versão do projeto:** 6.7.2 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
+**Versão do projeto:** 6.7.3 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
 
 > Montado a partir do código do projeto. Se algum comando não responder como descrito, me avise que eu ajusto o guia.
 > Para a lista técnica de rotas, veja [API.md](API.md); para o `.env`, [CONFIGURACAO.md](CONFIGURACAO.md).
@@ -319,6 +319,8 @@ Avisos automáticos (gatilhos): chuva amanhã (à noite), jogo começando (com o
 | --- | --- |
 | "Lembre que eu treino às 18h" | Guarda na memória de longo prazo; ele usa isso nas próximas conversas. |
 | "O que você lembra de mim?" / "Esqueça o treino" | Lista ou apaga memórias. |
+| (sozinho, V6.7.3) | Quando você fala de si nas conversas ("eu treino de manhã", "minha esposa Ana…"), ele guarda até 3 fatos duradouros por frase, sem repetir. Não guarda coisas passageiras nem senhas, documentos, banco ou detalhes de saúde. As memórias também valem fora de casa (nuvem). |
+| "Pare de aprender sobre mim" / "pode voltar a aprender sobre mim" | Desliga ou liga o aprendizado sozinho (o que já sabe continua guardado). |
 | "Acha a planilha de gastos" → "manda o primeiro para a lixeira" | Pergunta antes e, no "sim", manda para a **Lixeira do Windows** (dá para restaurar). |
 | "Move o segundo para documentos" | Pergunta antes; só mexe nas suas pastas pessoais. |
 | "Cria uma pasta Projetos na área de trabalho" | Pergunta antes e cria. |

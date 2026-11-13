@@ -2,6 +2,12 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 6.7.3 — 13 de novembro de 2026
+
+- **Memória que aprende sozinha** (`modules/memory_learn.py`): depois de cada resposta da IA, se você falou de si ("eu", "meu", "gosto", "trabalho"...), o JARVIS pede à IA, em segundo plano e sem atrasar a resposta, até 3 fatos duradouros (gostos, rotina, pessoas próximas, metas, trabalho, lugares) e guarda sem repetir o que já sabe. Fica de fora: coisas passageiras, senhas, documentos, dados bancários e detalhes de saúde. "Pare de aprender sobre mim" / "pode voltar a aprender sobre mim" (`memory_auto_learn`). "O que você lembra de mim?" mostra até 12 memórias e lembra como apagar; a IA recebe as 30 mais recentes.
+- **Nuvem:** as memórias vão na sincronização, e o JARVIS de fora de casa também conhece o senhor.
+- **Bug antigo na memória:** sem o arquivo `memoria.json`, o primeiro "lembre que..." gravava dentro da lista padrão compartilhada (cópia rasa). Corrigido.
+
 ## 6.7.2 — 13 de novembro de 2026
 
 - **Bolinha de atualização:** quando há versão nova do JARVIS no GitHub, o botão **⟳ ATUALIZAR** ganha uma bolinha vermelha com o número de versões novas, na tela de bloqueio e no topo da central (onde o botão só aparece quando há novidade). Clicar pergunta "Atualizar para a versão X?" e faz a atualização de sempre (baixa, avisa por voz e reinicia). O PC confere a branch que o ATUALIZAR baixa (`git fetch`, sem baixar nada ainda) e conta os commits "JARVIS x.y.z" novos; guarda o resultado por 15 min, e a central pergunta a cada 30 min (`GET /api/system/update/status`, liberado também no bloqueio). Antes, a conferência olhava as Releases do GitHub, que o projeto não usa, e nunca acusava nada. Só no PC (o celular atualiza pelo ATUALIZAR APP).
