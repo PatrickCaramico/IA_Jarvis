@@ -406,6 +406,31 @@ async def speak_on_pc(req: SpeakRequest) -> dict:
     return {"status": "ok"}
 
 
+class HoloRequest(BaseModel):
+    query: str
+    kind: str = "auto"
+
+
+@router.post("/api/holo")
+async def holo_build(req: HoloRequest) -> dict:
+    """V7.1: HOLOGRAMA: a pesquisa vira uma apresentação narrada ou uma receita viva (tela HoloStage)."""
+    from modules import holo
+    from services import llm_orchestrator
+
+    query = (req.query or "").strip()[:240]
+    if not query:
+        raise HTTPException(status_code=400, detail="Diga o assunto.")
+    kind = req.kind if req.kind in holo.KINDS else holo.guess_kind(query)
+    try:
+        raw = await asyncio.to_thread(llm_orchestrator.ask_text, holo.build_prompt(query, kind))
+        return holo.parse(raw, kind)
+    except ValueError as exc:
+        raise HTTPException(status_code=502, detail=f"{exc} Tente de novo, senhor.") from exc
+    except Exception as exc:  # noqa: BLE001
+        log.warning("Holograma falhou: %s", exc)
+        raise HTTPException(status_code=502, detail="Não consegui montar o holograma agora.") from exc
+
+
 class CameraAskRequest(BaseModel):
     image: str
     question: str = ""

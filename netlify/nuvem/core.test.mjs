@@ -366,3 +366,28 @@ test("câmera na nuvem: diagnóstico do item em JSON vira janela; texto puro con
   assert.deepEqual(r.diagnostico.alertas, ["Não use em fios ligados"]);
   assert.deepEqual(parseVision("É um copo."), { text: "É um copo.", diagnostico: null });
 });
+
+test("holograma na nuvem: monta a apresentação e recusa resposta quebrada", async () => {
+  const store = memStore();
+  const token = await login(store);
+  let reply = JSON.stringify({ tipo: "apresentacao", titulo: "A Lua", wiki: "Lua", cenas: [
+    { icone: "🌕", titulo: "Vizinha", fala: "Senhor, a Lua se afasta de nós todo ano.", pontos: ["3,8 cm por ano"], numero: { valor: "384.400", unidade: "km", rotulo: "distância" } },
+    { icone: "🌊", titulo: "Marés", fala: "Ela puxa os oceanos e cria as marés.", pontos: [], numero: null },
+  ] });
+  let sent;
+  const fetchFn = async (_url, init) => {
+    sent = JSON.parse(init.body);
+    return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: reply }] } }] }));
+  };
+  const env = { ...ENV, GEMINI_API_KEY: "g" };
+  const ask = (query) => handle(req("/holo", { method: "POST", token, body: { query } }), { store, env, fetchFn, nowDate: NOW });
+  const r = await ask("me explica a lua");
+  const data = await r.json();
+  assert.equal(r.status, 200);
+  assert.equal(data.cenas.length, 2);
+  assert.equal(data.cenas[0].numero.valor, 384400); // "384.400" (jeito brasileiro) = 384 mil
+  assert.match(sent.systemInstruction.parts[0].text, /APRESENTAÇÃO/);
+  reply = "não sei";
+  assert.equal((await ask("me explica a lua")).status, 502);
+  assert.equal((await ask("")).status, 400);
+});

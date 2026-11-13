@@ -1,0 +1,111 @@
+/* V7.1: HOLOGRAMA (components/HoloStage.jsx) */
+.holo-root { --holo: #67e8f9; --holo-2: #a78bfa; position: fixed; inset: 0; z-index: 96; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 56px 16px 24px; color: #e0fbff; background: radial-gradient(ellipse at 50% 40%, rgba(8, 47, 73, 0.95), #01040b 70%); animation: holo-in 420ms cubic-bezier(.2, .8, .2, 1); }
+@keyframes holo-in { from { opacity: 0; transform: scale(1.04); filter: blur(6px); } }
+.holo-bg { position: absolute; inset: -6%; background-size: cover; background-position: center; opacity: 0.22; filter: saturate(1.2) blur(2px); animation: holo-kenburns 28s ease-in-out infinite alternate; mask-image: radial-gradient(ellipse at center, #000 30%, transparent 75%); }
+@keyframes holo-kenburns { to { transform: scale(1.14) translate(-2%, -2%); } }
+.holo-grid { position: absolute; left: -50%; right: -50%; bottom: -10%; height: 55%; background-image: linear-gradient(rgba(103, 232, 249, 0.22) 1px, transparent 1px), linear-gradient(90deg, rgba(103, 232, 249, 0.22) 1px, transparent 1px); background-size: 60px 60px; transform: perspective(500px) rotateX(62deg); transform-origin: bottom; mask-image: linear-gradient(to top, #000, transparent 85%); animation: holo-floor 6s linear infinite; pointer-events: none; }
+@keyframes holo-floor { to { background-position: 0 60px, 0 0; } }
+.holo-scan { position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(to bottom, rgba(103, 232, 249, 0.035) 0 1px, transparent 1px 4px); }
+.holo-scan::after { content: ""; position: absolute; left: 0; right: 0; height: 120px; background: linear-gradient(to bottom, transparent, rgba(103, 232, 249, 0.08), transparent); animation: holo-sweep 5s linear infinite; }
+@keyframes holo-sweep { from { top: -120px; } to { top: 100%; } }
+.holo-close { position: absolute; z-index: 3; top: max(14px, env(safe-area-inset-top)); right: 14px; width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgba(103, 232, 249, 0.45); background: rgba(2, 10, 24, 0.6); color: #e0fbff; font-size: 16px; cursor: pointer; }
+.holo-root > *:not(.holo-bg):not(.holo-grid):not(.holo-scan) { position: relative; z-index: 2; }
+.holo-close { position: absolute !important; }
+.holo-credit { position: absolute !important; bottom: 8px; right: 12px; font-size: 10px; color: rgba(224, 251, 255, 0.4); }
+
+/* carregando */
+.holo-loading { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; max-width: 640px; }
+.holo-loading small { font: 600 11px "Orbitron", monospace; letter-spacing: 0.3em; color: var(--holo); }
+.holo-loading h2 { margin: 0; font: 600 clamp(1.1rem, 3.4vw, 1.7rem) "Orbitron", sans-serif; color: #fff; text-shadow: 0 0 18px rgba(103, 232, 249, 0.6); }
+.holo-loading p { margin: 0; color: rgba(224, 251, 255, 0.7); animation: holo-fade-up 500ms ease-out; }
+.holo-rings { position: relative; width: 150px; height: 150px; margin-bottom: 10px; }
+.holo-rings i { position: absolute; inset: 0; border-radius: 50%; border: 2px solid transparent; border-top-color: var(--holo); border-left-color: rgba(103, 232, 249, 0.3); animation: holo-spin 1.6s linear infinite; }
+.holo-rings i:nth-child(2) { inset: 18px; border-top-color: var(--holo-2); animation-duration: 2.3s; animation-direction: reverse; }
+.holo-rings i:nth-child(3) { inset: 36px; border-style: dashed; border-color: rgba(103, 232, 249, 0.5); animation-duration: 6s; }
+.holo-rings b { position: absolute; inset: 0; display: grid; place-items: center; font-size: 28px; color: #fff; text-shadow: 0 0 20px var(--holo); animation: holo-pulse 1.4s ease-in-out infinite; }
+@keyframes holo-spin { to { transform: rotate(360deg); } }
+@keyframes holo-pulse { 50% { opacity: 0.4; transform: scale(0.85); } }
+@keyframes holo-fade-up { from { opacity: 0; transform: translateY(8px); } }
+
+/* apresentação */
+.holo-progress { position: absolute !important; top: max(18px, env(safe-area-inset-top)); left: 16px; right: 70px; display: flex; gap: 6px; }
+.holo-progress i { flex: 1; height: 3px; border-radius: 3px; background: rgba(224, 251, 255, 0.18); overflow: hidden; }
+.holo-progress i.is-done { background: var(--holo); }
+.holo-progress i b { display: block; height: 100%; background: var(--holo); box-shadow: 0 0 10px var(--holo); animation: holo-bar linear forwards; }
+@keyframes holo-bar { from { width: 0; } to { width: 100%; } }
+.holo-scene { width: min(860px, 100%); display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; }
+.holo-icon { position: relative; width: 116px; height: 116px; display: grid; place-items: center; animation: holo-pop 700ms cubic-bezier(.2, 1.4, .3, 1); }
+.holo-icon::before, .holo-icon::after { content: ""; position: absolute; inset: 0; border-radius: 50%; border: 2px dashed rgba(103, 232, 249, 0.6); animation: holo-spin 9s linear infinite; }
+.holo-icon::after { inset: 12px; border: 1px solid rgba(167, 139, 250, 0.7); box-shadow: 0 0 30px rgba(103, 232, 249, 0.35), inset 0 0 24px rgba(103, 232, 249, 0.25); animation-direction: reverse; animation-duration: 5s; }
+.holo-icon span { font-size: 52px; filter: drop-shadow(0 0 14px rgba(103, 232, 249, 0.8)); }
+@keyframes holo-pop { from { opacity: 0; transform: scale(0.3) rotate(-30deg); } }
+.holo-count { font: 600 10px "Orbitron", monospace; letter-spacing: 0.32em; color: var(--holo); animation: holo-fade-up 500ms 150ms both; }
+.holo-title { position: relative; margin: 0; font: 700 clamp(1.4rem, 4.6vw, 2.6rem) "Orbitron", sans-serif; color: #fff; letter-spacing: 0.04em; text-shadow: 0 0 22px rgba(103, 232, 249, 0.75); animation: holo-glitch 900ms steps(2) both, holo-fade-up 600ms both; }
+@keyframes holo-glitch { 0% { clip-path: inset(40% 0 50% 0); transform: translateX(-6px); } 20% { clip-path: inset(10% 0 70% 0); transform: translateX(5px); } 40% { clip-path: inset(70% 0 5% 0); transform: translateX(-3px); } 60% { clip-path: inset(0 0 0 0); transform: none; } }
+.holo-caption { margin: 0; max-width: 760px; font-size: clamp(1rem, 2.6vw, 1.35rem); line-height: 1.5; color: rgba(224, 251, 255, 0.92); }
+.holo-caption span { opacity: 0; animation: holo-word 300ms ease-out forwards; }
+.holo-caption.is-paused span { animation-play-state: paused; }
+@keyframes holo-word { from { opacity: 0; filter: blur(4px); } to { opacity: 1; filter: none; } }
+.holo-number { display: flex; flex-direction: column; align-items: center; padding: 12px 26px; border-radius: 14px; border: 1px solid rgba(103, 232, 249, 0.4); background: linear-gradient(135deg, rgba(103, 232, 249, 0.12), rgba(167, 139, 250, 0.1)); box-shadow: 0 0 40px rgba(103, 232, 249, 0.18); animation: holo-fade-up 600ms 500ms both; }
+.holo-number strong { font: 800 clamp(2.2rem, 8vw, 3.8rem) "Orbitron", sans-serif; line-height: 1; color: #fff; text-shadow: 0 0 26px var(--holo); }
+.holo-number span { font: 600 0.9rem "Orbitron", sans-serif; color: var(--holo); letter-spacing: 0.08em; }
+.holo-number small { margin-top: 4px; color: rgba(224, 251, 255, 0.7); }
+.holo-points { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.holo-points li { padding: 7px 14px; border-radius: 999px; border: 1px solid rgba(103, 232, 249, 0.4); background: rgba(2, 12, 28, 0.7); font-size: 0.92rem; opacity: 0; animation: holo-chip 500ms cubic-bezier(.2, 1.3, .3, 1) forwards; }
+.holo-points li::before { content: "◆ "; color: var(--holo); }
+@keyframes holo-chip { from { opacity: 0; transform: translateY(12px) scale(0.9); } to { opacity: 1; transform: none; } }
+.holo-controls { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 18px; }
+.holo-controls button { min-width: 48px; font-size: 1rem !important; height: 44px; padding: 0 16px; border-radius: 999px; border: 1px solid rgba(103, 232, 249, 0.45); background: rgba(2, 12, 28, 0.7); color: #e0fbff; font: 600 0.8rem "Orbitron", sans-serif; letter-spacing: 0.06em; cursor: pointer; transition: 160ms ease; }
+.holo-controls button:hover:not(:disabled) { border-color: var(--holo); box-shadow: 0 0 16px rgba(103, 232, 249, 0.35); }
+.holo-controls button.is-main { background: var(--holo); color: #03121f; border-color: var(--holo); }
+.holo-controls button:disabled { opacity: 0.35; cursor: default; }
+.holo-end { display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; width: min(820px, 100%); }
+.holo-end small { font: 600 10px "Orbitron", monospace; letter-spacing: 0.3em; color: var(--holo); }
+.holo-end h2 { margin: 0; font: 700 clamp(1.3rem, 4vw, 2.2rem) "Orbitron", sans-serif; color: #fff; text-shadow: 0 0 20px rgba(103, 232, 249, 0.6); }
+.holo-end-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px; width: 100%; }
+.holo-end-grid button { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(103, 232, 249, 0.3); background: rgba(2, 12, 28, 0.7); color: #e0fbff; text-align: left; cursor: pointer; opacity: 0; animation: holo-chip 450ms forwards; }
+.holo-end-grid button span { font-size: 22px; }
+
+/* receita viva */
+.holo-root.is-receita { justify-content: flex-start; overflow-y: auto; }
+.holo-recipe { width: min(1100px, 100%); display: flex; flex-direction: column; gap: 14px; }
+.holo-recipe-head small, .holo-panel h3, .holo-step-now small { font: 600 10px "Orbitron", monospace; letter-spacing: 0.24em; color: var(--holo); }
+.holo-recipe-head h2 { margin: 4px 0 8px; font: 700 clamp(1.4rem, 4.4vw, 2.4rem) "Orbitron", sans-serif; color: #fff; text-shadow: 0 0 22px rgba(103, 232, 249, 0.6); animation: holo-fade-up 500ms both; }
+.holo-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.holo-chips span { padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(103, 232, 249, 0.4); background: rgba(2, 12, 28, 0.7); font-size: 0.88rem; }
+.holo-recipe-grid { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.4fr); gap: 14px; }
+.holo-panel { padding: 14px; border-radius: 16px; border: 1px solid rgba(103, 232, 249, 0.3); background: rgba(2, 10, 24, 0.78); backdrop-filter: blur(8px); box-shadow: 0 0 30px rgba(103, 232, 249, 0.08); }
+.holo-panel h3 { margin: 0 0 10px; display: flex; justify-content: space-between; gap: 8px; }
+.holo-panel h3 small { color: rgba(224, 251, 255, 0.6); letter-spacing: 0.05em; font-family: system-ui, sans-serif; }
+.holo-ingredients ul { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.holo-ingredients li { opacity: 0; animation: holo-chip 400ms forwards; }
+.holo-ingredients li button { width: 100%; display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; border: 1px solid rgba(224, 251, 255, 0.12); background: rgba(103, 232, 249, 0.04); color: #e0fbff; text-align: left; font-size: 0.95rem; cursor: pointer; transition: 160ms ease; }
+.holo-ingredients li button i { flex: none; width: 22px; height: 22px; border-radius: 6px; border: 1px solid rgba(103, 232, 249, 0.6); display: grid; place-items: center; font-style: normal; color: #03121f; font-weight: 800; }
+.holo-ingredients li button.is-on { color: rgba(224, 251, 255, 0.5); text-decoration: line-through; }
+.holo-ingredients li button.is-on i { background: var(--holo); box-shadow: 0 0 10px var(--holo); animation: holo-pop 300ms; }
+.holo-cta { width: 100%; padding: 11px; border-radius: 10px; border: 1px solid var(--holo); background: rgba(103, 232, 249, 0.16); color: #fff; font: 700 0.75rem "Orbitron", sans-serif; letter-spacing: 0.06em; cursor: pointer; }
+.holo-cta:disabled { opacity: 0.4; cursor: default; }
+.holo-ok { margin: 8px 0 0; color: #86efac; font-size: 0.88rem; }
+.holo-step-now { display: flex; flex-direction: column; gap: 10px; padding: 16px; border-radius: 14px; border: 1px solid rgba(103, 232, 249, 0.5); background: linear-gradient(135deg, rgba(103, 232, 249, 0.14), rgba(167, 139, 250, 0.08)); animation: holo-fade-up 400ms both; }
+.holo-step-now p { margin: 0; font-size: clamp(1.15rem, 3vw, 1.55rem); line-height: 1.45; color: #fff; }
+.holo-step-now .holo-cta { width: auto; align-self: flex-start; padding: 10px 16px; background: var(--holo); color: #03121f; }
+.holo-step-bar { height: 4px; margin: 12px 0; border-radius: 4px; background: rgba(224, 251, 255, 0.12); overflow: hidden; }
+.holo-step-bar b { display: block; height: 100%; background: var(--holo); box-shadow: 0 0 10px var(--holo); transition: width 400ms ease; }
+.holo-step-list { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 4px; max-height: 32dvh; overflow-y: auto; }
+.holo-step-list li { color: rgba(224, 251, 255, 0.55); }
+.holo-step-list li.is-now { color: var(--holo); }
+.holo-step-list li.is-done { color: rgba(224, 251, 255, 0.35); }
+.holo-step-list button { display: inline; border: 0; background: none; color: inherit; font: inherit; text-align: left; padding: 3px 0; cursor: pointer; }
+.holo-step-list li.is-done button { text-decoration: line-through; }
+.holo-tip { margin: 12px 0 0; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(251, 191, 36, 0.45); background: rgba(251, 191, 36, 0.08); color: #fef3c7; font-size: 0.92rem; }
+.holo-hint { margin: 10px 0 0; text-align: center; font-size: 0.8rem; color: rgba(224, 251, 255, 0.55); }
+@media (max-width: 760px) {
+  .holo-root { padding: 52px 12px 18px; }
+  .holo-recipe-grid { grid-template-columns: 1fr; }
+  .holo-steps { order: -1; }
+  .holo-icon { width: 92px; height: 92px; }
+  .holo-icon span { font-size: 42px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .holo-root *, .holo-root { animation-duration: 1ms !important; animation-iteration-count: 1 !important; }
+}

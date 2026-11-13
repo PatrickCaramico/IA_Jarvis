@@ -367,6 +367,13 @@ def ask_with_image(prompt: str, image_b64: str) -> str:
     return (_call_llm(full, image_b64, [], deep=False) or "").strip()
 
 
+def ask_text(prompt: str) -> str:
+    """V7.1: pergunta avulsa só com texto (sem histórico, sem câmera), para as telas montadas pela IA."""
+    now = datetime.now()
+    full = f"Data e hora atuais: {_WEEKDAYS[now.weekday()]}, {now:%d/%m/%Y}, {now:%H:%M}.\n{prompt}"
+    return (_call_llm(full, None, [], deep=False) or "").strip()
+
+
 async def generate_jarvis_response(
     user_text: str,
     on_step: Optional[StepCallback] = None,
