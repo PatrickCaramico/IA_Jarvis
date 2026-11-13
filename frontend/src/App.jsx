@@ -3,15 +3,11 @@ import { createPortal } from "react-dom";
 import ArcReactorHUD from "./components/ArcReactorHUD.jsx";
 import WireOrb from "./components/WireOrb.jsx";
 import LockScreen, { BlueprintStamp } from "./components/LockScreen.jsx";
-import EnrollScreen from "./components/EnrollScreen.jsx";
 import CommandBar from "./components/CommandBar.jsx";
 import ProfileMenu from "./components/ProfileMenu.jsx";
 import TodoWidget from "./components/TodoWidget.jsx";
 import FocusWidget from "./components/FocusWidget.jsx";
-import MicrophoneSelectModal from "./components/MicrophoneSelectModal.jsx";
-import AudioSettingsModal from "./components/AudioSettingsModal.jsx";
 import LockAnswer from "./components/LockAnswer.jsx";
-import BrowserChooser from "./components/BrowserChooser.jsx";
 import WeatherWidget from "./components/WeatherWidget.jsx";
 import AudioWaveformWidget from "./components/AudioWaveformWidget.jsx";
 import DigitalClockWidget from "./components/DigitalClockWidget.jsx";
@@ -19,16 +15,9 @@ import SpotifyWidget from "./components/SpotifyWidget.jsx";
 import MotivationWidget, { getMotivationMessage } from "./components/MotivationWidget.jsx";
 import HudLayout from "./components/HudLayout.jsx";
 import SideNav from "./components/SideNav.jsx";
-import FanModeBackground from "./components/FanModeBackground.jsx";
-import FanNewsWidget from "./components/FanNewsWidget.jsx";
-import FanScoreWidget from "./components/FanScoreWidget.jsx";
-import FanGoalOverlay from "./components/FanGoalOverlay.jsx";
-import NewProfileScreen from "./components/NewProfileScreen.jsx";
 import AlarmOverlay from "./components/AlarmOverlay.jsx";
 import ProfileWelcome from "./components/ProfileWelcome.jsx";
 import WaterWidget from "./components/WaterWidget.jsx";
-import FaceRecheckPanel from "./components/FaceRecheckPanel.jsx";
-import GuestScreen from "./components/GuestScreen.jsx";
 import useSpeechRecognition from "./hooks/useSpeechRecognition.js";
 import useClapDetector from "./hooks/useClapDetector.js";
 import useSentinelListener from "./hooks/useSentinelListener.js";
@@ -59,9 +48,21 @@ import WelcomeLogo from "./components/WelcomeLogo.jsx";
 import { APP_VERSION } from "./utils/version.js";
 import { tabTitle } from "./utils/tabTitle.js";
 import { canResumeSession, hasLoggedBefore, launcherWorks, markLauncherWorks, rememberLogin } from "./utils/session.js";
-import GodsEye from "./godseye/GodsEye.jsx";
 
 // Carregados sob demanda (otimização 4.2: pacote inicial menor)
+// V7: telas e janelas que nem sempre aparecem também saem do pacote inicial
+const EnrollScreen = lazyComponent(() => import("./components/EnrollScreen.jsx"));
+const MicrophoneSelectModal = lazyComponent(() => import("./components/MicrophoneSelectModal.jsx"));
+const AudioSettingsModal = lazyComponent(() => import("./components/AudioSettingsModal.jsx"));
+const BrowserChooser = lazyComponent(() => import("./components/BrowserChooser.jsx"));
+const FanModeBackground = lazyComponent(() => import("./components/FanModeBackground.jsx"));
+const FanNewsWidget = lazyComponent(() => import("./components/FanNewsWidget.jsx"));
+const FanScoreWidget = lazyComponent(() => import("./components/FanScoreWidget.jsx"));
+const FanGoalOverlay = lazyComponent(() => import("./components/FanGoalOverlay.jsx"));
+const NewProfileScreen = lazyComponent(() => import("./components/NewProfileScreen.jsx"));
+const FaceRecheckPanel = lazyComponent(() => import("./components/FaceRecheckPanel.jsx"));
+const GuestScreen = lazyComponent(() => import("./components/GuestScreen.jsx"));
+const GodsEye = lazyComponent(() => import("./godseye/GodsEye.jsx"));
 const SettingsPanel = lazyComponent(() => import("./components/SettingsPanel.jsx"));
 const DeviceTestModal = lazyComponent(() => import("./components/DeviceTestModal.jsx"));
 const NetworkQrModal = lazyComponent(() => import("./components/NetworkQrModal.jsx"));
@@ -1434,6 +1435,16 @@ export default function App() {
       speakLocal("Olho de Deus ativado. Monitorando o planeta.");
       return;
     }
+    // V6.9: "mostra o trânsito" / "como está o trânsito?" abre o Olho de Deus no mapa ao vivo
+    if (/\b(mostra|mostre|mostrar|abre|abra|abrir|ver|veja|como (esta|ta)|como que (esta|ta))\b.*\b(transito|engarrafamento|congestionamento)\b/.test(normalized)
+      && !/\b(para|pra|pro|ate)\b\s+\S/.test(normalized.split(/transito|engarrafamento|congestionamento/)[1] || "")) {
+      keepHubClean();
+      setUserText(text);
+      setGodsEyeOpen(true);
+      soundManager.playSuccess();
+      speakLocal("Mostrando o trânsito ao vivo da sua cidade, senhor.");
+      return;
+    }
     if (/\b(fechar|feche|fecha|sair|saia|desativar|desativa)\b.*\bolho\s+de\s+deus\b/.test(normalized)
       || /\bolho\s+de\s+deus\b.*\b(fechar|feche|fecha|sair|saia|desativar|desativa)\b/.test(normalized)) {
       setUserText(text);
@@ -1474,8 +1485,12 @@ export default function App() {
       && !/\b(seguranca|casa|pc|computador|notebook)\b/.test(normalized)) {
       keepHubClean();
       setUserText(text);
-      setCameraWin({ auto: false });
-      setResponse("Câmera aberta, senhor. Para perguntar sobre algo, aponte e toque em O QUE É ISSO.");
+      // V6.9: "abre a câmera e analisa esse item": abre, espera focar e já faz o diagnóstico
+      const analyze = /\b(analisa|analise|analisar|diagnostico|identifica|identifique|identificar|reconhece|reconheca|o que e)\b/.test(normalized);
+      setCameraWin({ auto: false, ask: analyze ? text : "" });
+      setResponse(analyze
+        ? "Câmera aberta, senhor. Segure o item na frente dela, vou analisar em instantes."
+        : "Câmera aberta, senhor. Para perguntar sobre algo, aponte e toque em O QUE É ISSO.");
       return;
     }
     if (/\b(tira|tire|tirar|bate|bata|bater)\b.*\b(foto|selfie|fotografia)\b/.test(normalized)) {
@@ -1486,7 +1501,7 @@ export default function App() {
       return;
     }
     // "o que é isso?" com a câmera aberta: pergunta sobre o que ela está vendo
-    if (cameraWinRef.current && /\b(o que e isso|o que e isto|que (planta|bicho|animal|coisa|objeto|produto|prato|lugar) e (esse|essa|este|esta)|o que (voce|vc) (ve|esta vendo)|isso e o que|le (isso|o que esta escrito))\b/.test(normalized)) {
+    if (cameraWinRef.current && /\b(analisa|analise|analisar|diagnostico|identifica|identifique|o que e isso|o que e isto|que (planta|bicho|animal|coisa|objeto|produto|prato|lugar) e (esse|essa|este|esta)|o que (voce|vc) (ve|esta vendo)|isso e o que|le (isso|o que esta escrito))\b/.test(normalized)) {
       setUserText(text);
       window.dispatchEvent(new CustomEvent("jarvis-camera-ask", { detail: text }));
       return;
@@ -2785,6 +2800,7 @@ export default function App() {
         <CameraWindow
           api={api}
           autoShot={cameraWin.auto}
+          autoAsk={cameraWin.ask || ""}
           onClose={() => setCameraWin(null)}
           onAnswer={(t) => {
             if (!t) return;
@@ -3225,7 +3241,7 @@ export default function App() {
         commandSlot={<CommandBar onSend={(text) => send(text)} disabled={busy} listening={listening} onToggleMic={toggleMic} />}
         tasksSlot={<TodoWidget api={api} onSend={send} />}
       />
-      {godsEyeOpen && <GodsEye onClose={() => setGodsEyeOpen(false)} />}
+      {godsEyeOpen && <GodsEye api={api} onClose={() => setGodsEyeOpen(false)} />}
     </>
   );
 }

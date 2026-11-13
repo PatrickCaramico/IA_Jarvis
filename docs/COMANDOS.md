@@ -1,6 +1,6 @@
 # JARVIS — Comandos do dia a dia
 
-**Versão do projeto:** 6.8.3 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
+**Versão do projeto:** 7.0.0 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
 
 > Montado a partir do código do projeto. Se algum comando não responder como descrito, me avise que eu ajusto o guia.
 > Para a lista técnica de rotas, veja [API.md](API.md); para o `.env`, [CONFIGURACAO.md](CONFIGURACAO.md).
@@ -338,7 +338,23 @@ Avisos automáticos (gatilhos): chuva amanhã (à noite), jogo começando (com o
 | "Tira uma foto" / "tira uma selfie" | Abre a câmera, conta 3, 2, 1 e salva a foto. |
 | "O que é isso?" (com a câmera aberta) ou o botão 🔍 O QUE É ISSO? | Manda **só aquela foto** à IA, que responde por voz (planta, produto, prato, rótulo, lugar). A foto não é guardada. Funciona em casa e fora (nuvem). Não identifica pessoas pelo rosto. |
 
+| "Abre a câmera e analisa esse item" / "analisa isso" (V7) | Abre a câmera, espera a imagem firmar e faz o **diagnóstico**: uma janela com o nome do item, categoria, confiança, resumo, detalhes (marca, modelo, nome científico, preço médio…), ⚠ alertas e 💡 dicas. A fala continua curta. |
+
 "O que você está vendo?" (sem abrir a câmera) continua usando a webcam do PC.
+
+### Olho de Deus: trânsito ao vivo (V7)
+
+| Fale / toque | O que acontece |
+|---|---|
+| "Mostra o trânsito" / "como está o trânsito?" / botão ◉ OLHO DE DEUS | Abre o mapa **ao vivo do Waze** centrado na cidade do clima: lentidão por cor e alertas dos motoristas (acidente, obra, polícia). |
+| Busca no topo | Cidade, endereço, bairro ou CEP: o mapa vai até lá. |
+| 🏠 MINHA CIDADE · 📍 ONDE ESTOU · ＋/－ | Volta para a sua cidade, centraliza onde você está (pede permissão de localização) e aproxima/afasta. |
+| Lugares salvos | Os lugares do agente de rotas viram atalhos no painel. |
+| 🧭 IR ATÉ AQUI NO WAZE | Abre a navegação no app do Waze. |
+
+### Central de Agentes (V6.8.3)
+
+Botão 🤖 AGENTES ao lado do Olho de Deus (ou em CONTROLES): exemplos de cada agente, lugares salvos (▶ ROTA, adicionar, apagar) e um chat com os agentes.
 
 ### Sub-agentes: rotas e pesquisa (V6.8)
 

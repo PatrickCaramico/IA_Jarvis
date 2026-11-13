@@ -356,3 +356,13 @@ test("central de agentes: lugar salvo pela nuvem aparece no estado junto com os 
   assert.equal(data.lugares.casa, "Rua A, 1");
   assert.equal(Object.values(data.lugares).includes("Av. Paulista, 1000"), true);
 });
+
+test("câmera na nuvem: diagnóstico do item em JSON vira janela; texto puro continua só fala", async () => {
+  const { parseVision } = await import("./core.mjs");
+  const r = parseVision('```json\n{"fala":"É um alicate.","item":"Alicate","categoria":"Ferramenta","confianca":"baixa","detalhes":[{"rotulo":"Tipo","valor":"Universal"}],"dicas":["Guarde seco"],"alertas":["Não use em fios ligados"]}\n```');
+  assert.equal(r.text, "É um alicate.");
+  assert.equal(r.diagnostico.item, "Alicate");
+  assert.equal(r.diagnostico.confianca, "baixa");
+  assert.deepEqual(r.diagnostico.alertas, ["Não use em fios ligados"]);
+  assert.deepEqual(parseVision("É um copo."), { text: "É um copo.", diagnostico: null });
+});

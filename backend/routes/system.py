@@ -426,7 +426,8 @@ async def camera_ask(req: CameraAskRequest) -> dict:
     except Exception as exc:  # noqa: BLE001
         log.warning("Pergunta pela câmera falhou: %s", exc)
         raise HTTPException(status_code=502, detail="Não consegui analisar a foto agora.") from exc
-    return {"text": (text or "").strip() or "Não consegui ver direito, senhor. Tente aproximar ou iluminar melhor."}
+    speech_text, diagnosis = cam.parse_answer(text or "")
+    return {"text": speech_text or "Não consegui ver direito, senhor. Tente aproximar ou iluminar melhor.", "diagnostico": diagnosis}
 
 
 @router.get("/api/cameras")
