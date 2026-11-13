@@ -14,6 +14,7 @@ vêm de um pedido (alarmes, lembretes, água) continuam no PC.
 """
 from __future__ import annotations
 
+import asyncio
 import re
 from contextvars import ContextVar
 from typing import Optional
@@ -59,8 +60,6 @@ def new_say_id() -> str:
 
 
 def expect(say_id: str):
-    import asyncio
-
     ev = asyncio.Event()
     _played[say_id] = ev
     return ev

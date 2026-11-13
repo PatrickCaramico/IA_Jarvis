@@ -133,6 +133,13 @@ async def handle_turn(message: str, routine: bool, force_deep: bool = False) -> 
         runtime.track(speech.speak(reply))
         return {"status": "ok", "response": reply, "cards": cards, "source": "local"}
 
+    # V6.7: bem-estar. A resposta de segurança (crise) vem antes de tudo; depois respiração, aterramento e humor.
+    from modules import wellbeing
+
+    wb_reply = await wellbeing.handle_voice(message)
+    if wb_reply:
+        return await finish_local(wb_reply)
+
     # V6.5.11: resposta a "Em qual navegador, senhor?"
     from modules import browser_choice
 

@@ -1,6 +1,6 @@
 # JARVIS — Comandos do dia a dia
 
-**Versão do projeto:** 6.6.9 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
+**Versão do projeto:** 6.7.0 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
 
 > Montado a partir do código do projeto. Se algum comando não responder como descrito, me avise que eu ajusto o guia.
 > Para a lista técnica de rotas, veja [API.md](API.md); para o `.env`, [CONFIGURACAO.md](CONFIGURACAO.md).
@@ -327,6 +327,19 @@ Avisos automáticos (gatilhos): chuva amanhã (à noite), jogo começando (com o
 | "Gastei 45 reais no mercado" / "Recebi 3000 de salário" | Anota (sem banco). |
 | "Quanto eu gastei esse mês?" / "hoje" / "essa semana" | Total e as categorias que mais pesaram. Também na tela **Finanças**. |
 | "Apaga o último gasto" | Desfaz o último lançamento. |
+
+### Bem-estar (V6.7)
+
+O JARVIS como um mordomo atento, **não um psicólogo**: ele acolhe, sugere técnicas simples e indica ajuda profissional quando faz sentido. Funciona no PC, no bloqueio e pela nuvem.
+
+| Diga | O que acontece |
+|---|---|
+| "Exercício de respiração" / "me ajuda a respirar" | Respiração guiada **4-7-8** (três ciclos). "Respiração quadrada" para a 4-4-4-4. |
+| "Me ajuda a me acalmar" / "aterramento" | Técnica **5-4-3-2-1** (o que você vê, toca, ouve, cheira e sente). |
+| "Meu humor hoje é 3" / "estou me sentindo 4 de 5" / "registra meu humor como bom" | Registra o humor do dia (1 a 5) e responde conforme a nota. |
+| "Como foi meu humor essa semana?" | Média dos últimos 7 dias e se está melhorando ou caindo. |
+| Desabafos ("tô exausto", "foi um dia difícil") | A IA acolhe primeiro, pergunta e só depois sugere algo prático. Se o mal-estar for persistente, sugere um psicólogo. |
+| Frases de crise ("quero morrer", "penso em me machucar") | Resposta fixa e acolhedora com **CVV 188** (24 h, gratuito, chat em cvv.org.br) e **SAMU 192**, sem passar pela IA, até com a central bloqueada. Expressões comuns ("me matar de rir", "morrer de vergonha") não disparam. |
 
 Ao entrar na central: na primeira vez do dia o JARVIS já começa o **briefing**. Nas próximas, pergunta se repete ou pula (botões, Enter/Esc ou "repetir"/"pular").
 

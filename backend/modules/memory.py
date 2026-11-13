@@ -110,6 +110,14 @@ def prompt_context() -> str:
     if previous:
         lines = [f"- Usuário: {c['user'][:160]} | JARVIS: {c['assistant'][:200]}" for c in previous]
         parts.append("Conversas recentes de sessões anteriores:\n" + "\n".join(lines))
+    try:  # V6.7: humor recente (só para ajustar o tom)
+        from modules import wellbeing
+
+        mood = wellbeing.prompt_context()
+        if mood:
+            parts.append(mood)
+    except Exception:  # noqa: BLE001
+        pass
     return "\n".join(parts)
 
 

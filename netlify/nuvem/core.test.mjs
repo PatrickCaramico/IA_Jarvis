@@ -216,3 +216,24 @@ test("voz da nuvem = voz do PC (validada); sem sincronizar, a padrão do JARVIS"
   assert.equal(calls[2].voice.name, "pt-BR-AntonioNeural"); // voz inválida descartada
   assert.equal((await handle(req("/tts", { method: "POST", body: { text: "oi" } }), { store, env: ENV, nowDate: NOW, synth })).status, 401);
 });
+
+test("bem-estar na nuvem: segurança fixa sem IA, respiração e humor que vai para o PC", async () => {
+  const store = memStore();
+  const token = await login(store);
+  let llmCalls = 0;
+  const fetchFn = async () => {
+    llmCalls += 1;
+    const text = JSON.stringify({ resposta: "Registrei, senhor.", acoes: [{ tipo: "humor", nota: 4 }] });
+    return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text }] } }] }));
+  };
+  const env = { ...ENV, GEMINI_API_KEY: "g" };
+  const ask = async (message) => (await handle(req("/chat", { method: "POST", token, body: { message } }), { store, env, fetchFn, nowDate: NOW })).json();
+  const crisis = await ask("Jarvis, quero morrer.");
+  assert.match(crisis.reply, /188/);
+  assert.match(crisis.reply, /192/);
+  assert.equal((await ask("exercício de respiração")).reply.startsWith("Vamos respirar juntos"), true);
+  assert.equal(llmCalls, 0); // nada disso passou pela IA
+  assert.equal((await ask("vou me matar de rir com esse filme")).reply, "Registrei, senhor."); // expressão comum vai para a IA
+  const ops = (await call(store, "/sync", { headers: { "X-Jarvis-Nuvem": ENV.JARVIS_NUVEM_CHAVE } })).data.ops;
+  assert.deepEqual(ops.map((o) => [o.op, o.score, o.date]), [["mood_set", 4, "2026-11-13"]]);
+});

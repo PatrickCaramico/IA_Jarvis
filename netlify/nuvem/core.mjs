@@ -259,6 +259,14 @@ export function apply(state, op, now = spNow()) {
       s.agua.goal_ml = goal;
       return { keys: ["agua"], result: goal };
     }
+    case "mood_set": {
+      // V6.7: humor do dia (1 a 5); a nuvem só repassa ao PC (data/humor.json)
+      const score = Math.round(Number(op.score));
+      if (!(score >= 1 && score <= 5)) throw new HttpError(400, "Humor de 1 a 5.");
+      op.score = score;
+      op.date ||= now.date;
+      return { keys: [], result: score };
+    }
     default:
       throw new HttpError(400, "Operação desconhecida.");
   }
@@ -529,6 +537,43 @@ export async function getWeather(fetchFn, city) {
   };
 }
 
+// --------------------------------------------------------------------------- bem-estar (V6.7)
+// Mesmas frases e textos de backend/modules/wellbeing.py (o PC é a referência; os testes dos dois lados conferem).
+const HARM_INTENT = "(?:quero|vou|penso em|pensando em|vontade de|com vontade de|preciso|tentei|tentar)";
+const CRISIS = new RegExp(
+  "\\b(?:me matar(?! de )|suicid\\w*|tirar (?:a )?(?:minha )?(?:propria )?vida|acabar com (?:a )?minha (?:propria )?vida|"
+  + "quero morrer(?! de )|vontade de morrer(?! de )|nao quero (?:mais )?viver|nao quero mais estar aqui|"
+  + "sem (?:razao|motivo|vontade) (?:pra|para|de) viver|nao aguento mais viver|"
+  + "melhor (?:se )?eu (?:nao existisse|morresse|sumisse)|automutil\\w*|"
+  + HARM_INTENT + " me (?:machucar|ferir|cortar(?! (?:o|a|os|as) )))\\b",
+);
+export const CRISIS_REPLY = "Senhor, sinto muito que esteja passando por isso, e fico feliz que tenha me contado. "
+  + "Você não precisa enfrentar isso sozinho. Por favor, ligue agora para o CVV, no 188: é gratuito, "
+  + "funciona 24 horas, e também dá para conversar pelo chat em cvv.org.br. "
+  + "Se estiver em perigo agora, ligue 192, o SAMU. Se puder, chame alguém de confiança para ficar com você. "
+  + "Eu continuo aqui com você.";
+const BREATH_478 = "Vamos respirar juntos, senhor. Solte o ar pela boca. Agora inspire pelo nariz contando até quatro... "
+  + "segure o ar contando até sete... e solte devagar pela boca contando até oito. "
+  + "Mais uma vez: inspire em quatro... segure em sete... solte em oito. "
+  + "E a última: inspire... segure... e solte bem devagar. Muito bem. Como está se sentindo agora?";
+const BREATH_BOX = "Respiração quadrada, senhor. Inspire contando até quatro... segure quatro... solte em quatro... "
+  + "e fique sem ar por quatro. Repita comigo mais três vezes, no seu ritmo. "
+  + "Quatro para entrar, quatro segurando, quatro para sair, quatro em pausa. Muito bem.";
+const GROUNDING = "Vamos trazer a atenção para o agora, senhor. Olhe em volta e diga para si cinco coisas que você vê. "
+  + "Agora, quatro coisas que você consegue tocar. Três sons que você ouve. Duas coisas que você sente o cheiro. "
+  + "E uma coisa que você sente o gosto, ou algo bom sobre você. Respire fundo. Você está aqui, e está seguro.";
+
+export function wellbeingReply(text) {
+  const n = norm(text).replace(/[^\w\s]/g, " ").replace(/\s+/g, " ").trim();
+  if (CRISIS.test(n)) return CRISIS_REPLY;
+  if (/\b(?:respiracao|respirar|respira)\b/.test(n)
+      && (/\b(?:exercicio|exercicios|guiada|guia|ajuda|ajude|vamos|bora|me ensina|faz|faca|fazer|quero|preciso)\b/.test(n) || n.split(" ").length <= 4)) {
+    return n.includes("quadrad") ? BREATH_BOX : BREATH_478;
+  }
+  if (/\b(?:aterramento|5 4 3 2 1|cinco quatro tres dois um)\b|\bme (?:ajuda|ajude) a (?:me )?acalmar\b|\bme acalma\b/.test(n)) return GROUNDING;
+  return null;
+}
+
 // --------------------------------------------------------------------------- conversa (IA)
 export function llmConfig(env) {
   const keys = { gemini: env.GEMINI_API_KEY, openai: env.OPENAI_API_KEY, anthropic: env.ANTHROPIC_API_KEY };
@@ -552,7 +597,13 @@ const PERSONA = (
   + "Aqui você consegue: lista de compras, tarefas, lembretes, alarmes, registro de água, notícias e clima. "
   + "Não consegue: câmera, Sentinela, abrir programas ou sites no PC, Spotify, controlar o computador. "
   + "Se pedirem algo assim, diga em uma frase que isso precisa do notebook ligado. "
-  + "Nunca diga que fez algo que não está nas suas ações. Use notícias e clima apenas quando vierem no contexto; nunca invente."
+  + "Nunca diga que fez algo que não está nas suas ações. Use notícias e clima apenas quando vierem no contexto; nunca invente. "
+  // V6.7: bem-estar (igual ao PC: services/llm_orchestrator.SYSTEM_PROMPT)
+  + "Quando o usuário demonstrar cansaço, estresse, tristeza, ansiedade ou desabafar: acolha primeiro (nomeie o sentimento "
+  + "e valide, sem minimizar), faça no máximo uma pergunta aberta e só depois, se fizer sentido, ofereça algo prático e "
+  + "curto (respiração guiada, uma pausa, um primeiro passo, olhar o pensamento por outro ângulo). Deixe o humor de lado "
+  + "nesses momentos. Nunca diagnostique nem rotule. Se o mal-estar parecer persistente, sugira com gentileza um psicólogo. "
+  + "Se houver sinal de risco à vida, oriente a ligar para o CVV (188, 24 horas) ou o SAMU (192)."
 );
 
 const FORMAT = (
@@ -567,6 +618,7 @@ const FORMAT = (
   + '{"tipo":"alarme_add","hora":"HH:MM","dias":[0,1,2,3,4],"rotulo":""} (dias: 0=segunda..6=domingo; vazio = uma vez), '
   + '{"tipo":"alarme_remover","hora":"HH:MM"}, '
   + '{"tipo":"agua_add","ml":250} (um copo = 250 ml, uma garrafa = 500 ml), {"tipo":"agua_desfazer"}, {"tipo":"agua_meta","ml":2500}, '
+  + '{"tipo":"humor","nota":4} (quando o usuário disser como está de 1 a 5, ex.: "meu humor hoje é 4"), '
   + '{"tipo":"abrir","tela":"noticias"|"clima"|"compras"|"tarefas"|"agua"|"lembretes"}. '
   + "Na resposta, confirme a ação de forma natural ('Coloquei leite na lista, senhor.')."
 );
@@ -662,6 +714,7 @@ const ACTION_TO_OP = {
   agua_add: (a) => ({ op: "water_add", ml: a.ml }),
   agua_desfazer: () => ({ op: "water_undo" }),
   agua_meta: (a) => ({ op: "water_goal", goal_ml: a.ml }),
+  humor: (a) => ({ op: "mood_set", score: a.nota ?? a.score }),
 };
 
 async function runAction(store, action, now) {
@@ -694,6 +747,14 @@ async function runAction(store, action, now) {
 export async function chat({ store, env, fetchFn, message, now = spNow() }) {
   const text = clean(message, 1200);
   if (!text) throw new HttpError(400, "Mensagem vazia.");
+  // V6.7: bem-estar com respostas fixas (as mesmas do PC, modules/wellbeing.py). A de segurança vem antes de tudo.
+  const fixed = wellbeingReply(text);
+  if (fixed) {
+    const history = ((await store.get("conversa")) || []).slice(-MAX_HISTORY);
+    history.push({ role: "user", text, at: now.stamp }, { role: "assistant", text: fixed, at: now.stamp });
+    await store.set("conversa", history.slice(-MAX_HISTORY));
+    return { reply: fixed, actions: [] };
+  }
   const cfg = llmConfig(env);
   if (!cfg) {
     return {
@@ -846,7 +907,7 @@ export async function handle(req, { store, env, fetchFn = fetch, nowDate = new D
     if (path === "/change" && method === "POST") {
       const op = await body(req);
       const allowed = ["shopping_add", "shopping_set", "shopping_remove", "shopping_clear", "task_add", "task_done", "task_remove",
-        "reminder_add", "reminder_remove", "alarm_add", "alarm_remove", "water_add", "water_undo", "water_goal"];
+        "reminder_add", "reminder_remove", "alarm_add", "alarm_remove", "water_add", "water_undo", "water_goal", "mood_set"];
       if (!allowed.includes(op.op)) throw new HttpError(400, "Operação desconhecida.");
       const { result } = await change(store, op, now);
       return json({ ok: true, result });
