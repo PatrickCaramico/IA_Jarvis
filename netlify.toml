@@ -1,11 +1,16 @@
 # Site do JARVIS no Netlify: a vitrine (site/) e, em /app/, a própria central do JARVIS (frontend/).
-# A central publicada aqui é a mesma do PC e conversa com o backend que roda no PC (127.0.0.1:8000);
-# nada do backend nem dos dados é publicado aqui.
+# A central publicada aqui é a mesma do PC e conversa com o backend que roda no PC (127.0.0.1:8000).
+# V6.6: com o notebook desligado, a central usa o MODO NUVEM: funções do Netlify em /api/cloud/*
+# (netlify/functions/nuvem.mjs) com os dados no Netlify Blobs. Configuração em docs/MODO-NUVEM.md.
 # O script monta a pasta _site/ a partir de site/, das imagens de docs/, da marca, do Branding Book e do frontend.
 
 [build]
   command = "bash scripts/netlify/montar_site.sh"
   publish = "_site"
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
 
 # Endereços curtos
 [[redirects]]

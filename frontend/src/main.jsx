@@ -16,6 +16,7 @@ import { initialAccessibility, initialBackground } from "./utils/theme.js";
 import { IS_JARVIS_APP, markDevice } from "./utils/device.js";
 import NetworkNotice from "./components/NetworkNotice.jsx";
 import "./mobile.css";
+import "./cloud.css";
 
 initialBackground(); // V4.4: fundo blueprint/clássico antes do primeiro desenho
 initialAccessibility(); // V4.5: texto maior, alto contraste e menos movimento já na primeira tela

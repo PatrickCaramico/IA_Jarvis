@@ -24,6 +24,20 @@ const ERROR_TEXT = {
 // (a conferência atrasava o início e as primeiras palavras, como "abre o", se perdiam).
 let micChecked = false;
 
+// V6.6.1: o Chrome só aceita UMA escuta de voz por página. O ouvido contínuo ("Jarvis, ...") fica ligado
+// na central; antes de o botão do microfone abrir a dele, pede que o ouvido solte o microfone e espera um
+// instante. Sem isso, as duas escutas se derrubavam e o botão dava erro ou não ouvia nada.
+export const MIC_CLAIM = "jarvis-mic-claim";
+export const MIC_RELEASE = "jarvis-mic-release";
+const CLAIM_WAIT_MS = 300;
+function micEvent(name) {
+  try {
+    window.dispatchEvent(new CustomEvent(name));
+  } catch {
+    /* sem eventos: segue */
+  }
+}
+
 const SILENCE_TIMEOUT_MS = 2200; // Tempo de silêncio após falar para enviar automaticamente
 const MAX_WAIT_TIMEOUT_MS = 15000; // Tempo máximo de espera se você não disser nada
 
@@ -49,6 +63,8 @@ export default function useSpeechRecognition({ onFinal, onError, deviceId }) {
   const maxWaitTimerRef = useRef(null);
   const textBufferRef = useRef("");
   const startingRef = useRef(false);
+  const retryRef = useRef(0); // V6.6.1: falha de rede passageira do Chrome: tenta de novo uma vez
+  const startRef = useRef(null);
 
   useEffect(() => {
     onFinalRef.current = onFinal;
@@ -116,6 +132,14 @@ export default function useSpeechRecognition({ onFinal, onError, deviceId }) {
     textBufferRef.current = "";
     clearTimers();
 
+    micEvent(MIC_CLAIM);
+    await new Promise((resolve) => setTimeout(resolve, CLAIM_WAIT_MS));
+    if (canceledRef.current) {
+      startingRef.current = false;
+      micEvent(MIC_RELEASE);
+      return;
+    }
+
     const rec = new SR();
     rec.lang = "pt-BR";
     rec.interimResults = true;
@@ -166,6 +190,10 @@ export default function useSpeechRecognition({ onFinal, onError, deviceId }) {
     rec.onerror = (event) => {
       if (event.error === "not-allowed") micChecked = false;
       if (event.error === "no-speech" || event.error === "aborted") return;
+      if (event.error === "network" && retryRef.current === 0 && !textBufferRef.current.trim()) {
+        retryRef.current = 1; // reabre sozinho no onend, sem mostrar erro
+        return;
+      }
       onErrorRef.current?.(ERROR_TEXT[event.error] ?? `Erro no microfone: ${event.error}`);
     };
 
@@ -173,8 +201,15 @@ export default function useSpeechRecognition({ onFinal, onError, deviceId }) {
       clearTimers();
       recRef.current = null;
       startingRef.current = false;
+      if (retryRef.current === 1 && !canceledRef.current) {
+        retryRef.current = 2;
+        startRef.current?.();
+        return;
+      }
+      retryRef.current = 0;
       setListening(false);
       setInterim("");
+      micEvent(MIC_RELEASE);
       const text = textBufferRef.current.trim();
       if (text && !canceledRef.current) {
         onFinalRef.current?.(text);
@@ -187,11 +222,15 @@ export default function useSpeechRecognition({ onFinal, onError, deviceId }) {
       setListening(true);
     } catch (error) {
       recRef.current = null;
+      retryRef.current = 0;
+      setListening(false);
+      micEvent(MIC_RELEASE);
       onErrorRef.current?.(microphoneError(error));
     } finally {
       startingRef.current = false;
     }
   }, [deviceId, startNative]);
+  startRef.current = start;
 
   const stop = useCallback(() => {
     clearTimers();
