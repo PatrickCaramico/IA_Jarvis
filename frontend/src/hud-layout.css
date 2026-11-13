@@ -1200,8 +1200,16 @@
 @keyframes upd-pop { 0%, 85%, 100% { transform: scale(1); } 92% { transform: scale(1.18); } }
 
 /* V6.8.3: Olho de Deus + Central de Agentes, lado a lado embaixo do orbe */
-.hl-orb > .hl-orb-actions { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); display: flex; gap: 16px; align-items: center; }
-.hl-orb-actions > .hl-gods-eye-trigger { margin: 0; }
+/* V7.4.1: fileira de atalhos abaixo do orbe, no fluxo (não fica mais por cima dele) */
+.hl-orb-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin: 2px 0 10px; position: relative; z-index: 2; }
+.hl-orb-actions > button,
+.hl-orb-actions > .hl-gods-eye-trigger,
+.hl-orb-actions > .hl-agents-trigger {
+  margin: 0; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(103, 232, 249, 0.35);
+  background: rgba(3, 20, 38, 0.6); color: #bdf6ff; font: 600 10px "Orbitron", monospace; letter-spacing: 0.1em;
+  cursor: pointer; transition: border-color 160ms ease, background 160ms ease, box-shadow 160ms ease, color 160ms ease;
+}
+.hl-orb-actions > button:hover { color: #fff; border-color: #67e8f9; background: rgba(34, 211, 238, 0.16); box-shadow: 0 0 14px rgba(34, 211, 238, 0.35); }
 .hl-agents-trigger { display: block; margin: 0; background: none; border: 0; cursor: pointer; color: rgba(103, 232, 249, 0.65); font: 9px "Orbitron", monospace; letter-spacing: 0.08em; transition: color 160ms ease, text-shadow 160ms ease; }
 .hl-agents-trigger:hover { color: #dffbff; text-shadow: 0 0 10px #22d3ee; }
 .hl-root.hl-briefing .hl-orb-actions { display: none !important; }
