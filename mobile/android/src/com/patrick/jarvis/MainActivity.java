@@ -1046,8 +1046,20 @@ public class MainActivity extends Activity {
     private void loadSavedOrSetup() {
         String url = prefs.getString(KEY_URL, "");
         if (isHttp(url)) {
-            web.loadUrl(url);
-            checkForUpdate(url);
+            // V6.6.3: confere o PC antes (até ~3 s). Sem resposta, vai direto para o modo nuvem em vez de
+            // esperar o "tempo esgotado" do WebView (que em alguns celulares mostrava a página de erro crua).
+            new Thread(() -> {
+                boolean ok = pcAnswers();
+                runOnUiThread(() -> {
+                    if (ok) {
+                        stopCloud();
+                        web.loadUrl(url);
+                        checkForUpdate(url);
+                    } else {
+                        openCloud(web);
+                    }
+                });
+            }).start();
         } else {
             web.loadUrl(SETUP);
         }

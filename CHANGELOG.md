@@ -6,6 +6,7 @@ Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
 - **Nuvem só no celular:** no navegador do **computador**, a central é sempre a do PC: sem o botão USAR PELA NUVEM e sem entrar na nuvem (nem com `?nuvem=1`). No **Chrome do celular** e no **app Android**, com o notebook desligado, entra sozinho no modo nuvem, com as configurações da central.
 - **App Android com nuvem de novo** (como na 6.6.0): sem resposta do PC, abre o modo nuvem, confere o PC a cada 20 s e volta para a central completa quando ele liga; avisos de lembretes, alarmes e água pela nuvem com o app fechado; voz do Android nas respostas da nuvem. Precisa gerar o APK 6.6.3 (`Gerar-App-Android.bat`).
+- **App abre mais rápido sem o PC:** ao abrir, o app confere o PC por até ~3 s antes de carregar a central; sem resposta, vai direto para a nuvem, em vez de esperar o "tempo esgotado" do Android (que em alguns celulares mostrava a página de erro crua "Página da Web não disponível").
 
 ## 6.6.2 — 13 de novembro de 2026
 
