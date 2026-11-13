@@ -183,8 +183,38 @@ def snapshot() -> dict:
             "sobre": (about.get_about() or "")[:600],
             "prefs": shared,
             "memorias": memory.facts(30),  # V6.7.3: o JARVIS da nuvem também conhece o senhor
+            "agenda": _agenda(),  # V6.7.4: "o que tenho amanhã?" também fora de casa
         },
     }
+
+
+_AGENDA_TTL = 10 * 60
+_agenda_cache: dict = {"at": 0.0, "items": []}
+
+
+def _agenda() -> list[dict]:
+    """V6.7.4: compromissos dos próximos 7 dias (Google Agenda ou iCal) para a nuvem. Atualiza a cada 10 min.
+
+    A nuvem nunca recebe a chave do Google: só os compromissos (título, início e local).
+    """
+    import time
+
+    now = time.time()
+    if now - _agenda_cache["at"] < _AGENDA_TTL:
+        return _agenda_cache["items"]
+    items: list[dict] = []
+    try:
+        from modules import calendar_hub
+
+        if calendar_hub.connected():
+            for ev in calendar_hub.upcoming_events(days=7, limit=25):
+                items.append({"titulo": str(ev.get("title") or "Compromisso")[:120],
+                              "inicio": str(ev.get("start") or "")[:19], "local": str(ev.get("location") or "")[:80]})
+    except Exception as exc:  # noqa: BLE001 - agenda fora do ar: manda o que tinha
+        log.debug("Agenda indisponível para a nuvem: %s", exc)
+        return _agenda_cache["items"]
+    _agenda_cache.update(at=now, items=items)
+    return items
 
 
 def sync_once() -> dict:

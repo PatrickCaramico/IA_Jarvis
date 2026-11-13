@@ -30,6 +30,8 @@ bloqueia), então ele usa sempre a nuvem.
 | Lista de compras, tarefas, lembretes e alarmes | Abrir sites e programas no PC, controlar o Windows |
 | Água do dia (meta, copos, desfazer) | Spotify, volume, tela do PC |
 | Notícias (Google Notícias) e clima (Open-Meteo) | Briefing completo, Modo Torcedor, e-mail |
+| Agenda dos próximos 7 dias (o PC manda os compromissos; a nuvem nunca recebe a chave do Google) | Conectar ou mudar a agenda |
+| Música no próprio celular, pelo app: tocar, pausar, próxima, anterior e "toca …" (abre a busca no Spotify do celular) | Spotify do PC |
 | As suas configurações da central: nome da IA, personalidade, fundo, cor, acessibilidade, modo silencioso, temas de notícias e copos de água | Mudar as configurações (mude na central com o PC ligado) |
 
 ## Como ligar (uma vez só)

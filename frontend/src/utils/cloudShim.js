@@ -147,6 +147,8 @@ function weather(w) {
 function agenda(st) {
   const today = (st.agora || "").slice(0, 10);
   const items = [
+    // V6.7.4: compromissos da agenda que o PC mandou
+    ...(st.agenda || []).map((e) => ({ at: e.inicio.replace("T", " ").slice(0, 16), title: e.titulo, kind: "agenda" })),
     ...st.lembretes.map((r) => ({ at: r.data_hora, title: r.texto, kind: "lembrete" })),
     ...st.alarmes.map((a) => ({ at: a.proximo, title: a.rotulo || `Alarme ${a.hora}`, kind: "alarme" })),
   ].filter((i) => i.at && i.at >= (st.agora || "")).sort((a, b) => a.at.localeCompare(b.at)).slice(0, 4);
@@ -155,10 +157,31 @@ function agenda(st) {
 
 const byId = (list, id) => list.find((i) => String(i.id) === String(id));
 
+// V6.7.4: música no próprio celular (só o app Android sabe apertar os botões de mídia e abrir o Spotify)
+function canMusic() {
+  try {
+    return typeof window.JarvisApp?.media === "function";
+  } catch {
+    return false;
+  }
+}
+
+function playMusic(command, search = "") {
+  if (!canMusic()) return false;
+  try {
+    if (command === "tocar" && search) return window.JarvisApp.openSpotify(search);
+    const key = { tocar: "play", pausar: "pause", proxima: "next", anterior: "previous" }[command] || "toggle";
+    return window.JarvisApp.media(key);
+  } catch {
+    return false;
+  }
+}
+
 async function chat(message) {
   emit({ type: "state", state: "processing" });
   try {
-    const res = await cloud("/chat", { method: "POST", body: { message }, timeout: 45000 });
+    const res = await cloud("/chat", { method: "POST", body: { message, pode_musica: canMusic() }, timeout: 45000 });
+    for (const a of res.actions || []) if (a.tipo === "musica" && a.ok) playMusic(a.comando, a.busca);
     const reply = res.reply || "";
     emit({ type: "response", text: reply, cards: [] });
     emit({ type: "state", state: "speaking" });
@@ -237,6 +260,18 @@ async function route(method, path, query, body) {
       return ok({ ringing: false });
     case "GET /api/agenda/next":
       return ok({ items: agenda(await refresh()) });
+    case "POST /api/integrations/spotify/control": {
+      // botões de música da central: no app, viram os botões de mídia do celular
+      const map = { play: "tocar", resume: "tocar", pause: "pausar", next: "proxima", previous: "anterior", prev: "anterior" };
+      if (playMusic(map[body.action] || "tocar")) return ok({ status: "ok" });
+      return { status: 503, data: { detail: "No navegador eu não controlo a música. Pelo app do JARVIS no celular, dá." } };
+    }
+    case "GET /api/integrations/google-calendar/status": {
+      const st = await refresh();
+      return ok({ connected: (st.agenda || []).length > 0, cloud: true });
+    }
+    case "GET /api/integrations/google-calendar/events":
+      return ok({ events: ((await refresh()).agenda || []).map((e, i) => ({ id: `nuvem-${i}`, title: e.titulo, start: e.inicio, location: e.local, link: "" })) });
     case "GET /api/weather":
       return ok(weather(await cloud(`/weather${query.get("city") ? `?city=${encodeURIComponent(query.get("city"))}` : ""}`)));
     case "GET /api/news":
