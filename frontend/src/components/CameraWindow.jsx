@@ -6,7 +6,7 @@ import { createPortal } from "react-dom";
 // - FOTO: salva no aparelho (download). TROCAR: frontal/traseira.
 // - O QUE É ISSO?: manda UMA foto à IA (PC ou nuvem) e a resposta aparece e é falada.
 // autoShot: "tira uma foto" -> contagem 3, 2, 1 e foto.
-export default function CameraWindow({ api, onClose, onAnswer, autoShot = false }) {
+export default function CameraWindow({ api, onClose, onAnswer, autoShot = false, autoAsk = "" }) {
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const [facing, setFacing] = useState("user");
@@ -15,6 +15,7 @@ export default function CameraWindow({ api, onClose, onAnswer, autoShot = false 
   const [flash, setFlash] = useState(false);
   const [asking, setAsking] = useState(false);
   const [answer, setAnswer] = useState("");
+  const [diag, setDiag] = useState(null); // V6.9: diagnóstico do item (janela)
   const [question, setQuestion] = useState("");
   const [shots, setShots] = useState(0);
 
@@ -93,10 +94,12 @@ export default function CameraWindow({ api, onClose, onAnswer, autoShot = false 
     if (!c || asking) return;
     setAsking(true);
     setAnswer("");
+    setDiag(null);
     try {
       const image = c.toDataURL("image/jpeg", 0.8);
       const r = await api("/api/camera/ask", { method: "POST", body: JSON.stringify({ image, question: (typeof spoken === "string" ? spoken : question).trim() }), timeout: 45_000 });
       setAnswer(r.text || "");
+      if (r.diagnostico?.item) setDiag({ ...r.diagnostico, photo: c.toDataURL("image/jpeg", 0.7) });
       onAnswer?.(r.text || "");
     } catch (err) {
       setAnswer(err.message || "Não consegui analisar a foto agora.");
@@ -116,6 +119,20 @@ export default function CameraWindow({ api, onClose, onAnswer, autoShot = false 
     window.addEventListener("jarvis-camera-ask", onAsk);
     return () => window.removeEventListener("jarvis-camera-ask", onAsk);
   }, []);
+
+  // V6.9: "abre a câmera e analisa": quando a imagem estabiliza (2,5 s), analisa sozinho uma vez
+  const autoAskDone = useRef(false);
+  useEffect(() => {
+    if (!autoAsk || autoAskDone.current) return undefined;
+    const t = setInterval(() => {
+      if (videoRef.current?.videoWidth && !autoAskDone.current) {
+        autoAskDone.current = true;
+        clearInterval(t);
+        setTimeout(() => askRef.current?.(autoAsk), 2500);
+      }
+    }, 300);
+    return () => clearInterval(t);
+  }, [autoAsk]);
 
   useEffect(() => {
     const onKey = (e) => e.key === "Escape" && onClose();
@@ -138,7 +155,7 @@ export default function CameraWindow({ api, onClose, onAnswer, autoShot = false 
           {count > 0 && <div className="camw-count" aria-live="assertive">{count}</div>}
           {flash && <div className="camw-flash" aria-hidden="true" />}
         </div>
-        {answer && <p className="camw-answer" role="status">{answer}</p>}
+        {answer && !diag && <p className="camw-answer" role="status">{answer}</p>}
         <div className="camw-ask">
           <input value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="Pergunta (opcional): que planta é essa?" aria-label="Pergunta sobre a foto" />
           <button type="button" onClick={() => ask()} disabled={asking || Boolean(error)}>{asking ? "OLHANDO…" : "🔍 O QUE É ISSO?"}</button>
@@ -150,7 +167,41 @@ export default function CameraWindow({ api, onClose, onAnswer, autoShot = false 
         </div>
         <p className="camw-note">"O que é isso?" manda só aquela foto à IA, e ela não é guardada.</p>
       </div>
+      {diag && <Diagnosis diag={diag} onClose={() => setDiag(null)} />}
     </div>,
     document.body,
+  );
+}
+
+const CONF_LABEL = { alta: "Confiança alta", media: "Confiança média", baixa: "Confiança baixa" };
+
+// V6.9: janela de diagnóstico do item analisado (a foto fica só na tela; fecha e some)
+function Diagnosis({ diag, onClose }) {
+  return (
+    <section className="camw-diag" role="dialog" aria-label={`Diagnóstico: ${diag.item}`}>
+      <header className="camw-diag-head">
+        <img src={diag.photo} alt="" />
+        <div>
+          <small>{diag.categoria || "ITEM"} · <span className={`camw-conf is-${diag.confianca}`}>{CONF_LABEL[diag.confianca] || ""}</span></small>
+          <h3>{diag.item}</h3>
+        </div>
+        <button type="button" className="camw-x" onClick={onClose} aria-label="Fechar o diagnóstico">✕</button>
+      </header>
+      {diag.resumo && <p className="camw-diag-sum">{diag.resumo}</p>}
+      {diag.detalhes?.length > 0 && (
+        <dl className="camw-diag-grid">
+          {diag.detalhes.map((d) => (
+            <div key={d.rotulo}><dt>{d.rotulo}</dt><dd>{d.valor}</dd></div>
+          ))}
+        </dl>
+      )}
+      {diag.alertas?.length > 0 && (
+        <div className="camw-diag-list is-alert"><b>⚠ ATENÇÃO</b><ul>{diag.alertas.map((a) => <li key={a}>{a}</li>)}</ul></div>
+      )}
+      {diag.dicas?.length > 0 && (
+        <div className="camw-diag-list"><b>💡 DICAS</b><ul>{diag.dicas.map((a) => <li key={a}>{a}</li>)}</ul></div>
+      )}
+      <p className="camw-note">Análise feita por IA a partir de uma foto: confira antes de decidir algo importante.</p>
+    </section>
   );
 }

@@ -2,6 +2,12 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 7.0.0 — 13 de novembro de 2026
+
+- **Diagnóstico pela câmera**: "abre a câmera e analisa esse item" abre a câmera, espera a imagem firmar e analisa sozinho. A resposta vem numa janela de diagnóstico (nome, categoria, confiança, resumo, detalhes, alertas e dicas) além da fala curta. Funciona no PC e pela nuvem; a foto não é guardada.
+- **Olho de Deus com trânsito ao vivo**: nova categoria 🚦 Trânsito (abre primeiro) com o mapa ao vivo do Waze na cidade do clima. Busca por cidade, endereço, bairro ou CEP; MINHA CIDADE, ONDE ESTOU, zoom, atalhos dos lugares salvos e IR ATÉ AQUI NO WAZE. Por voz: "mostra o trânsito".
+- **Otimização**: mais telas carregam só quando aparecem (Olho de Deus, cadastro, visitante, modo torcedor, janelas de áudio/microfone/navegador) e o React foi para um pacote separado, que fica no cache entre versões. O pacote inicial caiu de 515 kB para 342 kB.
+
 ## 6.8.3 — 13 de novembro de 2026
 
 - **Central de Agentes**: botão 🤖 AGENTES ao lado do Olho de Deus (e em CONTROLES). Mostra cada agente, o que faz e exemplos (um toque envia o pedido), os lugares do agente de rotas (▶ ROTA com um toque, adicionar e apagar) e um chat com os agentes, onde aparece o que você pediu e o que eles fizeram. Funciona também pela nuvem (o lugar salvo fora de casa vai para o PC na sincronização).

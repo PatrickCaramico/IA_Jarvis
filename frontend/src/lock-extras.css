@@ -784,3 +784,28 @@
 .camw-actions .camw-shot { padding: 12px 26px; font-size: 0.95rem; background: rgba(103, 232, 249, 0.28); }
 .camw button:disabled { opacity: 0.45; cursor: default; }
 .camw-note { margin: 0; text-align: center; font-size: 0.7rem; color: rgba(224, 251, 255, 0.55); }
+
+/* V6.9: janela de diagnóstico do item (câmera) */
+.camw-diag { position: fixed; z-index: 2; right: max(12px, env(safe-area-inset-right)); top: 50%; transform: translateY(-50%); width: min(420px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: 16px; border: 1px solid rgba(34, 211, 238, 0.55); background: rgba(4, 12, 28, 0.97); color: #e0fbff; box-shadow: 0 0 40px rgba(34, 211, 238, 0.25); animation: camw-diag-in 220ms ease-out; }
+@keyframes camw-diag-in { from { opacity: 0; transform: translateY(-50%) translateX(16px); } }
+.camw-diag-head { display: flex; gap: 12px; align-items: center; }
+.camw-diag-head img { width: 64px; height: 64px; object-fit: cover; border-radius: 10px; border: 1px solid rgba(201, 246, 255, 0.3); flex: none; }
+.camw-diag-head > div { flex: 1; min-width: 0; }
+.camw-diag-head small { font: 600 0.66rem "Orbitron", sans-serif; letter-spacing: 0.1em; color: #67e8f9; text-transform: uppercase; }
+.camw-diag-head h3 { margin: 2px 0 0; font: 700 1.1rem "Orbitron", sans-serif; color: #fff; overflow-wrap: anywhere; }
+.camw-conf.is-alta { color: #86efac; }
+.camw-conf.is-media { color: #fde68a; }
+.camw-conf.is-baixa { color: #fca5a5; }
+.camw-diag-sum { margin: 0; font-size: 0.92rem; line-height: 1.45; }
+.camw-diag-grid { margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.camw-diag-grid > div { padding: 7px 9px; border-radius: 9px; background: rgba(34, 211, 238, 0.08); border: 1px solid rgba(34, 211, 238, 0.22); }
+.camw-diag-grid dt { font: 600 0.62rem "Orbitron", sans-serif; letter-spacing: 0.08em; color: #67e8f9; text-transform: uppercase; }
+.camw-diag-grid dd { margin: 2px 0 0; font-size: 0.85rem; overflow-wrap: anywhere; }
+.camw-diag-list { padding: 8px 10px; border-radius: 10px; border: 1px solid rgba(201, 246, 255, 0.2); font-size: 0.86rem; }
+.camw-diag-list b { font: 600 0.68rem "Orbitron", sans-serif; letter-spacing: 0.1em; color: #a5f3fc; }
+.camw-diag-list ul { margin: 4px 0 0; padding-left: 18px; }
+.camw-diag-list.is-alert { border-color: rgba(251, 191, 36, 0.55); background: rgba(251, 191, 36, 0.08); }
+.camw-diag-list.is-alert b { color: #fde68a; }
+@media (max-width: 760px) {
+  .camw-diag { top: auto; bottom: max(12px, env(safe-area-inset-bottom)); left: 12px; right: 12px; width: auto; max-height: 70dvh; transform: none; animation: none; }
+}

@@ -1,4 +1,6 @@
 export const GODS_EYE_CATEGORIES = [
+  // V6.9: trânsito ao vivo da sua cidade (mapa do Waze); é a categoria que abre primeiro
+  { id: "traffic", label: "Trânsito", icon: "🚦", live: true, layers: [] },
   {
     id: "movement",
     label: "Movimento",

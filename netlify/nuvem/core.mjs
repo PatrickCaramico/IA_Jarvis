@@ -570,6 +570,7 @@ export async function getWeather(fetchFn, city) {
   }));
   return {
     place: [place.name, place.admin1].filter(Boolean).join(", "),
+    coords: { lat: place.latitude, lon: place.longitude }, // V6.9: centro do mapa de trânsito (Olho de Deus)
     temperature: Math.round(c.temperature_2m),
     apparent_temperature: Math.round(c.apparent_temperature),
     humidity: c.relative_humidity_2m ?? null,
@@ -781,11 +782,44 @@ async function callLlm(fetchFn, cfg, system, history) {
 }
 
 // --------------------------------------------------------------------------- V6.8.2: "o que é isso?" pela câmera
+// V6.9: além da fala curta, um DIAGNÓSTICO do item (a tela da câmera mostra numa janela)
 const VISION_PROMPT = (q) => "A imagem anexada é uma foto feita AGORA pela câmera do celular do usuário, a pedido dele. "
-  + "Responda em português do Brasil, como o J.A.R.V.I.S., em 1 a 3 frases curtas (a resposta é falada), com base no que "
-  + "aparece na foto. Se for produto, planta, animal, prato, lugar ou texto, diga o que é e uma informação útil. Se não der "
-  + "para ver direito, diga isso e peça para aproximar ou iluminar. Não invente. Não identifique pessoas pelo rosto. "
-  + `Não repita dados sensíveis visíveis.\nPergunta do usuário: "${q}"`;
+  + "Analise o item principal e responda à pergunta, como o J.A.R.V.I.S. Se for produto, planta, animal, prato, objeto, peça, "
+  + "lugar ou texto, diga o que é e informações úteis. Se não der para ver direito, diga isso e peça para aproximar ou iluminar. "
+  + "Não invente: sem certeza, diga e use confiança baixa. Não identifique pessoas pelo rosto. Não repita dados sensíveis visíveis.\n"
+  + "Responda SOMENTE com um JSON, em português do Brasil: "
+  + '{"fala": "1 a 3 frases curtas (vai ser falada)", "item": "nome do item", "categoria": "ex.: Planta, Eletrônico, Alimento", '
+  + '"confianca": "alta|media|baixa", "resumo": "2 a 4 frases", "detalhes": [{"rotulo": "ex.: Marca, Modelo, Nome científico, Preço médio", "valor": "..."}], '
+  + '"dicas": ["..."], "alertas": ["... (vazio se nada)"]}. No máximo 6 detalhes, 4 dicas e 3 alertas.\n'
+  + `Pergunta do usuário: "${q}"`;
+
+const short = (v, n) => String(v ?? "").replace(/\s+/g, " ").trim().slice(0, n);
+const CONF = { alta: "alta", media: "media", "média": "media", baixa: "baixa" };
+
+// Separa a fala e o diagnóstico; se a IA não mandou JSON, a resposta toda vira a fala (sem janela).
+export function parseVision(raw) {
+  const text = String(raw || "").trim();
+  const m = text.match(/\{[\s\S]*\}/);
+  let data = null;
+  try { data = m ? JSON.parse(m[0]) : null; } catch { data = null; }
+  if (!data || typeof data !== "object" || Array.isArray(data)) return { text, diagnostico: null };
+  const fala = short(data.fala || data.resumo, 600);
+  const item = short(data.item, 80);
+  if (!item) return { text: fala || text, diagnostico: null };
+  const list = (k, n) => (Array.isArray(data[k]) ? data[k] : []).filter((x) => typeof x === "string" && x.trim()).map((x) => short(x, 220)).slice(0, n);
+  const diagnostico = {
+    item,
+    categoria: short(data.categoria, 40),
+    confianca: CONF[short(data.confianca, 10).toLowerCase()] || "media",
+    resumo: short(data.resumo, 700),
+    detalhes: (Array.isArray(data.detalhes) ? data.detalhes : [])
+      .filter((d) => d && short(d.rotulo, 40) && short(d.valor, 160))
+      .map((d) => ({ rotulo: short(d.rotulo, 40), valor: short(d.valor, 160) })).slice(0, 6),
+    dicas: list("dicas", 4),
+    alertas: list("alertas", 3),
+  };
+  return { text: fala || diagnostico.resumo || item, diagnostico };
+}
 
 export function cleanImage(data) {
   const raw = String(data || "").trim().replace(/^data:image\/(?:jpeg|jpg|png|webp);base64,/, "");
@@ -823,7 +857,7 @@ export async function askVision(fetchFn, cfg, image, question) {
   const res = await fetchFn("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-api-key": cfg.key, "anthropic-version": "2023-06-01" },
-    body: JSON.stringify({ model: cfg.model, max_tokens: 400, messages: [{ role: "user", content: [{ type: "image", source: { type: "base64", media_type: image.mime, data: image.data } }, { type: "text", text }] }] }),
+    body: JSON.stringify({ model: cfg.model, max_tokens: 900, messages: [{ role: "user", content: [{ type: "image", source: { type: "base64", media_type: image.mime, data: image.data } }, { type: "text", text }] }] }),
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new HttpError(502, `A IA (Claude) recusou: ${data.error?.message || res.status}`);
@@ -1082,8 +1116,8 @@ export async function handle(req, { store, env, fetchFn = fetch, nowDate = new D
       const { image, question } = await body(req);
       const cfg = llmConfig(env);
       if (!cfg) throw new HttpError(503, "A nuvem ainda não tem a chave da IA.");
-      const text = await askVision(fetchFn, cfg, cleanImage(image), question);
-      return json({ text: text || "Não consegui ver direito, senhor. Tente aproximar ou iluminar melhor." });
+      const r = parseVision(await askVision(fetchFn, cfg, cleanImage(image), question));
+      return json({ text: r.text || "Não consegui ver direito, senhor. Tente aproximar ou iluminar melhor.", diagnostico: r.diagnostico });
     }
     if (path === "/chat/clear" && method === "POST") {
       await store.set("conversa", []);
