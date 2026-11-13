@@ -229,11 +229,17 @@ public class MainActivity extends Activity {
             @Override
             public void onPermissionRequest(final PermissionRequest request) {
                 runOnUiThread(() -> {
-                    if (hasMic()) {
+                    // V6.8.2: microfone (voz) e câmera ("abre a câmera"): pede ao Android o que faltar
+                    ArrayList<String> need = new ArrayList<>();
+                    for (String r : request.getResources()) {
+                        if (PermissionRequest.RESOURCE_AUDIO_CAPTURE.equals(r) && !hasMic()) need.add(Manifest.permission.RECORD_AUDIO);
+                        if (PermissionRequest.RESOURCE_VIDEO_CAPTURE.equals(r) && !hasCamera()) need.add(Manifest.permission.CAMERA);
+                    }
+                    if (need.isEmpty()) {
                         request.grant(request.getResources());
                     } else {
                         pendingPermission = request;
-                        requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, REQ_MIC);
+                        requestPermissions(need.toArray(new String[0]), REQ_MIC);
                     }
                 });
             }
@@ -1173,6 +1179,10 @@ public class MainActivity extends Activity {
         return url != null && (url.startsWith("http://") || url.startsWith("https://"));
     }
 
+    private boolean hasCamera() {
+        return checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED;
+    }
+
     private boolean hasMic() {
         return checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED;
     }
@@ -1180,8 +1190,15 @@ public class MainActivity extends Activity {
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         if (requestCode == REQ_MIC && pendingPermission != null) {
-            if (hasMic()) pendingPermission.grant(pendingPermission.getResources());
-            else pendingPermission.deny();
+            // V6.8.2: libera só o que o Android permitiu (microfone e/ou câmera)
+            ArrayList<String> ok = new ArrayList<>();
+            for (String r : pendingPermission.getResources()) {
+                if (PermissionRequest.RESOURCE_AUDIO_CAPTURE.equals(r) && hasMic()) ok.add(r);
+                else if (PermissionRequest.RESOURCE_VIDEO_CAPTURE.equals(r) && hasCamera()) ok.add(r);
+                else if (!PermissionRequest.RESOURCE_AUDIO_CAPTURE.equals(r) && !PermissionRequest.RESOURCE_VIDEO_CAPTURE.equals(r)) ok.add(r);
+            }
+            if (ok.isEmpty()) pendingPermission.deny();
+            else pendingPermission.grant(ok.toArray(new String[0]));
             pendingPermission = null;
         } else if (requestCode == REQ_MIC_SPEECH) {
             if (hasMic()) startListening();

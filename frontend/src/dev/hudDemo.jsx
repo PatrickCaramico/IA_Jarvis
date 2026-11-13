@@ -38,6 +38,7 @@ const DATA = {
   "/api/tasks": { tasks: [] },
   "/api/notifications": { items: [] },
   "/api/health": { status: "ok" },
+  "/api/camera/ask": { text: "É uma caneca azul, senhor." }, // V6.8.2
   // V6.7.2: bolinha de atualização no ⟳ ATUALIZAR
   "/api/system/update/status": { available: true, count: 1, current: "6.7.1", latest: "6.7.2", notes: ["JARVIS 6.7.2: bolinha de atualização"] },
   // V6.5.15: tela de espera (Área Limpa)

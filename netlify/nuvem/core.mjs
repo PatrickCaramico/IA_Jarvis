@@ -780,6 +780,56 @@ async function callLlm(fetchFn, cfg, system, history) {
   return (data.content || []).filter((b) => b.type === "text").map((b) => b.text).join("");
 }
 
+// --------------------------------------------------------------------------- V6.8.2: "o que é isso?" pela câmera
+const VISION_PROMPT = (q) => "A imagem anexada é uma foto feita AGORA pela câmera do celular do usuário, a pedido dele. "
+  + "Responda em português do Brasil, como o J.A.R.V.I.S., em 1 a 3 frases curtas (a resposta é falada), com base no que "
+  + "aparece na foto. Se for produto, planta, animal, prato, lugar ou texto, diga o que é e uma informação útil. Se não der "
+  + "para ver direito, diga isso e peça para aproximar ou iluminar. Não invente. Não identifique pessoas pelo rosto. "
+  + `Não repita dados sensíveis visíveis.\nPergunta do usuário: "${q}"`;
+
+export function cleanImage(data) {
+  const raw = String(data || "").trim().replace(/^data:image\/(?:jpeg|jpg|png|webp);base64,/, "");
+  if (!raw || !/^[A-Za-z0-9+/=]+$/.test(raw)) throw new HttpError(400, "A foto chegou corrompida.");
+  const blob = Buffer.from(raw, "base64");
+  if (blob.length > 2_500_000) throw new HttpError(400, "A foto é grande demais.");
+  const jpeg = blob[0] === 0xff && blob[1] === 0xd8 && blob[2] === 0xff;
+  const png = blob.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+  if (!jpeg && !png) throw new HttpError(400, "Isso não parece uma foto.");
+  return { data: raw, mime: jpeg ? "image/jpeg" : "image/png" };
+}
+
+export async function askVision(fetchFn, cfg, image, question) {
+  const text = VISION_PROMPT(clean(question, 300) || "O que é isso?");
+  if (cfg.provider === "gemini") {
+    const res = await fetchFn(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(cfg.model)}:generateContent`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": cfg.key },
+      body: JSON.stringify({ contents: [{ role: "user", parts: [{ inlineData: { mimeType: image.mime, data: image.data } }, { text }] }] }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new HttpError(502, `A IA (Gemini) recusou: ${data.error?.message || res.status}`);
+    return (data.candidates?.[0]?.content?.parts || []).map((p) => p.text || "").join("").trim();
+  }
+  if (cfg.provider === "openai") {
+    const res = await fetchFn("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${cfg.key}` },
+      body: JSON.stringify({ model: cfg.model, messages: [{ role: "user", content: [{ type: "text", text }, { type: "image_url", image_url: { url: `data:${image.mime};base64,${image.data}` } }] }] }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new HttpError(502, `A IA (OpenAI) recusou: ${data.error?.message || res.status}`);
+    return (data.choices?.[0]?.message?.content || "").trim();
+  }
+  const res = await fetchFn("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-api-key": cfg.key, "anthropic-version": "2023-06-01" },
+    body: JSON.stringify({ model: cfg.model, max_tokens: 400, messages: [{ role: "user", content: [{ type: "image", source: { type: "base64", media_type: image.mime, data: image.data } }, { type: "text", text }] }] }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new HttpError(502, `A IA (Claude) recusou: ${data.error?.message || res.status}`);
+  return (data.content || []).filter((b) => b.type === "text").map((b) => b.text).join("").trim();
+}
+
 export function parseReply(raw) {
   const text = String(raw || "").trim();
   const start = text.indexOf("{");
@@ -1026,6 +1076,13 @@ export async function handle(req, { store, env, fetchFn = fetch, nowDate = new D
     if (path === "/chat" && method === "POST") {
       const { message, pode_musica: canMusic } = await body(req);
       return json(await chat({ store, env, fetchFn, message, now, canMusic: Boolean(canMusic) }));
+    }
+    if (path === "/vision" && method === "POST") {
+      const { image, question } = await body(req);
+      const cfg = llmConfig(env);
+      if (!cfg) throw new HttpError(503, "A nuvem ainda não tem a chave da IA.");
+      const text = await askVision(fetchFn, cfg, cleanImage(image), question);
+      return json({ text: text || "Não consegui ver direito, senhor. Tente aproximar ou iluminar melhor." });
     }
     if (path === "/chat/clear" && method === "POST") {
       await store.set("conversa", []);

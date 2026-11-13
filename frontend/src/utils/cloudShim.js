@@ -268,6 +268,9 @@ async function route(method, path, query, body) {
       return ok({ ringing: false });
     case "GET /api/agenda/next":
       return ok({ items: agenda(await refresh()) });
+    case "POST /api/camera/ask":
+      // V6.8.2: "o que é isso?" pela câmera do celular, fora de casa
+      return ok(await cloud("/vision", { method: "POST", body: { image: body.image, question: body.question }, timeout: 45000 }));
     case "POST /api/integrations/spotify/control": {
       // botões de música da central: no app, viram os botões de mídia do celular
       const map = { play: "tocar", resume: "tocar", pause: "pausar", next: "proxima", previous: "anterior", prev: "anterior" };

@@ -1,6 +1,6 @@
 # JARVIS — Comandos do dia a dia
 
-**Versão do projeto:** 6.8.1 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
+**Versão do projeto:** 6.8.2 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
 
 > Montado a partir do código do projeto. Se algum comando não responder como descrito, me avise que eu ajusto o guia.
 > Para a lista técnica de rotas, veja [API.md](API.md); para o `.env`, [CONFIGURACAO.md](CONFIGURACAO.md).
@@ -329,6 +329,16 @@ Avisos automáticos (gatilhos): chuva amanhã (à noite), jogo começando (com o
 | "Gastei 45 reais no mercado" / "Recebi 3000 de salário" | Anota (sem banco). |
 | "Quanto eu gastei esse mês?" / "hoje" / "essa semana" | Total e as categorias que mais pesaram. Também na tela **Finanças**. |
 | "Apaga o último gasto" | Desfaz o último lançamento. |
+
+### Câmera do aparelho (V6.8.2)
+
+| Diga | O que acontece |
+|---|---|
+| "Abre a câmera" | Abre a câmera **do aparelho em que você está** (celular ou PC). Ao vivo só ali: nada sai do aparelho. Botões: 📸 FOTO (salva no aparelho), ↺ TROCAR (frontal/traseira), ⏱ 3 s. |
+| "Tira uma foto" / "tira uma selfie" | Abre a câmera, conta 3, 2, 1 e salva a foto. |
+| "O que é isso?" (com a câmera aberta) ou o botão 🔍 O QUE É ISSO? | Manda **só aquela foto** à IA, que responde por voz (planta, produto, prato, rótulo, lugar). A foto não é guardada. Funciona em casa e fora (nuvem). Não identifica pessoas pelo rosto. |
+
+"O que você está vendo?" (sem abrir a câmera) continua usando a webcam do PC.
 
 ### Sub-agentes: rotas e pesquisa (V6.8)
 
