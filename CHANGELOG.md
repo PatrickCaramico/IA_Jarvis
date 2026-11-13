@@ -2,6 +2,10 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 6.6.9 — 13 de novembro de 2026
+
+- **Mesma voz do JARVIS fora de casa:** pela nuvem (dados móveis ou Chrome do celular), a resposta saía na voz do Android/navegador. Agora a nuvem gera o áudio com a **mesma voz do PC** (vozes neurais da Microsoft, as mesmas do edge-tts): o PC manda na sincronização o estilo escolhido em Ajustes (nome da voz, velocidade e tom: Natural, Grave, Clássica, Thalita, Andrew), e a central toca o MP3 de `POST /api/cloud/tts`. Antes da primeira sincronização, usa a voz padrão (Antonio, estilo Natural). Sem internet ou com erro, cai na voz do aparelho. Nova dependência das funções: `msedge-tts`.
+
 ## 6.6.8 — 13 de novembro de 2026
 
 - **App parado no bloqueio ao sair de casa:** com a central do notebook aberta no Wi-Fi, ao passar para os dados móveis o app avisava a troca de rede mas continuava na mesma página (endereço da rede de casa); PIN e digital ficavam "carregando" para sempre. Agora, a cada troca de rede (e ao voltar para o app depois de 15 s), o app decide de novo: notebook respondendo nesta rede → central do notebook; não respondendo → a mesma central pela nuvem (sem Tailscale). Ao voltar ao Wi-Fi de casa, volta sozinho para o notebook.

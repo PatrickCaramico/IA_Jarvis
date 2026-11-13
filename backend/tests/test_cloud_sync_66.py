@@ -73,3 +73,11 @@ def test_snapshot_shares_only_safe_prefs():
     assert shared["background_style"] == "space" and shared["personality_mode"] == "alexa"
     assert "camera_index" not in shared and "custom_shortcuts" not in shared
     assert shared["briefing_news_themes"] and {"title", "q"} <= set(shared["briefing_news_themes"][0])
+
+
+def test_snapshot_sends_pc_voice():
+    from modules import prefs, tts
+
+    prefs.update(voice_style="grave")
+    voice = cloud_sync.snapshot()["perfil"]["prefs"]["voice"]
+    assert (voice["name"], voice["rate"], voice["pitch"]) == tts.voice_params()

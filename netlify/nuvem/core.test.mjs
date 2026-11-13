@@ -195,3 +195,24 @@ test("configurações da central chegam ao modo nuvem (validadas) e a personalid
   assert.match(system, /estilo Alexa/);
   assert.match(system, /Seu nome aqui é Sexta-Feira/);
 });
+
+test("voz da nuvem = voz do PC (validada); sem sincronizar, a padrão do JARVIS", async () => {
+  const store = memStore();
+  const token = await login(store);
+  const calls = [];
+  const synth = async (text, voice) => { calls.push({ text, voice }); return Buffer.from("MP3"); };
+  const tts = async () => handle(req("/tts", { method: "POST", token, body: { text: "Bom dia, senhor." } }), { store, env: ENV, nowDate: NOW, synth });
+  let res = await tts();
+  assert.equal(res.status, 200);
+  assert.equal(res.headers.get("content-type"), "audio/mpeg");
+  assert.equal(Buffer.from(await res.arrayBuffer()).toString(), "MP3");
+  assert.deepEqual(calls[0].voice, { name: "pt-BR-AntonioNeural", rate: "-4%", pitch: "-3Hz" });
+  const sync = { "X-Jarvis-Nuvem": ENV.JARVIS_NUVEM_CHAVE };
+  await call(store, "/sync", { method: "POST", headers: sync, body: { ack: 0, snapshot: { perfil: { prefs: { voice: { name: "pt-BR-ThalitaMultilingualNeural", rate: "-2%", pitch: "+0Hz" } } } } } });
+  res = await tts();
+  assert.equal(calls[1].voice.name, "pt-BR-ThalitaMultilingualNeural");
+  await call(store, "/sync", { method: "POST", headers: sync, body: { ack: 0, snapshot: { perfil: { prefs: { voice: { name: "<script>", rate: "999" } } } } } });
+  res = await tts();
+  assert.equal(calls[2].voice.name, "pt-BR-AntonioNeural"); // voz inválida descartada
+  assert.equal((await handle(req("/tts", { method: "POST", body: { text: "oi" } }), { store, env: ENV, nowDate: NOW, synth })).status, 401);
+});

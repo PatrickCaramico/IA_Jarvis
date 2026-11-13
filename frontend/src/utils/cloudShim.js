@@ -5,7 +5,7 @@
 // lembretes, alarmes, água, notícias e clima. O que só existe no PC (câmera, Spotify, controle do
 // Windows...) responde "precisa do notebook ligado".
 import { API_URL, WS_URL } from "./api.js";
-import { change, cloud } from "./cloudApi.js";
+import { CLOUD_URL, change, cloud, cloudToken } from "./cloudApi.js";
 import { APP_VERSION } from "./version.js";
 import { pcLine } from "./cloudStatus.js";
 
@@ -21,12 +21,51 @@ function emit(event) {
   for (const s of sockets) s._deliver(event);
 }
 
-function speak(text, onEnd) {
-  const clean = String(text || "").trim();
-  if (!clean || status.prefs?.silent_mode) {
-    onEnd?.();
-    return;
+// V6.6.9: a voz da nuvem é a MESMA do PC (vozes neurais da Microsoft, estilo escolhido em Ajustes):
+// a nuvem gera o MP3 (/api/cloud/tts) e ele toca aqui. Sem internet ou com erro, cai na voz do aparelho.
+let playing = null;
+
+function stopVoice() {
+  if (playing) {
+    try {
+      playing.pause();
+    } catch {
+      /* já parado */
+    }
+    playing = null;
   }
+  try {
+    window.speechSynthesis?.cancel();
+  } catch {
+    /* sem voz do navegador */
+  }
+}
+
+async function cloudVoice(text) {
+  const token = cloudToken();
+  const res = await fetch(`${CLOUD_URL}/tts`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    body: JSON.stringify({ text }),
+  });
+  if (!res.ok) throw new Error(`voz ${res.status}`);
+  const url = URL.createObjectURL(await res.blob());
+  const audio = new Audio(url);
+  playing = audio;
+  await new Promise((resolve, reject) => {
+    const done = () => {
+      URL.revokeObjectURL(url);
+      if (playing === audio) playing = null;
+      resolve();
+    };
+    audio.addEventListener("ended", done, { once: true });
+    audio.addEventListener("pause", done, { once: true });
+    audio.addEventListener("error", () => reject(new Error("áudio")), { once: true });
+    audio.play().catch(reject);
+  });
+}
+
+function deviceVoice(clean, onEnd) {
   try {
     if (window.JarvisApp?.say) {
       window.JarvisApp.say(clean); // app Android: voz do Android
@@ -50,6 +89,18 @@ function speak(text, onEnd) {
   } catch {
     onEnd?.();
   }
+}
+
+function speak(text, onEnd) {
+  const clean = String(text || "").trim();
+  if (!clean || status.prefs?.silent_mode) {
+    onEnd?.();
+    return;
+  }
+  stopVoice();
+  cloudVoice(clean)
+    .then(() => onEnd?.())
+    .catch(() => deviceVoice(clean, onEnd));
 }
 
 async function refresh() {
@@ -206,7 +257,7 @@ async function route(method, path, query, body) {
       speak(body.text);
       return ok({ ok: true });
     case "POST /api/cancel":
-      try { window.speechSynthesis?.cancel(); } catch { /* sem voz */ }
+      stopVoice();
       emit({ type: "state", state: "idle" });
       return ok({ status: "canceled" });
     case "GET /api/devices":
