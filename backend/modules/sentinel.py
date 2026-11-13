@@ -121,6 +121,13 @@ async def classify_and_answer(message: str, state: str, wake_words: Optional[lis
             return {"reply": GUEST_REFUSAL, "public": False, "requires_unlock": False, "action": None}
         return {"reply": reply or UNLOCK_REPLY, "public": False, "requires_unlock": True, "action": "unlock"}
 
+    # V6.7: frase de crise recebe ajuda na hora, mesmo com a central bloqueada ou no modo visitante
+    from modules import wellbeing
+
+    crisis = wellbeing.crisis_reply(message)
+    if crisis:
+        return public(crisis, card=answer_card(message, crisis))
+
     if not norm or _AWAKE.fullmatch(norm) or raw_norm in {_norm(w) for w in wake_words}:
         return public(random.choice(AWAKE_REPLIES), "awake")
 

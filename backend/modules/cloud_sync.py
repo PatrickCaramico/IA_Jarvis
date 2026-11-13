@@ -123,6 +123,15 @@ def apply_op(op: dict) -> bool:
     if kind == "water_undo":
         water.undo_last()
         return True
+    if kind == "mood_set":  # V6.7: humor registrado fora de casa
+        from modules import wellbeing
+
+        try:
+            day = datetime.strptime(str(op.get("date") or datetime.now().strftime("%Y-%m-%d")), "%Y-%m-%d")
+            wellbeing.log_mood(int(op.get("score", 0)), when=day.replace(hour=datetime.now().hour, minute=datetime.now().minute))
+        except (TypeError, ValueError):
+            return False
+        return True
     if kind == "water_goal":
         try:
             water.set_goal(int(op.get("goal_ml", 0)))

@@ -117,7 +117,7 @@ def _clock(text: str) -> tuple[Optional[tuple[int, int]], str]:
 
 
 def _relative(text: str) -> tuple[Optional[timedelta], str]:
-    m = re.search(rf"\b(?:daqui\s+(?:a\s+)?|em\s+|dentro\s+de\s+)(?:uma\s+)?meia\s+hora\b", text)
+    m = re.search(r"\b(?:daqui\s+(?:a\s+)?|em\s+|dentro\s+de\s+)(?:uma\s+)?meia\s+hora\b", text)
     if m:
         return timedelta(minutes=30), _cut(text, m.span())
     m = re.search(

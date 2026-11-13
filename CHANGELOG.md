@@ -2,6 +2,13 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 6.7.0 — 13 de novembro de 2026
+
+- **Modo bem-estar** (`modules/wellbeing.py`): o JARVIS como um mordomo atento, não um psicólogo. Respiração guiada 4-7-8 e quadrada, aterramento 5-4-3-2-1, registro do humor do dia (1 a 5, em `data/humor.json`, um por pessoa) e resumo da semana ("como foi meu humor essa semana?"). A IA recebe orientações de escuta ativa (acolher, validar, uma pergunta, depois algo prático; nunca diagnosticar; sugerir psicólogo se persistir) e o humor recente para ajustar o tom.
+- **Segurança:** frases de crise ("quero morrer", "penso em me machucar", "não quero mais viver"...) recebem sempre a mesma resposta acolhedora com **CVV 188** e **SAMU 192**, antes de qualquer outra coisa e sem passar pela IA, inclusive com a central bloqueada, no modo visitante e pela nuvem. Expressões comuns ("me matar de rir", "morrer de vergonha", "cortar o cabelo") não disparam. Um teste garante que o texto do PC e o da nuvem sejam iguais.
+- **Pela nuvem:** as mesmas respostas fixas; "meu humor hoje é 4" fora de casa vai para o PC na sincronização.
+- Lint: dois avisos antigos que travavam o `ruff check` (CI) corrigidos (`when.py`, `voice_route.py`).
+
 ## 6.6.9 — 13 de novembro de 2026
 
 - **Mesma voz do JARVIS fora de casa:** pela nuvem (dados móveis ou Chrome do celular), a resposta saía na voz do Android/navegador. Agora a nuvem gera o áudio com a **mesma voz do PC** (vozes neurais da Microsoft, as mesmas do edge-tts): o PC manda na sincronização o estilo escolhido em Ajustes (nome da voz, velocidade e tom: Natural, Grave, Clássica, Thalita, Andrew), e a central toca o MP3 de `POST /api/cloud/tts`. Antes da primeira sincronização, usa a voz padrão (Antonio, estilo Natural). Sem internet ou com erro, cai na voz do aparelho. Nova dependência das funções: `msedge-tts`.
