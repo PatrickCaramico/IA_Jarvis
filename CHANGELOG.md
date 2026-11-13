@@ -2,6 +2,11 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 6.6.8 — 13 de novembro de 2026
+
+- **App parado no bloqueio ao sair de casa:** com a central do notebook aberta no Wi-Fi, ao passar para os dados móveis o app avisava a troca de rede mas continuava na mesma página (endereço da rede de casa); PIN e digital ficavam "carregando" para sempre. Agora, a cada troca de rede (e ao voltar para o app depois de 15 s), o app decide de novo: notebook respondendo nesta rede → central do notebook; não respondendo → a mesma central pela nuvem (sem Tailscale). Ao voltar ao Wi-Fi de casa, volta sozinho para o notebook.
+- **Teste do notebook mais seguro:** com a chave de pareamento, só conta como "notebook" a resposta do próprio JARVIS (200 ou 403, em JSON), para outro aparelho com o mesmo endereço numa Wi-Fi de fora não enganar o app. Precisa do APK 6.6.8.
+
 ## 6.6.7 — 13 de novembro de 2026
 
 - **App caía no acesso pela nuvem mesmo em casa:** ao abrir, o app 6.6.x testava o PC em `/api/health` sem a chave de pareamento; o PC respondia 401 (o celular sempre precisa da chave) e o app entendia "PC fora do ar". Agora o teste leva a chave, e qualquer resposta do PC conta como "ao alcance": só falha de conexão (dados móveis, outra rede, PC desligado) leva à nuvem. Precisa do APK 6.6.7: gere no PC e toque em ATUALIZAR APP no celular (funciona de dentro da nuvem, na Wi-Fi de casa).
