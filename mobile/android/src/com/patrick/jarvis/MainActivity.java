@@ -416,14 +416,20 @@ public class MainActivity extends Activity {
         if (base != null) bases.add(base);
         String remote = prefs.getString(KEY_REMOTE, "");
         if (!remote.isEmpty() && base != null && base.startsWith("http://")) bases.add("http://" + remote + ":8000");
+        // V6.6.7: o PC exige a chave de pareamento de quem vem do celular. Antes o teste ia sem a chave, o PC
+        // respondia 401 e o app achava que o PC estava fora do ar (caía na nuvem mesmo em casa). Agora leva a
+        // chave e QUALQUER resposta HTTP do PC conta como "ao alcance"; só falha de conexão/tempo vai à nuvem.
+        String token = saved.getQueryParameter("token");
+        String query = token == null || token.isEmpty() ? "" : "?token=" + Uri.encode(token);
         for (String b : bases) {
             try {
-                java.net.HttpURLConnection c = (java.net.HttpURLConnection) new java.net.URL(b + "/api/health").openConnection();
+                java.net.HttpURLConnection c = (java.net.HttpURLConnection) new java.net.URL(b + "/api/health" + query).openConnection();
                 c.setConnectTimeout(3000);
                 c.setReadTimeout(4000);
+                if (token != null && !token.isEmpty()) c.setRequestProperty("X-Jarvis-Token", token);
                 int code = c.getResponseCode();
                 c.disconnect();
-                if (code == 200) return true;
+                if (code > 0) return true;
             } catch (Exception ignored) {
             }
         }
