@@ -10,6 +10,16 @@ que roda no próprio Netlify (o mesmo site da central), sem custo para uso pesso
 | **Chrome do celular** | Central completa | Modo nuvem, sozinho |
 | **App Android** | Central completa | Modo nuvem, sozinho (e volta para a central quando o PC liga) |
 
+## Como é a tela (V6.6.5)
+
+A **mesma central** do app e do site. Depois do PIN da nuvem, um adaptador
+(`frontend/src/utils/cloudShim.js`) responde no lugar do PC. Um aviso no topo mostra
+"☁ MODO NUVEM · notebook desligado".
+
+**Limitação conhecida:** pelo navegador do celular, o site (https) não consegue falar com o PC na rede
+de casa (`http://192.168...`): o navegador bloqueia. Por isso, no Chrome do celular o site entra na nuvem
+mesmo com o notebook ligado. No app, em casa, ele abre a central do PC normalmente.
+
 ## O que funciona sem o notebook
 
 | Funciona na nuvem | Só com o notebook ligado |

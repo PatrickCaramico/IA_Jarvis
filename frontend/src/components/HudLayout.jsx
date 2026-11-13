@@ -560,6 +560,8 @@ const CONTROL_SECTIONS = [
     title: "SISTEMA & HUD",
     items: [
       { id: "lock", icon: "🔒", label: "BLOQUEAR", sub: "Volta à tela de bloqueio", tone: "amber" },
+      // V6.6.5: app Android: espelha a tela do JARVIS numa TV (Chromecast, Smart TV, Miracast)
+      { id: "cast", icon: "📺", label: "TRANSMITIR", sub: "Para a TV ou outro aparelho" },
       { id: "silent", icon: "🤫", label: "SILENCIOSO" },
       { id: "background", icon: "🌌", label: "TROCAR FUNDO", sub: "Grade, universo, clássico" },
       { id: "zen", icon: "⛶", label: "ÁREA LIMPA" },
@@ -568,6 +570,15 @@ const CONTROL_SECTIONS = [
     ],
   },
 ];
+
+// V6.6.5: TRANSMITIR só aparece no app Android que sabe abrir a transmissão de tela
+function canCast() {
+  try {
+    return typeof window !== "undefined" && typeof window.JarvisApp?.cast === "function";
+  } catch {
+    return false;
+  }
+}
 
 const CONTROL_TONES = {
   cyan: "text-cyan-100 border-cyan-500/15 hover:border-cyan-300/60 hover:bg-cyan-500/15",
@@ -678,6 +689,14 @@ function HudControlsMenu({
         if (onOpenSettings) onOpenSettings();
         setOpen(false);
         break;
+      case "cast":
+        setOpen(false);
+        try {
+          window.JarvisApp?.cast?.();
+        } catch {
+          /* fora do app */
+        }
+        break;
       case "lock": // V6.5.12: no celular não havia um jeito claro de voltar ao bloqueio
         setOpen(false);
         if (onLock) onLock();
@@ -763,6 +782,7 @@ function HudControlsMenu({
               <div className={`grid gap-1.5 ${section.cols === 3 ? "grid-cols-3" : "grid-cols-2"}`}>
                 {section.items
                   .filter((item) => item.id !== "settings" || onOpenSettings)
+                  .filter((item) => item.id !== "cast" || canCast())
                   .map((item) => {
                     const d = describe(item);
                     const toggle = item.id === "silent" || item.id === "zen" || item.id === "fan";

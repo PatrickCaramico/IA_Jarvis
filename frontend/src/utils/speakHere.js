@@ -45,6 +45,11 @@ export async function speakHere(text, id = "x") {
   stopHere();
   const clean = String(text || "").trim();
   if (!clean) return;
+  // V6.6.5: modo nuvem: sem o PC para gerar o áudio, fala com a voz do aparelho
+  if (typeof window !== "undefined" && window.__JARVIS_CLOUD_SPEAK__) {
+    window.__JARVIS_CLOUD_SPEAK__(clean);
+    return;
+  }
   const gen = stopGen;
   const token = getJarvisToken();
   const res = await fetch(`${API_URL}/api/tts`, {
