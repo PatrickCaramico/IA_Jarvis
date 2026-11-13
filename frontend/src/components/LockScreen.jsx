@@ -244,6 +244,8 @@ export default function LockScreen({
             title="Identidade visual do JARVIS">📘 BRANDING</button>
           <button type="button" className="ls-chip" onClick={(e) => { e.stopPropagation(); window.dispatchEvent(new CustomEvent("jarvis-open-optimizer")); }}
             title="Medir e deixar o JARVIS mais rápido neste aparelho">⚡ OTIMIZAR</button>
+          <button type="button" className="ls-chip" onClick={(e) => { e.stopPropagation(); window.dispatchEvent(new CustomEvent("jarvis-open-notes")); }}
+            title="O que mudou em cada versão">📝 NOTAS</button>
         </>
       )}
       {updateProgress != null && (

@@ -1,6 +1,6 @@
 # JARVIS — Comandos do dia a dia
 
-**Versão do projeto:** 7.2.0 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
+**Versão do projeto:** 7.3.0 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
 
 > Montado a partir do código do projeto. Se algum comando não responder como descrito, me avise que eu ajusto o guia.
 > Para a lista técnica de rotas, veja [API.md](API.md); para o `.env`, [CONFIGURACAO.md](CONFIGURACAO.md).
@@ -341,6 +341,13 @@ Avisos automáticos (gatilhos): chuva amanhã (à noite), jogo começando (com o
 | "Abre a câmera e analisa esse item" / "analisa isso" (V7) | Abre a câmera, espera a imagem firmar e faz o **diagnóstico**: uma janela com o nome do item, categoria, confiança, resumo, detalhes (marca, modelo, nome científico, preço médio…), ⚠ alertas e 💡 dicas. A fala continua curta. |
 
 "O que você está vendo?" (sem abrir a câmera) continua usando a webcam do PC.
+
+### Notas da versão (V7.3)
+
+| Fale / toque | O que acontece |
+|---|---|
+| 📝 NOTAS (tela de bloqueio, CONTROLES, perfil) ou "Jarvis, o que mudou?" / "novidades" / "notas da versão" | Abre a lista de todas as versões com data e detalhes, com busca. A versão em uso aparece como **INSTALADA**. |
+| Depois de atualizar | As notas abrem sozinhas uma vez na versão nova. |
 
 ### Otimizar, Branding Book e saudação (V7.2)
 
