@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import useEscape from "../hooks/useEscape.js";
 
 // V6.8.2: câmera do APARELHO, como na Alexa ("Jarvis, abre a câmera").
 // - Ao vivo, só aqui: nenhuma imagem sai do aparelho enquanto você só olha.
@@ -134,11 +135,7 @@ export default function CameraWindow({ api, onClose, onAnswer, autoShot = false,
     return () => clearInterval(t);
   }, [autoAsk]);
 
-  useEffect(() => {
-    const onKey = (e) => e.key === "Escape" && onClose();
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  useEscape(onClose);
 
   return createPortal(
     <div className="camw-overlay" role="dialog" aria-modal="true" aria-label="Câmera do JARVIS">

@@ -13,6 +13,8 @@ test("receitas e explicações viram holograma; o resto segue o caminho normal",
   assert.equal(holoIntent("como fazer backup do celular"), null);
   assert.equal(holoIntent("que horas são"), null);
   assert.equal(holoIntent("me explica"), null);
+  assert.equal(holoIntent("me fala sobre minha agenda de amanhã"), null);
+  assert.equal(holoIntent("como funciona o timer do jarvis"), null);
 });
 
 test("modo cozinha por voz", () => {

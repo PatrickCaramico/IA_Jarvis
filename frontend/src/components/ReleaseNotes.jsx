@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import useEscape from "../hooks/useEscape.js";
 import CHANGELOG from "../../../CHANGELOG.md?raw";
 import { inlineParts, matches, parseChangelog } from "../utils/changelog.js";
 import { APP_VERSION } from "../utils/version.js";
@@ -20,11 +21,7 @@ export default function ReleaseNotes({ onClose, highlight = "" }) {
   const list = versions.filter((v) => matches(v, query));
   const current = versions.find((v) => v.version === selected) || list[0];
 
-  useEffect(() => {
-    const onKey = (e) => e.key === "Escape" && onClose();
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  useEscape(onClose);
 
   const pick = (v) => {
     setSelected(v);

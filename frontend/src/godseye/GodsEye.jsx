@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { GODS_EYE_CATEGORIES } from "./layers.config.js";
 import { DEFAULT_CENTER, geocode, wazeEmbedUrl, wazeNavigateUrl } from "./traffic.js";
 import { soundManager } from "../utils/soundEffects.js";
+import useEscape from "../hooks/useEscape.js";
 
 function Globe() {
   const stars = useMemo(
@@ -47,7 +48,6 @@ function SearchBar({ onClose, onSearch, busy }) {
         event.preventDefault();
         inputRef.current?.focus();
       }
-      if (event.key === "Escape") onClose();
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
@@ -189,6 +189,7 @@ export default function GodsEye({ onClose, api = null, initialCategory = "traffi
     soundManager.playIdle();
     onClose();
   };
+  useEscape(close); // V7.4: Esc fecha mesmo com um botão focado
 
   return (
     <section className="ge-root" aria-label="Olho de Deus" onClick={(event) => event.stopPropagation()}>

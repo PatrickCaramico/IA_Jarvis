@@ -246,6 +246,8 @@ export default function LockScreen({
             title="Medir e deixar o JARVIS mais rápido neste aparelho">⚡ OTIMIZAR</button>
           <button type="button" className="ls-chip" onClick={(e) => { e.stopPropagation(); window.dispatchEvent(new CustomEvent("jarvis-open-notes")); }}
             title="O que mudou em cada versão">📝 NOTAS</button>
+          <button type="button" className="ls-chip" onClick={(e) => { e.stopPropagation(); window.dispatchEvent(new CustomEvent("jarvis-open-diagnostic")); }}
+            title="Testar IA, voz, internet, microfone e câmera">🩺 DIAGNÓSTICO</button>
         </>
       )}
       {updateProgress != null && (

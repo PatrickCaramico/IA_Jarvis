@@ -80,6 +80,7 @@ const HoloStage = lazyComponent(() => import("./components/HoloStage.jsx")); // 
 const BrandingBook = lazyComponent(() => import("./components/BrandingBook.jsx")); // V7.2
 const OptimizerPanel = lazyComponent(() => import("./components/OptimizerPanel.jsx")); // V7.2
 const ReleaseNotes = lazyComponent(() => import("./components/ReleaseNotes.jsx")); // V7.3
+const DiagnosticPanel = lazyComponent(() => import("./components/DiagnosticPanel.jsx")); // V7.4
 const LogReportWidget = lazyComponent(() => import("./components/LogReportWidget.jsx"));
 const Onboarding = lazyComponent(() => import("./components/Onboarding.jsx"));
 const BioScanModal = lazyComponent(() => import("./components/BioScanModal.jsx"));
@@ -260,6 +261,13 @@ export default function App() {
     const open = () => setNotesOpen({ highlight: "" });
     window.addEventListener("jarvis-open-notes", open);
     return () => window.removeEventListener("jarvis-open-notes", open);
+  }, []);
+  // V7.4: 🩺 DIAGNÓSTICO
+  const [diagOpen, setDiagOpen] = useState(false);
+  useEffect(() => {
+    const open = () => setDiagOpen(true);
+    window.addEventListener("jarvis-open-diagnostic", open);
+    return () => window.removeEventListener("jarvis-open-diagnostic", open);
   }, []);
   useEffect(() => {
     const openBranding = () => setBrandingOpen(true);
@@ -1306,7 +1314,7 @@ export default function App() {
       enterMain(microphoneId);
     }
     else if (lockPhase === "failed") verify();
-  }, [lockPhase, verify, autoEntering, hasPin, loadPinStatus]);
+  }, [lockPhase, verify, autoEntering, hasPin, loadPinStatus, enterMain, microphoneId]);
 
   // Entrar sozinho (clap_auto_enter) ou com pedido pendente do Sentinela: ~1,5 s após o acesso autorizado
   useEffect(() => {
@@ -1572,6 +1580,13 @@ export default function App() {
     if (cameraWinRef.current && /\b(analisa|analise|analisar|diagnostico|identifica|identifique|o que e isso|o que e isto|que (planta|bicho|animal|coisa|objeto|produto|prato|lugar) e (esse|essa|este|esta)|o que (voce|vc) (ve|esta vendo)|isso e o que|le (isso|o que esta escrito))\b/.test(normalized)) {
       setUserText(text);
       window.dispatchEvent(new CustomEvent("jarvis-camera-ask", { detail: text }));
+      return;
+    }
+    // V7.4: "roda um diagnóstico", "faz um check-up"
+    if (/\b(diagnostico|check up|checkup|autoteste|auto teste)\b/.test(normalized) && !/\b(copiar|copia)\b/.test(normalized)) {
+      setUserText(text);
+      setDiagOpen(true);
+      setResponse("Rodando o diagnóstico completo, senhor.");
       return;
     }
     // V7.3: "o que mudou?", "novidades", "notas da versão"
@@ -2812,6 +2827,7 @@ export default function App() {
         {brandingOpen && <BrandingBook onClose={() => setBrandingOpen(false)} />}
         {optimizerOpen && <OptimizerPanel api={api} onClose={() => setOptimizerOpen(false)} />}
         {notesOpen && <ReleaseNotes highlight={notesOpen.highlight} onClose={() => setNotesOpen(null)} />}
+        {diagOpen && <DiagnosticPanel api={api} connected={connected} onClose={() => setDiagOpen(false)} />}
       </>
     );
   }
@@ -2908,6 +2924,7 @@ export default function App() {
       {brandingOpen && <BrandingBook onClose={() => setBrandingOpen(false)} />}
       {optimizerOpen && <OptimizerPanel api={api} onClose={() => setOptimizerOpen(false)} />}
       {notesOpen && <ReleaseNotes highlight={notesOpen.highlight} onClose={() => setNotesOpen(null)} />}
+      {diagOpen && <DiagnosticPanel api={api} connected={connected} onClose={() => setDiagOpen(false)} />}
       {holo && (
         <HoloStage
           api={api}

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import useEscape from "../hooks/useEscape.js";
 import { clearBrowserCaches, isLite, measureFps, score, setLite } from "../utils/perfMode.js";
 
 // V7.2: ⚡ OTIMIZAR. Mede e arruma o que dá para arrumar neste aparelho e no PC:
@@ -39,7 +40,8 @@ export default function OptimizerPanel({ api, onClose }) {
       mark("ping", pingMs == null ? "warn" : "ok", pingMs == null ? "o PC não respondeu" : `${pingMs} ms`);
 
       mark("fps", "run");
-      const fps = await measureFps(1500);
+      let fps = await measureFps(1500);
+      if (fps < 45) fps = Math.max(fps, await measureFps(1500)); // V7.4: confirma (a 1ª pode pegar a tela ainda carregando)
       mark("fps", fps >= 45 ? "ok" : "warn", `${fps} quadros/s`);
 
       mark("cache", "run");
@@ -70,11 +72,7 @@ export default function OptimizerPanel({ api, onClose }) {
     })();
   }, [api]);
 
-  useEffect(() => {
-    const onKey = (e) => e.key === "Escape" && onClose();
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  useEscape(onClose);
 
   const toggleLite = () => {
     setLite(!lite);

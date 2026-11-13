@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import useEscape from "../hooks/useEscape.js";
 import { speechSeconds, stepTimerText } from "../utils/holoIntent.js";
 import "../holo.css";
 
@@ -345,11 +346,7 @@ export default function HoloStage({ api, request, onClose, onSend, onSpeak, onSt
     onClose();
   }, [onClose, onStop]);
 
-  useEffect(() => {
-    const onKey = (e) => e.key === "Escape" && close();
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [close]);
+  useEscape(close);
 
   return createPortal(
     <div className={`holo-root${data ? ` is-${data.tipo}` : ""}`} role="dialog" aria-modal="true" aria-label="Holograma do JARVIS">

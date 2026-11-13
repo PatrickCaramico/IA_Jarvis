@@ -564,6 +564,7 @@ const CONTROL_SECTIONS = [
       { id: "branding", icon: "📘", label: "BRANDING BOOK", sub: "Identidade visual do JARVIS" }, // V7.2
       { id: "optimize", icon: "⚡", label: "OTIMIZAR", sub: "Medir e deixar mais rápido" }, // V7.2
       { id: "notes", icon: "📝", label: "NOTAS DA VERSÃO", sub: "O que mudou em cada versão" }, // V7.3
+      { id: "diagnostic", icon: "🩺", label: "DIAGNÓSTICO", sub: "Testar IA, voz, internet e mais" }, // V7.4
       // V6.6.5: app Android: espelha a tela do JARVIS numa TV (Chromecast, Smart TV, Miracast)
       { id: "cast", icon: "📺", label: "TRANSMITIR", sub: "Para a TV ou outro aparelho" },
       { id: "silent", icon: "🤫", label: "SILENCIOSO" },
@@ -708,6 +709,10 @@ function HudControlsMenu({
       case "notes":
         setOpen(false);
         window.dispatchEvent(new CustomEvent("jarvis-open-notes"));
+        break;
+      case "diagnostic":
+        setOpen(false);
+        window.dispatchEvent(new CustomEvent("jarvis-open-diagnostic"));
         break;
       case "cast":
         setOpen(false);
@@ -1237,6 +1242,9 @@ export default function HudLayout({
               )}
               <button type="button" className="hl-agents-trigger" onClick={() => window.dispatchEvent(new CustomEvent("jarvis-open-branding"))} title="Branding Book: identidade visual do JARVIS">
                 📘 BRANDING
+              </button>
+              <button type="button" className="hl-agents-trigger" onClick={() => window.dispatchEvent(new CustomEvent("jarvis-open-diagnostic"))} title="Diagnóstico: testar IA, voz, internet, microfone e câmera">
+                🩺 DIAGNÓSTICO
               </button>
             </div>
           )}
