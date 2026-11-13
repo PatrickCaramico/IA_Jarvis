@@ -3,6 +3,7 @@
 import logging
 import asyncio
 import re
+import time
 from datetime import datetime
 from fastapi import HTTPException
 from modules import (
@@ -29,6 +30,9 @@ from services.llm_orchestrator import (
 from core import briefing_flow, confirm, runtime, session, speech, reactive_cards
 
 log = logging.getLogger("jarvis.turns")
+
+# V7.2: quanto a resposta espera os cartões (clima, notícias…) antes de aparecer; o resto chega depois
+CARDS_WAIT_SECONDS = 0.6
 
 
 MAX_HISTORY = 12  # mensagens lembradas na conversa
@@ -601,6 +605,7 @@ async def handle_turn(message: str, routine: bool, force_deep: bool = False) -> 
     stop = asyncio.Event()
     session.current_stop = stop
     runtime.track(speech.filler_loop(stop))
+    started_ai = time.monotonic()
 
     try:
         text = await generate_jarvis_response(
@@ -647,8 +652,30 @@ async def handle_turn(message: str, routine: bool, force_deep: bool = False) -> 
     stop.set()
     if speech.canceled(turn):  # o usuário cancelou enquanto a IA respondia: descarta a resposta
         return {"status": "canceled"}
+    log.info("Resposta da IA em %.1f s", time.monotonic() - started_ai)
 
-    cards = await reactive_cards.detect_reactive_cards(message, text)
+    # V7.2: a voz começa a ser gerada JÁ; os cartões (clima, notícias, cotações) vêm em paralelo.
+    # Antes a resposta esperava esses dados da internet antes de aparecer e de ser falada.
+    cards_task = asyncio.create_task(reactive_cards.detect_reactive_cards(message, text))
+    runtime.track(speech.speak(text))
+    try:
+        cards = await asyncio.wait_for(asyncio.shield(cards_task), timeout=CARDS_WAIT_SECONDS)
+    except asyncio.TimeoutError:
+        cards = []
+
+        async def late_cards() -> None:
+            try:
+                extra = await cards_task
+            except Exception:  # noqa: BLE001
+                log.debug("Cartões da resposta falharam", exc_info=True)
+                return
+            if extra and not speech.canceled(turn):
+                await runtime.manager.broadcast({"type": "response_cards", "text": text, "cards": extra})
+
+        runtime.track(late_cards())
+    except Exception:  # noqa: BLE001
+        log.debug("Cartões da resposta falharam", exc_info=True)
+        cards = []
     session.history.extend([{"role": "user", "content": message}, {"role": "assistant", "content": text}])
     memory.add_conversation(message, text)
     del session.history[:-MAX_HISTORY]
@@ -658,5 +685,4 @@ async def handle_turn(message: str, routine: bool, force_deep: bool = False) -> 
     runtime.track(memory_learn.learn_from(message))
 
     await runtime.manager.broadcast({"type": "response", "text": text, "cards": cards})
-    runtime.track(speech.speak(text))
     return {"status": "ok", "response": text, "cards": cards}

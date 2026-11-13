@@ -2,6 +2,18 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 7.2.0 — 13 de novembro de 2026
+
+- **JARVIS mais rápido**:
+  - a resposta da IA aparece e começa a ser falada na hora; os cartões (clima, notícias, cotações) chegam em paralelo (antes a resposta esperava esses dados da internet);
+  - o aviso "só um minutinho" é cortado quando a resposta chega (antes a resposta esperava ele terminar);
+  - o microfone envia o pedido ~1 s depois que você para de falar quando a frase já foi entendida (antes, sempre 2,2 s);
+  - o PC registra no log quanto a IA levou em cada resposta.
+- **⚡ OTIMIZAR** (perfil, CONTROLES, tela de bloqueio ou "Jarvis, otimiza o sistema"): mede a resposta do JARVIS e a fluidez da tela, limpa caches antigos do navegador e sobras de áudio no PC, dá uma nota e liga o **Modo leve** sozinho se o aparelho estiver pesado (sem o vidro desfocado, que é o que mais pesa no celular).
+- **📘 BRANDING BOOK** dentro do JARVIS: botão ao lado do Olho de Deus e dos Agentes, em CONTROLES, no perfil e na tela de bloqueio (ou "abre o branding book").
+- **Saudação só às vezes**: o desbloqueio cumprimenta na 1ª vez do dia ou depois de 3 horas; nas outras vezes entra em silêncio. Configurações > Bloqueio > Saudação ao desbloquear (Às vezes / Sempre / Nunca). O aviso de tentativas não reconhecidas continua sendo falado.
+- **Site (Netlify)**: câmera e localização liberadas para a própria central (a câmera e o "ONDE ESTOU" fora de casa estavam bloqueados pelo site).
+
 ## 7.1.0 — 13 de novembro de 2026
 
 - **HOLOGRAMA**: pesquisas viram uma tela viva. "Me explica como funciona…", "pesquisa sobre…", "me ensina…" abrem uma apresentação de 4 a 6 cenas animadas (ícone em anéis, título com efeito holográfico, legenda palavra a palavra, tópicos e número em destaque que sobe na tela), narrada pela voz do JARVIS: cada cena avança quando ele termina de falar. Barra de progresso por cena, pausa, voltar, avançar e um resumo no fim. Foto de fundo da Wikipédia.

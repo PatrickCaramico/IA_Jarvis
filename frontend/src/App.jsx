@@ -34,6 +34,9 @@ import { IS_JARVIS_APP } from "./utils/device.js";
 import { CLOUD_AVAILABLE, cloudRequested, isPhone } from "./utils/cloudApi.js";
 import { installCloudShim } from "./utils/cloudShim.js";
 import { holoCommand, holoIntent } from "./utils/holoIntent.js";
+import { applyPerf } from "./utils/perfMode.js";
+
+applyPerf(); // V7.2: modo leve escolhido neste aparelho
 
 // V6.3: tela longe do PC (app do celular, ou navegador por túnel/rede): a câmera do PC não vê quem está
 // usando, então a entrada é pelo PIN (e a digital, no app) em vez da verificação do rosto.
@@ -74,6 +77,8 @@ const CloudMode = lazyComponent(() => import("./components/CloudMode.jsx"));
 const CameraWindow = lazyComponent(() => import("./components/CameraWindow.jsx")); // V6.8.2
 const AgentsHub = lazyComponent(() => import("./components/AgentsHub.jsx")); // V6.8.3
 const HoloStage = lazyComponent(() => import("./components/HoloStage.jsx")); // V7.1
+const BrandingBook = lazyComponent(() => import("./components/BrandingBook.jsx")); // V7.2
+const OptimizerPanel = lazyComponent(() => import("./components/OptimizerPanel.jsx")); // V7.2
 const LogReportWidget = lazyComponent(() => import("./components/LogReportWidget.jsx"));
 const Onboarding = lazyComponent(() => import("./components/Onboarding.jsx"));
 const BioScanModal = lazyComponent(() => import("./components/BioScanModal.jsx"));
@@ -231,6 +236,19 @@ export default function App() {
   }, []);
   const cameraWinRef = useRef(null);
   cameraWinRef.current = cameraWin;
+  // V7.2: 📘 Branding Book e ⚡ Otimizar (botões na central, em CONTROLES, no perfil e na tela de bloqueio)
+  const [brandingOpen, setBrandingOpen] = useState(false);
+  const [optimizerOpen, setOptimizerOpen] = useState(false);
+  useEffect(() => {
+    const openBranding = () => setBrandingOpen(true);
+    const openOptimizer = () => setOptimizerOpen(true);
+    window.addEventListener("jarvis-open-branding", openBranding);
+    window.addEventListener("jarvis-open-optimizer", openOptimizer);
+    return () => {
+      window.removeEventListener("jarvis-open-branding", openBranding);
+      window.removeEventListener("jarvis-open-optimizer", openOptimizer);
+    };
+  }, []);
   // V7.1: HOLOGRAMA (pesquisa vira tela viva: apresentação narrada ou receita com modo cozinha)
   const [holo, setHolo] = useState(null);
   const holoRef = useRef(null);
@@ -679,6 +697,12 @@ export default function App() {
         if ((msg.cards || []).some((c) => c.type === "water" && c.open_panel)) {
           openWaterPanelRef.current();
         }
+        break;
+      case "response_cards": // V7.2: cartões (clima, notícias…) que chegam depois da resposta já falada
+        setResponse((current) => {
+          if (current === msg.text) setResponseCards(msg.cards || []);
+          return current;
+        });
         break;
       case "error":
         setError(msg.message);
@@ -1181,8 +1205,24 @@ export default function App() {
         "Painel tático ativo, senhor. Como posso ajudar agora?",
       ];
       const quickReply = quickWelcomes[Math.floor(Math.random() * quickWelcomes.length)];
-      speak(quickReply).catch(() => {});
-      startIntroMusic();
+      // V7.2: a saudação vem só de vez em quando (1ª do dia ou depois de 3 h), não a cada entrada
+      const greetMode = prefsNow.lock_unlock_greeting || "sometimes";
+      let lastGreet = 0;
+      try {
+        lastGreet = Number(localStorage.getItem("jarvis_last_quick_greet")) || 0;
+      } catch {
+        /* sem armazenamento */
+      }
+      const due = greetMode === "always" || (greetMode === "sometimes" && (isFirstAccessOfDay || Date.now() - lastGreet > 3 * 3600_000));
+      if (due) {
+        try {
+          localStorage.setItem("jarvis_last_quick_greet", String(Date.now()));
+        } catch {
+          /* sem armazenamento */
+        }
+        speak(quickReply).catch(() => {});
+        startIntroMusic();
+      }
       return;
     }
 
@@ -1510,6 +1550,19 @@ export default function App() {
     if (cameraWinRef.current && /\b(analisa|analise|analisar|diagnostico|identifica|identifique|o que e isso|o que e isto|que (planta|bicho|animal|coisa|objeto|produto|prato|lugar) e (esse|essa|este|esta)|o que (voce|vc) (ve|esta vendo)|isso e o que|le (isso|o que esta escrito))\b/.test(normalized)) {
       setUserText(text);
       window.dispatchEvent(new CustomEvent("jarvis-camera-ask", { detail: text }));
+      return;
+    }
+    // V7.2: "abre o branding book" / "otimiza o jarvis"
+    if (/\b(branding|brand book|manual da marca|identidade visual)\b/.test(normalized) && /\b(abre|abra|abrir|mostra|mostre|ver)\b/.test(normalized)) {
+      setUserText(text);
+      setBrandingOpen(true);
+      setResponse("Abrindo o Branding Book, senhor.");
+      return;
+    }
+    if (/\b(otimiza|otimize|otimizar|deixa mais rapido|acelera|acelerar)\b/.test(normalized) && /\b(jarvis|sistema|site|central|app|aplicativo|voce)\b/.test(normalized)) {
+      setUserText(text);
+      setOptimizerOpen(true);
+      setResponse("Otimizando, senhor.");
       return;
     }
     // V7.1: com o holograma aberto, "próximo passo", "repete", "pausa", "fecha" controlam a tela
@@ -2727,6 +2780,8 @@ export default function App() {
         {audioOpen && <AudioSettingsModal api={api} onClose={() => setAudioOpen(false)} onMicChange={setMicrophoneId} />}
         {lockAnswer && <LockAnswer answer={lockAnswer} onClose={() => setLockAnswer(null)} />}
         {fanModeEnabled && <FanGoalOverlay event={fanEvent} onDone={clearFanEvent} />}
+        {brandingOpen && <BrandingBook onClose={() => setBrandingOpen(false)} />}
+        {optimizerOpen && <OptimizerPanel api={api} onClose={() => setOptimizerOpen(false)} />}
       </>
     );
   }
@@ -2820,6 +2875,8 @@ export default function App() {
         />
       )}
       {notice && <div className="notice-toast" role="status">{notice}</div>}
+      {brandingOpen && <BrandingBook onClose={() => setBrandingOpen(false)} />}
+      {optimizerOpen && <OptimizerPanel api={api} onClose={() => setOptimizerOpen(false)} />}
       {holo && (
         <HoloStage
           api={api}

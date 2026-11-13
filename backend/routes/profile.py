@@ -106,6 +106,7 @@ class PrefsRequest(BaseModel):
     clap_relock_on_fail: bool | None = None
     # Tela de bloqueio (seção 17)
     lock_daily_summary: str | None = None
+    lock_unlock_greeting: str | None = None
     lock_cards: list[str] | None = None
     lock_auto_relock_minutes: int | None = None
     lock_presence_check: bool | None = None

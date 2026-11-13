@@ -39,6 +39,9 @@ function micEvent(name) {
 }
 
 const SILENCE_TIMEOUT_MS = 2200; // Tempo de silêncio após falar para enviar automaticamente
+// V7.2: quando o reconhecimento já FECHOU a frase (sem pedaço em andamento), basta ~1 s de silêncio:
+// antes eram sempre 2,2 s, o que deixava o JARVIS com cara de lento logo depois de você parar de falar
+const FINAL_SILENCE_MS = 1000;
 const MAX_WAIT_TIMEOUT_MS = 15000; // Tempo máximo de espera se você não disser nada
 
 function microphoneError(error) {
@@ -174,7 +177,7 @@ export default function useSpeechRecognition({ onFinal, onError, deviceId }) {
         if (maxWaitTimerRef.current) clearTimeout(maxWaitTimerRef.current);
         silenceTimerRef.current = setTimeout(() => {
           if (recRef.current) rec.stop();
-        }, SILENCE_TIMEOUT_MS);
+        }, partial.trim() ? SILENCE_TIMEOUT_MS : FINAL_SILENCE_MS);
       }
     };
 

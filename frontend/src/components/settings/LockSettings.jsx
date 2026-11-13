@@ -148,6 +148,12 @@ export default function LockSettings({ api, prefs, onPatch }) {
           options={[["first_login", "Só no 1º acesso do dia"], ["always", "Sempre"], ["off", "Desligado"]]}
         />
         <SelectRow
+          label="Saudação ao desbloquear"
+          value={prefs.lock_unlock_greeting || "sometimes"}
+          onChange={(v) => onPatch({ lock_unlock_greeting: v })}
+          options={[["sometimes", "Às vezes (1ª do dia ou após 3 h)"], ["always", "Sempre"], ["off", "Nunca"]]}
+        />
+        <SelectRow
           label="Som de abertura"
           value={prefs.lock_intro_sound || "default"}
           onChange={(v) => onPatch({ lock_intro_sound: v })}

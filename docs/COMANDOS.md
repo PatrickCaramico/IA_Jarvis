@@ -1,6 +1,6 @@
 # JARVIS — Comandos do dia a dia
 
-**Versão do projeto:** 7.1.0 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
+**Versão do projeto:** 7.2.0 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
 
 > Montado a partir do código do projeto. Se algum comando não responder como descrito, me avise que eu ajusto o guia.
 > Para a lista técnica de rotas, veja [API.md](API.md); para o `.env`, [CONFIGURACAO.md](CONFIGURACAO.md).
@@ -341,6 +341,14 @@ Avisos automáticos (gatilhos): chuva amanhã (à noite), jogo começando (com o
 | "Abre a câmera e analisa esse item" / "analisa isso" (V7) | Abre a câmera, espera a imagem firmar e faz o **diagnóstico**: uma janela com o nome do item, categoria, confiança, resumo, detalhes (marca, modelo, nome científico, preço médio…), ⚠ alertas e 💡 dicas. A fala continua curta. |
 
 "O que você está vendo?" (sem abrir a câmera) continua usando a webcam do PC.
+
+### Otimizar, Branding Book e saudação (V7.2)
+
+| Fale / toque | O que acontece |
+|---|---|
+| ⚡ OTIMIZAR (perfil, CONTROLES, tela de bloqueio) ou "Jarvis, otimiza o sistema" | Mede a resposta e a fluidez, limpa caches e sobras de áudio, mostra uma nota e liga o **Modo leve** se o aparelho estiver pesado. O Modo leve vale por aparelho e pode ser ligado/desligado ali. |
+| 📘 BRANDING (ao lado do Olho de Deus, CONTROLES, perfil, tela de bloqueio) ou "abre o branding book" | Abre o Branding Book ilustrado dentro do JARVIS. |
+| Configurações > Bloqueio > Saudação ao desbloquear | **Às vezes** (padrão: 1ª do dia ou depois de 3 h), **Sempre** ou **Nunca**. |
 
 ### HOLOGRAMA: pesquisa vira tela viva (V7.1)
 

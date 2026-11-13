@@ -108,3 +108,32 @@ def decide(now: Optional[datetime] = None, rng: Optional[random.Random] = None) 
     st["last_welcome"] = pick
     _save(st)
     return {"action": "greet", "text": QUICK_WELCOMES[pick]}
+
+
+# --------------------------------------------------------------------------- V7.2: saudação "só às vezes"
+# Antes, TODO desbloqueio (rosto, PIN, digital) falava "Boa tarde, Patrick. Tudo pronto por aqui".
+# Agora, no padrão ("sometimes"), ele cumprimenta na 1ª entrada do dia e depois só se passou um tempo
+# (GREET_GAP_HOURS); nas outras, entra em silêncio. O aviso de tentativas não reconhecidas continua sendo falado.
+GREET_GAP_HOURS = 3
+
+
+def unlock_speech(hello: str, confirm: str, note: str = "", now: Optional[datetime] = None) -> str:
+    """O que falar ao desbloquear ("" = silêncio). hello/confirm já vêm sorteados das frases."""
+    now = now or datetime.now()
+    if briefing_pending(now):
+        return confirm + note  # o briefing vem logo depois; aqui só confirma
+    mode = prefs._load().get("lock_unlock_greeting") or "sometimes"
+    if mode == "always":
+        return hello + note
+    if mode == "off":
+        return note.strip()
+    st = prefs._load().get("unlock_greeting") or {}
+    last = st.get("at")
+    try:
+        gap = (now - datetime.fromisoformat(last)).total_seconds() / 3600 if last else None
+    except ValueError:
+        gap = None
+    if gap is None or gap >= GREET_GAP_HOURS or datetime.fromisoformat(last).date() != now.date():
+        prefs.update(unlock_greeting={"at": now.isoformat(timespec="seconds")})
+        return hello + note
+    return note.strip()
