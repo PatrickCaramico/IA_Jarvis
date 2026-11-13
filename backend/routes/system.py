@@ -62,6 +62,12 @@ class UpdateRequest(BaseModel):
     confirm: bool = False
 
 
+@router.get("/api/system/update/status")
+async def system_update_status(force: bool = False) -> dict:
+    """V6.7.2: tem versão nova? (a central mostra a bolinha com o número no botão ATUALIZAR)"""
+    return await asyncio.to_thread(self_update.check, force)
+
+
 @router.post("/api/system/update")
 async def system_update(req: UpdateRequest, request: Request) -> dict:
     """Botão ATUALIZAR (tela de bloqueio): baixa a versão nova, avisa por voz e reinicia.

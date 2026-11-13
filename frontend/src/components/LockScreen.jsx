@@ -146,6 +146,7 @@ export default function LockScreen({
   onBiometric = null, // V6.0: no app com a digital ativada, "ENTRAR COM A DIGITAL"
   onNewProfile = null, // V4.5: "＋ NOVA PESSOA" (perfil próprio: rosto, PIN e preferências)
   onUpdate = null, // botão ATUALIZAR: no PC baixa a versão nova e reinicia; no app, atualiza o app (V5.7.1)
+  updateCount = 0, // V6.7.2: versões novas esperando (bolinha com o número no botão)
   updateNote = "", // V5.7.1: resposta do ATUALIZAR APP ("O app já está na versão mais nova…")
   updateProgress = null, // V6.1: 0–100 enquanto o app baixa a versão nova
   phoneApp = false, // V4.5: dentro do app do celular (o rosto usaria a webcam do PC: entra pelo PIN)
@@ -232,6 +233,9 @@ export default function LockScreen({
         <button type="button" className="ls-chip" onClick={(e) => { e.stopPropagation(); onUpdate(); }}
           title={phoneApp ? "Procurar e instalar a versão nova do app" : "Baixar a versão mais nova do JARVIS e reiniciar"}>
           {phoneApp ? "⟳ ATUALIZAR APP" : "⟳ ATUALIZAR"}
+          {!phoneApp && updateCount > 0 && (
+            <span className="upd-badge" aria-label={`${updateCount} ${updateCount === 1 ? "atualização disponível" : "atualizações disponíveis"}`}>{updateCount}</span>
+          )}
         </button>
       )}
       {updateProgress != null && (

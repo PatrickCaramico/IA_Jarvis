@@ -2,6 +2,10 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 6.7.2 — 13 de novembro de 2026
+
+- **Bolinha de atualização:** quando há versão nova do JARVIS no GitHub, o botão **⟳ ATUALIZAR** ganha uma bolinha vermelha com o número de versões novas, na tela de bloqueio e no topo da central (onde o botão só aparece quando há novidade). Clicar pergunta "Atualizar para a versão X?" e faz a atualização de sempre (baixa, avisa por voz e reinicia). O PC confere a branch que o ATUALIZAR baixa (`git fetch`, sem baixar nada ainda) e conta os commits "JARVIS x.y.z" novos; guarda o resultado por 15 min, e a central pergunta a cada 30 min (`GET /api/system/update/status`, liberado também no bloqueio). Antes, a conferência olhava as Releases do GitHub, que o projeto não usa, e nunca acusava nada. Só no PC (o celular atualiza pelo ATUALIZAR APP).
+
 ## 6.7.1 — 13 de novembro de 2026
 
 - **Timers com nome de verdade:** "cancela o timer do arroz" cancelava **todos** os timers; agora cancela só aquele (com vários e sem nome, pergunta qual; "cancela todos" continua valendo). Novos: "quanto falta pro arroz?" e "aumenta 5 minutos no timer do arroz". Os timers ficam em `data/timers.json` e voltam depois de o JARVIS reiniciar; os que acabaram durante o reinício (até 10 min) são avisados.
