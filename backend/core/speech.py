@@ -187,6 +187,18 @@ async def filler_loop(stop: asyncio.Event) -> None:
             return
         except asyncio.TimeoutError:
             pass
-        await say_quietly(FILLERS[n % len(FILLERS)])  # se a resposta chegar, ela espera este aviso terminar
+        # V7.2: se a resposta chegar no meio do aviso, o aviso é cortado (antes a resposta esperava ele terminar)
+        filler = asyncio.create_task(say_quietly(FILLERS[n % len(FILLERS)]))
+        stopper = asyncio.create_task(stop.wait())
+        done, _ = await asyncio.wait({filler, stopper}, return_when=asyncio.FIRST_COMPLETED)
+        if stopper in done and not filler.done():
+            from modules import tts
+
+            tts.stop_playback()
+            await asyncio.gather(filler, return_exceptions=True)
+            return
+        stopper.cancel()
+        if stop.is_set():
+            return
         n += 1
         wait = max(settings.FILLER_INTERVAL, 5)

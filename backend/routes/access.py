@@ -143,12 +143,11 @@ async def auth_verify(req: Optional[VerifyRequest] = None) -> dict:
                 from modules import phrases
 
                 tg = speech.time_greeting()
-                if entry_greeting.briefing_pending():
-                    # V6.1: o briefing vem logo em seguida com "Bom dia, Patrick..."; aqui só confirma
-                    message = phrases.pick("unlock_confirm", who=who) + failures_note
-                else:
-                    # V6.5.3: frases variadas (antes era sempre "Olá, boa tarde... Tudo bem?")
-                    message = phrases.pick("unlock_hello", tg=tg.lower(), TG=tg, who=who) + failures_note
+                # V6.1: com briefing logo depois, só confirma; V7.2: a saudação vem só de vez em quando
+                message = entry_greeting.unlock_speech(
+                    phrases.pick("unlock_hello", tg=tg.lower(), TG=tg, who=who),
+                    phrases.pick("unlock_confirm", who=who), failures_note,
+                )
             else:
                 message = f"Identidade confirmada{', ' + name if name else ''}."
         else:
@@ -166,7 +165,11 @@ async def auth_verify(req: Optional[VerifyRequest] = None) -> dict:
         await runtime.manager.send_local({"type": "face_scan_end", "verified": result["verified"], "mode": mode})
         await speech.broadcast_access()
         # Libera busy ao final da fala de feedback
-        runtime.track(speech.speak(message, release_busy=True))
+        if message:
+            runtime.track(speech.speak(message, release_busy=True))
+        else:  # V7.2: desbloqueio sem saudação (já cumprimentou há pouco): entra em silêncio
+            session.busy = False
+            message = f"Acesso liberado{', ' + name if name else ''}."
         return {
             "verified": result["verified"],
             "name": name if result["verified"] else "",
@@ -257,7 +260,9 @@ async def device_unlock(req: DeviceUnlockRequest) -> dict:
         from modules import phrases
 
         tg = speech.time_greeting()
-        runtime.track(speech.speak(phrases.pick("unlock_hello", tg=tg.lower(), TG=tg, who=", " + name if name else "")))
+        spoken = entry_greeting.unlock_speech(phrases.pick("unlock_hello", tg=tg.lower(), TG=tg, who=", " + name if name else ""), "")
+        if spoken:  # V7.2: só de vez em quando
+            runtime.track(speech.speak(spoken))
     return {"verified": True, "name": name, "message": f"Acesso liberado pela digital{', ' + name if name else ''}."}
 
 
@@ -316,9 +321,11 @@ async def pin_verify(req: PinRequest) -> dict:
 
         who = ", " + name if name else ""
         tg = speech.time_greeting()
-        spoken = (phrases.pick("unlock_confirm", who=who) if entry_greeting.briefing_pending()
-                  else phrases.pick("unlock_hello", tg=tg.lower(), TG=tg, who=who)) + note
-        runtime.track(speech.speak(spoken))
+        spoken = entry_greeting.unlock_speech(  # V7.2: a saudação vem só de vez em quando
+            phrases.pick("unlock_hello", tg=tg.lower(), TG=tg, who=who), phrases.pick("unlock_confirm", who=who), note,
+        )
+        if spoken:
+            runtime.track(speech.speak(spoken))
         return {**result, "name": name, "message": message}
     lock_log.add("pin", "locked_out" if result["reason"] == "locked_out" else "fail")
     if result["reason"] == "locked_out":

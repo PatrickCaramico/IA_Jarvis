@@ -561,6 +561,8 @@ const CONTROL_SECTIONS = [
     items: [
       { id: "lock", icon: "🔒", label: "BLOQUEAR", sub: "Volta à tela de bloqueio", tone: "amber" },
       { id: "agents", icon: "🤖", label: "AGENTES", sub: "Rotas, pesquisa e chat" },
+      { id: "branding", icon: "📘", label: "BRANDING BOOK", sub: "Identidade visual do JARVIS" }, // V7.2
+      { id: "optimize", icon: "⚡", label: "OTIMIZAR", sub: "Medir e deixar mais rápido" }, // V7.2
       // V6.6.5: app Android: espelha a tela do JARVIS numa TV (Chromecast, Smart TV, Miracast)
       { id: "cast", icon: "📺", label: "TRANSMITIR", sub: "Para a TV ou outro aparelho" },
       { id: "silent", icon: "🤫", label: "SILENCIOSO" },
@@ -693,6 +695,14 @@ function HudControlsMenu({
       case "agents":
         setOpen(false);
         window.dispatchEvent(new CustomEvent("jarvis-open-agents"));
+        break;
+      case "branding":
+        setOpen(false);
+        window.dispatchEvent(new CustomEvent("jarvis-open-branding"));
+        break;
+      case "optimize":
+        setOpen(false);
+        window.dispatchEvent(new CustomEvent("jarvis-open-optimizer"));
         break;
       case "cast":
         setOpen(false);
@@ -1220,6 +1230,9 @@ export default function HudLayout({
                   🤖 AGENTES
                 </button>
               )}
+              <button type="button" className="hl-agents-trigger" onClick={() => window.dispatchEvent(new CustomEvent("jarvis-open-branding"))} title="Branding Book: identidade visual do JARVIS">
+                📘 BRANDING
+              </button>
             </div>
           )}
         </div>

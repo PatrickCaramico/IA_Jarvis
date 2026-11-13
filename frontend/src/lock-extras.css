@@ -809,3 +809,43 @@
 @media (max-width: 760px) {
   .camw-diag { top: auto; bottom: max(12px, env(safe-area-inset-bottom)); left: 12px; right: 12px; width: auto; max-height: 70dvh; transform: none; animation: none; }
 }
+
+/* V7.2: 📘 Branding Book e ⚡ Otimizar */
+.bb-overlay, .opt-overlay { position: fixed; inset: 0; z-index: 97; display: grid; place-items: center; padding: 12px; background: rgba(2, 6, 14, 0.78); backdrop-filter: blur(4px); }
+.bb { width: min(1200px, 100%); height: calc(100dvh - 24px); display: flex; flex-direction: column; border-radius: 16px; overflow: hidden; border: 1px solid rgba(34, 211, 238, 0.45); background: #050e20; box-shadow: 0 0 40px rgba(34, 211, 238, 0.22); }
+.bb-head, .opt-head { display: flex; align-items: center; gap: 10px; padding: 10px 14px; font: 600 0.85rem "Orbitron", sans-serif; letter-spacing: 0.12em; color: #67e8f9; border-bottom: 1px solid rgba(34, 211, 238, 0.2); }
+.bb-head small { flex: 1; min-width: 0; font: 0.72rem system-ui, sans-serif; letter-spacing: 0; color: rgba(224, 251, 255, 0.6); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bb-link { color: #cffafe; font: 600 0.68rem "Orbitron", sans-serif; text-decoration: none; border: 1px solid rgba(103, 232, 249, 0.4); border-radius: 8px; padding: 5px 9px; white-space: nowrap; }
+.bb-x, .opt-x { margin-left: auto; border: 1px solid rgba(201, 246, 255, 0.3); background: transparent; color: #e0fbff; border-radius: 8px; width: 32px; height: 32px; cursor: pointer; flex: none; }
+.bb-head .bb-x { margin-left: 0; }
+.bb-frame { position: relative; flex: 1; background: #050e20; }
+.bb-frame iframe { width: 100%; height: 100%; border: 0; display: block; }
+.bb-loading { position: absolute; inset: 0; display: grid; place-items: center; color: rgba(224, 251, 255, 0.7); }
+@media (max-width: 640px) { .bb-head small { display: none; } }
+.opt { width: min(460px, 100%); max-height: calc(100dvh - 24px); overflow-y: auto; border-radius: 16px; border: 1px solid rgba(34, 211, 238, 0.45); background: rgba(5, 14, 32, 0.97); color: #e0fbff; box-shadow: 0 0 40px rgba(34, 211, 238, 0.22); padding-bottom: 14px; }
+.opt-gauge { --pct: 0; width: 150px; height: 150px; margin: 18px auto 8px; border-radius: 50%; display: grid; place-items: center; background: conic-gradient(#67e8f9 calc(var(--pct) * 1%), rgba(103, 232, 249, 0.12) 0); transition: --pct 800ms; animation: opt-spin 1.6s linear infinite; }
+.opt-gauge.is-done { animation: none; }
+@keyframes opt-spin { to { filter: hue-rotate(40deg); transform: rotate(360deg); } }
+.opt-gauge > div { width: 124px; height: 124px; border-radius: 50%; background: #050e20; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.opt-gauge.is-done > div { animation: none; }
+.opt-gauge:not(.is-done) > div { animation: opt-spin 1.6s linear infinite reverse; }
+.opt-gauge strong { font: 800 2.4rem "Orbitron", sans-serif; color: #fff; text-shadow: 0 0 18px #22d3ee; }
+.opt-gauge small { font: 600 0.62rem "Orbitron", sans-serif; letter-spacing: 0.16em; color: #67e8f9; }
+.opt-steps { list-style: none; margin: 8px 14px; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.opt-steps li { display: grid; grid-template-columns: 24px 1fr; gap: 2px 8px; align-items: center; padding: 8px 10px; border-radius: 10px; background: rgba(103, 232, 249, 0.05); border: 1px solid rgba(103, 232, 249, 0.12); font-size: 0.88rem; }
+.opt-steps li small { grid-column: 2; color: rgba(224, 251, 255, 0.6); font-size: 0.78rem; }
+.opt-steps li i { font-style: normal; text-align: center; font-weight: 800; }
+.opt-steps li.is-wait { opacity: 0.45; }
+.opt-steps li.is-run i { color: #67e8f9; animation: opt-spin 1s linear infinite; display: inline-block; }
+.opt-steps li.is-ok i { color: #86efac; }
+.opt-steps li.is-warn i { color: #fde68a; }
+.opt-steps li.is-skip i { color: rgba(224, 251, 255, 0.5); }
+.opt-lite { display: flex; gap: 10px; align-items: flex-start; margin: 10px 14px 0; padding: 10px; border-radius: 10px; border: 1px solid rgba(103, 232, 249, 0.3); cursor: pointer; }
+.opt-lite input { margin-top: 3px; width: 18px; height: 18px; accent-color: #22d3ee; }
+.opt-lite b { display: block; font-size: 0.9rem; }
+.opt-lite small { color: rgba(224, 251, 255, 0.6); font-size: 0.78rem; }
+.opt-note { margin: 10px 14px 0; font-size: 0.85rem; color: rgba(224, 251, 255, 0.8); }
+
+/* MODO LEVE: sem vidro desfocado (o efeito que mais pesa em celular e notebook simples) */
+[data-perf="lite"] *, [data-perf="lite"] *::before, [data-perf="lite"] *::after { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+[data-perf="lite"] .holo-bg, [data-perf="lite"] .holo-scan, [data-perf="lite"] .ge-stars { display: none !important; }

@@ -39,7 +39,9 @@ _DEFAULTS: dict[str, Any] = {
     "clap_relock_on_fail": False,  # bloqueia a tela se a reverificação por palma falhar
     # --- Tela de bloqueio (seção 17) ---
     "lock_daily_summary": "first_login",  # "off" | "first_login" | "always"
+    "lock_unlock_greeting": "sometimes",  # V7.2: "sometimes" (1ª do dia ou após 3 h) | "always" | "off"
     "briefing_entry": {},
+    "unlock_greeting": {},  # V7.2: quando foi a última saudação do desbloqueio
     "voice_style": "natural",             # V6.1: natural | grave | classica | thalita | andrew
     "briefing_news_themes": [],           # V6.2: temas de notícias do "bom dia" ([] = padrões, com Marvel)
     "voice_listener_enabled": True,       # V6.3: ouvido offline ("Jarvis, ..." sem o navegador)
@@ -96,7 +98,7 @@ PUBLIC_KEYS = {
     "ai_name", "color_theme", "background_style", "theme_colors", "available_themes", "silent_mode",
     "fan_mode_enabled", "fan_team", "fan_team_info",
     "clap_wake_enabled", "clap_sensitivity", "clap_auto_enter", "clap_scope", "clap_relock_on_fail",
-    "lock_cards", "lock_intro_sound", "lock_daily_summary", "lock_auto_relock_minutes", "lock_guest_enabled",
+    "lock_cards", "lock_intro_sound", "lock_daily_summary", "lock_unlock_greeting", "lock_auto_relock_minutes", "lock_guest_enabled",
     "sentinel_enabled", "sentinel_wake_words", "sentinel_show_clock", "sentinel_night_dim",
     "water_vessel", "sfx_volume", "sfx_mode",
     "a11y_text_scale", "a11y_high_contrast", "a11y_reduce_motion",
@@ -132,6 +134,8 @@ def validate_patch(patch: dict[str, Any]) -> Optional[str]:
             return "clap_sensitivity deve ser um inteiro de 1 a 10."
     if "clap_scope" in patch and patch["clap_scope"] not in {"lock", "always"}:
         return "clap_scope inválido. Use 'lock' ou 'always'."
+    if "lock_unlock_greeting" in patch and patch["lock_unlock_greeting"] not in {"sometimes", "always", "off"}:
+        return "lock_unlock_greeting inválido. Use 'sometimes', 'always' ou 'off'."
     if "lock_daily_summary" in patch and patch["lock_daily_summary"] not in {"off", "first_login", "always"}:
         return "lock_daily_summary inválido. Use 'off', 'first_login' ou 'always'."
     if "lock_cards" in patch:

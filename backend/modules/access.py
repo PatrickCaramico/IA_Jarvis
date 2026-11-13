@@ -116,6 +116,7 @@ def reset_for_tests(state: str = LOCKED) -> None:
 _PUBLIC_EXACT = {
     ("GET", "/api/health"),
     ("GET", "/api/system/update/status"),  # V6.7.2: bolinha de atualização no botão ATUALIZAR do bloqueio
+    ("POST", "/api/system/optimize"),  # V7.2: ⚡ OTIMIZAR na tela de bloqueio (só limpa sobras de áudio)
     ("GET", "/api/integrations/spotify/track"),  # V4.2.2: a rota confere se o cartão está ligado no bloqueio
     ("GET", "/api/presence"),
     ("GET", "/api/profile"),          # devolve só has_photo quando restrito (sem nome)

@@ -224,6 +224,22 @@ export default function ProfileModal({
                 <p className="text-xs text-cyan-200/60 mt-1">Conectar smartphone na mesma rede</p>
               </button>
 
+              {/* V7.2: ⚡ otimizar e 📘 branding book */}
+              <button
+                onClick={() => { onClose(); window.dispatchEvent(new CustomEvent("jarvis-open-optimizer")); }}
+                className="p-3.5 rounded-lg border border-cyan-500/30 bg-black/40 hover:border-cyan-400 hover:bg-cyan-950/40 text-left transition"
+              >
+                <strong className="block text-sm font-['Orbitron'] text-white">⚡ Otimizar</strong>
+                <p className="text-xs text-cyan-200/60 mt-1">Medir e deixar o JARVIS mais rápido neste aparelho</p>
+              </button>
+              <button
+                onClick={() => { onClose(); window.dispatchEvent(new CustomEvent("jarvis-open-branding")); }}
+                className="p-3.5 rounded-lg border border-cyan-500/30 bg-black/40 hover:border-cyan-400 hover:bg-cyan-950/40 text-left transition"
+              >
+                <strong className="block text-sm font-['Orbitron'] text-white">📘 Branding Book</strong>
+                <p className="text-xs text-cyan-200/60 mt-1">Identidade visual, cores e componentes</p>
+              </button>
+
               {/* V6.8.3: verificar atualizações (mesma fonte do ⟳ ATUALIZAR) */}
               <button
                 onClick={checkUpdates}

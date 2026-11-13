@@ -406,6 +406,14 @@ async def speak_on_pc(req: SpeakRequest) -> dict:
     return {"status": "ok"}
 
 
+@router.post("/api/system/optimize")
+async def system_optimize() -> dict:
+    """V7.2: botão ⚡ OTIMIZAR: limpa sobras de áudio (falas interrompidas), cache de voz velho e libera memória."""
+    from modules import optimizer
+
+    return await asyncio.to_thread(optimizer.run)
+
+
 class HoloRequest(BaseModel):
     query: str
     kind: str = "auto"

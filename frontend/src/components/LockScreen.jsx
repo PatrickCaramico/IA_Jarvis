@@ -238,6 +238,14 @@ export default function LockScreen({
           )}
         </button>
       )}
+      {(phase === "ready" || phase === "failed") && (
+        <>
+          <button type="button" className="ls-chip" onClick={(e) => { e.stopPropagation(); window.dispatchEvent(new CustomEvent("jarvis-open-branding")); }}
+            title="Identidade visual do JARVIS">📘 BRANDING</button>
+          <button type="button" className="ls-chip" onClick={(e) => { e.stopPropagation(); window.dispatchEvent(new CustomEvent("jarvis-open-optimizer")); }}
+            title="Medir e deixar o JARVIS mais rápido neste aparelho">⚡ OTIMIZAR</button>
+        </>
+      )}
       {updateProgress != null && (
         <div className="ls-update-progress"><ProgressBar pct={updateProgress} label="Atualizando o app" /></div>
       )}

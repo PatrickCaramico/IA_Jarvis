@@ -51,10 +51,12 @@
   for = "/*"
   [headers.values]
     X-Content-Type-Options = "nosniff"
-    X-Frame-Options = "DENY"
+    # V7.2: SAMEORIGIN (antes DENY) para o 📘 Branding Book abrir dentro da central; outros sites continuam sem poder
+    X-Frame-Options = "SAMEORIGIN"
     Referrer-Policy = "strict-origin-when-cross-origin"
-    # Microfone para a central (/app/): voz, palmas e Sentinela. A câmera é do backend, no PC.
-    Permissions-Policy = "camera=(), microphone=(self), geolocation=()"
+    # Microfone (voz, palmas, Sentinela); V7.2: câmera do celular ("abre a câmera e analisa", também fora de casa)
+    # e localização ("ONDE ESTOU" no mapa de trânsito do Olho de Deus, inclusive dentro do mapa do Waze)
+    Permissions-Policy = "camera=(self), microphone=(self), geolocation=(self \"https://embed.waze.com\")"
 
 # Imagens e ícones mudam pouco: cache de um dia
 [[headers]]
