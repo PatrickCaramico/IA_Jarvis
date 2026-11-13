@@ -259,6 +259,15 @@ export function apply(state, op, now = spNow()) {
       s.agua.goal_ml = goal;
       return { keys: ["agua"], result: goal };
     }
+    case "place_set": {
+      // V6.8: lugar salvo fora de casa ("meu trabalho fica na..."): a nuvem guarda e repassa ao PC
+      const nome = clean(norm(op.nome || "").replace(/^(?:o|a|meu|minha)\s+/, ""), 40);
+      const endereco = clean(op.endereco, 160);
+      if (!nome || !endereco) throw new HttpError(400, "Diga o nome do lugar e o endereço.");
+      op.nome = nome;
+      op.endereco = endereco;
+      return { keys: [], result: { nome, endereco } };
+    }
     case "mood_set": {
       // V6.7: humor do dia (1 a 5); a nuvem só repassa ao PC (data/humor.json)
       const score = Math.round(Number(op.score));
@@ -272,10 +281,33 @@ export function apply(state, op, now = spNow()) {
   }
 }
 
+// V6.8: ofensiva (dias seguidos batendo a meta). O PC manda a ofensiva até ontem ("base", com a data);
+// se o PC não sincronizou hoje, a nuvem conta pelos dias que ela mesma tem (com a base antiga como piso).
+export function waterStreak(agua, now = spNow()) {
+  const goal = agua.goal_ml || 2000;
+  const done = (date) => (agua.days[date]?.total_ml || 0) >= goal;
+  let base;
+  const sk = agua.streak;
+  if (sk && sk.date === now.date) base = sk.base;
+  else {
+    base = 0;
+    let d = addDays(now.date, -1);
+    while (done(d) && base < 3650) {
+      base += 1;
+      d = addDays(d, -1);
+      if (sk && d === addDays(sk.date, -1)) { base += sk.base; break; } // emenda com a base que o PC mandou
+    }
+  }
+  const todayDone = done(now.date);
+  const days = base + (todayDone ? 1 : 0);
+  return { streak: days, streak_base: base, streak_today_done: todayDone, streak_best: Math.max(sk?.best || 0, days) };
+}
+
 export function waterStatus(agua, now = spNow()) {
   const day = agua.days[now.date] || { total_ml: 0, logs: [] };
   const goal = agua.goal_ml || 2000;
   return {
+    ...waterStreak(agua, now),
     date: now.date,
     total_ml: day.total_ml,
     goal_ml: goal,
@@ -326,6 +358,10 @@ export async function receiveSnapshot(store, { ack = 0, snapshot = {} }, now = s
   if (snapshot.agua && typeof snapshot.agua === "object") {
     const goal = Number(snapshot.agua.goal_ml);
     if (goal >= 500 && goal <= 10000) state.agua.goal_ml = goal;
+    const sk = snapshot.agua.streak;
+    if (sk && /^\d{4}-\d{2}-\d{2}$/.test(sk.date || "")) {
+      state.agua.streak = { date: sk.date, base: Math.max(0, Math.round(Number(sk.base) || 0)), best: Math.max(0, Math.round(Number(sk.best) || 0)) };
+    }
     const today = snapshot.agua.today;
     if (today && /^\d{4}-\d{2}-\d{2}$/.test(today.date || "")) {
       state.agua.days[today.date] = { total_ml: Math.max(0, Number(today.total_ml) || 0), logs: Array.isArray(today.logs) ? today.logs.slice(-50) : [] };
@@ -356,6 +392,8 @@ export async function receiveSnapshot(store, { ack = 0, snapshot = {} }, now = s
           .map((e) => ({ titulo: clean(e.titulo, 120) || "Compromisso", inicio: String(e.inicio).slice(0, 19), local: clean(e.local, 80) }))
           .slice(0, 25)
         : [],
+      // V6.8: lugares do agente de rotas ("trabalho" -> endereço)
+      lugares: cleanPlaces(p.lugares),
       memorias: Array.isArray(p.memorias) ? p.memorias.filter((m) => typeof m === "string").map((m) => clean(m, 140)).filter(Boolean).slice(-30) : [],
       atualizado_em: now.stamp,
     });
@@ -627,9 +665,42 @@ const FORMAT = (
   + '{"tipo":"alarme_remover","hora":"HH:MM"}, '
   + '{"tipo":"agua_add","ml":250} (um copo = 250 ml, uma garrafa = 500 ml), {"tipo":"agua_desfazer"}, {"tipo":"agua_meta","ml":2500}, '
   + '{"tipo":"humor","nota":4} (quando o usuário disser como está de 1 a 5, ex.: "meu humor hoje é 4"), '
+  + '{"tipo":"rota","destino":"trabalho ou um endereço","modo":"carro"|"a pe"|"onibus"|"bicicleta"} (abre o Google Maps com a rota saindo de onde ele está; use o nome do lugar salvo quando houver), '
+  + '{"tipo":"lugar_salvar","nome":"trabalho","endereco":"Av. Paulista, 1000"} (quando ele disser onde fica um lugar), '
+  + '{"tipo":"youtube","busca":"..."} (abre a pesquisa no YouTube), '
   + '{"tipo":"abrir","tela":"noticias"|"clima"|"compras"|"tarefas"|"agua"|"lembretes"}. '
   + "Na resposta, confirme a ação de forma natural ('Coloquei leite na lista, senhor.')."
 );
+
+// --------------------------------------------------------------------------- V6.8: sub-agentes (rotas e YouTube)
+export function cleanPlaces(p) {
+  if (!p || typeof p !== "object" || Array.isArray(p)) return {};
+  const out = {};
+  for (const [k, v] of Object.entries(p).slice(0, 30)) {
+    const key = clean(norm(k), 40);
+    const addr = clean(v, 160);
+    if (key && addr) out[key] = addr;
+  }
+  return out;
+}
+
+async function allPlaces(store) {
+  const perfil = (await store.get("perfil")) || {};
+  return { ...(perfil.lugares || {}), ...((await store.get("lugares_nuvem")) || {}) };
+}
+
+const MODES = { carro: "driving", "a pe": "walking", ape: "walking", onibus: "transit", transporte: "transit", metro: "transit", bicicleta: "bicycling", bike: "bicycling" };
+
+export async function routeUrl(store, destino, modo = "") {
+  const places = await allPlaces(store);
+  const key = norm(destino).replace(/^(?:o|a|meu|minha)\s+/, "");
+  const address = places[key] || clean(destino, 160);
+  const mode = MODES[norm(modo)] || "driving";
+  return {
+    url: `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}&travelmode=${mode}`,
+    rotulo: places[key] ? key : address,
+  };
+}
 
 export function agendaText(agenda, now) {
   const items = (agenda || []).filter((e) => e.inicio.slice(0, 10) >= now.date);
@@ -654,6 +725,8 @@ function describeState(state, now, perfil) {
     perfil?.nome ? `Nome do usuário: ${perfil.nome}.` : "",
     perfil?.sobre ? `O que ele contou sobre si: ${perfil.sobre}` : "",
     agendaText(perfil?.agenda, now),
+    perfil?.lugares && Object.keys(perfil.lugares).length
+      ? `Lugares salvos (para rotas): ${Object.entries(perfil.lugares).map(([k, v]) => `${k} = ${v}`).join("; ")}.` : "",
     perfil?.memorias?.length ? `Memórias do usuário (use com naturalidade quando ajudar, sem listar): ${perfil.memorias.join("; ")}.` : "",
     `Lista de compras (faltando): ${pending.join(", ") || "vazia"}.`,
     `Tarefas abertas: ${tasks.join("; ") || "nenhuma"}.`,
@@ -736,11 +809,33 @@ const ACTION_TO_OP = {
   agua_desfazer: () => ({ op: "water_undo" }),
   agua_meta: (a) => ({ op: "water_goal", goal_ml: a.ml }),
   humor: (a) => ({ op: "mood_set", score: a.nota ?? a.score }),
+  lugar_salvar: (a) => ({ op: "place_set", nome: a.nome, endereco: a.endereco }),
 };
 
 async function runAction(store, action, now) {
   const kind = action?.tipo;
   if (kind === "abrir") return { tipo: "abrir", tela: action.tela, ok: true };
+  // V6.8: agentes de rotas e pesquisa: devolvem o link para o aparelho abrir
+  if (kind === "rota") {
+    const r = await routeUrl(store, action.destino || "", action.modo || "");
+    return { tipo: "abrir_url", ok: true, url: r.url, agente: "rotas", rotulo: r.rotulo };
+  }
+  if (kind === "youtube") {
+    const q = clean(action.busca, 100);
+    if (!q) return { tipo: kind, ok: false, erro: "O que pesquisar?" };
+    return { tipo: "abrir_url", ok: true, url: `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`, agente: "pesquisa", rotulo: q };
+  }
+  if (kind === "lugar_salvar") {
+    try {
+      const { result } = await change(store, { op: "place_set", nome: action.nome, endereco: action.endereco }, now);
+      const extra = (await store.get("lugares_nuvem")) || {};
+      extra[result.nome] = result.endereco;
+      await store.set("lugares_nuvem", extra);
+      return { tipo: kind, ok: true };
+    } catch (err) {
+      return { tipo: kind, ok: false, erro: err.message };
+    }
+  }
   // V6.7.4: música no próprio celular (o app executa; a nuvem só repassa)
   if (kind === "musica") {
     const comando = ["tocar", "pausar", "proxima", "anterior"].includes(action.comando) ? action.comando : "tocar";

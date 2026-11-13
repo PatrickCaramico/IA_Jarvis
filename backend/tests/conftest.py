@@ -30,6 +30,7 @@ _WRITABLE = (
     ("triggers", "_FIRED_PATH", "gatilhos_avisados.json"),  # V6.5.17
     ("wellbeing", "_PATH", "humor.json"),  # V6.7
     ("tools", "_TIMERS_PATH", "timers.json"),  # V6.7.1
+    ("agents", "_PATH", "lugares.json"),  # V6.8
 )
 
 

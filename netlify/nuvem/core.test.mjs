@@ -278,3 +278,50 @@ test("agenda do PC e música do celular na nuvem", async () => {
   const st = await call(store, "/state", { token });
   assert.equal(st.data.agenda.length, 3);
 });
+
+test("ofensiva da água na nuvem: continua a do PC", async () => {
+  const { waterStreak } = await import("./core.mjs");
+  const now = spNow(NOW); // 2026-11-13
+  // PC sincronizou hoje: base 5 até ontem
+  let agua = { goal_ml: 2000, days: {}, streak: { date: "2026-11-13", base: 5, best: 7 } };
+  assert.deepEqual(waterStreak(agua, now), { streak: 5, streak_base: 5, streak_today_done: false, streak_best: 7 });
+  agua.days["2026-11-13"] = { total_ml: 2000, logs: [] };
+  assert.equal(waterStreak(agua, now).streak, 6);
+  // PC sumiu desde 11/11 (base 5 até 10/11); na nuvem bateu a meta em 11 e 12: 5 + 2
+  agua = { goal_ml: 2000, days: { "2026-11-11": { total_ml: 2100 }, "2026-11-12": { total_ml: 2000 } }, streak: { date: "2026-11-11", base: 5, best: 5 } };
+  assert.equal(waterStreak(agua, now).streak_base, 7);
+  // falhou ontem: zera
+  agua = { goal_ml: 2000, days: { "2026-11-12": { total_ml: 100 } }, streak: { date: "2026-11-11", base: 5 } };
+  assert.equal(waterStreak(agua, now).streak_base, 0);
+});
+
+test("agentes na nuvem: rota com lugar salvo, salvar lugar e YouTube", async () => {
+  const store = memStore();
+  const token = await login(store);
+  await call(store, "/sync", { method: "POST", headers: { "X-Jarvis-Nuvem": ENV.JARVIS_NUVEM_CHAVE }, body: { ack: 0, snapshot: { perfil: { lugares: { trabalho: "Av. Paulista, 1000" } } } } });
+  let answer;
+  let system = "";
+  const fetchFn = async (_url, init) => {
+    system = JSON.parse(init.body).systemInstruction.parts[0].text;
+    return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: JSON.stringify(answer) }] } }] }));
+  };
+  const env = { ...ENV, GEMINI_API_KEY: "g" };
+  const chatMsg = async (message) => (await handle(req("/chat", { method: "POST", token, body: { message } }), { store, env, fetchFn, nowDate: NOW })).json();
+
+  answer = { resposta: "Abrindo a rota, senhor.", acoes: [{ tipo: "rota", destino: "o trabalho", modo: "a pé" }] };
+  let r = await chatMsg("quero ir pro trabalho a pé");
+  assert.match(system, /Lugares salvos \(para rotas\): trabalho = Av\. Paulista, 1000/);
+  assert.deepEqual(r.actions[0], { tipo: "abrir_url", ok: true, url: "https://www.google.com/maps/dir/?api=1&destination=Av.%20Paulista%2C%201000&travelmode=walking", agente: "rotas", rotulo: "trabalho" });
+
+  answer = { resposta: "Guardado.", acoes: [{ tipo: "lugar_salvar", nome: "a academia", endereco: "Rua Augusta 500" }] };
+  await chatMsg("minha academia fica na Rua Augusta 500");
+  answer = { resposta: "Indo.", acoes: [{ tipo: "rota", destino: "academia" }] };
+  r = await chatMsg("me leva pra academia");
+  assert.match(r.actions[0].url, /destination=Rua%20Augusta%20500&travelmode=driving/);
+  const ops = (await call(store, "/sync", { headers: { "X-Jarvis-Nuvem": ENV.JARVIS_NUVEM_CHAVE } })).data.ops;
+  assert.deepEqual(ops.filter((o) => o.op === "place_set").map((o) => [o.nome, o.endereco]), [["academia", "Rua Augusta 500"]]);
+
+  answer = { resposta: "Pesquisando.", acoes: [{ tipo: "youtube", busca: "receita de pão" }] };
+  r = await chatMsg("pesquisa receita de pão no youtube");
+  assert.equal(r.actions[0].url, "https://www.youtube.com/results?search_query=receita%20de%20p%C3%A3o");
+});

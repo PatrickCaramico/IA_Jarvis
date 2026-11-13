@@ -147,6 +147,13 @@ async def handle_turn(message: str, routine: bool, force_deep: bool = False) -> 
     if ann_reply:
         return await finish_local(ann_reply)
 
+    # V6.8: sub-agentes (rotas no Google Maps, pesquisa no YouTube), abrindo no aparelho que pediu
+    from modules import agents
+
+    agent_reply = await agents.handle(message)
+    if agent_reply:
+        return await finish_local(agent_reply)
+
     # V6.5.11: resposta a "Em qual navegador, senhor?"
     from modules import browser_choice
 
@@ -388,6 +395,10 @@ async def handle_turn(message: str, routine: bool, force_deep: bool = False) -> 
     water_cmd = water.parse_water_command(message)
     if water_cmd:
         action, value = water_cmd
+        if action == "streak":  # V6.8: ofensiva da água
+            st = water.get_status()
+            reply = water.streak_sentence(water.streak(), st)
+            return await finish_local(reply, extra_cards=[{"type": "water", "data": st, "open_panel": True}])
         if action == "query":
             st = water.get_status()
             reply = water.status_sentence(st)
@@ -397,6 +408,8 @@ async def handle_turn(message: str, routine: bool, force_deep: bool = False) -> 
             reply = f"Registrado: +{value} ml de água! " + water.status_sentence(st)
             if st["goal_reached"] and st["total_ml"] - value < st["goal_ml"]:
                 reply += " Meta de água do dia batida, senhor. Bom trabalho."
+                if st.get("streak", 0) > 1:
+                    reply += f" Ofensiva de {st['streak']} dias!"
             await runtime.manager.broadcast({"type": "water_updated", "data": st, "added_ml": value})
             return await finish_local(reply, extra_cards=[{"type": "water", "data": st, "open_panel": True}])
         if action == "set_goal":
