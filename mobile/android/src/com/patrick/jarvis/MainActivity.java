@@ -23,7 +23,6 @@ import android.os.Looper;
 import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
-import android.speech.tts.TextToSpeech;
 import android.view.View;
 import android.view.WindowManager;
 import android.webkit.JavascriptInterface;
@@ -39,7 +38,6 @@ import android.widget.Toast;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
-import java.util.Locale;
 
 /**
  * JARVIS para Android (V4.5).
@@ -53,11 +51,6 @@ public class MainActivity extends Activity {
     private static final String PREFS = "jarvis";
     private static final String KEY_URL = "url";
     private static final String SETUP = "file:///android_asset/setup.html";
-    // V6.6: modo nuvem (funções do Netlify): o app abre aqui quando o PC não responde
-    static final String CLOUD_HOST = "projeto-jarvis-ia.netlify.app";
-    static final String CLOUD_URL = "https://" + CLOUD_HOST + "/app/?nuvem=1";
-    static final String KEY_CLOUD_TOKEN = "cloud_token";
-    private static final long PC_PROBE_MS = 20_000;
     private static final int REQ_MIC = 7;
     private static final int REQ_NOTIFY = 8;
     private static final int REQ_MIC_SPEECH = 9;
@@ -114,8 +107,6 @@ public class MainActivity extends Activity {
     private int retryAttempt = 0;
     private volatile boolean mainFrameFailed = false;
     private boolean offlineScreen = false;
-    private volatile boolean cloudScreen = false; // V6.6: no modo nuvem, conferindo o PC em segundo plano
-    private TextToSpeech tts;
     private ConnectivityManager.NetworkCallback networkCallback;
     private long pausedAt = 0; // V6.4: para avisar a rede só quando o app é "aberto" de novo
 
@@ -165,8 +156,6 @@ public class MainActivity extends Activity {
             public void onPageFinished(WebView view, String url) {
                 // A central do PC abriu de verdade: zera as tentativas
                 if (isHttp(url) && !mainFrameFailed) {
-                    Uri pu = Uri.parse(url);
-                    if (!CLOUD_HOST.equals(pu.getHost())) stopCloud();
                     retryAttempt = 0;
                     offlineScreen = false;
                     retryHandler.removeCallbacks(retryRunnable);
@@ -205,12 +194,6 @@ public class MainActivity extends Activity {
                         return;
                     }
                     String h = savedHostValue();
-                    // V6.6: o PC (casa e Tailscale) não respondeu: abre o modo nuvem e segue conferindo o PC
-                    boolean cloudFailed = CLOUD_HOST.equals(failedHost);
-                    if (savedUri() != null && !cloudFailed) {
-                        openCloud(view);
-                        return;
-                    }
                     if (savedUri() != null) {
                         // Já pareado: tela "reconectando" e nova tentativa sozinha
                         int wait = RETRY_SECONDS[Math.min(retryAttempt, RETRY_SECONDS.length - 1)];
@@ -372,77 +355,6 @@ public class MainActivity extends Activity {
 
     // ------------------------------------------------------------------ reconexão (V5.2)
     /** Nova tentativa com o endereço salvo, só se a tela "reconectando" estiver aberta. */
-    // ------------------------------------------------------------------ V6.6: modo nuvem
-    private final Runnable pcProbe = new Runnable() {
-        @Override
-        public void run() {
-            if (!cloudScreen) return;
-            new Thread(() -> {
-                boolean ok = pcAnswers();
-                runOnUiThread(() -> {
-                    if (!cloudScreen) return;
-                    if (ok) {
-                        stopCloud();
-                        retryAttempt = 0;
-                        web.loadUrl(prefs.getString(KEY_URL, ""));
-                    } else {
-                        retryHandler.postDelayed(pcProbe, PC_PROBE_MS);
-                    }
-                });
-            }).start();
-        }
-    };
-
-    private void openCloud(WebView view) {
-        cloudScreen = true;
-        offlineScreen = false;
-        retryHandler.removeCallbacks(retryRunnable);
-        retryHandler.removeCallbacks(pcProbe);
-        retryHandler.postDelayed(pcProbe, PC_PROBE_MS);
-        view.loadUrl(CLOUD_URL);
-    }
-
-    private void stopCloud() {
-        cloudScreen = false;
-        retryHandler.removeCallbacks(pcProbe);
-    }
-
-    /** O backend do PC responde (Wi-Fi de casa, Tailscale ou túnel)? */
-    private boolean pcAnswers() {
-        Uri saved = savedUri();
-        if (saved == null) return false;
-        ArrayList<String> bases = new ArrayList<>();
-        String base = PcAddress.base(saved);
-        if (base != null) bases.add(base);
-        String remote = prefs.getString(KEY_REMOTE, "");
-        if (!remote.isEmpty() && base != null && base.startsWith("http://")) bases.add("http://" + remote + ":8000");
-        for (String b : bases) {
-            try {
-                java.net.HttpURLConnection c = (java.net.HttpURLConnection) new java.net.URL(b + "/api/health").openConnection();
-                c.setConnectTimeout(3000);
-                c.setReadTimeout(4000);
-                int code = c.getResponseCode();
-                c.disconnect();
-                if (code == 200) return true;
-            } catch (Exception ignored) {
-            }
-        }
-        return false;
-    }
-
-    private void speak(String text) {
-        if (tts == null) {
-            tts = new TextToSpeech(this, status -> {
-                if (status == TextToSpeech.SUCCESS) {
-                    tts.setLanguage(new Locale("pt", "BR"));
-                    tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "jarvis");
-                }
-            });
-            return;
-        }
-        tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "jarvis");
-    }
-
     private void retrySaved() {
         retryHandler.removeCallbacks(retryRunnable);
         if (!offlineScreen || savedUri() == null) return;
@@ -472,9 +384,6 @@ public class MainActivity extends Activity {
                         if (offlineScreen) {
                             retryAttempt = 0;
                             retrySaved();
-                        } else if (cloudScreen) {
-                            retryHandler.removeCallbacks(pcProbe);
-                            retryHandler.post(pcProbe);
                         }
                     }, 1500); // dá tempo de a rede pegar o IP
                 }
@@ -1060,9 +969,7 @@ public class MainActivity extends Activity {
 
     private boolean sameHost(Uri uri) {
         Uri saved = savedUri();
-        if (uri.getHost() == null) return false;
-        if (CLOUD_HOST.equals(uri.getHost()) && "https".equals(uri.getScheme())) return true; // V6.6: modo nuvem
-        if (saved == null) return false;
+        if (saved == null || uri.getHost() == null) return false;
         String remote = prefs.getString(KEY_REMOTE, "");
         return uri.getHost().equals(saved.getHost()) || (!remote.isEmpty() && uri.getHost().equals(remote));
     }
@@ -1262,22 +1169,6 @@ public class MainActivity extends Activity {
             if (fromJarvis()) runOnUiThread(() -> stopListening(cancel));
         }
 
-        /** V6.6: chave do modo nuvem (os avisos da nuvem chegam com o app fechado). */
-        @JavascriptInterface
-        public void setCloudToken(String token) {
-            if (currentUrl == null || !CLOUD_HOST.equals(Uri.parse(currentUrl).getHost())) return;
-            prefs.edit().putString(KEY_CLOUD_TOKEN, token == null ? "" : token.trim()).apply();
-            if (token != null && !token.trim().isEmpty() && notificationsOn()) runOnUiThread(() -> NotifyService.start(MainActivity.this));
-        }
-
-        /** V6.6: voz do Android (o modo nuvem não tem a voz do PC). */
-        @JavascriptInterface
-        public void say(String text) {
-            if (!fromJarvis() || text == null) return;
-            String t = text.length() > 600 ? text.substring(0, 600) : text;
-            runOnUiThread(() -> speak(t));
-        }
-
         @JavascriptInterface
         public boolean notificationsEnabled() {
             return (fromJarvis() || fromSetup()) && notificationsOn();
@@ -1303,7 +1194,6 @@ public class MainActivity extends Activity {
             }
         }
         if (recognizer != null) recognizer.destroy();
-        if (tts != null) tts.shutdown();
         if (web != null) {
             web.setVisibility(View.GONE);
             web.destroy();

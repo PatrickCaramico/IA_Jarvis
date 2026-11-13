@@ -25,6 +25,12 @@ from modules.quick_replies import _norm
 log = logging.getLogger("jarvis.cloud_sync")
 
 INTERVAL_S = 60
+# V6.6.2: preferências que a tela da nuvem usa (nada de câmera, PIN, atalhos ou chaves)
+CLOUD_PREF_KEYS = (
+    "ai_name", "color_theme", "theme_colors", "background_style", "personality_mode", "silent_mode",
+    "a11y_text_scale", "a11y_high_contrast", "a11y_reduce_motion", "briefing_news_themes", "water_quick_ml",
+    "sfx_mode", "sfx_volume",
+)
 STATE: dict[str, Any] = {"last_ok": None, "last_error": "", "applied": 0}
 
 
@@ -137,8 +143,17 @@ def snapshot() -> dict:
         from modules import prefs
 
         assistant = prefs.get_ai_name()
+        all_prefs = prefs.get_all()
     except Exception:  # noqa: BLE001
-        assistant = "JARVIS"
+        assistant, all_prefs = "JARVIS", {}
+    # V6.6.2: as configurações da central valem também no modo nuvem (só as de aparência, voz e IA)
+    shared = {k: all_prefs[k] for k in CLOUD_PREF_KEYS if k in all_prefs}
+    try:  # temas de notícias do "bom dia" (os seus ou os padrões) viram atalhos na aba NOTÍCIAS da nuvem
+        from modules import briefing
+
+        shared["briefing_news_themes"] = [{"title": t["title"], "q": t.get("query") or t.get("topic")} for t in briefing.news_themes()]
+    except Exception:  # noqa: BLE001
+        shared.pop("briefing_news_themes", None)
     return {
         "compras": shopping.list_items(),
         "tarefas": tasks.get_tasks(include_completed=True)[-120:],
@@ -150,6 +165,7 @@ def snapshot() -> dict:
             "assistente": assistant,
             "cidade": settings.WEATHER_CITY,
             "sobre": (about.get_about() or "")[:600],
+            "prefs": shared,
         },
     }
 

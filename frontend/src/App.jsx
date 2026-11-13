@@ -43,7 +43,7 @@ import { enqueueHere, stopSpeech } from "./utils/speakHere.js";
 import { scheduleDailyUpdateCheck } from "./utils/updateCheck.js";
 import { applyAccessibility, applyBackground, applyFanMode, applyTheme } from "./utils/theme.js";
 import { IS_JARVIS_APP } from "./utils/device.js";
-import { cloudRequested, isPhone } from "./utils/cloudApi.js";
+import { CLOUD_AVAILABLE, cloudRequested, isPhone } from "./utils/cloudApi.js";
 
 // V6.3: tela longe do PC (app do celular, ou navegador por túnel/rede): a câmera do PC não vê quem está
 // usando, então a entrada é pelo PIN (e a digital, no app) em vez da verificação do rosto.
@@ -2302,11 +2302,11 @@ export default function App() {
   ] : [];
 
   // ================= Telas =================
-  if (cloudMode && screen === "boot") {
+  if (cloudMode && CLOUD_AVAILABLE && screen === "boot") {
     return (
       <CloudMode
         onPcBack={() => { setCloudMode(false); boot(); }}
-        onBack={IS_JARVIS_APP || cloudRequested() ? null : () => setCloudMode(false)}
+        onBack={cloudRequested() ? null : () => setCloudMode(false)}
       />
     );
   }
@@ -2353,7 +2353,7 @@ export default function App() {
                   <span>{launchState === "trying" ? "ABRINDO…" : "LIGAR O JARVIS"}</span>
                 </button>
                 <button type="button" onClick={boot} className="ls-chip">TENTAR AGORA</button>
-                <button type="button" onClick={() => setCloudMode(true)} className="ls-chip">USAR PELA NUVEM</button>
+                {CLOUD_AVAILABLE && <button type="button" onClick={() => setCloudMode(true)} className="ls-chip">USAR PELA NUVEM</button>}
               </div>
               {launchState === "missing" && (
                 <div className="ls-launch-missing" role="alert">
@@ -2381,7 +2381,7 @@ export default function App() {
                   <span>{launchState === "trying" ? "ABRINDO…" : "LIGAR O JARVIS"}</span>
                 </button>
                 <button type="button" onClick={boot} className="ls-chip">TENTAR AGORA</button>
-                <button type="button" onClick={() => setCloudMode(true)} className="ls-chip">USAR PELA NUVEM</button>
+                {CLOUD_AVAILABLE && <button type="button" onClick={() => setCloudMode(true)} className="ls-chip">USAR PELA NUVEM</button>}
               </div>
               {launchState === "missing" ? (
                 <div className="ls-launch-missing" role="alert">
@@ -2410,7 +2410,7 @@ export default function App() {
               >
                 <span>TENTAR NOVAMENTE</span>
               </button>
-              {bootOffline && (
+              {bootOffline && CLOUD_AVAILABLE && (
                 <button type="button" onClick={() => setCloudMode(true)} className="ls-chip" style={{ marginTop: "10px" }}>USAR PELA NUVEM</button>
               )}
             </>

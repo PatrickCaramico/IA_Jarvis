@@ -29,15 +29,13 @@ import java.net.URL;
  *
  * Serviço em primeiro plano com uma notificação discreta ("JARVIS conectado"). A cada 30 s consulta
  * GET http://PC:8000/api/mobile/notifications?since=N com a chave de pareamento, na Wi-Fi de casa.
- * V6.6: com o PC fora do alcance, consulta o modo nuvem (Netlify) com a chave do PIN da nuvem:
- * lembretes, alarmes e água chegam mesmo com o notebook desligado.
+ * Sem servidor na nuvem: se o celular sair de casa, os avisos esperam até ele voltar a alcançar o PC.
  */
 public class NotifyService extends Service {
     static final String CH_ALERTS = "jarvis_avisos";
     static final String CH_LINK = "jarvis_conexao";
     static final String KEY_ENABLED = "notify_enabled";
     private static final String KEY_SINCE = "notify_since";
-    private static final String KEY_CLOUD_SINCE = "cloud_notify_since";
     private static final int ID_FOREGROUND = 1;
     private static final long INTERVAL_MS = 30_000;
 
@@ -101,13 +99,6 @@ public class NotifyService extends Service {
             } catch (Exception e) {
                 setLink(false);
             }
-            if (!lastOk) {
-                try {
-                    checkCloud();
-                } catch (Exception ignored) {
-                    // sem internet: tenta no próximo ciclo
-                }
-            }
             handler.postDelayed(this, INTERVAL_MS);
         }
     };
@@ -160,45 +151,6 @@ public class NotifyService extends Service {
             }
         }
         prefs.edit().putLong(KEY_SINCE, latest).apply();
-    }
-
-    /** V6.6: avisos do modo nuvem (mesmo formato da fila do PC). */
-    private void checkCloud() throws Exception {
-        String token = prefs.getString(MainActivity.KEY_CLOUD_TOKEN, "");
-        if (token.isEmpty()) return;
-        long since = prefs.getLong(KEY_CLOUD_SINCE, -1);
-        HttpURLConnection c = (HttpURLConnection) new URL("https://" + MainActivity.CLOUD_HOST
-                + "/api/cloud/notifications?since=" + since).openConnection();
-        c.setConnectTimeout(8000);
-        c.setReadTimeout(15000);
-        c.setRequestProperty("Accept", "application/json");
-        c.setRequestProperty("Authorization", "Bearer " + token);
-        int code = c.getResponseCode();
-        if (code == 401) {
-            c.disconnect();
-            prefs.edit().remove(MainActivity.KEY_CLOUD_TOKEN).apply();
-            return;
-        }
-        if (code != 200) {
-            c.disconnect();
-            return;
-        }
-        StringBuilder sb = new StringBuilder();
-        try (BufferedReader r = new BufferedReader(new InputStreamReader(c.getInputStream(), "UTF-8"))) {
-            String line;
-            while ((line = r.readLine()) != null) sb.append(line);
-        }
-        c.disconnect();
-        JSONObject json = new JSONObject(sb.toString());
-        JSONArray items = json.optJSONArray("items");
-        if (items != null && since >= 0) {
-            for (int i = 0; i < items.length(); i++) {
-                JSONObject n = items.getJSONObject(i);
-                if (!MainActivity.visible) show(n.optString("title", "JARVIS"), n.optString("body", ""), n.optString("kind", ""));
-            }
-        }
-        prefs.edit().putLong(KEY_CLOUD_SINCE, json.optLong("latest", 0)).apply();
-        getSystemService(NotificationManager.class).notify(ID_FOREGROUND, linkNotification("PC desligado · avisos pela nuvem"));
     }
 
     private void show(String title, String body, String kind) {

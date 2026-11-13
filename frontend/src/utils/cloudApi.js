@@ -1,5 +1,7 @@
 // V6.6: cliente do MODO NUVEM (funções do Netlify em /api/cloud). Funciona com o notebook desligado.
 // A chave vem do PIN do modo nuvem e fica guardada neste aparelho (60 dias).
+// V6.6.2: só no NAVEGADOR (celular ou computador). O app Android fala só com o PC, como antes.
+import { IS_JARVIS_APP } from "./device.js";
 
 const TOKEN_KEY = "jarvis.cloud.token";
 const SITE = "https://projeto-jarvis-ia.netlify.app";
@@ -23,25 +25,22 @@ export function setCloudToken(token) {
   } catch {
     /* sem armazenamento: vale só nesta aba */
   }
-  // o app Android usa a chave para buscar os avisos (lembretes e alarmes) com o app fechado
-  try {
-    window.JarvisApp?.setCloudToken?.(token || "");
-  } catch {
-    /* fora do app */
-  }
 }
 
 /** O endereço pede o modo nuvem (?nuvem=1, usado pelo app quando o PC não responde)? */
 export function cloudRequested() {
-  if (typeof window === "undefined") return false;
+  if (typeof window === "undefined" || IS_JARVIS_APP) return false;
   return new URLSearchParams(window.location.search).get("nuvem") === "1";
 }
 
-/** Celular (navegador ou app): com o PC desligado, entra direto no modo nuvem. */
+/** Navegador do celular: com o PC desligado, entra direto no modo nuvem (o app nunca usa a nuvem). */
 export function isPhone() {
-  if (typeof navigator === "undefined") return false;
-  return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || /JarvisApp\//.test(navigator.userAgent);
+  if (typeof navigator === "undefined" || IS_JARVIS_APP) return false;
+  return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
 }
+
+/** O modo nuvem está disponível aqui? (navegador sim; app Android não) */
+export const CLOUD_AVAILABLE = !IS_JARVIS_APP;
 
 export async function cloud(path, { method = "GET", body, timeout = 25000 } = {}) {
   const ctrl = new AbortController();

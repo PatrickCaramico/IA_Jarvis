@@ -2,8 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import PinPad from "./PinPad.jsx";
 import useSpeechRecognition from "../hooks/useSpeechRecognition.js";
 import { API_URL } from "../utils/api.js";
-import { IS_JARVIS_APP } from "../utils/device.js";
 import { change, cloud, cloudToken, setCloudToken } from "../utils/cloudApi.js";
+import { applyAccessibility, applyBackground, applyTheme } from "../utils/theme.js";
 
 // V6.6: MODO NUVEM. Com o notebook desligado (ou longe), a central roda pelas funções do Netlify:
 // conversa com a IA, compras, tarefas, lembretes, alarmes, água, notícias e clima.
@@ -21,14 +21,6 @@ const DAYS = ["seg", "ter", "qua", "qui", "sex", "sáb", "dom"];
 function sayHere(text) {
   const clean = String(text || "").trim();
   if (!clean) return;
-  try {
-    if (window.JarvisApp?.say) {
-      window.JarvisApp.say(clean);
-      return;
-    }
-  } catch {
-    /* segue para a voz do navegador */
-  }
   try {
     const synth = window.speechSynthesis;
     if (!synth) return;
@@ -259,13 +251,13 @@ function ListsTab({ state, run }) {
             ))}
           </ul>
         )}
-        <p className="cm-muted">Com o app fechado, o alarme chega como notificação do celular.</p>
+        <p className="cm-muted">O alarme toca com esta página aberta; com o PC ligado, ele toca no PC.</p>
       </section>
     </div>
   );
 }
 
-function WaterTab({ state, run }) {
+function WaterTab({ state, run, quick }) {
   const w = state?.agua;
   const [goal, setGoal] = useState("");
   if (!w) return null;
@@ -276,7 +268,7 @@ function WaterTab({ state, run }) {
           <div><b>{w.total_ml}</b><span>de {w.goal_ml} ml</span></div>
         </div>
         <div className="cm-water-btns">
-          {[200, 250, 500].map((ml) => <button key={ml} type="button" onClick={() => run({ op: "water_add", ml })}>+{ml} ml</button>)}
+          {(quick?.length ? quick : [200, 250, 500]).map((ml) => <button key={ml} type="button" onClick={() => run({ op: "water_add", ml })}>+{ml} ml</button>)}
         </div>
         {w.logs.length > 0 && <button type="button" className="cm-chip" onClick={() => run({ op: "water_undo" })}>DESFAZER O ÚLTIMO</button>}
         <form className="cm-add" onSubmit={(e) => { e.preventDefault(); if (goal) { run({ op: "water_goal", goal_ml: Number(goal) }); setGoal(""); } }}>
@@ -289,7 +281,7 @@ function WaterTab({ state, run }) {
   );
 }
 
-function InfoTab() {
+function InfoTab({ themes = [] }) {
   const [weather, setWeather] = useState(null);
   const [news, setNews] = useState(null);
   const [topic, setTopic] = useState("");
@@ -329,6 +321,14 @@ function InfoTab() {
           <input value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="Tema (vazio = principais)" aria-label="Tema das notícias" />
           <button type="submit">🔎</button>
         </form>
+        {themes.length > 0 && (
+          <div className="cm-themes" role="group" aria-label="Seus temas de notícias">
+            <button type="button" className={`cm-chip ${!news?.topic ? "is-on" : ""}`} onClick={() => { setTopic(""); loadNews(""); }}>Principais</button>
+            {themes.map((t) => (
+              <button key={t.title} type="button" className={`cm-chip ${news?.topic === t.q ? "is-on" : ""}`} onClick={() => { setTopic(""); loadNews(t.q); }}>{t.title}</button>
+            ))}
+          </div>
+        )}
         {!news ? <p className="cm-muted">Carregando…</p> : news.items.length === 0 ? <p className="cm-muted">Nada encontrado.</p> : (
           <ul className="cm-news">
             {news.items.map((n) => (
@@ -358,11 +358,27 @@ export default function CloudMode({ onPcBack, onBack }) {
       return true;
     }
   });
+  const prefs = status?.prefs || {};
   const sinceRef = useRef(null);
 
   useEffect(() => {
     cloud("/status").then(setStatus).catch(() => setStatus({ configured: true }));
   }, []);
+
+  // V6.6.2: as configurações da central (fundo, cor, acessibilidade, modo silencioso) valem aqui também.
+  // O PC manda para a nuvem a cada minuto; vale a última que ele mandou.
+  useEffect(() => {
+    if (!status?.prefs) return;
+    const p = status.prefs;
+    if (p.background_style) applyBackground(p.background_style);
+    applyAccessibility(p);
+    if (p.theme_colors) applyTheme(p.theme_colors);
+    try {
+      if (localStorage.getItem("jarvis.cloud.voice") === null && p.silent_mode) setVoiceOn(false);
+    } catch {
+      /* sem armazenamento */
+    }
+  }, [status]);
 
   const refresh = useCallback(async () => {
     try {
@@ -376,7 +392,6 @@ export default function CloudMode({ onPcBack, onBack }) {
 
   useEffect(() => {
     if (!logged) return undefined;
-    setCloudToken(cloudToken()); // entrega a chave ao app Android (avisos com o app fechado)
     refresh();
     const t = setInterval(refresh, 30000);
     return () => clearInterval(t);
@@ -405,9 +420,9 @@ export default function CloudMode({ onPcBack, onBack }) {
     return () => clearInterval(t);
   }, [logged, refresh]);
 
-  // O PC voltou? (no navegador: confere o backend; no app, quem confere é o próprio app)
+  // O PC voltou? Confere o backend e volta para a central completa
   useEffect(() => {
-    if (IS_JARVIS_APP || !onPcBack) return undefined;
+    if (!onPcBack) return undefined;
     let alive = true;
     const probe = async () => {
       try {
@@ -477,7 +492,7 @@ export default function CloudMode({ onPcBack, onBack }) {
     <div className="cm-root">
       <header className="cm-header">
         <div>
-          <div className="cm-brand">J.A.R.V.I.S. <span>· MODO NUVEM</span></div>
+          <div className="cm-brand">{(prefs.ai_name || status?.assistente || "JARVIS").toUpperCase()} <span>· MODO NUVEM</span></div>
           <div className="cm-sub">
             <span className="cm-dot" aria-hidden="true" />
             {status?.nome ? `${status.nome}, o` : "O"} notebook está desligado: usando a nuvem.
@@ -509,8 +524,8 @@ export default function CloudMode({ onPcBack, onBack }) {
                 micSupported={speech.supported} onMic={() => (speech.listening ? speech.stop() : speech.start())} />
             )}
             {tab === "listas" && <ListsTab state={state} run={run} />}
-            {tab === "agua" && <WaterTab state={state} run={run} />}
-            {tab === "info" && <InfoTab />}
+            {tab === "agua" && <WaterTab state={state} run={run} quick={prefs.water_quick_ml} />}
+            {tab === "info" && <InfoTab themes={prefs.briefing_news_themes} />}
             {error && <p className="cm-error" role="alert">{error}</p>}
           </main>
           <nav className="cm-tabs" aria-label="Seções do modo nuvem">
