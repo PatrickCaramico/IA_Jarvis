@@ -1,6 +1,6 @@
 // V6.6: cliente do MODO NUVEM (funções do Netlify em /api/cloud). Funciona com o notebook desligado.
 // A chave vem do PIN do modo nuvem e fica guardada neste aparelho (60 dias).
-// V6.6.2: só no NAVEGADOR (celular ou computador). O app Android fala só com o PC, como antes.
+// V6.6.3: só no CELULAR (Chrome do celular e app Android). No computador, sempre o site normal (PC).
 import { IS_JARVIS_APP } from "./device.js";
 
 const TOKEN_KEY = "jarvis.cloud.token";
@@ -25,22 +25,28 @@ export function setCloudToken(token) {
   } catch {
     /* sem armazenamento: vale só nesta aba */
   }
+  // o app Android usa a chave para buscar os avisos (lembretes e alarmes) com o app fechado
+  try {
+    window.JarvisApp?.setCloudToken?.(token || "");
+  } catch {
+    /* fora do app */
+  }
 }
 
-/** O endereço pede o modo nuvem (?nuvem=1, usado pelo app quando o PC não responde)? */
+/** O endereço pede o modo nuvem (?nuvem=1, usado pelo app quando o PC não responde)? Só no celular. */
 export function cloudRequested() {
-  if (typeof window === "undefined" || IS_JARVIS_APP) return false;
+  if (typeof window === "undefined" || !isPhone()) return false;
   return new URLSearchParams(window.location.search).get("nuvem") === "1";
 }
 
-/** Navegador do celular: com o PC desligado, entra direto no modo nuvem (o app nunca usa a nuvem). */
+/** Celular (Chrome do celular ou app Android): com o PC desligado, entra direto no modo nuvem. */
 export function isPhone() {
-  if (typeof navigator === "undefined" || IS_JARVIS_APP) return false;
-  return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+  if (typeof navigator === "undefined") return false;
+  return IS_JARVIS_APP || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
 }
 
-/** O modo nuvem está disponível aqui? (navegador sim; app Android não) */
-export const CLOUD_AVAILABLE = !IS_JARVIS_APP;
+/** O modo nuvem existe aqui? Só no celular; no computador, a central é sempre a do PC. */
+export const CLOUD_AVAILABLE = isPhone();
 
 export async function cloud(path, { method = "GET", body, timeout = 25000 } = {}) {
   const ctrl = new AbortController();

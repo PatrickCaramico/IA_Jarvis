@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import PinPad from "./PinPad.jsx";
 import useSpeechRecognition from "../hooks/useSpeechRecognition.js";
 import { API_URL } from "../utils/api.js";
+import { IS_JARVIS_APP } from "../utils/device.js";
 import { change, cloud, cloudToken, setCloudToken } from "../utils/cloudApi.js";
 import { applyAccessibility, applyBackground, applyTheme } from "../utils/theme.js";
 
@@ -21,6 +22,14 @@ const DAYS = ["seg", "ter", "qua", "qui", "sex", "sáb", "dom"];
 function sayHere(text) {
   const clean = String(text || "").trim();
   if (!clean) return;
+  try {
+    if (window.JarvisApp?.say) {
+      window.JarvisApp.say(clean); // app Android: voz do Android
+      return;
+    }
+  } catch {
+    /* segue para a voz do navegador */
+  }
   try {
     const synth = window.speechSynthesis;
     if (!synth) return;
@@ -251,7 +260,7 @@ function ListsTab({ state, run }) {
             ))}
           </ul>
         )}
-        <p className="cm-muted">O alarme toca com esta página aberta; com o PC ligado, ele toca no PC.</p>
+        <p className="cm-muted">{IS_JARVIS_APP ? "Com o app fechado, o alarme chega como notificação do celular." : "O alarme toca com esta página aberta; com o PC ligado, ele toca no PC."}</p>
       </section>
     </div>
   );
@@ -392,6 +401,7 @@ export default function CloudMode({ onPcBack, onBack }) {
 
   useEffect(() => {
     if (!logged) return undefined;
+    setCloudToken(cloudToken()); // entrega a chave ao app Android (avisos com o app fechado)
     refresh();
     const t = setInterval(refresh, 30000);
     return () => clearInterval(t);
@@ -420,9 +430,9 @@ export default function CloudMode({ onPcBack, onBack }) {
     return () => clearInterval(t);
   }, [logged, refresh]);
 
-  // O PC voltou? Confere o backend e volta para a central completa
+  // O PC voltou? No navegador, confere o backend; no app, quem confere é o próprio app (e abre a central)
   useEffect(() => {
-    if (!onPcBack) return undefined;
+    if (IS_JARVIS_APP || !onPcBack) return undefined;
     let alive = true;
     const probe = async () => {
       try {
