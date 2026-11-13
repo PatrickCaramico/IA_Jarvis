@@ -393,6 +393,40 @@ public class MainActivity extends Activity {
         }
     };
 
+    /**
+     * V6.6.8: decide para onde o app vai AGORA: notebook (se ele responde nesta rede) ou nuvem.
+     * Roda ao abrir, a cada troca de rede (Wi-Fi <-> dados móveis) e ao voltar para o app. Antes, o app
+     * trocava de rede com a central do PC aberta e ficava parado nela: PIN e digital "carregavam" para sempre.
+     */
+    private volatile boolean routing = false;
+
+    private void routeNow() {
+        String saved = prefs.getString(KEY_URL, "");
+        if (!isHttp(saved) || routing) return;
+        routing = true;
+        new Thread(() -> {
+            boolean ok = pcAnswers();
+            runOnUiThread(() -> {
+                routing = false;
+                Uri cur = currentUrl == null ? null : Uri.parse(currentUrl);
+                boolean onCloud = cur != null && CLOUD_HOST.equals(cur.getHost());
+                boolean onPc = cur != null && isHttp(currentUrl) && !onCloud;
+                if (ok) {
+                    if (!onPc || mainFrameFailed) {
+                        stopCloud();
+                        offlineScreen = false;
+                        retryAttempt = 0;
+                        web.loadUrl(saved);
+                    }
+                } else if (!onCloud) {
+                    openCloud(web);
+                }
+            });
+        }).start();
+    }
+
+    private final Runnable routeSoon = this::routeNow;
+
     private void openCloud(WebView view) {
         cloudScreen = true;
         offlineScreen = false;
@@ -417,8 +451,7 @@ public class MainActivity extends Activity {
         String remote = prefs.getString(KEY_REMOTE, "");
         if (!remote.isEmpty() && base != null && base.startsWith("http://")) bases.add("http://" + remote + ":8000");
         // V6.6.7: o PC exige a chave de pareamento de quem vem do celular. Antes o teste ia sem a chave, o PC
-        // respondia 401 e o app achava que o PC estava fora do ar (caía na nuvem mesmo em casa). Agora leva a
-        // chave e QUALQUER resposta HTTP do PC conta como "ao alcance"; só falha de conexão/tempo vai à nuvem.
+        // respondia 401 e o app achava que o PC estava fora do ar (caía na nuvem mesmo em casa).
         String token = saved.getQueryParameter("token");
         String query = token == null || token.isEmpty() ? "" : "?token=" + Uri.encode(token);
         for (String b : bases) {
@@ -428,8 +461,11 @@ public class MainActivity extends Activity {
                 c.setReadTimeout(4000);
                 if (token != null && !token.isEmpty()) c.setRequestProperty("X-Jarvis-Token", token);
                 int code = c.getResponseCode();
+                // 200 = JARVIS respondeu com a chave; 403 = JARVIS bloqueado (também é ele). Outro aparelho
+                // com o mesmo endereço numa Wi-Fi de fora não passa por aqui.
+                String server = c.getHeaderField("content-type");
                 c.disconnect();
-                if (code > 0) return true;
+                if ((code == 200 || code == 403) && server != null && server.contains("json")) return true;
             } catch (Exception ignored) {
             }
         }
@@ -504,6 +540,9 @@ public class MainActivity extends Activity {
     private void netCheckSoon() {
         retryHandler.removeCallbacks(netCheck);
         retryHandler.postDelayed(netCheck, 2500);
+        // V6.6.8: Wi-Fi de casa <-> dados móveis: notebook ou nuvem, de novo
+        retryHandler.removeCallbacks(routeSoon);
+        retryHandler.postDelayed(routeSoon, 2000);
     }
 
     /** "wifi", "cellular", "ethernet", "none" ou "other". Com VPN (Tailscale), olha a rede por baixo dela. */
@@ -552,6 +591,8 @@ public class MainActivity extends Activity {
         if (offlineScreen) {
             retryAttempt = 0;
             retrySaved();
+        } else if (pausedAt > 0 && System.currentTimeMillis() - pausedAt > 15_000L) {
+            routeNow(); // V6.6.8: saiu de casa com o app em segundo plano
         }
         // V5.1.1: voltou da tela "permitir instalar apps" ou reabriu o app: confere de novo se há versão nova
         String url = prefs.getString(KEY_URL, "");
@@ -1054,18 +1095,8 @@ public class MainActivity extends Activity {
         if (isHttp(url)) {
             // V6.6.3: confere o PC antes (até ~3 s). Sem resposta, vai direto para o modo nuvem em vez de
             // esperar o "tempo esgotado" do WebView (que em alguns celulares mostrava a página de erro crua).
-            new Thread(() -> {
-                boolean ok = pcAnswers();
-                runOnUiThread(() -> {
-                    if (ok) {
-                        stopCloud();
-                        web.loadUrl(url);
-                        checkForUpdate(url);
-                    } else {
-                        openCloud(web);
-                    }
-                });
-            }).start();
+            routeNow();
+            checkForUpdate(url);
         } else {
             web.loadUrl(SETUP);
         }
