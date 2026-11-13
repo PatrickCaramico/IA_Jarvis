@@ -2,6 +2,10 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 6.6.7 — 13 de novembro de 2026
+
+- **App caía no acesso pela nuvem mesmo em casa:** ao abrir, o app 6.6.x testava o PC em `/api/health` sem a chave de pareamento; o PC respondia 401 (o celular sempre precisa da chave) e o app entendia "PC fora do ar". Agora o teste leva a chave, e qualquer resposta do PC conta como "ao alcance": só falha de conexão (dados móveis, outra rede, PC desligado) leva à nuvem. Precisa do APK 6.6.7: gere no PC e toque em ATUALIZAR APP no celular (funciona de dentro da nuvem, na Wi-Fi de casa).
+
 ## 6.6.6 — 13 de novembro de 2026
 
 - **Status certo no acesso pela nuvem:** o aviso do topo dizia "notebook desligado" mesmo com o notebook ligado em casa (você só estava fora, nos dados móveis). Agora diz "☁ ACESSO PELA NUVEM · notebook ligado em casa · listas sincronizadas" quando o PC sincronizou nos últimos 3 minutos, e "notebook desligado · visto 13/11 15:09" quando não. Atualiza a cada minuto. No app, o aviso de rede ("O senhor está conectado pela rede de dados móveis") continua aparecendo e falando também pela nuvem. `/api/cloud/status` passa a mandar `agora`.
