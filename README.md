@@ -100,6 +100,8 @@ A mesma central também abre pelo site, no botão **Abrir meu JARVIS** (`https:/
 
 **Modo nuvem (V6.6), com o notebook desligado:** no celular (Chrome ou app), quando o PC não responde, a central abre o **modo nuvem**, que roda nas funções do Netlify: conversa com a IA (voz ou texto), lista de compras, tarefas, lembretes, alarmes, água, notícias e clima. Entra com um PIN próprio. Quando o PC liga, ele puxa o que você mudou pelo celular e a central completa volta sozinha. As configurações da central (fundo, cor, nome, personalidade) valem também na nuvem. No computador, o site é sempre o normal (sem nuvem). Configuração (uma vez, no painel do Netlify): `docs/MODO-NUVEM.md`.
 
+**App do celular que se atualiza sozinho (V6.7.7):** rode uma vez o `Preparar-App-no-GitHub.bat` (põe a chave do app nos secrets do GitHub). Daí em diante o GitHub gera o APK a cada versão, e o app se atualiza de qualquer lugar, sem o PC.
+
 Depois de uma atualização no GitHub, toque em **⟳ ATUALIZAR** na tela de bloqueio: o JARVIS baixa a versão nova, avisa por voz e reinicia sozinho.
 
 **Alarmes e lembretes por voz (V5.1):** "Jarvis, me acorda às 7", "alarme de segunda a sexta às 6 e meia", "me lembra toda terça às 19 de levar o lixo". Tocando, diga "Jarvis, parar" ou "soneca". Lista completa em `docs/COMANDOS.md`.
