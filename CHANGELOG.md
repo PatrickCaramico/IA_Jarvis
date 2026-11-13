@@ -2,6 +2,10 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 6.6.4 — 13 de novembro de 2026
+
+- **Tela final do resumo (bom dia / boa tarde / boa noite) reorganizada no PC:** antes, o orbe ocupava o meio e os cards ficavam espremidos numa fileira só de 200 px, por cima das linhas do orbe. Agora o orbe fica menor no alto e os cards vão para um painel de vidro embaixo, em no máximo 2 fileiras (8 assuntos = 4×2; 10 = 5×2; tela média até 3 colunas), maiores (até 300 px) e sem passar por cima do orbe (o painel tem altura máxima e rola por dentro se precisar). A frase final do JARVIS aparece inteira (até 2 linhas) e a prontidão fisiológica ficou compacta, com o anel ao lado dos números. No celular, nada muda.
+
 ## 6.6.3 — 13 de novembro de 2026
 
 - **Nuvem só no celular:** no navegador do **computador**, a central é sempre a do PC: sem o botão USAR PELA NUVEM e sem entrar na nuvem (nem com `?nuvem=1`). No **Chrome do celular** e no **app Android**, com o notebook desligado, entra sozinho no modo nuvem, com as configurações da central.
