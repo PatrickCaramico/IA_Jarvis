@@ -73,6 +73,45 @@ def _save_data(data: Dict[str, Any]) -> None:
         log.warning("Falha ao salvar water_log.json: %s", exc)
 
 
+def streak(data: Optional[Dict[str, Any]] = None, now: Optional[datetime] = None) -> Dict[str, Any]:
+    """V6.8: ofensiva da água: dias seguidos batendo a meta (como no Duolingo).
+
+    base = dias seguidos até ONTEM; hoje soma 1 quando a meta é batida. Se ontem não bateu, a ofensiva
+    recomeça (base 0). Usa a meta atual para todos os dias.
+    """
+    data = data or _load_data()
+    now = now or _now()
+    goal = data.get("goal_ml", DEFAULT_GOAL_ML) or DEFAULT_GOAL_ML
+    days = data.get("days", {})
+
+    def done(d: datetime) -> bool:
+        return int(days.get(d.strftime("%Y-%m-%d"), {}).get("total_ml", 0)) >= goal
+
+    base = 0
+    day = now - timedelta(days=1)
+    while base < 3650 and done(day):
+        base += 1
+        day -= timedelta(days=1)
+    today_done = done(now)
+    best = int(data.get("best_streak", 0))
+    total = base + (1 if today_done else 0)
+    return {"days": total, "base": base, "today_done": today_done, "best": max(best, total)}
+
+
+def streak_sentence(s: Dict[str, Any], st: Optional[Dict[str, Any]] = None) -> str:
+    if s["days"] == 0:
+        return "Sua ofensiva de água está zerada, senhor. Bata a meta hoje para começar uma nova."
+    days = f"{s['days']} {'dia' if s['days'] == 1 else 'dias'}"
+    if s["today_done"]:
+        text = f"Sua ofensiva de água está em {days}, com a meta de hoje já batida."
+    else:
+        left = max(0, (st or get_status())["goal_ml"] - (st or get_status())["total_ml"])
+        text = f"Sua ofensiva de água está em {days}. Faltam {left} ml hoje para manter."
+    if s["best"] > s["days"]:
+        text += f" Seu recorde é de {s['best']} dias."
+    return text
+
+
 def get_status() -> Dict[str, Any]:
     """Retorna o progresso hídrico de hoje."""
     data = _load_data()
@@ -93,6 +132,8 @@ def get_status() -> Dict[str, Any]:
         "reminder_interval_min": data.get("reminder_interval_min", DEFAULT_REMINDER_INTERVAL_MIN),
         "start_hour": data.get("start_hour", DEFAULT_START_HOUR),
         "end_hour": data.get("end_hour", DEFAULT_END_HOUR),
+        # V6.8: ofensiva (dias seguidos batendo a meta)
+        **{f"streak{'' if k == 'days' else '_' + k}": v for k, v in streak(data).items()},
     }
 
 
@@ -135,6 +176,9 @@ def add_intake(ml: int, note: str = "copo de água") -> Dict[str, Any]:
     day_entry["total_ml"] = day_entry.get("total_ml", 0) + ml
     day_entry["logs"].append({"time": now_iso, "ml": ml, "note": note})
     data["last_intake_ts"] = _now().isoformat()
+    s = streak(data)  # V6.8: guarda o recorde da ofensiva
+    if s["days"] > int(data.get("best_streak", 0)):
+        data["best_streak"] = s["days"]
 
     _save_data(data)
     return get_status()
@@ -180,6 +224,10 @@ def parse_water_command(message: str) -> Optional[tuple[str, int]]:
         "como esta a agua", "hidratacao", "nivel de hidratacao", "como esta minha hidratacao",
         "agua de hoje", "bebi agua hoje"
     )
+    # V6.8: "qual minha ofensiva de água?" / "como está minha sequência de água?"
+    if re.search(r"\bofensiva\b", norm_clean) or re.search(r"\bsequencia\b.*\bagua\b", norm_clean):
+        return ("streak", 0)
+
     if any(q in norm_clean for q in query_phrases):
         return ("query", 0)
 

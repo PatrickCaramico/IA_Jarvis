@@ -216,6 +216,24 @@ export default function App() {
   const [summaryActive, setSummaryActive] = useState(false);
   const [godsEyeOpen, setGodsEyeOpen] = useState(false);
   const [notice, setNotice] = useState("");
+  // V6.8: link aberto por um agente que o navegador bloqueou (aparece como botão por 20 s)
+  const [agentLink, setAgentLink] = useState(null);
+  useEffect(() => {
+    if (!agentLink) return undefined;
+    const t = setTimeout(() => setAgentLink(null), 20000);
+    return () => clearTimeout(t);
+  }, [agentLink]);
+  const openOnThisDevice = useCallback((url) => {
+    if (!/^https:\/\//.test(url || "")) return;
+    const label = /google\.com\/maps/.test(url) ? "🧭 Abrir a rota no Google Maps" : /youtube\.com/.test(url) ? "▶ Abrir no YouTube" : "Abrir o link";
+    if (IS_JARVIS_APP) {
+      window.location.href = url; // no app, o Android abre o Google Maps / YouTube
+      return;
+    }
+    const w = window.open(url, "_blank");
+    if (w) w.opener = null;
+    else setAgentLink({ url, label }); // o navegador bloqueou: vira um botão
+  }, []);
   // V4.4: comemoração do Modo Torcedor (gol, gol sofrido, grito) e releitura do placar
   const [fanEvent, setFanEvent] = useState(null);
   const [fanRefresh, setFanRefresh] = useState(0);
@@ -555,6 +573,14 @@ export default function App() {
       case "speak_on_device":
         // V5.7: a resposta a um pedido DESTE aparelho: a voz toca aqui (o PC ficou em silêncio)
         if (msg.client_id && msg.client_id === clientId() && msg.text) enqueueHere(msg.text, msg.say_id);
+        break;
+      case "agent":
+        // V6.8: sub-agente trabalhando ("🧭 Agente de rotas: rota para o trabalho")
+        if (msg.label) setNotice(`${msg.icon || "🤖"} ${msg.label}: ${msg.text || ""}`);
+        break;
+      case "open_url":
+        // V6.8: o agente abriu algo (Google Maps, YouTube) para ESTE aparelho
+        if (msg.url && msg.client_id && msg.client_id === clientId()) openOnThisDevice(msg.url);
         break;
       case "speak_everywhere":
         // V6.7.1: aviso para todos (timer, lembrete, "avisa em todos os aparelhos"): fala também aqui,
@@ -2713,6 +2739,11 @@ export default function App() {
         />
       )}
       {notice && <div className="notice-toast" role="status">{notice}</div>}
+      {agentLink && (
+        <a className="notice-toast agent-link" href={agentLink.url} target="_blank" rel="noreferrer" onClick={() => setAgentLink(null)}>
+          {agentLink.label} ›
+        </a>
+      )}
       {/* V6.0: "Compartilhar -> JARVIS" */}
       {shareItem && createPortal(
         <div className="ld-overlay" role="dialog" aria-modal="true" aria-label="Compartilhado com o JARVIS" onClick={(e) => { if (e.target === e.currentTarget) setShareItem(null); }}>

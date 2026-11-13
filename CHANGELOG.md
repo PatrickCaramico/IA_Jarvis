@@ -2,6 +2,14 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 6.8.0 — 13 de novembro de 2026
+
+- **Sub-agentes** (`modules/agents.py`): o JARVIS entrega pedidos a agentes especialistas, que aparecem na tela enquanto trabalham (evento `agent`) e abrem o resultado no aparelho que pediu (evento `open_url` para o celular; navegador do PC quando o pedido veio do PC). Novo agente cabe numa classe com `match`/`run`.
+  - **Agente de rotas 🧭:** guarda lugares ("meu trabalho fica na…", `data/lugares.json`, um por pessoa) e abre o Google Maps com a rota saindo de onde você está ("quero ir para o trabalho", "me leva pra academia a pé", "rota para o aeroporto de Guarulhos de ônibus"). Lugar pessoal sem endereço: ele pergunta. "quero ir dormir" e afins não disparam.
+  - **Agente de pesquisa 🔎:** "abre o YouTube e pesquisa…", "procura … no YouTube" (antes abria sempre no PC).
+  - **Fora de casa:** a nuvem conhece os lugares (sincronizados) e ganha as ações `rota`, `lugar_salvar` (vai para o PC) e `youtube`; o app abre o Google Maps/YouTube direto.
+- **Ofensiva da água 🔥:** dias seguidos batendo a meta, no painel de água ("🔥 Ofensiva de N dias" ou "beba X ml para manter"), na comemoração da meta ("Ofensiva de 6 dias!"), no lembrete depois das 17h quando está em risco e por voz ("qual minha ofensiva de água?", com o recorde). Fora de casa, a nuvem continua a contagem do PC.
+
 ## 6.7.7 — 13 de novembro de 2026
 
 - **App que se atualiza de qualquer lugar:** o app procurava versão nova só no PC (Wi-Fi de casa). Agora, se não acha o PC (fora de casa, PC desligado) ou o PC não tem APK mais novo, procura nas **Releases do GitHub** e se instala dali (só aceita APK publicado neste repositório). O GitHub gera o APK sozinho a cada versão nova na main (`release-apk.yml` dispara quando `backend/version.py` muda; versão já publicada é pulada), assinado com a **mesma chave do PC**, que precisa ir para os secrets do repositório uma vez: rode o **`Preparar-App-no-GitHub.bat`** (abre a página e põe a chave e a senha na área de transferência para colar; não envia nada sozinho). Sem a chave, o processo só avisa e pula. Precisa do APK 6.7.7 (a última vez gerado no PC).

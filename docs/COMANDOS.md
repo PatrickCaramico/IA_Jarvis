@@ -1,6 +1,6 @@
 # JARVIS — Comandos do dia a dia
 
-**Versão do projeto:** 6.7.7 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
+**Versão do projeto:** 6.8.0 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
 
 > Montado a partir do código do projeto. Se algum comando não responder como descrito, me avise que eu ajusto o guia.
 > Para a lista técnica de rotas, veja [API.md](API.md); para o `.env`, [CONFIGURACAO.md](CONFIGURACAO.md).
@@ -329,6 +329,27 @@ Avisos automáticos (gatilhos): chuva amanhã (à noite), jogo começando (com o
 | "Gastei 45 reais no mercado" / "Recebi 3000 de salário" | Anota (sem banco). |
 | "Quanto eu gastei esse mês?" / "hoje" / "essa semana" | Total e as categorias que mais pesaram. Também na tela **Finanças**. |
 | "Apaga o último gasto" | Desfaz o último lançamento. |
+
+### Sub-agentes: rotas e pesquisa (V6.8)
+
+O JARVIS entrega o pedido a um agente especialista. Ele aparece na tela enquanto trabalha ("🧭 Agente de rotas: rota para o trabalho") e abre o resultado **no aparelho de onde veio o pedido** (no celular, o Google Maps/YouTube; no PC, o navegador). Funciona também fora de casa, pela nuvem.
+
+| Diga | O que acontece |
+|---|---|
+| "Meu trabalho fica na Av. Paulista, 1000" / "o endereço da academia é Rua Augusta, 500" | O agente de rotas guarda o lugar. |
+| "Quero ir para o trabalho" / "me leva pra academia" / "rota para o aeroporto de Guarulhos" | Abre o Google Maps com a rota saindo de onde você está. |
+| "… a pé" / "de ônibus" / "de bicicleta" | Rota no modo pedido. |
+| "Quais são meus lugares?" / "esquece o endereço da academia" | Lista ou apaga. |
+| "Abre o YouTube e pesquisa receita de bolo" / "procura lofi no YouTube" | O agente de pesquisa abre a busca no YouTube. |
+
+Se o navegador bloquear a janela nova, aparece um botão "Abrir a rota no Google Maps ›" para tocar.
+
+### Ofensiva da água 🔥 (V6.8)
+
+| Diga | O que acontece |
+|---|---|
+| "Qual minha ofensiva de água?" | Quantos dias seguidos você bateu a meta, quanto falta hoje para manter e o recorde. |
+| (sozinho) | O painel de água mostra "🔥 Ofensiva de N dias"; ao bater a meta ele comemora; depois das 17h o lembrete avisa se a ofensiva está em risco. Fora de casa, a nuvem continua a contagem. |
 
 ### Timers e avisos para todos (V6.7.1)
 

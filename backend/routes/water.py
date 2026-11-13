@@ -32,7 +32,8 @@ async def add_water(req: WaterAddRequest) -> dict:
         st = water.add_intake(req.ml, req.note)
         await runtime.manager.broadcast({"type": "water_updated", "data": st, "added_ml": req.ml})
         if st["goal_reached"] and not before["goal_reached"]:
-            runtime.track(speech.say_quietly("Meta de água do dia batida, senhor. Bom trabalho."))
+            extra = f" Ofensiva de {st['streak']} dias!" if st.get("streak", 0) > 1 else ""
+            runtime.track(speech.say_quietly("Meta de água do dia batida, senhor. Bom trabalho." + extra))
         return st
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

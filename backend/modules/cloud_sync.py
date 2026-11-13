@@ -123,6 +123,14 @@ def apply_op(op: dict) -> bool:
     if kind == "water_undo":
         water.undo_last()
         return True
+    if kind == "place_set":  # V6.8: lugar salvo fora de casa (agente de rotas)
+        from modules import agents
+
+        nome, endereco = str(op.get("nome") or "").strip()[:40], str(op.get("endereco") or "").strip()[:160]
+        if not nome or not endereco:
+            return False
+        agents.save_place(nome, endereco)
+        return True
     if kind == "mood_set":  # V6.7: humor registrado fora de casa
         from modules import wellbeing
 
@@ -175,7 +183,9 @@ def snapshot() -> dict:
         "tarefas": tasks.get_tasks(include_completed=True)[-120:],
         "lembretes": [r for r in reminders.get_reminders(only_pending=True)][:120],
         "alarmes": alarms.list_alarms(),
-        "agua": {"goal_ml": st["goal_ml"], "today": {"date": st["date"], "total_ml": st["total_ml"], "logs": st["logs"]}},
+        "agua": {"goal_ml": st["goal_ml"], "today": {"date": st["date"], "total_ml": st["total_ml"], "logs": st["logs"]},
+                 # V6.8: ofensiva até ontem (a nuvem continua a contagem fora de casa)
+                 "streak": {"date": st["date"], "base": st.get("streak_base", 0), "best": st.get("streak_best", 0)}},
         "perfil": {
             "nome": name if name not in {"Principal", ""} else settings.USER_NAME,
             "assistente": assistant,
@@ -184,6 +194,7 @@ def snapshot() -> dict:
             "prefs": shared,
             "memorias": memory.facts(30),  # V6.7.3: o JARVIS da nuvem também conhece o senhor
             "agenda": _agenda(),  # V6.7.4: "o que tenho amanhã?" também fora de casa
+            "lugares": _places(),  # V6.8: o agente de rotas também funciona fora de casa
         },
     }
 
@@ -215,6 +226,15 @@ def _agenda() -> list[dict]:
         return _agenda_cache["items"]
     _agenda_cache.update(at=now, items=items)
     return items
+
+
+def _places() -> dict:
+    try:
+        from modules import agents
+
+        return dict(list(agents.load_places().items())[:30])
+    except Exception:  # noqa: BLE001
+        return {}
 
 
 def sync_once() -> dict:

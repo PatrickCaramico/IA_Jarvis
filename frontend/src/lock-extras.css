@@ -312,6 +312,10 @@
 .wp-full .wp-info { align-items: center; text-align: center; }
 .wp-remaining { font-size: 0.82rem; color: rgba(224, 242, 254, 0.85); }
 .wp-last, .wp-pace { font-size: 0.72rem; color: rgba(186, 230, 253, 0.7); }
+/* V6.8: ofensiva da água */
+.wp-streak { display: inline-flex; align-items: center; gap: 6px; margin: 4px 0; padding: 2px 10px; border-radius: 999px; font-size: 0.78rem; font-weight: 600; width: fit-content; }
+.wp-streak.is-on { color: #fed7aa; background: rgba(249, 115, 22, 0.18); border: 1px solid rgba(251, 146, 60, 0.55); }
+.wp-streak.is-risk { color: #fde68a; background: rgba(251, 191, 36, 0.12); border: 1px dashed rgba(251, 191, 36, 0.55); }
 .wp-actions { display: flex; flex-wrap: wrap; gap: 6px; }
 .wp-actions button {
   flex: 1 1 auto; min-height: 44px; padding: 4px 8px; border-radius: 8px; cursor: pointer;

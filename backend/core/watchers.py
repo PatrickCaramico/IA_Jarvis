@@ -187,6 +187,10 @@ async def water_watcher_loop() -> None:
             if await asyncio.to_thread(water.should_remind_water):
                 st = await asyncio.to_thread(water.get_status)
                 text = f"Hora de um copo d'água, senhor. Hoje foram {st['total_ml']} de {st['goal_ml']} ml."
+                # V6.8: no fim do dia, avisa se a ofensiva está em risco
+                if st.get("streak_base", 0) > 0 and not st.get("streak_today_done") and datetime.now().hour >= 17:
+                    left = st["goal_ml"] - st["total_ml"]
+                    text += f" Faltam {left} ml para manter sua ofensiva de {st['streak_base']} dias."
                 await runtime.manager.broadcast({"type": "alert", "text": text})
                 runtime.notify("water", "💧 Hora da água", text)
                 if not prefs.is_silent_mode():

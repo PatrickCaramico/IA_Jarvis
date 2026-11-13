@@ -109,6 +109,15 @@ export default function WaterPanel({ api, size = "full", initialData = null, onI
             </div>
           )}
           <div className="wp-remaining">{reached ? "Meta do dia alcançada. Bom trabalho." : `Faltam ${remainingMl(total, goal)} ml para o objetivo`}</div>
+          {/* V6.8: ofensiva (dias seguidos batendo a meta) */}
+          {(data.streak > 0 || data.streak_base > 0) && (
+            <div className={`wp-streak ${data.streak_today_done ? "is-on" : "is-risk"}`} title={data.streak_best ? `Recorde: ${data.streak_best} dias` : undefined}>
+              <span aria-hidden="true">🔥</span>
+              {data.streak_today_done
+                ? `Ofensiva de ${data.streak} ${data.streak === 1 ? "dia" : "dias"}`
+                : `Ofensiva de ${data.streak_base} ${data.streak_base === 1 ? "dia" : "dias"}: beba ${remainingMl(total, goal)} ml para manter`}
+            </div>
+          )}
           {last && <div className="wp-last">Último: {last.time} (+{last.ml} ml)</div>}
           {pace && <div className="wp-pace">{pace}</div>}
         </div>

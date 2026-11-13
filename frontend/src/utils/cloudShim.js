@@ -4,7 +4,7 @@
 // respondidos pela nuvem (funções do Netlify, utils/cloudApi.js): conversa com a IA, compras, tarefas,
 // lembretes, alarmes, água, notícias e clima. O que só existe no PC (câmera, Spotify, controle do
 // Windows...) responde "precisa do notebook ligado".
-import { API_URL, WS_URL } from "./api.js";
+import { API_URL, WS_URL, clientId } from "./api.js";
 import { CLOUD_URL, change, cloud, cloudToken } from "./cloudApi.js";
 import { APP_VERSION } from "./version.js";
 import { pcLine } from "./cloudStatus.js";
@@ -181,7 +181,15 @@ async function chat(message) {
   emit({ type: "state", state: "processing" });
   try {
     const res = await cloud("/chat", { method: "POST", body: { message, pode_musica: canMusic() }, timeout: 45000 });
-    for (const a of res.actions || []) if (a.tipo === "musica" && a.ok) playMusic(a.comando, a.busca);
+    for (const a of res.actions || []) {
+      if (a.tipo === "musica" && a.ok) playMusic(a.comando, a.busca);
+      // V6.8: agentes de rotas e pesquisa: abre o Google Maps / YouTube neste aparelho
+      if (a.tipo === "abrir_url" && a.ok && /^https:\/\//.test(a.url || "")) {
+        const rotas = a.agente === "rotas";
+        emit({ type: "agent", agent: a.agente, label: rotas ? "Agente de rotas" : "Agente de pesquisa", icon: rotas ? "🧭" : "🔎", text: rotas ? `rota para ${a.rotulo}` : `buscando “${a.rotulo}” no YouTube` });
+        emit({ type: "open_url", url: a.url, client_id: clientId() });
+      }
+    }
     const reply = res.reply || "";
     emit({ type: "response", text: reply, cards: [] });
     emit({ type: "state", state: "speaking" });
