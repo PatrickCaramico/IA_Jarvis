@@ -11,7 +11,7 @@ import "./blueprint.css";
 import "./profiles.css";
 import "./accessibility.css";
 import "./alarm.css";
-import lazyComponent from "./utils/lazyComponent.jsx";
+import lazyComponent, { PieceBoundary } from "./utils/lazyComponent.jsx";
 import { initialAccessibility, initialBackground } from "./utils/theme.js";
 import { IS_JARVIS_APP, markDevice } from "./utils/device.js";
 import NetworkNotice from "./components/NetworkNotice.jsx";
@@ -32,7 +32,8 @@ const isPopout = window.location.pathname.endsWith("/display") || window.locatio
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    {isPopout ? <ScreensPopout /> : <App />}
+    {/* V6.7.6: um erro na tela vira um aviso com RECARREGAR, nunca mais a tela preta */}
+    <PieceBoundary fullscreen>{isPopout ? <ScreensPopout /> : <App />}</PieceBoundary>
     {IS_JARVIS_APP && !isPopout && <NetworkNotice />}
   </React.StrictMode>
 );
