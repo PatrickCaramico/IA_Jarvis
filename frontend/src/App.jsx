@@ -1939,7 +1939,9 @@ export default function App() {
     () => effectiveWakeWords(appPrefs.sentinel_wake_words, aiName),
     [appPrefs.sentinel_wake_words, aiName],
   );
-  const sentinelOn = Boolean(appPrefs.sentinel_enabled) && screen === "lock";
+  // V6.6.1: os pedidos de voz no bloqueio ("Jarvis, como está o clima?") valem sempre que o microfone do
+  // bloqueio está ligado; antes só com o Modo Sentinela ativado nas configurações (vinha desligado).
+  const sentinelOn = screen === "lock";
   const unlockTimerRef = useRef(null);
 
   const askSentinel = useCallback(async (text) => {
@@ -2482,7 +2484,7 @@ export default function App() {
             setScreen("enroll");
           }}
           liveScan={faceScan.mode === "recheck" ? null : faceScan}
-          mic={!IS_JARVIS_APP && (clapOn || appPrefs.sentinel_enabled) ? { muted: sentinelMuted, onToggle: () => toggleLockMicRef.current() } : null}
+          mic={!IS_JARVIS_APP ? { muted: sentinelMuted, onToggle: () => toggleLockMicRef.current() } : null}
           clap={clapOn ? { enabled: true, status: clap.status, level: clap.level, needsGesture: clap.needsGesture, pulse: clapPulse, autoEntering } : { enabled: false, autoEntering }}
           cards={{ list: appPrefs.lock_cards || [], api, fanModeEnabled, fanRefresh }}
           hasPin={hasPin}

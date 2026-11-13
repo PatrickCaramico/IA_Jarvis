@@ -4,8 +4,9 @@
     {"reply": str, "public": bool, "requires_unlock": bool, "action": str | None}
 
 Pedidos públicos (nível 1): cumprimentos, "tá acordado?", hora, data, clima, quem é o
-JARVIS, contas simples, timers, foco/Pomodoro e status do sistema. No modo visitante,
-também os controles de música. Todo o resto é protegido: o JARVIS não executa e só
+JARVIS, contas simples, timers, foco/Pomodoro e status do sistema. V6.6.1: também as manchetes
+do dia e os controles do Spotify (tocar, pausar, próxima, o que está tocando), no bloqueio e no
+modo visitante. Todo o resto é protegido: o JARVIS não executa e só
 avisa que precisa liberar a central (ou recusa, no modo visitante).
 
 As funções locais reaproveitadas (tools._h_*) recebem nome vazio para não revelar dados.
@@ -30,8 +31,8 @@ _AWAKE = re.compile(r"^(?:(?:ei|oi|ola|e ai)\s+)?(?:jarvis\s*)?(?:(?:voce\s+)?(?
 _LOCK_CMD = re.compile(r"\b(?:bloquear|bloqueie|bloqueia|trancar|tranque|tranca)\b(?:\s+(?:a\s+)?(?:tela|central|sistema|jarvis))?")
 _NEWS = re.compile(r"\b(?:noticias?|manchetes?|novidades)\b")
 _SUMMARY = re.compile(r"\b(?:resumo|o que (?:eu )?tenho (?:pra |para )?hoje|como esta (?:o )?meu dia|meu dia)\b")
-_MUSIC = re.compile(r"\b(?:pausar|pause|pausa|parar a musica|proxima|seguinte|anterior|voltar a musica|continuar|retomar|tocando|musica atual|tocar|play)\b")
-_MUSIC_CONTEXT = re.compile(r"\b(?:musica|spotify|faixa|som)\b")
+_MUSIC = re.compile(r"\b(?:pausar|pause|pausa|parar a musica|proxima|seguinte|anterior|voltar a musica|continuar|retomar|tocando|musica atual|tocar|toca|toque|play)\b")
+_MUSIC_CONTEXT = re.compile(r"\b(?:musica|musicas|spotify|faixa|som|playlist)\b")
 _SYSTEM_STATUS = re.compile(r"^(?:jarvis\s+)?(?:status|diagnostico)(?:\s+do\s+sistema|\s+dos\s+sistemas)?$")
 _IDENTITY_WORDS = ("quem e voce", "quem desenvolveu", "quem criou", "quem te criou", "quem fez voce",
                    "o que voce faz", "o que voce sabe fazer", "qual e o seu nome", "como voce se chama",
@@ -147,11 +148,13 @@ async def classify_and_answer(message: str, state: str, wake_words: Optional[lis
         except Exception:  # noqa: BLE001
             return public("Sistemas operacionais, senhor.")
 
-    if guest and (_MUSIC.search(norm) and (_MUSIC_CONTEXT.search(norm) or len(norm.split()) <= 3)):
-        music_norm = norm if "spotify" in norm else f"{norm} spotify"
+    # V6.6.1: Spotify no bloqueio também (antes só no modo visitante): "toca minha playlist", "pausa", "próxima"
+    if (_MUSIC.search(norm) or "spotify" in norm) and (_MUSIC_CONTEXT.search(norm) or len(norm.split()) <= 3) \
+            and not re.search(r"\b(?:abrir|abra|abre)\b", norm):
+        music_norm = norm if "spotify" in norm else f"{norm} no spotify"
         reply = await _local(tools._h_spotify, message, music_norm)
-        if reply and not re.search(r"\b(?:abrir|abra|abre)\b", norm):
-            return public(reply)
+        if reply:
+            return public(reply, card={"kind": "music", "title": "Spotify", "text": reply})
 
     for handler in (tools._h_timer, tools._h_calc, tools._h_weather, tools._h_focus):
         if handler is tools._h_weather:
@@ -165,8 +168,20 @@ async def classify_and_answer(message: str, state: str, wake_words: Optional[lis
     if quick:
         return public(quick, card=answer_card(message, quick))
 
+    # V6.6.1: manchetes do dia (públicas, iguais às de qualquer site) na tela e na voz
     if _NEWS.search(norm):
-        return protected("Há novidades no radar, senhor. Para ler as manchetes, preciso liberar a central.")
+        try:
+            from modules import news
+
+            items = await asyncio.to_thread(news.fetch_top_news, 5)
+        except Exception:  # noqa: BLE001 - sem internet ou RSS fora do ar
+            log.warning("Manchetes indisponíveis no bloqueio", exc_info=True)
+            items = []
+        if not items:
+            return public("Não consegui buscar as notícias agora, senhor. Tente de novo em instantes.")
+        spoken = "; ".join(i["title"] for i in items[:3])
+        return public(f"As principais manchetes, senhor: {spoken}.",
+                      card={"kind": "news", "title": "Notícias de agora", "items": items[:5]})
 
     if _SUMMARY.search(norm) and not guest:
         return protected(_counts_summary())

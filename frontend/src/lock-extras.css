@@ -653,6 +653,9 @@
 .la-x { flex: none; width: 28px; height: 28px; border-radius: 8px; border: 1px solid rgba(201, 246, 255, 0.25); background: rgba(2, 8, 19, 0.6); color: #c9f6ff; cursor: pointer; }
 .la-x:hover { border-color: #5eead4; color: #fff; }
 .la-text { margin: 0; font-size: 0.95rem; line-height: 1.45; }
+/* V6.6.1: manchetes no bloqueio ("Jarvis, quais as notícias?") */
+.la-news { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 6px; font-size: 0.95rem; line-height: 1.35; }
+.la-news-src { opacity: 0.65; font-size: 0.85rem; }
 .la-now { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; }
 .la-now-icon { font-size: 2.4rem; line-height: 1; }
 .la-now-temp { display: block; font-family: "Orbitron", sans-serif; font-size: 2.2rem; line-height: 1; }
