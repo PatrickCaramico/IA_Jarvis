@@ -2,6 +2,12 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 7.3.0 — 13 de novembro de 2026
+
+- **📝 NOTAS DA VERSÃO**: botão na tela de bloqueio, em CONTROLES e no menu do perfil (ou "Jarvis, o que mudou?" / "novidades"). Mostra todas as versões do JARVIS com a data e cada detalhe do que mudou, com busca (ex.: "câmera", "trânsito", "voz") e a marca **INSTALADA** na versão que está rodando. No celular, lista e detalhe ficam em telas separadas.
+- Depois de cada atualização, as notas abrem **sozinhas uma vez**, já na versão nova (marcada como **NOVA**).
+- As notas são o próprio histórico do projeto (CHANGELOG.md), então estão sempre em dia com o que foi publicado.
+
 ## 7.2.0 — 13 de novembro de 2026
 
 - **JARVIS mais rápido**:

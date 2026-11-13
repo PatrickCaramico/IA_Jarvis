@@ -79,6 +79,7 @@ const AgentsHub = lazyComponent(() => import("./components/AgentsHub.jsx")); // 
 const HoloStage = lazyComponent(() => import("./components/HoloStage.jsx")); // V7.1
 const BrandingBook = lazyComponent(() => import("./components/BrandingBook.jsx")); // V7.2
 const OptimizerPanel = lazyComponent(() => import("./components/OptimizerPanel.jsx")); // V7.2
+const ReleaseNotes = lazyComponent(() => import("./components/ReleaseNotes.jsx")); // V7.3
 const LogReportWidget = lazyComponent(() => import("./components/LogReportWidget.jsx"));
 const Onboarding = lazyComponent(() => import("./components/Onboarding.jsx"));
 const BioScanModal = lazyComponent(() => import("./components/BioScanModal.jsx"));
@@ -236,9 +237,30 @@ export default function App() {
   }, []);
   const cameraWinRef = useRef(null);
   cameraWinRef.current = cameraWin;
+  useEffect(() => {
+    if (screen !== "main") return undefined;
+    let seen = null;
+    try {
+      seen = localStorage.getItem("jarvis.notesSeen");
+      localStorage.setItem("jarvis.notesSeen", APP_VERSION);
+    } catch {
+      return undefined;
+    }
+    if (!seen || seen === APP_VERSION) return undefined; // 1º uso ou já viu: não abre
+    const t = setTimeout(() => setNotesOpen({ highlight: APP_VERSION }), 4000); // depois da saudação
+    return () => clearTimeout(t);
+  }, [screen]);
+
   // V7.2: 📘 Branding Book e ⚡ Otimizar (botões na central, em CONTROLES, no perfil e na tela de bloqueio)
   const [brandingOpen, setBrandingOpen] = useState(false);
   const [optimizerOpen, setOptimizerOpen] = useState(false);
+  // V7.3: 📝 NOTAS DA VERSÃO (abre sozinha uma vez depois de cada atualização)
+  const [notesOpen, setNotesOpen] = useState(null);
+  useEffect(() => {
+    const open = () => setNotesOpen({ highlight: "" });
+    window.addEventListener("jarvis-open-notes", open);
+    return () => window.removeEventListener("jarvis-open-notes", open);
+  }, []);
   useEffect(() => {
     const openBranding = () => setBrandingOpen(true);
     const openOptimizer = () => setOptimizerOpen(true);
@@ -1552,6 +1574,13 @@ export default function App() {
       window.dispatchEvent(new CustomEvent("jarvis-camera-ask", { detail: text }));
       return;
     }
+    // V7.3: "o que mudou?", "novidades", "notas da versão"
+    if (/\b(notas da versao|notas de versao|novidades|o que mudou|o que tem de novo|historico de versoes|changelog)\b/.test(normalized)) {
+      setUserText(text);
+      setNotesOpen({ highlight: "" });
+      setResponse("Aqui estão as notas de cada versão, senhor.");
+      return;
+    }
     // V7.2: "abre o branding book" / "otimiza o jarvis"
     if (/\b(branding|brand book|manual da marca|identidade visual)\b/.test(normalized) && /\b(abre|abra|abrir|mostra|mostre|ver)\b/.test(normalized)) {
       setUserText(text);
@@ -2782,6 +2811,7 @@ export default function App() {
         {fanModeEnabled && <FanGoalOverlay event={fanEvent} onDone={clearFanEvent} />}
         {brandingOpen && <BrandingBook onClose={() => setBrandingOpen(false)} />}
         {optimizerOpen && <OptimizerPanel api={api} onClose={() => setOptimizerOpen(false)} />}
+        {notesOpen && <ReleaseNotes highlight={notesOpen.highlight} onClose={() => setNotesOpen(null)} />}
       </>
     );
   }
@@ -2877,6 +2907,7 @@ export default function App() {
       {notice && <div className="notice-toast" role="status">{notice}</div>}
       {brandingOpen && <BrandingBook onClose={() => setBrandingOpen(false)} />}
       {optimizerOpen && <OptimizerPanel api={api} onClose={() => setOptimizerOpen(false)} />}
+      {notesOpen && <ReleaseNotes highlight={notesOpen.highlight} onClose={() => setNotesOpen(null)} />}
       {holo && (
         <HoloStage
           api={api}
