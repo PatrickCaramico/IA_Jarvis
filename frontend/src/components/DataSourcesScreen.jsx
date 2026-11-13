@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 const CATEGORIES = ["Todas", "Produtividade", "Comunicação", "Finanças", "Sensores e Clima", "Casa e dispositivos"];
 
 // V5.6: agenda pelo "endereço secreto no formato iCal" do Google Agenda (sem criar projeto no Google Cloud)
-function IcsConnect({ api, onDone }) {
+export function IcsConnect({ api, onDone, hideHelp = false }) {
   const [url, setUrl] = useState("");
   const [state, setState] = useState({ busy: false, msg: "", ok: false });
   const save = async () => {
@@ -18,10 +18,10 @@ function IcsConnect({ api, onDone }) {
   };
   return (
     <div className="hs-ics">
-      <p className="hs-ds-desc">
+      {!hideHelp && <p className="hs-ds-desc">
         Ou cole o <b>endereço secreto no formato iCal</b>: no Google Agenda (computador), Configurações › sua agenda ›
         Integrar agenda › <i>Endereço secreto no formato iCal</i>.
-      </p>
+      </p>}
       <div className="hs-ics-row">
         <input
           type="url"
