@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { matchUnlock, matchWake } from "../utils/wakeWords.js";
+import { MIC_CLAIM, MIC_RELEASE } from "./useSpeechRecognition.js";
 
 // Modo Sentinela: escuta contínua (sem o limite de 15 s do hook de conversa), reiniciada
 // automaticamente, que só reage quando a frase começa com a palavra de ativação.
@@ -112,8 +113,26 @@ export default function useSentinelListener({ enabled, paused = false, wakeWords
       }
     };
 
+    // V6.6.1: o botão do microfone vai abrir a escuta dele: solta o microfone e espera ele terminar
+    let heldRef = false;
+    const onClaim = () => {
+      heldRef = true;
+      clearTimeout(restartTimerRef.current);
+      try { recRef.current?.abort(); } catch { /* ignora */ }
+      recRef.current = null;
+      setInterim("");
+    };
+    const onRelease = () => {
+      if (!heldRef) return;
+      heldRef = false;
+      clearTimeout(restartTimerRef.current);
+      if (activeRef.current && !recRef.current) restartTimerRef.current = setTimeout(start, 400);
+    };
+    window.addEventListener(MIC_CLAIM, onClaim);
+    window.addEventListener(MIC_RELEASE, onRelease);
+
     const start = () => {
-      if (!activeRef.current) return;
+      if (!activeRef.current || heldRef || recRef.current) return;
       const rec = new SR();
       rec.lang = "pt-BR";
       rec.interimResults = true;
@@ -149,7 +168,7 @@ export default function useSentinelListener({ enabled, paused = false, wakeWords
       rec.onend = () => {
         recRef.current = null;
         setInterim("");
-        if (activeRef.current) {
+        if (activeRef.current && !heldRef) {
           // O Chrome encerra a escuta sozinho de tempos em tempos: reinicia
           restartTimerRef.current = setTimeout(start, backoffRef.current);
         }
@@ -170,6 +189,8 @@ export default function useSentinelListener({ enabled, paused = false, wakeWords
 
     return () => {
       activeRef.current = false;
+      window.removeEventListener(MIC_CLAIM, onClaim);
+      window.removeEventListener(MIC_RELEASE, onRelease);
       clearInterval(sleepTimer);
       clearTimeout(restartTimerRef.current);
       try { recRef.current?.abort(); } catch { /* ignora */ }

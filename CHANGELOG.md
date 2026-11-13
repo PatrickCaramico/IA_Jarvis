@@ -8,6 +8,7 @@ Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 - **Sincroniza com o PC:** com `JARVIS_NUVEM_CHAVE` no `.env`, o PC busca a cada minuto o que foi mudado pelo celular, aplica nas listas dele e manda as listas de volta para a nuvem (`modules/cloud_sync.py`). Só o perfil principal.
 - **App Android 6.6:** sem resposta do PC (casa e Tailscale), abre o modo nuvem e confere o PC a cada 20 s; quando ele volta, abre a central completa sozinho. Com o app fechado, os avisos de lembretes, alarmes e água chegam pela nuvem. A resposta do JARVIS é falada pela voz do Android.
 - **Navegador:** no celular, PC desligado = modo nuvem direto; no computador, a tela de "PC desligado" ganhou **USAR PELA NUVEM**.
+- **Voz no site com erro (microfone):** na central, o ouvido contínuo ("Jarvis, …") ficava ligado e, ao tocar no microfone, o botão abria uma segunda escuta antes de a primeira soltar. O Chrome só aceita uma escuta de voz por página: as duas se derrubavam e o botão dava erro ou não ouvia. Agora o botão pede o microfone (`jarvis-mic-claim`), o ouvido solta e só volta quando o botão termina (`jarvis-mic-release`). A falha de rede passageira do reconhecimento do Chrome tenta de novo sozinha uma vez, sem mostrar erro.
 - Guia: `docs/MODO-NUVEM.md`. Testes: `netlify/nuvem/core.test.mjs` (`npm run test:nuvem`) e `backend/tests/test_cloud_sync_66.py`.
 
 ## 6.5.21 — 12 de novembro de 2026
