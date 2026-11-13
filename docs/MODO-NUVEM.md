@@ -1,11 +1,14 @@
 # Modo nuvem: o JARVIS no celular com o notebook desligado (V6.6)
 
 O JARVIS completo roda no notebook (câmera, Sentinela, controle do Windows, Spotify...). Quando o
-notebook está desligado ou longe, o **navegador** (do celular ou do computador) passa a usar o
-**modo nuvem**, um backend pequeno que roda no próprio Netlify (o mesmo site da central), sem custo
-para uso pessoal.
+notebook está desligado ou longe, o **celular** passa a usar o **modo nuvem**, um backend pequeno
+que roda no próprio Netlify (o mesmo site da central), sem custo para uso pessoal.
 
-**O app Android não usa a nuvem** (V6.6.2): ele continua falando só com o PC, como sempre.
+| Onde | Notebook ligado | Notebook desligado |
+| --- | --- | --- |
+| Navegador do **computador** | Central completa (site normal) | Tela para ligar o JARVIS. **Nunca usa a nuvem.** |
+| **Chrome do celular** | Central completa | Modo nuvem, sozinho |
+| **App Android** | Central completa | Modo nuvem, sozinho (e volta para a central quando o PC liga) |
 
 ## O que funciona sem o notebook
 
@@ -34,19 +37,23 @@ para uso pessoal.
 2. Em **Deploys**, toque em **Trigger deploy › Deploy site** (as variáveis só valem depois de um deploy).
 3. No `.env` do PC, coloque a mesma senha: `JARVIS_NUVEM_CHAVE=...` e reinicie o JARVIS
    (`Iniciar-JARVIS.bat`). A partir daí o PC sincroniza a cada minuto.
-4. No celular, abra pelo **navegador** `https://projeto-jarvis-ia.netlify.app/app/`: sem o PC, ele entra
-   no modo nuvem. Dica: no Chrome, ⋮ › **Adicionar à tela inicial** cria um atalho só para ele.
+4. No celular, gere o app novo (`Gerar-App-Android.bat` no PC, ou **ATUALIZAR APP** no celular em casa,
+   com o PC ligado): o app 6.6.3 abre o modo nuvem sozinho quando o PC não responde. Pelo Chrome do
+   celular, `https://projeto-jarvis-ia.netlify.app/app/` também entra no modo nuvem sem o PC.
 
 Confira em `https://projeto-jarvis-ia.netlify.app/api/cloud/status`: `"configured": true` e `"llm"` com o
 nome da IA.
 
 ## Como funciona
 
-- **App Android:** igual antes: só o PC (Wi-Fi de casa e, se configurado, o Tailscale).
+- **App Android:** tenta o PC (Wi-Fi de casa e, se configurado, o Tailscale). Se nenhum responder, abre
+  `…/app/?nuvem=1` e continua conferindo o PC a cada 20 s; quando ele responde, volta para a central completa.
+  Com o app fechado, o serviço de avisos consulta a nuvem a cada 30 s (lembretes, alarmes e água), e a
+  resposta da nuvem é falada pela voz do Android.
 - **Configurações:** a cada minuto o PC manda para a nuvem as configurações de aparência, voz e IA
   (nada de câmera, PIN, atalhos ou chaves). A tela da nuvem aplica a última que chegou.
-- **Navegador do celular:** a central tenta o PC; sem resposta, entra no modo nuvem. No navegador do
-  computador, a tela de "PC desligado" ganhou o botão **USAR PELA NUVEM**.
+- **Chrome do celular:** a central tenta o PC; sem resposta, entra no modo nuvem.
+- **Navegador do computador:** sempre a central do PC (sem nuvem, nem com `?nuvem=1`).
 - **Sincronização:** cada mudança feita na nuvem vira uma operação pendente. O PC, quando ligado, busca as
   operações (`GET /api/cloud/sync`), aplica nas listas dele e manda a foto das listas
   (`POST /api/cloud/sync`), que passa a ser o que a nuvem mostra. Só o perfil principal é sincronizado.
@@ -68,3 +75,4 @@ nome da IA.
   Testes: `npm run test:nuvem` na raiz.
 - `frontend/src/components/CloudMode.jsx`, `frontend/src/utils/cloudApi.js`, `frontend/src/cloud.css`: a tela.
 - `backend/modules/cloud_sync.py`: a sincronização do PC. Testes: `backend/tests/test_cloud_sync_66.py`.
+- App: `MainActivity.java` (abre a nuvem, confere o PC, voz do Android) e `NotifyService.java` (avisos da nuvem).
