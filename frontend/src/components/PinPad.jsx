@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import useNow from "../hooks/useNow.js";
 
 // Teclado numérico do PIN de reserva (seção 17.1). Aceita também o teclado físico.
-export default function PinPad({ onSubmit, onCancel, busy = false, message = "", lockedUntil = null, onForgot = null, title = "" }) {
+export default function PinPad({ onSubmit, onCancel, busy = false, message = "", lockedUntil = null, onForgot = null, title = "", cancelLabel = "Voltar ao escaneamento facial" }) {
   const [pin, setPin] = useState("");
   const now = useNow(Boolean(lockedUntil)).getTime();
   const locked = lockedUntil && lockedUntil * 1000 > now;
@@ -48,7 +48,7 @@ export default function PinPad({ onSubmit, onCancel, busy = false, message = "",
 
   return (
     <div className="pp-root" role="group" aria-label="Digite o PIN">
-      <div className="pp-title">PIN DE RESERVA</div>
+      <div className="pp-title">{title || "PIN DE RESERVA"}</div>
       <div className="pp-dots" aria-live="polite" aria-label={`${pin.length} dígitos digitados`}>
         {Array.from({ length: Math.max(4, pin.length) }, (_, i) => (
           <span key={i} className={i < pin.length ? "on" : ""} />
@@ -80,7 +80,7 @@ export default function PinPad({ onSubmit, onCancel, busy = false, message = "",
       {onForgot && (
         <button type="button" className="pp-cancel pp-forgot" onClick={onForgot}>Esqueci o PIN</button>
       )}
-      <button type="button" className="pp-cancel" onClick={onCancel}>Voltar ao escaneamento facial</button>
+      {cancelLabel && <button type="button" className="pp-cancel" onClick={onCancel}>{cancelLabel}</button>}
     </div>
   );
 }

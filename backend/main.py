@@ -16,7 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from config import settings
-from modules import access, alarms, reminders, tts
+from modules import access, alarms, cloud_sync, reminders, tts
 
 # Configuração de logging em console e arquivo rotativo
 _file_handler = RotatingFileHandler(
@@ -48,6 +48,7 @@ async def lifespan(app: FastAPI):
     runtime.track_service(watchers.triggers_watcher_loop())
     runtime.track_service(watchers.notifications_watcher_loop())
     runtime.track_service(watchers.news_watcher_loop())  # V6.5: notícias novas no celular
+    runtime.track_service(cloud_sync.sync_loop())  # V6.6: modo nuvem (celular com o notebook desligado)
     runtime.track(tts.preload())  # V4.4: voz carrega depois que o servidor já está no ar
     yield
     for task in list(runtime.service_tasks):

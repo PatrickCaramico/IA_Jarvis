@@ -98,6 +98,8 @@ Na primeira execução, o script prepara o ambiente Python e instala as dependê
 
 A mesma central também abre pelo site, no botão **Abrir meu JARVIS** (`https://projeto-jarvis-ia.netlify.app/app/`), e conversa com o JARVIS ligado no PC. Para o site conseguir ligar o JARVIS quando ele estiver desligado (botão **LIGAR O JARVIS**), rode uma vez o `Instalar-Botao-Ligar.bat`: ele cria o atalho `jarvis://` só para o seu usuário do Windows, que roda o `Iniciar-JARVIS.bat` sem abrir aba nova. O navegador pergunta antes de abrir. Para desfazer, use `Remover-Botao-Ligar.bat`.
 
+**Modo nuvem (V6.6), com o notebook desligado:** no celular (app ou navegador), quando o PC não responde, a central abre o **modo nuvem**, que roda nas funções do Netlify: conversa com a IA (voz ou texto), lista de compras, tarefas, lembretes, alarmes, água, notícias e clima. Entra com um PIN próprio. Quando o PC liga, ele puxa o que você mudou pelo celular e a central completa volta sozinha. Configuração (uma vez, no painel do Netlify): `docs/MODO-NUVEM.md`.
+
 Depois de uma atualização no GitHub, toque em **⟳ ATUALIZAR** na tela de bloqueio: o JARVIS baixa a versão nova, avisa por voz e reinicia sozinho.
 
 **Alarmes e lembretes por voz (V5.1):** "Jarvis, me acorda às 7", "alarme de segunda a sexta às 6 e meia", "me lembra toda terça às 19 de levar o lixo". Tocando, diga "Jarvis, parar" ou "soneca". Lista completa em `docs/COMANDOS.md`.

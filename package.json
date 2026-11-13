@@ -1,0 +1,12 @@
+{
+  "name": "jarvis-site",
+  "private": true,
+  "description": "Dependências das funções do Netlify (modo nuvem do JARVIS). O frontend tem o próprio package.json.",
+  "type": "module",
+  "scripts": {
+    "test:nuvem": "node --test netlify/nuvem/core.test.mjs"
+  },
+  "dependencies": {
+    "@netlify/blobs": "10.7.13"
+  }
+}

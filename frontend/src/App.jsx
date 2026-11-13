@@ -43,6 +43,7 @@ import { enqueueHere, stopSpeech } from "./utils/speakHere.js";
 import { scheduleDailyUpdateCheck } from "./utils/updateCheck.js";
 import { applyAccessibility, applyBackground, applyFanMode, applyTheme } from "./utils/theme.js";
 import { IS_JARVIS_APP } from "./utils/device.js";
+import { cloudRequested, isPhone } from "./utils/cloudApi.js";
 
 // V6.3: tela longe do PC (app do celular, ou navegador por túnel/rede): a câmera do PC não vê quem está
 // usando, então a entrada é pelo PIN (e a digital, no app) em vez da verificação do rosto.
@@ -66,6 +67,8 @@ const DeviceTestModal = lazyComponent(() => import("./components/DeviceTestModal
 const NetworkQrModal = lazyComponent(() => import("./components/NetworkQrModal.jsx"));
 const WidgetWorkspace = lazyComponent(() => import("./components/WidgetWorkspace.jsx"));
 const MonitorPanel = lazyComponent(() => import("./components/MonitorPanel.jsx"));
+// V6.6: modo nuvem (notebook desligado): só carrega quando precisa
+const CloudMode = lazyComponent(() => import("./components/CloudMode.jsx"));
 const LogReportWidget = lazyComponent(() => import("./components/LogReportWidget.jsx"));
 const Onboarding = lazyComponent(() => import("./components/Onboarding.jsx"));
 const BioScanModal = lazyComponent(() => import("./components/BioScanModal.jsx"));
@@ -79,6 +82,8 @@ export default function App() {
   const [screen, setScreen] = useState("boot");
   const [bootError, setBootError] = useState("");
   const [bootOffline, setBootOffline] = useState(false); // backend do PC desligado (sem resposta)
+  // V6.6: modo nuvem (funções do Netlify) com o notebook desligado. "?nuvem=1" (o app usa) entra direto.
+  const [cloudMode, setCloudMode] = useState(cloudRequested);
   // Botão LIGAR O JARVIS (atalho jarvis://): "" | "trying" | "opening" | "missing"
   const [launchState, setLaunchState] = useState("");
   // V5.1: alarme tocando (evento "alarm" do backend): { id, hora, rotulo, snooze_minutes } ou null
@@ -788,12 +793,20 @@ export default function App() {
       setBootError(err.message);
       setBootOffline(!err.status);
       setScreen("boot");
+      // V6.6: no celular, PC desligado = modo nuvem direto (no PC, a tela oferece o botão)
+      if (!err.status && isPhone()) setCloudMode(true);
     }
   }, [verify, loadPinStatus]);
 
   useEffect(() => {
     if (bootedRef.current) return; // evita rodar duas vezes no modo de desenvolvimento
     bootedRef.current = true;
+    if (cloudRequested()) {
+      // aberto pelo app já no modo nuvem: não espera o PC (ele confere o PC por conta própria)
+      setBootError("O JARVIS do PC não respondeu.");
+      setBootOffline(true);
+      return;
+    }
     boot();
   }, [boot]);
 
@@ -817,6 +830,7 @@ export default function App() {
         if (res.ok && alive) {
           alive = false;
           clearTimeout(timer);
+          setCloudMode(false);
           boot();
           return;
         }
@@ -2286,6 +2300,15 @@ export default function App() {
   ] : [];
 
   // ================= Telas =================
+  if (cloudMode && screen === "boot") {
+    return (
+      <CloudMode
+        onPcBack={() => { setCloudMode(false); boot(); }}
+        onBack={IS_JARVIS_APP || cloudRequested() ? null : () => setCloudMode(false)}
+      />
+    );
+  }
+
   if (screen === "boot") {
     const returningUser = hasLoggedBefore();
     return (
@@ -2328,6 +2351,7 @@ export default function App() {
                   <span>{launchState === "trying" ? "ABRINDO…" : "LIGAR O JARVIS"}</span>
                 </button>
                 <button type="button" onClick={boot} className="ls-chip">TENTAR AGORA</button>
+                <button type="button" onClick={() => setCloudMode(true)} className="ls-chip">USAR PELA NUVEM</button>
               </div>
               {launchState === "missing" && (
                 <div className="ls-launch-missing" role="alert">
@@ -2355,6 +2379,7 @@ export default function App() {
                   <span>{launchState === "trying" ? "ABRINDO…" : "LIGAR O JARVIS"}</span>
                 </button>
                 <button type="button" onClick={boot} className="ls-chip">TENTAR AGORA</button>
+                <button type="button" onClick={() => setCloudMode(true)} className="ls-chip">USAR PELA NUVEM</button>
               </div>
               {launchState === "missing" ? (
                 <div className="ls-launch-missing" role="alert">
@@ -2383,6 +2408,9 @@ export default function App() {
               >
                 <span>TENTAR NOVAMENTE</span>
               </button>
+              {bootOffline && (
+                <button type="button" onClick={() => setCloudMode(true)} className="ls-chip" style={{ marginTop: "10px" }}>USAR PELA NUVEM</button>
+              )}
             </>
           ) : (
             <>
