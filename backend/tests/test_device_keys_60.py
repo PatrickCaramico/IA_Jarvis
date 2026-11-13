@@ -5,7 +5,7 @@ import main
 from modules import access, device_keys
 
 
-def test_enroll_requires_unlocked_and_unlock_works():
+def test_enroll_requires_unlocked_and_unlock_works(credentials):
     c = TestClient(main.app)
     access.reset_for_tests(access.LOCKED)
     assert c.post("/api/auth/device/enroll", json={"name": "Galaxy"}).status_code == 403

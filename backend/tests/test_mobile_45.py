@@ -117,7 +117,7 @@ def test_download_page_has_open_app_button(monkeypatch, tmp_path):
     assert "ABRIR O JARVIS" in page.text and "scheme=jarvis" in page.text and "setup?host=" in page.text
 
 
-def test_pair_page_opens_app_with_token(monkeypatch):
+def test_pair_page_opens_app_with_token(monkeypatch, credentials):
     monkeypatch.setattr(main.settings, "NETWORK_MODE", True)
     access.reset_for_tests(access.UNLOCKED)
     page = _client("192.168.0.50").get(f"/api/mobile/pair?token={runtime.ACCESS_TOKEN}")

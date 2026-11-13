@@ -29,6 +29,7 @@ _WRITABLE = (
     ("phone_feed", "_PATH", "avisos_celular.json"),  # V6.5.4
     ("triggers", "_FIRED_PATH", "gatilhos_avisados.json"),  # V6.5.17
     ("wellbeing", "_PATH", "humor.json"),  # V6.7
+    ("tools", "_TIMERS_PATH", "timers.json"),  # V6.7.1
 )
 
 
@@ -63,3 +64,15 @@ def isolated_data(tmp_path, monkeypatch):
     access.reset_for_tests(access.LOCKED)
     yield tmp_path
     access.reset_for_tests(access.LOCKED)
+
+
+@pytest.fixture
+def credentials(monkeypatch):
+    """V6.7.1: finge um perfil cadastrado (rosto/PIN), para o bloqueio valer de verdade nos testes.
+
+    Sem isso, os testes de "bloqueado" dependiam de existir uma foto real em data/ (passavam no PC do
+    dono e falhavam no CI).
+    """
+    from modules import access
+
+    monkeypatch.setattr(access, "_has_credentials", lambda: True)

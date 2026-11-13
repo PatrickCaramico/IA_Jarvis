@@ -140,6 +140,13 @@ async def handle_turn(message: str, routine: bool, force_deep: bool = False) -> 
     if wb_reply:
         return await finish_local(wb_reply)
 
+    # V6.7.1: "avisa em todos os aparelhos que..."
+    from modules import announce
+
+    ann_reply = await announce.handle_voice(message)
+    if ann_reply:
+        return await finish_local(ann_reply)
+
     # V6.5.11: resposta a "Em qual navegador, senhor?"
     from modules import browser_choice
 

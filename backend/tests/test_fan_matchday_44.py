@@ -343,7 +343,7 @@ def test_auto_mode_after_game_does_not_announce_end_again(fan_cache, monkeypatch
     assert sports_provider.take_moments()[0] == []  # o "fim de jogo" já foi dito na ativação
 
 
-def test_fan_toggle_route_works_locked_and_counts_as_manual(fan_cache, monkeypatch):
+def test_fan_toggle_route_works_locked_and_counts_as_manual(fan_cache, monkeypatch, credentials):
     """Botão do bloqueio: liga/desliga com a central bloqueada; escolha manual não é desfeita sozinha."""
     from fastapi.testclient import TestClient
 
