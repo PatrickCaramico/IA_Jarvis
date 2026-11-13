@@ -19,7 +19,7 @@ from typing import Any
 import requests
 
 from config import settings
-from modules import about, alarms, profiles, reminders, shopping, tasks, water
+from modules import about, alarms, memory, profiles, reminders, shopping, tasks, water
 from modules.quick_replies import _norm
 
 log = logging.getLogger("jarvis.cloud_sync")
@@ -182,6 +182,7 @@ def snapshot() -> dict:
             "cidade": settings.WEATHER_CITY,
             "sobre": (about.get_about() or "")[:600],
             "prefs": shared,
+            "memorias": memory.facts(30),  # V6.7.3: o JARVIS da nuvem também conhece o senhor
         },
     }
 

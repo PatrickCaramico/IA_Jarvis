@@ -237,3 +237,16 @@ test("bem-estar na nuvem: segurança fixa sem IA, respiração e humor que vai p
   const ops = (await call(store, "/sync", { headers: { "X-Jarvis-Nuvem": ENV.JARVIS_NUVEM_CHAVE } })).data.ops;
   assert.deepEqual(ops.map((o) => [o.op, o.score, o.date]), [["mood_set", 4, "2026-11-13"]]);
 });
+
+test("memórias aprendidas no PC chegam ao JARVIS da nuvem", async () => {
+  const store = memStore();
+  const token = await login(store);
+  await call(store, "/sync", { method: "POST", headers: { "X-Jarvis-Nuvem": ENV.JARVIS_NUVEM_CHAVE }, body: { ack: 0, snapshot: { perfil: { memorias: ["Torce para o Palmeiras", 42, "Treina às 18h"] } } } });
+  let system = "";
+  const fetchFn = async (_url, init) => {
+    system = JSON.parse(init.body).systemInstruction.parts[0].text;
+    return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: '{"resposta":"Ok.","acoes":[]}' }] } }] }));
+  };
+  await handle(req("/chat", { method: "POST", token, body: { message: "oi" } }), { store, env: { ...ENV, GEMINI_API_KEY: "g" }, fetchFn, nowDate: NOW });
+  assert.match(system, /Torce para o Palmeiras; Treina às 18h/);
+});
