@@ -2,6 +2,10 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 6.7.5 — 13 de novembro de 2026
+
+- **"Verificar atualizações" (Ajustes › Diagnóstico) corrigido:** ainda olhava as Releases do GitHub (que o projeto não usa) e sempre dizia "versão mais nova". Agora confere na hora a mesma fonte do ⟳ ATUALIZAR (`/api/system/update/status?force=true`), mostra a versão deste PC e quantas versões novas existem, e já acende a bolinha do botão sem esperar os 30 minutos. A conferência diária antiga saiu.
+
 ## 6.7.4 — 13 de novembro de 2026
 
 - **Agenda fora de casa:** o PC manda para a nuvem, na sincronização, os compromissos dos próximos 7 dias (Google Agenda ou iCal; título, início e local, atualizados a cada 10 min). A nuvem **nunca recebe a chave do Google**. Fora de casa, "o que tenho amanhã?" responde, e o widget de agenda e a tela de espera mostram os compromissos.

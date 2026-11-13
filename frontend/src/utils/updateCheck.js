@@ -1,4 +1,3 @@
-export const LATEST_RELEASE_URL = "https://api.github.com/repos/PatrickCaramico/IA_Jarvis/releases/latest";
 export const AUTO_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
 
 const LAST_AUTO_CHECK_KEY = "jarvis.updateCheck.lastAutoCheck";
@@ -41,34 +40,18 @@ export function compareVersions(left, right) {
   return 0;
 }
 
-export async function checkForUpdate(api, fetchImpl = fetch) {
-  const health = await api("/api/health");
-  const currentVersion = health?.version;
-  if (!currentVersion) throw new Error("Não consegui identificar a versão deste JARVIS.");
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 10000);
-  let response;
-  try {
-    response = await fetchImpl(LATEST_RELEASE_URL, {
-      headers: { Accept: "application/vnd.github+json" },
-      signal: controller.signal,
-    });
-  } finally {
-    clearTimeout(timeout);
-  }
-  if (!response.ok) throw new Error("O GitHub não respondeu à verificação de atualizações.");
-
-  const release = await response.json();
-  const latestVersion = String(release?.tag_name || "").replace(/^v/i, "");
-  if (!latestVersion || !release?.html_url) throw new Error("A release mais recente não tem os dados esperados.");
-
+// V6.7.4: confere a MESMA fonte do botão ATUALIZAR (a branch do GitHub, pelo PC: git fetch), não as Releases
+// do GitHub, que o projeto não usa (por isso a conferência antiga nunca acusava nada).
+export async function checkForUpdate(api) {
+  const data = await api("/api/system/update/status?force=true", { timeout: 60_000 });
+  if (!data || typeof data.available !== "boolean") throw new Error("Não consegui conferir as atualizações.");
+  if (!data.available && data.message && /n[aã]o consegui|sem git/i.test(data.message)) throw new Error(data.message);
   return {
-    currentVersion,
-    latestVersion,
-    updateAvailable: compareVersions(latestVersion, currentVersion) > 0,
-    notes: release.body || "Sem notas de versão.",
-    url: release.html_url,
+    currentVersion: data.current || "",
+    latestVersion: data.latest || data.current || "",
+    updateAvailable: data.available,
+    count: data.count || 0,
+    notes: (data.notes || []).join("\n"),
   };
 }
 
