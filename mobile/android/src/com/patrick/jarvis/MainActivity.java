@@ -1327,6 +1327,51 @@ public class MainActivity extends Activity {
             runOnUiThread(() -> speak(t));
         }
 
+        /**
+         * V6.7.4: música no próprio celular (fora de casa, pela nuvem): aperta os botões de mídia do Android,
+         * como um fone Bluetooth. Vale para o Spotify e qualquer outro player, sem precisar de chave.
+         */
+        @JavascriptInterface
+        public boolean media(String action) {
+            if (!fromJarvis() || action == null) return false;
+            int key;
+            switch (action) {
+                case "play": key = android.view.KeyEvent.KEYCODE_MEDIA_PLAY; break;
+                case "pause": key = android.view.KeyEvent.KEYCODE_MEDIA_PAUSE; break;
+                case "next": key = android.view.KeyEvent.KEYCODE_MEDIA_NEXT; break;
+                case "previous": key = android.view.KeyEvent.KEYCODE_MEDIA_PREVIOUS; break;
+                default: key = android.view.KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE; break;
+            }
+            try {
+                android.media.AudioManager am = (android.media.AudioManager) getSystemService(AUDIO_SERVICE);
+                am.dispatchMediaKeyEvent(new android.view.KeyEvent(android.view.KeyEvent.ACTION_DOWN, key));
+                am.dispatchMediaKeyEvent(new android.view.KeyEvent(android.view.KeyEvent.ACTION_UP, key));
+                return true;
+            } catch (Exception e) {
+                return false;
+            }
+        }
+
+        /** V6.7.4: "toca Coldplay" fora de casa: abre a busca no Spotify do celular (ou no site, sem o app). */
+        @JavascriptInterface
+        public boolean openSpotify(String query) {
+            if (!fromJarvis()) return false;
+            String q = query == null ? "" : query.trim();
+            runOnUiThread(() -> {
+                try {
+                    Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(q.isEmpty() ? "spotify:" : "spotify:search:" + Uri.encode(q)));
+                    i.setPackage("com.spotify.music");
+                    startActivity(i);
+                } catch (Exception e) {
+                    try {
+                        startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://open.spotify.com/search/" + Uri.encode(q))));
+                    } catch (Exception ignored) {
+                    }
+                }
+            });
+            return true;
+        }
+
         /** V6.6.5: TRANSMITIR: abre a transmissão de tela do Android (Chromecast, Smart TV, Miracast). */
         @JavascriptInterface
         public void cast() {

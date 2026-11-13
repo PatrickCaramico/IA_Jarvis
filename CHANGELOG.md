@@ -2,6 +2,11 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 6.7.4 — 13 de novembro de 2026
+
+- **Agenda fora de casa:** o PC manda para a nuvem, na sincronização, os compromissos dos próximos 7 dias (Google Agenda ou iCal; título, início e local, atualizados a cada 10 min). A nuvem **nunca recebe a chave do Google**. Fora de casa, "o que tenho amanhã?" responde, e o widget de agenda e a tela de espera mostram os compromissos.
+- **Música no celular fora de casa (app):** "toca Coldplay" abre a busca no Spotify do celular; "pausa", "próxima", "anterior" e os botões de música da central viram os botões de mídia do Android (como um fone Bluetooth; vale para qualquer player), sem chave do Spotify. No navegador, o JARVIS explica que isso funciona pelo app. Precisa do APK 6.7.4.
+
 ## 6.7.3 — 13 de novembro de 2026
 
 - **Memória que aprende sozinha** (`modules/memory_learn.py`): depois de cada resposta da IA, se você falou de si ("eu", "meu", "gosto", "trabalho"...), o JARVIS pede à IA, em segundo plano e sem atrasar a resposta, até 3 fatos duradouros (gostos, rotina, pessoas próximas, metas, trabalho, lugares) e guarda sem repetir o que já sabe. Fica de fora: coisas passageiras, senhas, documentos, dados bancários e detalhes de saúde. "Pare de aprender sobre mim" / "pode voltar a aprender sobre mim" (`memory_auto_learn`). "O que você lembra de mim?" mostra até 12 memórias e lembra como apagar; a IA recebe as 30 mais recentes.

@@ -250,3 +250,31 @@ test("memórias aprendidas no PC chegam ao JARVIS da nuvem", async () => {
   await handle(req("/chat", { method: "POST", token, body: { message: "oi" } }), { store, env: { ...ENV, GEMINI_API_KEY: "g" }, fetchFn, nowDate: NOW });
   assert.match(system, /Torce para o Palmeiras; Treina às 18h/);
 });
+
+test("agenda do PC e música do celular na nuvem", async () => {
+  const store = memStore();
+  const token = await login(store);
+  await call(store, "/sync", { method: "POST", headers: { "X-Jarvis-Nuvem": ENV.JARVIS_NUVEM_CHAVE }, body: { ack: 0, snapshot: { perfil: { agenda: [
+    { titulo: "Dentista", inicio: "2026-11-14T15:00:00", local: "Centro" },
+    { titulo: "Feriado", inicio: "2026-11-20" },
+    { titulo: "Velho", inicio: "2026-11-01T10:00:00" },
+    { titulo: "sem data" },
+  ] } } } });
+  let system = "";
+  const fetchFn = async (_url, init) => {
+    system = JSON.parse(init.body).systemInstruction.parts[0].text;
+    const text = JSON.stringify({ resposta: "Abrindo Coldplay no Spotify, senhor.", acoes: [{ tipo: "musica", comando: "tocar", busca: "Coldplay" }] });
+    return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text }] } }] }));
+  };
+  const env = { ...ENV, GEMINI_API_KEY: "g" };
+  const chatAs = async (pode_musica) => (await handle(req("/chat", { method: "POST", token, body: { message: "toca Coldplay", pode_musica } }), { store, env, fetchFn, nowDate: NOW })).json();
+  const r = await chatAs(true);
+  assert.match(system, /14\/11 às 15:00: Dentista \(Centro\); 20\/11 \(dia todo\): Feriado/);
+  assert.doesNotMatch(system, /Velho/);
+  assert.match(system, /você controla o player do celular/);
+  assert.deepEqual(r.actions, [{ tipo: "musica", ok: true, comando: "tocar", busca: "Coldplay" }]);
+  await chatAs(false);
+  assert.match(system, /aqui \(navegador\) você não controla o player/);
+  const st = await call(store, "/state", { token });
+  assert.equal(st.data.agenda.length, 3);
+});

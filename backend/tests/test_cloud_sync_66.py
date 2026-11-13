@@ -81,3 +81,21 @@ def test_snapshot_sends_pc_voice():
     prefs.update(voice_style="grave")
     voice = cloud_sync.snapshot()["perfil"]["prefs"]["voice"]
     assert (voice["name"], voice["rate"], voice["pitch"]) == tts.voice_params()
+
+
+def test_snapshot_sends_agenda_without_google_keys(monkeypatch):
+    from modules import calendar_hub
+
+    calls = []
+    monkeypatch.setattr(cloud_sync, "_agenda_cache", {"at": 0.0, "items": []})
+    monkeypatch.setattr(calendar_hub, "connected", lambda: True)
+
+    def events(days=14, limit=10):
+        calls.append(days)
+        return [{"id": "x", "title": "Dentista", "start": "2099-01-02T15:00:00", "location": "Centro", "link": "https://secret"}]
+
+    monkeypatch.setattr(calendar_hub, "upcoming_events", events)
+    agenda = cloud_sync.snapshot()["perfil"]["agenda"]
+    assert agenda == [{"titulo": "Dentista", "inicio": "2099-01-02T15:00:00", "local": "Centro"}]
+    cloud_sync.snapshot()
+    assert calls == [7]  # guarda por 10 min (não consulta a agenda a cada minuto)

@@ -350,6 +350,12 @@ export async function receiveSnapshot(store, { ack = 0, snapshot = {} }, now = s
       sobre: clean(p.sobre, 600),
       prefs: cleanPrefs(p.prefs),
       // V6.7.3: memórias que o PC aprendeu (a nuvem só lê; quem aprende é o PC)
+      // V6.7.4: compromissos dos próximos 7 dias que o PC leu na agenda (sem nenhuma chave do Google)
+      agenda: Array.isArray(p.agenda)
+        ? p.agenda.filter((e) => e && typeof e === "object" && /^\d{4}-\d{2}-\d{2}/.test(e.inicio || ""))
+          .map((e) => ({ titulo: clean(e.titulo, 120) || "Compromisso", inicio: String(e.inicio).slice(0, 19), local: clean(e.local, 80) }))
+          .slice(0, 25)
+        : [],
       memorias: Array.isArray(p.memorias) ? p.memorias.filter((m) => typeof m === "string").map((m) => clean(m, 140)).filter(Boolean).slice(-30) : [],
       atualizado_em: now.stamp,
     });
@@ -597,7 +603,7 @@ const PERSONA = (
   + "sem listas, sem markdown e sem emojis. Humor seco e sutil é bem-vindo, no máximo uma tirada, nunca em assuntos sérios. "
   + "Neste momento o senhor está usando o JARVIS pelo MODO NUVEM: o notebook dele está desligado ou longe. "
   + "Aqui você consegue: lista de compras, tarefas, lembretes, alarmes, registro de água, notícias e clima. "
-  + "Não consegue: câmera, Sentinela, abrir programas ou sites no PC, Spotify, controlar o computador. "
+  + "Não consegue: câmera, Sentinela, abrir programas ou sites no PC, controlar o computador ou o Spotify do PC. "
   + "Se pedirem algo assim, diga em uma frase que isso precisa do notebook ligado. "
   + "Nunca diga que fez algo que não está nas suas ações. Use notícias e clima apenas quando vierem no contexto; nunca invente. "
   // V6.7: bem-estar (igual ao PC: services/llm_orchestrator.SYSTEM_PROMPT)
@@ -625,6 +631,17 @@ const FORMAT = (
   + "Na resposta, confirme a ação de forma natural ('Coloquei leite na lista, senhor.')."
 );
 
+export function agendaText(agenda, now) {
+  const items = (agenda || []).filter((e) => e.inicio.slice(0, 10) >= now.date);
+  if (!items.length) return "Agenda dos próximos 7 dias: nada marcado (ou a agenda não está conectada no PC).";
+  const fmt = (e) => {
+    const day = e.inicio.slice(0, 10) === now.date ? "hoje" : `${e.inicio.slice(8, 10)}/${e.inicio.slice(5, 7)}`;
+    const time = e.inicio.length > 10 ? ` às ${e.inicio.slice(11, 16)}` : " (dia todo)";
+    return `${day}${time}: ${e.titulo}${e.local ? ` (${e.local})` : ""}`;
+  };
+  return `Agenda dos próximos 7 dias (a mais recente que o PC leu): ${items.map(fmt).join("; ")}.`;
+}
+
 function describeState(state, now, perfil) {
   const pending = state.compras.filter((i) => !i.comprado).map((i) => i.texto);
   const tasks = state.tarefas.filter((t) => !t.concluida).map((t) => t.texto);
@@ -636,6 +653,7 @@ function describeState(state, now, perfil) {
     `Agora: ${weekday}, ${now.date} ${now.time} (horário de Brasília).`,
     perfil?.nome ? `Nome do usuário: ${perfil.nome}.` : "",
     perfil?.sobre ? `O que ele contou sobre si: ${perfil.sobre}` : "",
+    agendaText(perfil?.agenda, now),
     perfil?.memorias?.length ? `Memórias do usuário (use com naturalidade quando ajudar, sem listar): ${perfil.memorias.join("; ")}.` : "",
     `Lista de compras (faltando): ${pending.join(", ") || "vazia"}.`,
     `Tarefas abertas: ${tasks.join("; ") || "nenhuma"}.`,
@@ -723,6 +741,11 @@ const ACTION_TO_OP = {
 async function runAction(store, action, now) {
   const kind = action?.tipo;
   if (kind === "abrir") return { tipo: "abrir", tela: action.tela, ok: true };
+  // V6.7.4: música no próprio celular (o app executa; a nuvem só repassa)
+  if (kind === "musica") {
+    const comando = ["tocar", "pausar", "proxima", "anterior"].includes(action.comando) ? action.comando : "tocar";
+    return { tipo: "musica", ok: true, comando, busca: clean(action.busca, 80) };
+  }
   if (kind === "lembrete_remover") {
     const state = await loadState(store);
     const rem = findByText(state.lembretes.filter((r) => !r.disparado), "texto", action.texto);
@@ -747,7 +770,7 @@ async function runAction(store, action, now) {
   }
 }
 
-export async function chat({ store, env, fetchFn, message, now = spNow() }) {
+export async function chat({ store, env, fetchFn, message, now = spNow(), canMusic = false }) {
   const text = clean(message, 1200);
   if (!text) throw new HttpError(400, "Mensagem vazia.");
   // V6.7: bem-estar com respostas fixas (as mesmas do PC, modules/wellbeing.py). A de segurança vem antes de tudo.
@@ -789,7 +812,12 @@ export async function chat({ store, env, fetchFn, message, now = spNow() }) {
   const history = ((await store.get("conversa")) || []).slice(-MAX_HISTORY);
   history.push({ role: "user", text, at: now.stamp });
   const personality = PERSONALITY[perfil.prefs?.personality_mode] || "";
-  const system = [PERSONA, personality, perfil.assistente && perfil.assistente !== "JARVIS" ? `Seu nome aqui é ${perfil.assistente}.` : "", FORMAT, "Contexto:", describeState(state, now, perfil), ...extra].filter(Boolean).join("\n\n");
+  const music = canMusic
+    ? "Música: você controla o player do celular do usuário com a ação musica: "
+      + '{"tipo":"musica","comando":"tocar"|"pausar"|"proxima"|"anterior","busca":"artista, música ou playlist (só ao pedir algo para tocar)"}. '
+      + "Confirme em poucas palavras (\"Abrindo Coldplay no Spotify, senhor.\")."
+    : "Música: aqui (navegador) você não controla o player; diga que pelo app do JARVIS no celular dá para pedir música.";
+  const system = [PERSONA, personality, music, perfil.assistente && perfil.assistente !== "JARVIS" ? `Seu nome aqui é ${perfil.assistente}.` : "", FORMAT, "Contexto:", describeState(state, now, perfil), ...extra].filter(Boolean).join("\n\n");
   const parsed = parseReply(await callLlm(fetchFn, cfg, system, history.map(({ role, text: t }) => ({ role, text: t }))));
   const actions = [];
   for (const a of parsed.acoes.slice(0, 8)) actions.push(await runAction(store, a, now));
@@ -890,6 +918,7 @@ export async function handle(req, { store, env, fetchFn = fetch, nowDate = new D
         alarmes: [...state.alarmes].sort((a, b) => a.proximo.localeCompare(b.proximo)),
         agua: waterStatus(state.agua, now),
         conversa: ((await store.get("conversa")) || []).slice(-12),
+        agenda: ((await store.get("perfil")) || {}).agenda || [],
         agora: now.stamp,
       });
     }
@@ -900,8 +929,8 @@ export async function handle(req, { store, env, fetchFn = fetch, nowDate = new D
       return json({ latest: feed.seq, items: since < 0 ? [] : feed.items.filter((i) => i.id > since) });
     }
     if (path === "/chat" && method === "POST") {
-      const { message } = await body(req);
-      return json(await chat({ store, env, fetchFn, message, now }));
+      const { message, pode_musica: canMusic } = await body(req);
+      return json(await chat({ store, env, fetchFn, message, now, canMusic: Boolean(canMusic) }));
     }
     if (path === "/chat/clear" && method === "POST") {
       await store.set("conversa", []);
