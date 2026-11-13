@@ -1228,27 +1228,28 @@ export default function HudLayout({
               <img src={photoUrl} alt="" onError={(e) => { e.currentTarget.parentElement.style.display = "none"; }} />
             </span>
           )}
-          {(onOpenGodsEye || onOpenAgents) && (
-            <div className="hl-orb-actions">
-              {onOpenGodsEye && (
-                <button type="button" className="hl-gods-eye-trigger" onClick={onOpenGodsEye} title="Abrir Olho de Deus (G)">
-                  ◉ OLHO DE DEUS
-                </button>
-              )}
-              {onOpenAgents && (
-                <button type="button" className="hl-agents-trigger" onClick={onOpenAgents} title="Central de Agentes: rotas, pesquisa e chat">
-                  🤖 AGENTES
-                </button>
-              )}
-              <button type="button" className="hl-agents-trigger" onClick={() => window.dispatchEvent(new CustomEvent("jarvis-open-branding"))} title="Branding Book: identidade visual do JARVIS">
-                📘 BRANDING
-              </button>
-              <button type="button" className="hl-agents-trigger" onClick={() => window.dispatchEvent(new CustomEvent("jarvis-open-diagnostic"))} title="Diagnóstico: testar IA, voz, internet, microfone e câmera">
-                🩺 DIAGNÓSTICO
-              </button>
-            </div>
-          )}
         </div>
+        {/* V7.4.1: atalhos logo ABAIXO do orbe (antes ficavam por cima, no meio dele) */}
+        {(onOpenGodsEye || onOpenAgents) && (
+          <div className="hl-orb-actions">
+            {onOpenGodsEye && (
+              <button type="button" className="hl-gods-eye-trigger" onClick={onOpenGodsEye} title="Abrir Olho de Deus (G)">
+                ◉ OLHO DE DEUS
+              </button>
+            )}
+            {onOpenAgents && (
+              <button type="button" className="hl-agents-trigger" onClick={onOpenAgents} title="Central de Agentes: rotas, pesquisa e chat">
+                🤖 AGENTES
+              </button>
+            )}
+            <button type="button" className="hl-agents-trigger" onClick={() => window.dispatchEvent(new CustomEvent("jarvis-open-branding"))} title="Branding Book: identidade visual do JARVIS">
+              📘 BRANDING
+            </button>
+            <button type="button" className="hl-agents-trigger" onClick={() => window.dispatchEvent(new CustomEvent("jarvis-open-diagnostic"))} title="Diagnóstico: testar IA, voz, internet, microfone e câmera">
+              🩺 DIAGNÓSTICO
+            </button>
+          </div>
+        )}
         {/* V5.6: contagens regressivas pedidas por voz, logo abaixo do orbe */}
         {!briefing && <CountdownWidget items={countdowns} onRemove={onRemoveCountdown} />}
         {!briefing && <div className="hl-quote"><MotivationWidget /></div>}

@@ -2,6 +2,10 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 7.4.1 — 13 de novembro de 2026
+
+- Central: os atalhos **◉ OLHO DE DEUS · 🤖 AGENTES · 📘 BRANDING · 🩺 DIAGNÓSTICO** saíram de cima do orbe (ficavam no meio dele, quase invisíveis) e agora ficam **logo abaixo do orbe**, como botões mais legíveis. No celular continuam em CONTROLES.
+
 ## 7.4.0 — 13 de novembro de 2026
 
 - **🩺 DIAGNÓSTICO** (tela de bloqueio, ao lado do Olho de Deus, CONTROLES, perfil ou "Jarvis, roda um diagnóstico"): testa de verdade a IA (pergunta mínima, mede o tempo), a voz (gera um áudio), a internet, a sincronização com a nuvem, o espaço em disco, os arquivos de dados, os erros das últimas 24 h e, no aparelho, a conexão com o PC, o tempo real, a versão da tela e do PC, o microfone, a câmera e a fluidez. Cada item diz ok / atenção / falha e **o que fazer**. "COPIAR RELATÓRIO" copia tudo em texto (sem dados pessoais).
