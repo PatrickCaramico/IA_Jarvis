@@ -41,7 +41,7 @@ function CloudLogin({ status, onLogged, onBack }) {
   return (
     <div className="cm-login">
       <p className="cm-login-hint">O notebook não está respondendo. Entre com o PIN do modo nuvem para usar o JARVIS daqui.</p>
-      <PinPad title="PIN DO MODO NUVEM" cancelLabel="" busy={busy} message={message} onSubmit={submit} onCancel={() => onBack?.()} />
+      <PinPad title="PIN DA NUVEM" cancelLabel="" busy={busy} message={message} onSubmit={submit} onCancel={() => onBack?.()} />
       {onBack && <button type="button" className="cm-chip" onClick={onBack}>VOLTAR</button>}
     </div>
   );
@@ -83,10 +83,10 @@ export default function CloudMode({ onReady, onBack }) {
     <div className="cm-root">
       <header className="cm-header">
         <div>
-          <div className="cm-brand">{(status?.prefs?.ai_name || status?.assistente || "JARVIS").toUpperCase()} <span>· MODO NUVEM</span></div>
+          <div className="cm-brand">{(status?.prefs?.ai_name || status?.assistente || "JARVIS").toUpperCase()} <span>· ACESSO PELA NUVEM</span></div>
           <div className="cm-sub">
             <span className="cm-dot" aria-hidden="true" />
-            {status?.nome ? `${status.nome}, o` : "O"} notebook está desligado: usando a nuvem.
+            {status?.nome ? `${status.nome}, o` : "O"} JARVIS do notebook não está ao alcance daqui: acesso pela nuvem.
           </div>
         </div>
       </header>

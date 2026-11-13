@@ -2,6 +2,10 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 6.6.6 — 13 de novembro de 2026
+
+- **Status certo no acesso pela nuvem:** o aviso do topo dizia "notebook desligado" mesmo com o notebook ligado em casa (você só estava fora, nos dados móveis). Agora diz "☁ ACESSO PELA NUVEM · notebook ligado em casa · listas sincronizadas" quando o PC sincronizou nos últimos 3 minutos, e "notebook desligado · visto 13/11 15:09" quando não. Atualiza a cada minuto. No app, o aviso de rede ("O senhor está conectado pela rede de dados móveis") continua aparecendo e falando também pela nuvem. `/api/cloud/status` passa a mandar `agora`.
+
 ## 6.6.5 — 13 de novembro de 2026
 
 - **Modo nuvem com a central de sempre:** com o notebook desligado, o celular (Chrome ou app) abre a **mesma central** do app e do site (orbe, Canal Ativo, lista de compras, água, tarefas, clima, notícias, CONTROLES, Área Limpa), em vez da tela simplificada. Depois do PIN da nuvem, um adaptador (`utils/cloudShim.js`) responde no lugar do PC: conversa com a IA da nuvem (com voz do aparelho), compras, tarefas, lembretes, alarmes, água, notícias, clima e os avisos. O que só existe no PC (câmera, Spotify, volume, controle do Windows) responde "precisa do notebook ligado". Um aviso discreto no topo mostra "☁ MODO NUVEM · notebook desligado" e quando o PC foi visto pela última vez. O "Primeiros passos" não aparece na nuvem.

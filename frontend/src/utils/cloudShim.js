@@ -7,6 +7,7 @@
 import { API_URL, WS_URL } from "./api.js";
 import { change, cloud } from "./cloudApi.js";
 import { APP_VERSION } from "./version.js";
+import { pcLine } from "./cloudStatus.js";
 
 const NEEDS_PC = "Isso precisa do notebook ligado, senhor. No modo nuvem eu cuido de conversa, listas, lembretes, alarmes, água, notícias e clima.";
 const DAYS = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
@@ -305,14 +306,17 @@ export function installCloudShim(info) {
     /* sem armazenamento */
   }
   document.documentElement.dataset.cloud = "1";
-  // aviso discreto no topo: a central é a de sempre, mas os dados vêm da nuvem
+  // aviso discreto no topo: a central é a de sempre, mas o acesso é pela nuvem (fora de casa ou PC desligado)
   try {
     const pill = document.createElement("div");
     pill.className = "cloud-pill";
     pill.setAttribute("role", "status");
-    const when = status.sincronizado_em ? ` · PC visto ${status.sincronizado_em.slice(8, 10)}/${status.sincronizado_em.slice(5, 7)} ${status.sincronizado_em.slice(11, 16)}` : "";
-    pill.textContent = `☁ MODO NUVEM · notebook desligado${when}`;
     document.body.appendChild(pill);
+    const paint = (st) => {
+      pill.textContent = `☁ ACESSO PELA NUVEM · ${pcLine(st)}`;
+    };
+    paint(status);
+    setInterval(() => cloud("/status").then(paint).catch(() => {}), 60000);
   } catch {
     /* sem DOM: segue sem o aviso */
   }

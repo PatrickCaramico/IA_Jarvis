@@ -764,6 +764,7 @@ export async function handle(req, { store, env, fetchFn = fetch, nowDate = new D
         assistente: perfil.assistente || "JARVIS",
         sincronizado_em: perfil.atualizado_em || null,
         prefs: perfil.prefs || {},
+        agora: now.stamp, // V6.6.6: para a tela saber se o PC sincronizou há pouco (ligado) ou não
       });
     }
 
