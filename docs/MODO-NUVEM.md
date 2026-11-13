@@ -16,9 +16,11 @@ A **mesma central** do app e do site. Depois do PIN da nuvem, um adaptador
 (`frontend/src/utils/cloudShim.js`) responde no lugar do PC. Um aviso no topo mostra
 "☁ MODO NUVEM · notebook desligado".
 
-**Limitação conhecida:** pelo navegador do celular, o site (https) não consegue falar com o PC na rede
-de casa (`http://192.168...`): o navegador bloqueia. Por isso, no Chrome do celular o site entra na nuvem
-mesmo com o notebook ligado. No app, em casa, ele abre a central do PC normalmente.
+**Como o celular decide:** o app tenta o PC (Wi-Fi de casa e, se configurado, Tailscale). Achou: central
+do PC, como sempre. Não achou (dados móveis, outra rede ou PC desligado): a mesma central pela nuvem, com
+o aviso "☁ ACESSO PELA NUVEM" dizendo se o notebook está ligado em casa (sincronizou há menos de 3 min)
+ou desligado. No Chrome do celular, o site (https) não alcança o PC pela rede de casa (o navegador
+bloqueia), então ele usa sempre a nuvem.
 
 ## O que funciona sem o notebook
 
