@@ -956,7 +956,7 @@ export default function HudLayout({
   };
 
   return (
-    <div className={`hl-root${zenMode && !showConversation ? " hl-zen" : zenMode && showConversation ? " hl-zen hl-zen-chat" : ""}${!leftOpen && !zenMode ? " hl-left-hidden" : ""}${!rightOpen && !zenMode ? " hl-right-hidden" : ""}${briefing ? " hl-briefing" : ""}`}>
+    <div className={`hl-root${zenMode && !showConversation ? " hl-zen" : zenMode && showConversation ? " hl-zen hl-zen-chat" : ""}${!leftOpen && !zenMode ? " hl-left-hidden" : ""}${!rightOpen && !zenMode ? " hl-right-hidden" : ""}${briefing ? " hl-briefing" : ""}${briefing?.phase === "done" ? " hl-briefing-done" : ""}`}>
       {!rightOpen && !zenMode && (
         <button
           type="button"

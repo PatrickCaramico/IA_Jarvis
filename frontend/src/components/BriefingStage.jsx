@@ -162,7 +162,8 @@ function DoneRow({ briefing, onClose, onSay }) {
           </button>
           <button type="button" className="bf-close" onClick={onClose} title="Fechar o briefing">✕</button>
         </div>
-        <div className="bf-row">
+        {/* V6.6.4: no PC, colunas pela quantidade de assuntos para caber em 2 fileiras (8 -> 4x2, 10 -> 5x2) */}
+        <div className="bf-row" style={{ "--bf-cols": Math.min(5, Math.max(2, Math.ceil(visible.length / 2))) }}>
           {visible.map((c, i) => {
             const isHidden = hidden.includes(cardKey(c));
             return (
