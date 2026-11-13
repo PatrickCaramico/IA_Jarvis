@@ -108,6 +108,9 @@ _MODES = [
 
 class RouteAgent:
     name, label, icon = "rotas", "Agente de rotas", "🧭"
+    desc = "Guarda seus lugares e abre a rota no Google Maps, saindo de onde você está."
+    examples = ["quero ir para o trabalho", "me leva pra academia a pé", "rota para o aeroporto de Guarulhos de ônibus",
+                "quais são meus lugares?"]
 
     _SAVE = [
         re.compile(r"^(?:jarvis\s+)?(?:lembre que |lembra que |guarda que |anota que )?(?:o\s+)?(?:meu|minha)\s+((?:\w+\s?){1,3}?)\s+fica\s+(?:na|no|em|nas|nos)\s+(.{4,})$"),
@@ -185,6 +188,8 @@ class RouteAgent:
 
 class SearchAgent:
     name, label, icon = "pesquisa", "Agente de pesquisa", "🔎"
+    desc = "Pesquisa no YouTube e abre no aparelho em que você pediu."
+    examples = ["abre o YouTube e pesquisa receita de bolo", "procura lofi no YouTube", "toca Coldplay no YouTube"]
 
     _RX = [
         re.compile(r"\b(?:abre|abra|abrir|entra|entre|vai)\s+(?:no\s+|o\s+)?youtube\s+e\s+(?:pesquisa|pesquise|procura|procure|busca|busque|coloca|coloque|poe|ponha|toca|toque)\s+(?:por\s+|sobre\s+)?(.+)$"),
@@ -252,6 +257,11 @@ async def handle(message: str) -> Optional[str]:
         await _tell(agent, "done", result.status or "pronto")
         return result.reply
     return None
+
+
+def catalog() -> list[dict]:
+    """V6.8.3: os agentes para a Central de Agentes (nome, ícone, o que fazem e exemplos)."""
+    return [{"name": a.name, "label": a.label, "icon": a.icon, "desc": a.desc, "examples": a.examples} for a in AGENTS]
 
 
 def snapshot_places() -> dict:

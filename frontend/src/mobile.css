@@ -30,7 +30,7 @@
   .hl-root.hl-left-hidden .hl-left, .hl-root.hl-right-hidden .hl-right {
     visibility: visible !important; opacity: 1 !important; pointer-events: auto !important;
   }
-  .hl-left-tab-trigger, .hl-right-tab-trigger, .hl-gods-eye-trigger { display: none !important; }
+  .hl-left-tab-trigger, .hl-right-tab-trigger, .hl-gods-eye-trigger, .hl-agents-trigger { display: none !important; }
   .hl-col { overflow: visible; }
   .hl-messages { max-height: 55vh; }
   .hl-bottom {

@@ -157,6 +157,13 @@ function agenda(st) {
 
 const byId = (list, id) => list.find((i) => String(i.id) === String(id));
 
+const CLOUD_AGENTS = [
+  { name: "rotas", label: "Agente de rotas", icon: "🧭", desc: "Guarda seus lugares e abre a rota no Google Maps, saindo de onde você está.",
+    examples: ["quero ir para o trabalho", "me leva pra academia a pé", "rota para o aeroporto de Guarulhos de ônibus"] },
+  { name: "pesquisa", label: "Agente de pesquisa", icon: "🔎", desc: "Pesquisa no YouTube e abre no aparelho em que você pediu.",
+    examples: ["abre o YouTube e pesquisa receita de bolo", "procura lofi no YouTube"] },
+];
+
 // V6.7.4: música no próprio celular (só o app Android sabe apertar os botões de mídia e abrir o Spotify)
 function canMusic() {
   try {
@@ -268,6 +275,13 @@ async function route(method, path, query, body) {
       return ok({ ringing: false });
     case "GET /api/agenda/next":
       return ok({ items: agenda(await refresh()) });
+    // V6.8.3: Central de Agentes fora de casa (o catálogo é o mesmo do PC: backend/modules/agents.py)
+    case "GET /api/agents":
+      return ok({ agents: CLOUD_AGENTS, places: (await refresh()).lugares || {} });
+    case "POST /api/agents/places": {
+      await change({ op: "place_set", nome: body.name, endereco: body.address });
+      return ok({ places: (await refresh()).lugares || {} });
+    }
     case "POST /api/camera/ask":
       // V6.8.2: "o que é isso?" pela câmera do celular, fora de casa
       return ok(await cloud("/vision", { method: "POST", body: { image: body.image, question: body.question }, timeout: 45000 }));

@@ -1064,6 +1064,7 @@ export async function handle(req, { store, env, fetchFn = fetch, nowDate = new D
         agua: waterStatus(state.agua, now),
         conversa: ((await store.get("conversa")) || []).slice(-12),
         agenda: ((await store.get("perfil")) || {}).agenda || [],
+        lugares: await allPlaces(store), // V6.8.3: Central de Agentes
         agora: now.stamp,
       });
     }
@@ -1091,9 +1092,14 @@ export async function handle(req, { store, env, fetchFn = fetch, nowDate = new D
     if (path === "/change" && method === "POST") {
       const op = await body(req);
       const allowed = ["shopping_add", "shopping_set", "shopping_remove", "shopping_clear", "task_add", "task_done", "task_remove",
-        "reminder_add", "reminder_remove", "alarm_add", "alarm_remove", "water_add", "water_undo", "water_goal", "mood_set"];
+        "reminder_add", "reminder_remove", "alarm_add", "alarm_remove", "water_add", "water_undo", "water_goal", "mood_set", "place_set"];
       if (!allowed.includes(op.op)) throw new HttpError(400, "Operação desconhecida.");
       const { result } = await change(store, op, now);
+      if (op.op === "place_set") { // V6.8.3: lugar salvo pela Central de Agentes fora de casa
+        const extra = (await store.get("lugares_nuvem")) || {};
+        extra[result.nome] = result.endereco;
+        await store.set("lugares_nuvem", extra);
+      }
       return json({ ok: true, result });
     }
     // V6.6.9: a mesma voz do PC (vozes neurais da Microsoft), em MP3

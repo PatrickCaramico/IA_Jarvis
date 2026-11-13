@@ -206,6 +206,40 @@ class IcsRequest(BaseModel):
     url: str = ""
 
 
+# ---------------------------------------------------------------- V6.8.3: Central de Agentes
+class PlaceRequest(BaseModel):
+    name: str
+    address: str
+
+
+@router.get("/api/agents")
+async def agents_catalog() -> dict:
+    from modules import agents
+
+    return {"agents": agents.catalog(), "places": agents.load_places()}
+
+
+@router.post("/api/agents/places")
+async def agents_place_save(req: PlaceRequest) -> dict:
+    from modules import agents
+
+    key = agents._key(req.name)  # noqa: SLF001 - mesmo nome que a voz usa ("o trabalho" -> "trabalho")
+    address = req.address.strip()[:160]
+    if not key or not address:
+        raise HTTPException(status_code=400, detail="Diga o nome do lugar e o endereço.")
+    await asyncio.to_thread(agents.save_place, key, address)
+    return {"places": agents.load_places()}
+
+
+@router.delete("/api/agents/places/{name}")
+async def agents_place_delete(name: str) -> dict:
+    from modules import agents
+
+    if not await asyncio.to_thread(agents.forget_place, agents._key(name)):  # noqa: SLF001
+        raise HTTPException(status_code=404, detail="Lugar não encontrado.")
+    return {"places": agents.load_places()}
+
+
 @router.get("/api/calendar/status")
 async def calendar_status() -> dict:
     """V6.8.1: a agenda está conectada? (seção Google Agenda dos Ajustes)"""

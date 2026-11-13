@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { APP_VERSION } from "../utils/version.js";
 
+import { checkForUpdate, saveUpdateResult } from "../utils/updateCheck.js";
+
 export default function ProfileModal({
   photoUrl,
   name,
@@ -15,6 +17,25 @@ export default function ProfileModal({
   onClose,
   api,
 }) {
+  const [updateState, setUpdateState] = useState({ busy: false, text: "", available: false, latest: "" });
+  const checkUpdates = async () => {
+    setUpdateState({ busy: true, text: "", available: false, latest: "" });
+    try {
+      const r = await checkForUpdate(api);
+      saveUpdateResult(r);
+      window.dispatchEvent(new CustomEvent("jarvis-update-check", { detail: r })); // acende a bolinha do ATUALIZAR
+      setUpdateState({
+        busy: false,
+        available: r.updateAvailable,
+        latest: r.latestVersion,
+        text: r.updateAvailable
+          ? `${r.count > 1 ? `${r.count} versões novas` : "Versão nova"}: ${r.latestVersion} (este PC: ${r.currentVersion})`
+          : `Em dia: versão ${r.currentVersion}`,
+      });
+    } catch {
+      setUpdateState({ busy: false, text: "Não consegui conferir agora (o JARVIS do PC precisa estar ligado).", available: false, latest: "" });
+    }
+  };
   const [activeTab, setActiveTab] = useState("perfil"); // "perfil" | "widgets" | "lazer"
 
   const allWidgets = [
@@ -202,6 +223,25 @@ export default function ProfileModal({
                 <strong className="block text-sm font-['Orbitron'] text-white">📱 Acesso Mobile</strong>
                 <p className="text-xs text-cyan-200/60 mt-1">Conectar smartphone na mesma rede</p>
               </button>
+
+              {/* V6.8.3: verificar atualizações (mesma fonte do ⟳ ATUALIZAR) */}
+              <button
+                onClick={checkUpdates}
+                disabled={updateState.busy}
+                className="p-3.5 rounded-lg border border-cyan-500/30 bg-black/40 hover:border-cyan-400 hover:bg-cyan-950/40 text-left transition disabled:opacity-60"
+              >
+                <strong className="block text-sm font-['Orbitron'] text-white">↻ Verificar atualizações</strong>
+                <p className="text-xs text-cyan-200/60 mt-1">{updateState.busy ? "Conferindo no GitHub…" : updateState.text || "Ver se há versão nova do JARVIS"}</p>
+              </button>
+              {updateState.available && (
+                <button
+                  onClick={() => { onClose(); window.dispatchEvent(new CustomEvent("jarvis-run-update")); }}
+                  className="p-3.5 rounded-lg border border-amber-400/70 bg-amber-500/10 hover:bg-amber-500/20 text-left transition"
+                >
+                  <strong className="block text-sm font-['Orbitron'] text-amber-100">⟳ Atualizar agora</strong>
+                  <p className="text-xs text-amber-100/70 mt-1">Baixa a versão {updateState.latest} e reinicia (cerca de 1 min)</p>
+                </button>
+              )}
             </div>
           </div>
         )}

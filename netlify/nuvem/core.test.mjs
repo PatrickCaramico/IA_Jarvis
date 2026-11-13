@@ -345,3 +345,14 @@ test("o que é isso? pela câmera, na nuvem (foto validada; nada guardado)", asy
   assert.equal((await ask(Buffer.from("<html>").toString("base64"))).status, 400);
   assert.deepEqual([...store.data.keys()].filter((k) => /foto|vision|image/.test(k)), []);
 });
+
+test("central de agentes: lugar salvo pela nuvem aparece no estado junto com os do PC", async () => {
+  const store = memStore();
+  const token = await login(store);
+  await store.set("perfil", { lugares: { casa: "Rua A, 1" } });
+  const r = await call(store, "/change", { method: "POST", token, body: { op: "place_set", nome: "Trabalho", endereco: "Av. Paulista, 1000" } });
+  assert.equal(r.status, 200);
+  const { data } = await call(store, "/state", { token });
+  assert.equal(data.lugares.casa, "Rua A, 1");
+  assert.equal(Object.values(data.lugares).includes("Av. Paulista, 1000"), true);
+});
