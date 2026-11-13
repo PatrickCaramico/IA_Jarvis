@@ -1477,7 +1477,7 @@ async def _h_spotify(message: str, norm: str, words: int, name: str) -> Optional
         if re.search(r"\b(?:abrir|abra|abre|iniciar|inicie|acessar|acesse|mostrar|mostre)\b", norm):
             await asyncio.to_thread(_open_spotify_desktop)
             return "Spotify aberto no aplicativo do computador, senhor."
-        if any(term in norm for term in ("pausar", "pause", "parar")):
+        if re.search(r"\b(?:pausar|pausa|pause|parar|para a musica)\b", norm):
             await asyncio.to_thread(spotify.pause)
             return "Spotify pausado, senhor."
         if any(term in norm for term in ("proxima", "seguinte")):

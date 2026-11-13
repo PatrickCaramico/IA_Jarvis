@@ -2,6 +2,14 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 6.6.1 — 13 de novembro de 2026
+
+- **Pedidos de voz no bloqueio não respondiam:** a escuta de comandos do bloqueio ("Jarvis, como está o clima?") só ligava com o **Modo Sentinela** ativado nas configurações (vem desligado) e com o microfone do bloqueio ligado (vinha silenciado); sem as palmas ligadas, nem o botão do microfone aparecia. Agora o bloqueio ouve sempre que o microfone dele está ligado, o botão do microfone aparece sempre (no PC) e o microfone começa ligado (`lock_mic_on` padrão `true`; P ou o botão desligam e a escolha é lembrada).
+- **Notícias no bloqueio:** "Jarvis, quais as notícias?" lê as 3 primeiras manchetes e mostra as 5 numa mini janela (antes pedia o rosto).
+- **Spotify no bloqueio:** tocar, "toca minha playlist", pausar, próxima, anterior e "o que está tocando" respondem sem liberar a central (antes só no modo visitante), com a mini janela ♫. "Abre o Spotify" continua pedindo o rosto.
+- **"Pausa a música" não pausava** (o Spotify só entendia "pausar", "pause" e "parar"): corrigido também na central.
+- Continuam pedindo o rosto: tarefas, lembretes, agenda, memória, finanças e o resto que é pessoal. Teste: `backend/tests/test_lock_voice_661.py`.
+
 ## 6.6.0 — 13 de novembro de 2026
 
 - **Modo nuvem: o JARVIS no celular com o notebook desligado.** Antes, o app abria o endereço do PC na Wi-Fi de casa (`http://192.168.x.x:5173`) e, nos dados móveis ou com o notebook desligado, só mostrava "Página da Web não disponível" (`ERR_CONNECTION_TIMED_OUT`). Agora, quando o PC não responde, a central abre o **modo nuvem**, que roda nas funções do Netlify (`/api/cloud/*`, dados no Netlify Blobs): conversa com a IA por voz ou texto (Gemini, OpenAI ou Claude, com a chave nas variáveis do Netlify), lista de compras, tarefas, lembretes, alarmes, água, notícias (Google Notícias) e clima (Open-Meteo). Entra com um PIN próprio (`JARVIS_NUVEM_PIN`); 8 erros em 15 min bloqueiam.

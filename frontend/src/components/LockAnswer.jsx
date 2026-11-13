@@ -85,10 +85,18 @@ export default function LockAnswer({ answer, onClose }) {
     >
       <div className="la-timer" aria-hidden="true"><i style={{ width: `${(left / IDLE_MS) * 100}%` }} /></div>
       <header className="la-head">
-        <span className="la-title">{card.kind === "weather" ? "☁ " : "◈ "}{card.title}</span>
+        <span className="la-title">{card.kind === "weather" ? "☁ " : card.kind === "news" ? "📰 " : card.kind === "music" ? "♫ " : "◈ "}{card.title}</span>
         <button type="button" className="la-x" onClick={onClose} aria-label="Fechar">✕</button>
       </header>
-      {card.kind === "weather" ? <WeatherBody card={card} /> : <p className="la-text">{card.text}</p>}
+      {card.kind === "weather" ? <WeatherBody card={card} /> : card.kind === "news" ? (
+        <ol className="la-news">
+          {(card.items || []).map((n) => (
+            <li key={n.link || n.title}>
+              {n.title}{n.source && <span className="la-news-src"> · {n.source}</span>}
+            </li>
+          ))}
+        </ol>
+      ) : <p className="la-text">{card.text}</p>}
     </section>,
     document.body,
   );
