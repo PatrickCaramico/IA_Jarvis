@@ -34,6 +34,13 @@
   to = "/app/"
   status = 301
 
+# V6.7.6: arquivo antigo da central (de antes de uma atualização) responde 404, e não a página da central:
+# antes, o navegador recebia o HTML no lugar do código e a tela ficava preta
+[[redirects]]
+  from = "/app/assets/*"
+  to = "/404.html"
+  status = 404
+
 [[redirects]]
   from = "/app/*"
   to = "/app/index.html"

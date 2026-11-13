@@ -2,6 +2,10 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 6.7.6 — 13 de novembro de 2026
+
+- **Tela preta ao abrir os Ajustes (site):** com a central aberta durante uma publicação nova no Netlify, abrir uma parte carregada sob demanda (Ajustes, widgets, modais) pedia um arquivo da versão antiga, que não existe mais; o Netlify respondia com a página da central no lugar do código e a tela inteira ficava preta. Agora: (1) a central recarrega sozinha uma vez e pega a versão nova; (2) se ainda falhar, só aquela parte mostra "Esta parte não carregou" com RECARREGAR, e a central continua de pé; (3) qualquer erro na tela vira "O JARVIS precisa recarregar a tela" com o botão RECARREGAR, nunca mais a tela preta; (4) no Netlify, arquivo antigo de `/app/assets/` responde 404 em vez da página da central.
+
 ## 6.7.5 — 13 de novembro de 2026
 
 - **"Verificar atualizações" (Ajustes › Diagnóstico) corrigido:** ainda olhava as Releases do GitHub (que o projeto não usa) e sempre dizia "versão mais nova". Agora confere na hora a mesma fonte do ⟳ ATUALIZAR (`/api/system/update/status?force=true`), mostra a versão deste PC e quantas versões novas existem, e já acende a bolinha do botão sem esperar os 30 minutos. A conferência diária antiga saiu.
