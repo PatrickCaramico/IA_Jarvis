@@ -2,6 +2,10 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 6.5.19 — 12 de novembro de 2026
+
+- **O JARVIS se religa sozinho se cair:** o backend parou sozinho às 20:42 (sem erro no log nem suspensão do PC) e a central ficou em "Reconectando". Agora o ouvido offline, que já confere o JARVIS a cada 2 s, liga de novo pelo `Iniciar-JARVIS.bat site` quando ele fica 45 s fora do ar (no máximo uma vez a cada 10 min). Parar pelo `Parar-JARVIS.bat` encerra o ouvido antes, então parar de propósito não religa. Testado: derrubado às 21:14:29, de volta às 21:15:31.
+
 ## 6.5.18 — 12 de novembro de 2026
 
 - **Botão FUNDO na central:** no topo, ao lado de ÁUDIO e SPOTIFY, troca o fundo na hora (Blueprint → Universo → Clássico) e o PC salva para os outros aparelhos. O "Trocar fundo" do CONTROLES passou a trocar na hora também (antes dependia da resposta do PC e não reconhecia o Universo como atual).

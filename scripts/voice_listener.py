@@ -161,6 +161,36 @@ def beep() -> None:
 
 
 # ------------------------------------------------------------------ laço principal
+# V6.5.19: vigia do JARVIS. Se o backend cair sozinho (o processo some sem deixar erro), o ouvido — que já
+# confere o JARVIS a cada 2 s — liga de novo pelo Iniciar-JARVIS.bat. O Parar-JARVIS.bat encerra o ouvido
+# antes, então parar de propósito nunca religa. No máximo uma tentativa a cada 10 minutos.
+REVIVE_AFTER_S = 45
+REVIVE_COOLDOWN_S = 600
+
+
+def should_revive(down_since: Optional[float], now: float, last_revive: float, seen_up: bool) -> bool:
+    """Religa só se o JARVIS já esteve no ar, está fora há REVIVE_AFTER_S e não tentou há pouco."""
+    if not seen_up or down_since is None:
+        return False
+    return now - down_since >= REVIVE_AFTER_S and now - last_revive >= REVIVE_COOLDOWN_S
+
+
+def revive_backend() -> None:
+    import subprocess
+
+    bat = ROOT / "Iniciar-JARVIS.bat"
+    if not bat.exists():
+        return
+    log.warning("O JARVIS parou de responder; ligando de novo (Iniciar-JARVIS.bat site).")
+    flags = 0
+    if os.name == "nt":
+        # console escondido (o .bat usa comandos de console) e grupo próprio: sobrevive ao Iniciar encerrar o ouvido
+        flags = subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.CREATE_NO_WINDOW
+    # mesmo formato do atalho jarvis://: cmd /c ""C:\caminho com espaços\Iniciar-JARVIS.bat" site"
+    command = f'cmd.exe /c ""{bat}" site"'
+    subprocess.Popen(command, cwd=str(ROOT), creationflags=flags, close_fds=True)  # noqa: S603
+
+
 class Gate:
     """Consulta o backend a cada 2 s (não a cada quadro de áudio)."""
 
@@ -168,12 +198,25 @@ class Gate:
         self.at = 0.0
         self.open = False
         self.device = None  # V6.5.8: microfone escolhido ("" = padrão); None = ainda não leu
+        self.seen_up = False
+        self.down_since: Optional[float] = None
+        self.last_revive = 0.0
 
     def check(self) -> bool:
         now = time.monotonic()
         if now - self.at >= STATE_EVERY_SECONDS:
             self.at = now
             health = _get("/api/health")
+            if health:
+                self.seen_up, self.down_since = True, None
+            else:
+                self.down_since = self.down_since or now
+                if should_revive(self.down_since, now, self.last_revive, self.seen_up):
+                    self.last_revive = now
+                    try:
+                        revive_backend()
+                    except Exception as exc:  # noqa: BLE001
+                        log.warning("Não consegui religar o JARVIS: %s", exc)
             status = _get("/api/lock/status") if health else None
             prefs = _get("/api/prefs") if health else None
             enabled = True

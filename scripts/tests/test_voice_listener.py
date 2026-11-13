@@ -56,3 +56,11 @@ def test_match_input_prefers_mme_and_truncated_names():
     assert vl.match_input("Microfone (USB PnP Audio Device)", devs) == 1
     assert vl.match_input("", devs) is None
     assert vl.match_input("Headset que não existe", devs) is None
+
+
+def test_watchdog_revives_only_after_real_outage():
+    assert not vl.should_revive(None, 100, 0, True)              # no ar
+    assert not vl.should_revive(80, 100, 0, False)               # nunca esteve no ar (ainda subindo)
+    assert not vl.should_revive(80, 100, 0, True)                # fora há só 20 s
+    assert vl.should_revive(50, 100, -1000, True)                # fora há 50 s: religa
+    assert not vl.should_revive(50, 100, 0, True)                # tentou há pouco: espera

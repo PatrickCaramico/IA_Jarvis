@@ -52,6 +52,7 @@ enquanto escuta (o detector só "acorda" o reconhecimento completo depois do "Ja
 > ligado pelo `Iniciar-JARVIS.bat` quando o modelo está em `%USERPROFILE%\.jarvis-voice\vosk-model-small-pt-0.3`.
 > Pacotes: `pip install -r scripts/requirements-ouvido.txt`. Teste: `python scripts/voice_listener.py --test`.
 > Desligar: Configurações › Mídia & Foco › "Ouvir Jarvis com o navegador fechado".
+> V6.5.19: o ouvido também vigia o JARVIS: se o backend cair sozinho, ele liga de novo em cerca de 1 minuto.
 
 **Resumo (antes da V6.3):** com a aba fechada, o JARVIS continua **avisando e falando** (alarmes, lembretes, água,
 jogo, celular), mas **não escuta** pelo PC. Para escutar sem navegador, o passo é o ouvido offline no backend.
