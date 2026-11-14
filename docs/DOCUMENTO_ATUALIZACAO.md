@@ -165,6 +165,42 @@
   - 🎬 **Entretenimento:** filmes, séries, jogos do Palmeiras, onde assistir.
   - 🧠 **Estudos:** explica matérias usando o Holograma, faz perguntas tipo prova.
 
+#### ✅ Desenho fechado (15/11/2026)
+
+**Decisões do Patrick**
+| Tema | Decisão |
+|---|---|
+| Onde falar com o agente | **Nos dois:** abas por agente na Central de Agentes **e** `@nome` no campo de conversa normal |
+| Memória | **Cada agente lembra a própria conversa** (últimas 30 mensagens, salvas no PC), com botão LIMPAR |
+| Agentes novos | **Todos os 4:** 🛒 Mercado, 💰 Finanças, 📅 Secretário e 🧠 Professor |
+| Voz | **Sim:** "Jarvis, pergunta pro agente de finanças…", "agente mercado, monta a lista da semana" |
+
+**Como vai funcionar**
+1. **Agentes** (6), cada um com nome curto para o `@`:
+   | Agente | `@` | O que faz | Usa o que já existe |
+   |---|---|---|---|
+   | 🧭 Rotas | `@rotas` | rota e lugares salvos | agente de rotas |
+   | 🔎 Pesquisa | `@pesquisa` | YouTube e pesquisa na internet | agente de pesquisa |
+   | 🛒 Mercado | `@mercado` | lista de compras, receitas com o que tem em casa, quantidades | lista de compras |
+   | 💰 Finanças | `@financas` | anota gastos e entradas, resume o mês, compara categorias | módulo de finanças |
+   | 📅 Secretário | `@secretario` | agenda, lembretes e tarefas num lugar só ("o que tenho amanhã?", "marca dentista sexta às 10") | Google Agenda (iCal), lembretes, tarefas |
+   | 🧠 Professor | `@professor` | explica matérias (com o Holograma) e faz perguntas tipo prova | Holograma |
+2. **Falar com um agente:**
+   - **Central de Agentes:** uma **aba por agente**, cada uma com a própria conversa.
+   - **Campo de conversa:** começar com `@` mostra a lista de agentes. Escolhendo um, a mensagem vai **só para ele** e a resposta aparece com o ícone e o nome dele.
+   - **Voz:** "Jarvis, pergunta pro agente de finanças quanto gastei no mês", "agente mercado, monta a lista da semana", "fala com o professor: me explica frações".
+3. **Cada agente é especialista:**
+   - tem instruções próprias e só enxerga os dados da área dele (o de Finanças não vê a agenda, por exemplo);
+   - responde com a voz do JARVIS;
+   - quando precisa **mudar algo** (adicionar à lista, criar lembrete, anotar gasto), **mostra o que vai fazer** e faz, com o mesmo cuidado de confirmação da foto para ações maiores (apagar, várias de uma vez).
+4. **Memória:**
+   - as últimas 30 mensagens de cada agente ficam salvas no PC;
+   - um agente não vê a conversa do outro;
+   - o botão LIMPAR apaga só a conversa daquele agente.
+5. **Fora de casa (nuvem):** funcionam os agentes que já têm dados lá (Mercado, Secretário com lembretes/tarefas, Professor). Finanças e a agenda do Google pedem o PC ligado.
+
+**Status:** desenho aprovado; falta implementar.
+
 ---
 
 ### Ideia 4: Olho de Deus mais completo
@@ -247,6 +283,7 @@ Itens que já estavam na lista e continuam **em espera**:
 ## Anotações da conversa
 _Espaço para ir anotando as decisões de cada ideia._
 
+- **15/11:** Ideia 3 (chat com @agente) desenhada e decidida: abas e @ no campo, memória de 30 mensagens por agente, 4 agentes novos (Mercado, Finanças, Secretário, Professor) e voz.
 - **15/11:** Ideia 1 publicada (7.8.0). Próximas: ideia 3 (chat com @agente), 4 (Olho de Deus) e 5 (Holograma).
 - **15/11:** Ideia 1 (upload de fotos) desenhada e decidida: os três jeitos de enviar, as quatro funções, nada guardado e funcionando pela nuvem.
 - **15/11:** Ideia 2 concluída: parte 1 (7.6.0) e parte 2/https (7.7.0).
