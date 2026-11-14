@@ -22,9 +22,12 @@ function tunnelApi() {
   }
 }
 
+// V7.7: central aberta em https na rede de casa (porta 5443) fala com o backend em https (8443)
+const pageIsHttpsLan = typeof window !== "undefined" && window.location.protocol === "https:"
+  && !["localhost", "127.0.0.1", "[::1]"].includes(window.location.hostname);
 export const API_URL = tunnelApi()
   ?? import.meta.env.VITE_API_URL
-  ?? `${window.location.protocol}//${window.location.hostname}:8000`;
+  ?? `${window.location.protocol}//${window.location.hostname}:${pageIsHttpsLan ? 8443 : 8000}`;
 export const WS_URL = API_URL.replace(/^http/, "ws") + "/ws";
 
 // O backend roda nesta mesma máquina? (central aberta em localhost ou pelo site, falando com 127.0.0.1)

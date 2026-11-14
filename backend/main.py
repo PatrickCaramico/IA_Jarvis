@@ -75,6 +75,16 @@ async def security_middleware(request: Request, call_next):
                 status_code=403,
                 content={"detail": "Acesso externo não permitido. O modo rede está desativado."},
             )
+        # V7.7: com https ligado, a chave de acesso não viaja por http na rede (só as páginas públicas)
+        from modules import tls
+
+        if request.url.scheme == "http" and tls.enabled():
+            plain_ok = request.url.path.rstrip("/") in mobile.HTTP_OK_WITH_HTTPS
+            if not plain_ok:
+                host = request.url.hostname or "IP-DO-PC"
+                return JSONResponse(status_code=403, content={
+                    "detail": f"Conexão sem criptografia recusada. Abra o JARVIS por https://{host}:{tls.FRONT_HTTPS_PORT}.",
+                    "code": "https_required"})
         from modules import device_access
 
         ip = request.client.host if request.client else "?"
@@ -139,7 +149,7 @@ app.add_middleware(
     allow_origins=settings.CORS_ORIGINS,
     # rede de casa (192.168, 10, 172.16-31), Tailscale (100.64-127, V6.0) e nomes do Tailscale (*.ts.net)
     allow_origin_regex=(r"^https?://(192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+"
-                        r"|100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\.\d+\.\d+|[a-z0-9-]+(\.[a-z0-9-]+)*\.ts\.net):5173$"),
+                        r"|100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\.\d+\.\d+|[a-z0-9-]+(\.[a-z0-9-]+)*\.ts\.net):(5173|5443)$"),  # V7.7: 5443 = https
     allow_methods=["*"],
     allow_headers=["*"],
     **_PRIVATE_NETWORK,

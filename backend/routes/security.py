@@ -128,3 +128,29 @@ async def end_migration(request: Request) -> dict:
     _require_local(request)
     await asyncio.to_thread(device_access.end_migration)
     return {"status": "ok"}
+
+
+# --------------------------------------------------------------------------- V7.7: https na rede de casa
+@router.get("/api/security/https")
+async def https_status() -> dict:
+    from modules import tls
+
+    return await asyncio.to_thread(tls.status)
+
+
+class HttpsRequest(BaseModel):
+    on: bool
+
+
+@router.post("/api/security/https")
+async def https_toggle(req: HttpsRequest, request: Request) -> dict:
+    """Liga/desliga a conexão criptografada. Só a tela do PC. O JARVIS reinicia para valer."""
+    from modules import self_update, tls
+
+    _require_local(request)
+    await asyncio.to_thread(tls.set_enabled, req.on)
+    from modules import device_access
+
+    device_access.add_event("warn", "Conexão criptografada (https) " + ("LIGADA" if req.on else "DESLIGADA") + " na rede de casa.")
+    restarting = await asyncio.to_thread(self_update.restart)
+    return {"status": "ok", "enabled": req.on, "restarting": restarting, **(await asyncio.to_thread(tls.status))}

@@ -10,13 +10,28 @@ Uso:
     python serve_frontend.py --stale   # sai com 1 se o build estiver faltando ou desatualizado
 """
 import argparse
+import os
+import ssl
 import sys
+import threading
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 FRONTEND = Path(__file__).resolve().parent.parent / "frontend"
 DIST = FRONTEND / "dist"
+# V7.7: https na rede de casa (ligado em Configurações > Segurança; o certificado é criado pelo backend)
+TLS_DIR = Path(__file__).resolve().parent.parent / "data" / "tls"
+HTTPS_PORT = 5443
+
+
+def https_on() -> bool:
+    env = os.getenv("JARVIS_HTTPS", "").strip().lower()
+    if env in {"0", "false", "no", "off"}:
+        return False
+    if env in {"1", "true", "yes", "on"}:
+        return True
+    return (TLS_DIR / "https-ligado").exists()
 
 # Arquivos cuja mudança pede um build novo.
 SOURCES = ["src", "public", "index.html", "package.json", "vite.config.js", "tailwind.config.js", "postcss.config.js"]
@@ -64,7 +79,16 @@ def is_stale() -> bool:
 class Handler(SimpleHTTPRequestHandler):
     extensions_map = {**SimpleHTTPRequestHandler.extensions_map, **MIME}
 
+    redirect_https = False  # V7.7: no http, aparelho da rede vai para o https
+
     def send_head(self):
+        if self.redirect_https and self.client_address[0] not in ("127.0.0.1", "::1"):
+            host = (self.headers.get("Host") or "").split(":")[0] or "localhost"
+            self.send_response(302)
+            self.send_header("Location", f"https://{host}:{HTTPS_PORT}{self.path}")
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+            return None
         # Página única: qualquer caminho que não seja arquivo cai no index.html.
         path = Path(self.translate_path(self.path))
         if not path.exists() or (path.is_dir() and not (path / "index.html").exists()):
@@ -96,6 +120,22 @@ def main() -> int:
         print("frontend/dist não existe. Rode: npm run build (na pasta frontend).", file=sys.stderr)
         return 2
 
+    crt, key = TLS_DIR / "jarvis-pc.crt", TLS_DIR / "jarvis-pc.key"
+    use_https = https_on() and args.host not in ("127.0.0.1", "localhost") and crt.exists() and key.exists()
+    if use_https:
+        Handler.redirect_https = True
+        secure = ThreadingHTTPServer((args.host, HTTPS_PORT), partial(Handler, directory=str(DIST)))
+        secure.daemon_threads = True
+        ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        ctx.minimum_version = ssl.TLSVersion.TLSv1_2
+        ctx.load_cert_chain(str(crt), str(key))
+        secure.socket = ctx.wrap_socket(secure.socket, server_side=True)
+
+        class Plain(Handler):  # o servidor https não redireciona a si mesmo
+            redirect_https = False
+
+        secure.RequestHandlerClass = partial(Plain, directory=str(DIST))
+        threading.Thread(target=secure.serve_forever, daemon=True).start()
     server = ThreadingHTTPServer((args.host, args.port), partial(Handler, directory=str(DIST)))
     server.daemon_threads = True
     try:

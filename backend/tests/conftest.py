@@ -32,6 +32,7 @@ _WRITABLE = (
     ("tools", "_TIMERS_PATH", "timers.json"),  # V6.7.1
     ("agents", "_PATH", "lugares.json"),  # V6.8
     ("device_access", "_PATH", "aparelhos.json"),  # V7.6
+    ("tls", "_DIR", "tls"),  # V7.7
 )
 
 

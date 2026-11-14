@@ -712,8 +712,16 @@ public class MainActivity extends Activity {
         new Thread(() -> {
             String error;
             try {
-                java.net.HttpURLConnection c = (java.net.HttpURLConnection)
-                        new java.net.URL("http://" + host + ":8000/api/mobile/pair-pin").openConnection();
+                // V7.7: tenta primeiro a conexão criptografada (https, 8443); sem ela no PC, cai no http de sempre.
+                // Com o https ligado no PC, o PIN nunca vai por http (o PC recusa).
+                java.net.HttpURLConnection c;
+                try {
+                    c = (java.net.HttpURLConnection) new java.net.URL("https://" + host + ":8443/api/mobile/pair-pin").openConnection();
+                    c.setConnectTimeout(4000);
+                    c.connect();
+                } catch (java.io.IOException https) {
+                    c = (java.net.HttpURLConnection) new java.net.URL("http://" + host + ":8000/api/mobile/pair-pin").openConnection();
+                }
                 c.setConnectTimeout(6000);
                 c.setReadTimeout(10000);
                 c.setRequestMethod("POST");

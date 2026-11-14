@@ -12,6 +12,54 @@ function when(iso) {
   return d.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
 }
 
+function HttpsSection({ api, local }) {
+  const [st, setSt] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState("");
+  useEffect(() => {
+    api("/api/security/https").then(setSt).catch(() => {});
+  }, [api]);
+  const toggle = async () => {
+    const on = !st.enabled;
+    const warn = on
+      ? "Ligar a conexão criptografada (https)?\n\nDepois disso:\n• cada celular precisa instalar o certificado do JARVIS (passo a passo na página do certificado);\n• escaneie o QR code de novo;\n• o app Android precisa ser gerado de novo (Gerar-App-Android.bat).\n\nO JARVIS vai reiniciar."
+      : "Desligar a conexão criptografada? A rede de casa volta para http e o JARVIS reinicia.";
+    if (!window.confirm(warn)) return;
+    setBusy(true);
+    try {
+      const r = await api("/api/security/https", { method: "POST", body: JSON.stringify({ on }) });
+      setSt(r);
+      setNote(r.restarting ? "Reiniciando o JARVIS… a página volta sozinha em instantes." : "Pronto. Reinicie o JARVIS (Iniciar-JARVIS.bat) para valer.");
+    } catch (err) {
+      setNote(err.message);
+    }
+    setBusy(false);
+  };
+  if (!st) return null;
+  const ip = st.ips?.[0] || "IP-DO-PC";
+  return (
+    <Section title="CONEXÃO CRIPTOGRAFADA (HTTPS)">
+      <p className={`text-xs ${st.enabled ? "text-emerald-300" : "text-amber-200"}`}>
+        {st.enabled ? `● LIGADA: celulares e outros aparelhos entram por https://${ip}:${st.front_port}` : "○ DESLIGADA: a rede de casa usa http (alguém no mesmo Wi-Fi poderia espiar)."}
+      </p>
+      <Note>Este PC continua em http://127.0.0.1 (não sai do computador). Na rede, com https ligado, a chave de acesso nunca viaja sem criptografia.</Note>
+      {local && (
+        <button type="button" disabled={busy} onClick={toggle}
+          className={`w-full text-[11px] font-['Orbitron'] py-2 rounded border ${st.enabled ? "border-red-400/50 text-red-200 hover:bg-red-500/10" : "border-emerald-400/60 text-emerald-100 hover:bg-emerald-500/10"}`}>
+          {busy ? "AGUARDE…" : st.enabled ? "DESLIGAR HTTPS" : "LIGAR HTTPS (RECOMENDADO)"}
+        </button>
+      )}
+      {st.has_certificate && (
+        <p className="text-[11px] text-cyan-200/80">
+          No celular, abra <b className="text-white">http://{ip}:8000/api/mobile/certificado</b> para instalar o certificado (uma vez só).
+          <br /><span className="text-[10px] text-cyan-300/50 break-all">Impressão digital: {st.fingerprint}</span>
+        </p>
+      )}
+      {note && <p className="text-xs text-cyan-200" role="status">{note}</p>}
+    </Section>
+  );
+}
+
 export default function SecuritySettings({ api }) {
   const [data, setData] = useState(null);
   const [msg, setMsg] = useState("");
@@ -91,6 +139,8 @@ export default function SecuritySettings({ api }) {
           <Note>Aparelho novo escaneia o QR code e fica esperando: na tela do PC aparece PERMITIR / RECUSAR.</Note>
         )}
       </Section>
+
+      <HttpsSection api={api} local={data.local} />
 
       <Section title="ÚLTIMAS 24 HORAS">
         {data.events.length === 0 ? (

@@ -1,6 +1,6 @@
 # JARVIS — Comandos do dia a dia
 
-**Versão do projeto:** 7.6.0 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
+**Versão do projeto:** 7.7.0 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
 
 > Montado a partir do código do projeto. Se algum comando não responder como descrito, me avise que eu ajusto o guia.
 > Para a lista técnica de rotas, veja [API.md](API.md); para o `.env`, [CONFIGURACAO.md](CONFIGURACAO.md).
@@ -350,6 +350,17 @@ Avisos automáticos (gatilhos): chuva amanhã (à noite), jogo começando (com o
 | Aparelho que já usava o JARVIS (até 14 dias depois da atualização) | Ganha a própria chave sozinho, sem escanear de novo. |
 | Configurações > Segurança | Lista dos aparelhos com **REMOVER**, **DESCONECTAR TODOS E TROCAR O QR CODE**, **exigir aprovação agora** e o que aconteceu nas últimas 24 h. |
 | 5 tentativas erradas em 10 min | Aquele aparelho fica bloqueado por 15 min (dobra a cada vez), com aviso por voz, notificação no celular e registro no 🩺 Diagnóstico. |
+
+### Conexão criptografada / https (V7.7)
+
+1. **No PC:** Configurações › Segurança › **LIGAR HTTPS**. O JARVIS reinicia.
+2. **No celular:**
+   - abra `http://IP-DO-PC:8000/api/mobile/certificado`;
+   - baixe o certificado e instale em Configurações › Segurança › Criptografia e credenciais › Instalar certificado › **Certificado CA**. É uma vez só.
+3. **Escaneie o QR code de novo** (Configurações › Acesso Mobile). O endereço agora é `https://IP-DO-PC:5443`.
+4. **App Android:** gere o APK de novo (`Gerar-App-Android.bat`) e instale.
+
+Este PC continua em `http://127.0.0.1`. Para voltar ao normal: Configurações › Segurança › DESLIGAR HTTPS.
 
 ### Diagnóstico (V7.4)
 
