@@ -301,6 +301,8 @@ def prefetch(texts, whole: bool = False) -> int:
         if not speech:
             continue
         for piece in ([speech[:1500]] if whole else _split_chunks(speech)):
+            if not speakable(piece):
+                continue
             key = _cache_key(piece, volume)
             if key in _prefetched or key in _memory_cache:
                 continue
@@ -318,10 +320,34 @@ def clear_prefetch() -> None:
     _prefetched.clear()
 
 
+# V7.4.2: o serviço de voz da Microsoft às vezes responde "No audio was received" (instabilidade dele ou
+# muitas falas pedidas juntas, como no holograma). Antes isso virava "Falha na voz" na tela; agora tenta de
+# novo (até 2 vezes, com uma pausa curta) antes de desistir.
+RETRY_DELAYS = (0.6, 1.5)
+_SPEAKABLE = re.compile(r"[0-9A-Za-zÀ-ÿ]")
+
+
+def speakable(text: str) -> bool:
+    """Tem algo para falar? (pedaço só com emoji ou pontuação faz a Microsoft responder sem áudio)"""
+    return bool(_SPEAKABLE.search(text or ""))
+
+
 async def _synthesize_remote(text: str, path: str, volume: str) -> None:
     edge_tts = _get_edge_tts() if _edge_tts is not None else await asyncio.to_thread(_get_edge_tts)
     voice, rate, pitch = voice_params()
-    await edge_tts.Communicate(text, voice, rate=rate, volume=volume, pitch=pitch).save(path)
+    for attempt in range(len(RETRY_DELAYS) + 1):
+        try:
+            await edge_tts.Communicate(text, voice, rate=rate, volume=volume, pitch=pitch).save(path)
+            if Path(path).stat().st_size > 0:
+                return
+            raise RuntimeError("áudio vazio")
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:  # noqa: BLE001
+            if attempt >= len(RETRY_DELAYS):
+                raise
+            log.info("Voz sem resposta (%s); tentando de novo.", str(exc)[:80])
+            await asyncio.sleep(RETRY_DELAYS[attempt])
 
 
 async def generate_and_play_speech(
@@ -333,7 +359,9 @@ async def generate_and_play_speech(
     if not speech:
         return
 
-    chunks = _split_chunks(speech)
+    chunks = [c for c in _split_chunks(speech) if speakable(c)]  # V7.4.2
+    if not chunks:
+        return
     paths: list[str] = []
     for _ in chunks:
         fd, p = tempfile.mkstemp(suffix=".mp3", prefix="jarvis_")

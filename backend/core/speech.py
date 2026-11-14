@@ -81,10 +81,11 @@ async def speak(text: str, release_busy: bool = True, idle_after: bool = True) -
         await runtime.manager.broadcast({"type": "step", "step": "tts", "status": "done"})
     except asyncio.CancelledError:
         raise  # cancelado pelo usuário: o /api/cancel já cuidou do estado da tela
-    except Exception as exc:  # noqa: BLE001
+    except Exception:  # noqa: BLE001
         log.exception("Falha na síntese de voz")
         await runtime.manager.broadcast({"type": "step", "step": "tts", "status": "error"})
-        await runtime.manager.broadcast({"type": "error", "message": f"Falha na voz: {exc}"})
+        # V7.4.2: mensagem em português (antes vinha o texto técnico da Microsoft, em inglês)
+        await runtime.manager.broadcast({"type": "error", "message": "A voz falhou agora (o serviço de voz não respondeu). O texto ficou na tela; tente de novo em instantes."})
     finally:
         session.speaking = max(0, session.speaking - 1)
         if not canceled(turn):

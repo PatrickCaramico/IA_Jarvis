@@ -109,3 +109,108 @@
 @media (prefers-reduced-motion: reduce) {
   .holo-root *, .holo-root { animation-duration: 1ms !important; animation-iteration-count: 1 !important; }
 }
+
+/* ===================================================================== V7.5: holograma mais animado */
+.holo-particles { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+/* feixe do projetor, de baixo para o centro */
+.holo-beam { position: absolute; left: 50%; bottom: -10%; width: min(900px, 140vw); height: 85%; transform: translateX(-50%); pointer-events: none;
+  background: radial-gradient(ellipse 30% 100% at 50% 100%, rgba(103, 232, 249, 0.22), rgba(103, 232, 249, 0.05) 55%, transparent 75%);
+  clip-path: polygon(44% 100%, 56% 100%, 100% 0, 0 0); filter: blur(6px); animation: holo-beam 3.2s ease-in-out infinite; }
+@keyframes holo-beam { 0%, 100% { opacity: 0.55; } 40% { opacity: 0.85; } 42% { opacity: 0.4; } 44% { opacity: 0.8; } }
+.holo-root.is-speaking .holo-beam { animation-duration: 1.2s; }
+/* esfera holográfica 3D girando atrás da cena */
+.holo-sphere { position: absolute; left: 50%; top: 46%; width: min(560px, 80vw); aspect-ratio: 1; transform: translate(-50%, -50%); perspective: 900px; pointer-events: none; opacity: 0.55; }
+.holo-sphere i { position: absolute; inset: 0; border-radius: 50%; border: 1px solid rgba(103, 232, 249, 0.35); box-shadow: 0 0 22px rgba(103, 232, 249, 0.12) inset; transform-style: preserve-3d; }
+.holo-sphere i:nth-child(1) { animation: holo-rot-a 18s linear infinite; }
+.holo-sphere i:nth-child(2) { animation: holo-rot-b 24s linear infinite; border-color: rgba(167, 139, 250, 0.35); }
+.holo-sphere i:nth-child(3) { animation: holo-rot-c 30s linear infinite; border-style: dashed; }
+.holo-sphere i:nth-child(4) { inset: 18%; animation: holo-rot-a 12s linear infinite reverse; border-color: rgba(103, 232, 249, 0.2); }
+@keyframes holo-rot-a { from { transform: rotateX(70deg) rotateZ(0deg); } to { transform: rotateX(70deg) rotateZ(360deg); } }
+@keyframes holo-rot-b { from { transform: rotateY(65deg) rotateZ(0deg); } to { transform: rotateY(65deg) rotateZ(360deg); } }
+@keyframes holo-rot-c { from { transform: rotateX(30deg) rotateY(40deg) rotateZ(0deg); } to { transform: rotateX(30deg) rotateY(40deg) rotateZ(-360deg); } }
+.holo-root.is-speaking .holo-sphere { opacity: 0.8; }
+
+/* cenas: a nova "liga" como um holograma, a anterior se dissolve */
+.holo-stage-scenes { position: relative; width: min(860px, 100%); display: grid; }
+.holo-stage-scenes > .holo-scene { grid-area: 1 / 1; }
+.holo-scene:not(.is-leaving) { animation: holo-materialize 700ms cubic-bezier(.2, .8, .2, 1) both; }
+@keyframes holo-materialize {
+  0% { opacity: 0; clip-path: inset(49% -40% 49% -40%); filter: brightness(3) blur(3px); }
+  45% { opacity: 1; clip-path: inset(-40% -40% -40% -40%); filter: brightness(1.8) blur(1px); }
+  100% { opacity: 1; clip-path: none; filter: none; }
+}
+.holo-scene.is-leaving { pointer-events: none; animation: holo-dissolve 600ms ease-in forwards; }
+@keyframes holo-dissolve { to { opacity: 0; transform: scale(1.08) translateY(-12px); filter: blur(10px) brightness(1.6); } }
+.holo-caption.is-static { opacity: 0.9; }
+.holo-title { animation: holo-fade-up 500ms both !important; text-shadow: 0 0 22px rgba(103, 232, 249, 0.75), 2px 0 rgba(255, 64, 160, 0.35), -2px 0 rgba(64, 200, 255, 0.35); }
+
+/* ícone com órbitas e pulso quando fala */
+.holo-icon .holo-orbit { position: absolute; inset: -14px; border-radius: 50%; animation: holo-spin 6s linear infinite; }
+.holo-icon .holo-orbit.is-2 { inset: -26px; animation-duration: 9s; animation-direction: reverse; }
+.holo-icon .holo-orbit b { position: absolute; top: -4px; left: 50%; width: 8px; height: 8px; margin-left: -4px; border-radius: 50%; background: #e0fbff; box-shadow: 0 0 12px #67e8f9, 0 0 24px #67e8f9; }
+.holo-icon .holo-orbit.is-2 b { background: #c4b5fd; box-shadow: 0 0 12px #a78bfa; width: 6px; height: 6px; }
+.holo-icon.is-talking::after { animation: holo-spin 5s linear infinite reverse, holo-talk 0.7s ease-in-out infinite; }
+@keyframes holo-talk { 50% { box-shadow: 0 0 60px rgba(103, 232, 249, 0.75), inset 0 0 30px rgba(103, 232, 249, 0.45); } }
+
+/* ondas de voz */
+.holo-wave { display: flex; align-items: center; justify-content: center; gap: 4px; height: 34px; opacity: 0.35; transition: opacity 300ms ease; }
+.holo-wave i { width: 4px; height: 6px; border-radius: 4px; background: linear-gradient(to top, #22d3ee, #e0fbff); box-shadow: 0 0 8px rgba(103, 232, 249, 0.6); }
+.holo-wave.is-on { opacity: 1; }
+.holo-wave.is-on i { animation: holo-bar-wave ease-in-out infinite alternate; }
+@keyframes holo-bar-wave { from { height: 4px; } to { height: 32px; } }
+
+/* número com anel medidor */
+.holo-number { position: relative; min-width: 220px; overflow: visible; }
+.holo-gauge { position: absolute; left: 50%; top: 50%; width: 170px; height: 170px; transform: translate(-50%, -50%) rotate(-90deg); pointer-events: none; opacity: 0.6; }
+.holo-gauge circle { fill: none; stroke-width: 3; }
+.holo-gauge-track { stroke: rgba(103, 232, 249, 0.15); }
+.holo-gauge-fill { stroke: #67e8f9; stroke-linecap: round; stroke-dasharray: 340; stroke-dashoffset: 340; filter: drop-shadow(0 0 6px #22d3ee); animation: holo-gauge 1.8s 0.4s cubic-bezier(.2, .8, .2, 1) forwards, holo-spin 14s 2.2s linear infinite; transform-origin: 60px 60px; }
+@keyframes holo-gauge { to { stroke-dashoffset: 60; } }
+
+/* tópicos chegando de lados diferentes */
+.holo-points li { animation-name: holo-chip-dir !important; }
+@keyframes holo-chip-dir { from { opacity: 0; transform: translate(var(--from, 0, 12px)) scale(0.85); filter: blur(4px); } to { opacity: 1; transform: none; filter: none; } }
+
+/* progresso das cenas com brilho */
+.holo-progress i.is-now { background: rgba(103, 232, 249, 0.25); box-shadow: 0 0 10px rgba(103, 232, 249, 0.3); }
+
+/* carregando: barra de varredura */
+.holo-loadbar { width: min(320px, 70vw); height: 3px; border-radius: 3px; background: rgba(103, 232, 249, 0.15); overflow: hidden; }
+.holo-loadbar b { display: block; width: 35%; height: 100%; background: linear-gradient(90deg, transparent, #67e8f9, transparent); animation: holo-load 1.3s ease-in-out infinite; }
+@keyframes holo-load { from { transform: translateX(-100%); } to { transform: translateX(300%); } }
+
+/* fim da apresentação */
+.holo-end-badge { width: 80px; height: 80px; border-radius: 50%; display: grid; place-items: center; font-size: 34px; color: #fff; border: 2px solid #67e8f9; box-shadow: 0 0 40px rgba(103, 232, 249, 0.6), inset 0 0 20px rgba(103, 232, 249, 0.4); animation: holo-pop 700ms cubic-bezier(.2, 1.4, .3, 1), holo-pulse 2s 0.7s ease-in-out infinite; }
+
+/* faíscas */
+.holo-burst { position: absolute; left: 50%; top: 50%; width: 0; height: 0; pointer-events: none; z-index: 3; }
+.holo-burst i { position: absolute; width: 6px; height: 6px; margin: -3px; border-radius: 50%; background: #fde68a; box-shadow: 0 0 8px #fbbf24; animation: holo-spark 700ms ease-out forwards; }
+.holo-burst i:nth-child(even) { background: #67e8f9; box-shadow: 0 0 8px #22d3ee; }
+@keyframes holo-spark { from { transform: rotate(var(--a)) translateY(0) scale(1); opacity: 1; } to { transform: rotate(var(--a)) translateY(calc(var(--d) * -1)) scale(0.2); opacity: 0; } }
+.holo-ingredients li button i { position: relative; overflow: visible; }
+
+/* receita: anel do passo, entrada pela direção certa, comemoração */
+.holo-step-top { position: relative; display: flex; align-items: center; gap: 10px; }
+.holo-step-ring { width: 46px; height: 46px; flex: none; }
+.holo-step-ring circle { fill: none; stroke-width: 3; }
+.holo-step-ring-fill { stroke: #67e8f9; stroke-linecap: round; transform: rotate(-90deg); transform-origin: 25px 25px; transition: stroke-dashoffset 600ms ease; filter: drop-shadow(0 0 4px #22d3ee); }
+.holo-step-ring text { fill: #fff; font: 700 16px "Orbitron", sans-serif; }
+.holo-last { margin-left: auto; padding: 3px 9px; border-radius: 999px; background: rgba(251, 191, 36, 0.15); border: 1px solid rgba(251, 191, 36, 0.5); color: #fde68a; font: 600 0.62rem "Orbitron", sans-serif; letter-spacing: 0.08em; animation: holo-pulse 1.6s ease-in-out infinite; }
+.holo-step-now.is-next { animation: holo-step-in-r 450ms cubic-bezier(.2, .8, .2, 1) both; }
+.holo-step-now.is-prev { animation: holo-step-in-l 450ms cubic-bezier(.2, .8, .2, 1) both; }
+@keyframes holo-step-in-r { from { opacity: 0; transform: translateX(40px); filter: blur(4px); } }
+@keyframes holo-step-in-l { from { opacity: 0; transform: translateX(-40px); filter: blur(4px); } }
+.holo-step-now .holo-wave { justify-content: flex-start; height: 26px; }
+.holo-step-now .holo-cta { animation: holo-cta-pulse 2s ease-in-out infinite; }
+@keyframes holo-cta-pulse { 50% { box-shadow: 0 0 22px rgba(103, 232, 249, 0.7); } }
+.holo-celebrate { position: relative; margin: 0 0 10px; padding: 10px 12px; border-radius: 10px; text-align: center; background: linear-gradient(90deg, rgba(134, 239, 172, 0.12), rgba(103, 232, 249, 0.14), rgba(134, 239, 172, 0.12)); background-size: 200% 100%; border: 1px solid rgba(134, 239, 172, 0.5); color: #bbf7d0; font: 600 0.78rem "Orbitron", sans-serif; letter-spacing: 0.06em; animation: holo-pop 500ms cubic-bezier(.2, 1.4, .3, 1), holo-shine 2.4s linear infinite; }
+@keyframes holo-shine { to { background-position: -200% 0; } }
+
+@media (max-width: 760px) {
+  .holo-sphere { width: 95vw; top: 40%; }
+  .holo-gauge { width: 140px; height: 140px; }
+  .holo-number { min-width: 180px; }
+}
+[data-perf="lite"] .holo-sphere, [data-perf="lite"] .holo-beam { display: none; }
+/* camadas de fundo ficam por trás e fora do fluxo (não empurram a cena) */
+.holo-root > .holo-particles, .holo-root > .holo-beam, .holo-root > .holo-sphere { position: absolute !important; z-index: 1 !important; }
