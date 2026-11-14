@@ -199,7 +199,7 @@
    - o botão LIMPAR apaga só a conversa daquele agente.
 5. **Fora de casa (nuvem):** funcionam os agentes que já têm dados lá (Mercado, Secretário com lembretes/tarefas, Professor). Finanças e a agenda do Google pedem o PC ligado.
 
-**Status:** desenho aprovado; falta implementar.
+**Status:** ✅ **Implementada na versão 7.9.0.**
 
 ---
 
@@ -283,6 +283,7 @@ Itens que já estavam na lista e continuam **em espera**:
 ## Anotações da conversa
 _Espaço para ir anotando as decisões de cada ideia._
 
+- **15/11:** Ideia 3 publicada (7.9.0). Próximas: ideia 4 (Olho de Deus) e 5 (Holograma).
 - **15/11:** Ideia 3 (chat com @agente) desenhada e decidida: abas e @ no campo, memória de 30 mensagens por agente, 4 agentes novos (Mercado, Finanças, Secretário, Professor) e voz.
 - **15/11:** Ideia 1 publicada (7.8.0). Próximas: ideia 3 (chat com @agente), 4 (Olho de Deus) e 5 (Holograma).
 - **15/11:** Ideia 1 (upload de fotos) desenhada e decidida: os três jeitos de enviar, as quatro funções, nada guardado e funcionando pela nuvem.

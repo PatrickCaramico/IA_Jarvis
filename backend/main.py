@@ -35,6 +35,7 @@ from core import runtime, watchers  # noqa: E402
 from core.runtime import ConnectionManager, manager  # noqa: E402,F401 - reexportados (testes, compatibilidade)
 from routes import access as access_routes  # noqa: E402
 from routes import fan, health, info, integrations, mobile, productivity, profile, profiles, search, system, water  # noqa: E402
+from routes import agent_chat as agent_chat_routes  # noqa: E402
 from routes import photo as photo_routes  # noqa: E402
 from routes import security as security_routes  # noqa: E402
 from version import VERSION  # noqa: E402
@@ -157,5 +158,5 @@ app.add_middleware(
 )
 
 
-for _module in (system, access_routes, profile, fan, water, search, productivity, info, integrations, health, mobile, profiles, security_routes, photo_routes):
+for _module in (system, access_routes, profile, fan, water, search, productivity, info, integrations, health, mobile, profiles, security_routes, photo_routes, agent_chat_routes):
     app.include_router(_module.router)

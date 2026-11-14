@@ -216,7 +216,10 @@ class PlaceRequest(BaseModel):
 async def agents_catalog() -> dict:
     from modules import agents
 
-    return {"agents": agents.catalog(), "places": agents.load_places()}
+    from modules import agent_chat
+
+    # V7.9: chat_agents = os 6 agentes de conversa direta (abas da Central, @nome e voz)
+    return {"agents": agents.catalog(), "places": agents.load_places(), "chat_agents": agent_chat.catalog()}
 
 
 @router.post("/api/agents/places")

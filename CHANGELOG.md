@@ -2,6 +2,28 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 7.9.0 — 15 de novembro de 2026
+
+**Conversa direta com os agentes (ideia 3 do documento de atualização)**
+- **Seis agentes**, cada um especialista e só com os dados da área dele:
+  - 🧭 `@rotas`;
+  - 🔎 `@pesquisa`;
+  - 🛒 **`@mercado`** (novo): lista de compras, receitas com o que tem em casa e quantidades;
+  - 💰 **`@financas`** (novo): anota gastos e entradas e resume o mês por categoria;
+  - 📅 **`@secretario`** (novo): agenda, lembretes e tarefas num lugar só;
+  - 🧠 **`@professor`** (novo): explica matérias, abre o Holograma e faz perguntas tipo prova.
+- **Três jeitos de falar com eles**:
+  - **Central de Agentes**, agora com **uma aba por agente**;
+  - **`@` no campo de conversa** (aparece a lista dos agentes; a mensagem vai só para o escolhido e a resposta vem com o ícone dele);
+  - **voz**: "agente mercado, monta a lista da semana", "pergunta pro agente de finanças quanto gastei", "fala com o professor: me explica frações".
+- **Memória por agente**: cada um lembra as últimas 30 mensagens (salvas no PC). Um não vê a conversa do outro, e o **LIMPAR** apaga só a daquele agente.
+- **Ações**:
+  - as simples acontecem na hora e aparecem na resposta (✓ adicionado, ✓ anotado);
+  - as maiores (tirar os comprados da lista, concluir tarefa, mais de 8 itens) esperam o **✓ CONFIRMAR**;
+  - um agente não consegue fazer ações de outra área.
+- **Fora de casa** (nuvem): Mercado, Secretário (lembretes e tarefas) e Professor. Finanças, Rotas e Pesquisa pedem o PC ligado.
+- Valores em reais no padrão brasileiro (R$ 1.234,50).
+
 ## 7.8.0 — 15 de novembro de 2026
 
 **Foto da galeria (ideia 1 do documento de atualização)**
