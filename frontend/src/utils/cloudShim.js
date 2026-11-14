@@ -282,6 +282,8 @@ async function route(method, path, query, body) {
       await change({ op: "place_set", nome: body.name, endereco: body.address });
       return ok({ places: (await refresh()).lugares || {} });
     }
+    case "POST /api/tts/prefetch": // V7.5: na nuvem a voz é gerada na hora
+      return ok({ started: 0 });
     case "POST /api/holo": // V7.1: HOLOGRAMA fora de casa
       return ok(await cloud("/holo", { method: "POST", body: { query: body.query, kind: body.kind }, timeout: 60000 }));
     case "POST /api/camera/ask":

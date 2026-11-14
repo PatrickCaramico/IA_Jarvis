@@ -1624,6 +1624,7 @@ export default function App() {
     if (holoAsk) {
       keepHubClean();
       setUserText(text);
+      setResponseCards([]); // V7.5: não deixa o cartão da resposta anterior (ex.: clima) junto do holograma
       setHolo({ ...holoAsk, at: Date.now() });
       setResponse(holoAsk.kind === "receita" ? "Montando a receita na tela, senhor." : "Preparando o holograma, senhor.");
       return;
@@ -2933,6 +2934,7 @@ export default function App() {
           onSend={(t) => send(t)}
           onSpeak={(t) => api("/api/speak", { method: "POST", body: JSON.stringify({ text: t }) }).catch(() => {})}
           onStop={() => api("/api/cancel", { method: "POST" }).catch(() => {})}
+          onPrefetch={(texts) => api("/api/tts/prefetch", { method: "POST", body: JSON.stringify({ texts }) }).catch(() => {})}
         />
       )}
       {agentsOpen && <AgentsHub api={api} onSend={(t) => send(t)} onClose={() => setAgentsOpen(false)} />}

@@ -250,7 +250,7 @@ async def tts_audio(req: TtsRequest):
     from fastapi.responses import Response
 
     text = tts_module._clean_for_speech(req.text or "")[:1500]  # noqa: SLF001
-    if not text:
+    if not text or not tts_module.speakable(text):
         raise HTTPException(status_code=400, detail="Nada para falar.")
     fd, path = tempfile.mkstemp(suffix=".mp3", prefix="jarvis_dev_")
     os.close(fd)
@@ -420,6 +420,24 @@ async def system_optimize() -> dict:
     from modules import optimizer
 
     return await asyncio.to_thread(optimizer.run)
+
+
+class PrefetchRequest(BaseModel):
+    texts: list[str] = []
+
+
+@router.post("/api/tts/prefetch")
+async def tts_prefetch(req: PrefetchRequest) -> dict:
+    """V7.5: gera a voz destas falas JÁ (holograma: troca de cena sem esperar a voz ficar pronta).
+
+    Se a voz desta tela toca no próprio aparelho (celular), gera a fala inteira, como o /api/tts pede.
+    """
+    from core import voice_route
+    from modules import tts as tts_module
+
+    texts = [t[:600] for t in (req.texts or [])[:10] if isinstance(t, str) and t.strip()]
+    started = tts_module.prefetch(texts, whole=bool(voice_route.current()))
+    return {"started": started}
 
 
 class HoloRequest(BaseModel):

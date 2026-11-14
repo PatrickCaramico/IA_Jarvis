@@ -57,3 +57,18 @@ def test_route(monkeypatch):
 def test_personal_route_needs_unlock(credentials):
     access.reset_for_tests(access.LOCKED)
     assert TestClient(main.app).post("/api/holo", json={"query": "receita de bolo"}).status_code == 403
+
+
+def test_prefetch_route_starts_voice(monkeypatch):
+    from modules import tts
+
+    access.reset_for_tests(access.UNLOCKED)
+    seen = {}
+
+    def fake(texts, whole=False):
+        seen.update(texts=list(texts), whole=whole)
+        return len(texts)
+
+    monkeypatch.setattr(tts, "prefetch", fake)
+    r = TestClient(main.app).post("/api/tts/prefetch", json={"texts": ["Cena um.", "  ", "Cena dois."]})
+    assert r.status_code == 200 and r.json()["started"] == 2 and seen["texts"] == ["Cena um.", "Cena dois."]

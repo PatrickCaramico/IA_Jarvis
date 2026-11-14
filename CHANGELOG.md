@@ -2,6 +2,20 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 7.5.0 — 14 de novembro de 2026
+
+- **Erro de voz no holograma corrigido** ("No audio was received"): o serviço de voz da Microsoft às vezes responde sem áudio quando várias falas são pedidas em sequência. Agora a voz **tenta de novo** sozinha (até 2 vezes), ignora pedaços sem nada para falar (só emoji/pontuação) e, se mesmo assim falhar, avisa em português em vez da mensagem técnica em inglês.
+- **Holograma mais animado**:
+  - constelação de partículas no fundo, que acelera enquanto o JARVIS fala;
+  - feixe de projetor e uma esfera holográfica 3D girando atrás da cena;
+  - **ondas de voz** que pulsam só enquanto ele fala, e o ícone ganha órbitas com pontos de luz;
+  - títulos que se "decodificam" letra por letra; cada cena **liga como um holograma** e a anterior se dissolve;
+  - número em destaque com anel medidor; tópicos chegando de lados diferentes;
+  - carregamento com barra de varredura.
+- **Receita viva mais animada**: faíscas ao marcar um ingrediente, comemoração "TUDO SEPARADO!", anel de progresso do passo, entrada do passo pela direção certa, aviso de último passo e o botão do timer pulsando.
+- **Sem pausa entre as cenas**: as falas do holograma são geradas antes (enquanto a primeira cena aparece).
+- O cartão da resposta anterior (ex.: clima) não fica mais junto quando o holograma abre.
+
 ## 7.4.1 — 13 de novembro de 2026
 
 - Central: os atalhos **◉ OLHO DE DEUS · 🤖 AGENTES · 📘 BRANDING · 🩺 DIAGNÓSTICO** saíram de cima do orbe (ficavam no meio dele, quase invisíveis) e agora ficam **logo abaixo do orbe**, como botões mais legíveis. No celular continuam em CONTROLES.
