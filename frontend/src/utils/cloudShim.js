@@ -282,6 +282,10 @@ async function route(method, path, query, body) {
       await change({ op: "place_set", nome: body.name, endereco: body.address });
       return ok({ places: (await refresh()).lugares || {} });
     }
+    case "POST /api/photo/ask": // V7.8: foto da galeria fora de casa (não é guardada)
+      return ok(await cloud("/photo", { method: "POST", body: { image: body.image, question: body.question, mode: body.mode }, timeout: 60000 }));
+    case "POST /api/photo/apply":
+      return ok(await cloud("/photo/apply", { method: "POST", body: { acao: body.acao } }));
     case "POST /api/tts/prefetch": // V7.5: na nuvem a voz é gerada na hora
       return ok({ started: 0 });
     case "POST /api/holo": // V7.1: HOLOGRAMA fora de casa

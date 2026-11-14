@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 function MicIcon() {
   return (
@@ -12,6 +12,7 @@ function MicIcon() {
 // Campo de texto + botão de microfone (a barra de espaço também liga/desliga o microfone).
 export default function CommandBar({ onSend, disabled, listening, onToggleMic }) {
   const [value, setValue] = useState("");
+  const fileRef = useRef(null);
 
   const submit = (e) => {
     e.preventDefault();
@@ -36,6 +37,13 @@ export default function CommandBar({ onSend, disabled, listening, onToggleMic })
         <MicIcon />
       </button>
 
+      {/* V7.8: 📎 foto da galeria (abre a janela FOTO ENVIADA) */}
+      <button type="button" className="ph-clip" onClick={() => fileRef.current?.click()} aria-label="Enviar uma foto da galeria" title="Enviar uma foto">📎</button>
+      <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => {
+        const file = e.target.files?.[0];
+        e.target.value = "";
+        if (file) window.dispatchEvent(new CustomEvent("jarvis-photo-file", { detail: file }));
+      }} />
       <input
         value={value}
         onChange={(e) => setValue(e.target.value)}

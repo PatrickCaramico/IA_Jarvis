@@ -365,7 +365,7 @@ function Presentation({ data, image, speak, stop, onClose, speaking }) {
         <button type="button" className="is-main" onClick={() => cmd(playing ? "pause" : "play")} aria-label={playing ? "Pausar" : "Continuar"}>{playing ? "❚❚" : "▶"}</button>
         <button type="button" onClick={() => cmd("next")} aria-label="Próxima cena">⟶</button>
       </div>
-      {image && <span className="holo-credit">Imagem: Wikipédia</span>}
+      {image && !image.own && <span className="holo-credit">Imagem: Wikipédia</span>}
     </>
   );
 }
@@ -496,7 +496,7 @@ function Recipe({ data, image, api, speak, stop, onSend, onClose, speaking }) {
           <p className="holo-hint">Mãos ocupadas? Diga "Jarvis, próximo passo", "repete" ou "passo anterior".</p>
         </section>
       </div>
-      {image && <span className="holo-credit">Imagem: Wikipédia</span>}
+      {image && !image.own && <span className="holo-credit">Imagem: Wikipédia</span>}
     </div>
   );
 }
@@ -516,7 +516,8 @@ export default function HoloStage({ api, request, onClose, onSend, onSpeak, onSt
   const speaking = useSpeaking();
   const [error, setError] = useState("");
   const [line, setLine] = useState(0);
-  const image = useWikiImage(data?.wiki || "");
+  const wikiImage = useWikiImage(request.photo ? "" : data?.wiki || "");
+  const image = request.photo ? { src: request.photo, own: true } : wikiImage; // V7.8: a foto enviada vira o fundo
 
   useEffect(() => {
     let alive = true;

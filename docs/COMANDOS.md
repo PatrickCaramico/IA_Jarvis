@@ -1,6 +1,6 @@
 # JARVIS — Comandos do dia a dia
 
-**Versão do projeto:** 7.7.0 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
+**Versão do projeto:** 7.8.0 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
 
 > Montado a partir do código do projeto. Se algum comando não responder como descrito, me avise que eu ajusto o guia.
 > Para a lista técnica de rotas, veja [API.md](API.md); para o `.env`, [CONFIGURACAO.md](CONFIGURACAO.md).
@@ -350,6 +350,18 @@ Avisos automáticos (gatilhos): chuva amanhã (à noite), jogo começando (com o
 | Aparelho que já usava o JARVIS (até 14 dias depois da atualização) | Ganha a própria chave sozinho, sem escanear de novo. |
 | Configurações > Segurança | Lista dos aparelhos com **REMOVER**, **DESCONECTAR TODOS E TROCAR O QR CODE**, **exigir aprovação agora** e o que aconteceu nas últimas 24 h. |
 | 5 tentativas erradas em 10 min | Aquele aparelho fica bloqueado por 15 min (dobra a cada vez), com aviso por voz, notificação no celular e registro no 🩺 Diagnóstico. |
+
+### Foto da galeria (V7.8)
+
+| Como | O que acontece |
+|---|---|
+| 🖼 GALERIA (câmera), 📎 (campo de conversa) ou arrastar a imagem na central do PC | Abre **FOTO ENVIADA**. A foto é reduzida e perde a localização antes de sair do aparelho. |
+| 🔍 ANALISAR | Diagnóstico: o que é, detalhes, dicas e alertas. |
+| 📄 LER E AGIR | Sugere lista de compras, lembrete, contato ou tarefas. **Só faz depois do ✓ CONFIRMAR.** |
+| 🌐 PESQUISAR (ou perguntar "quanto custa?") | Preço, onde comprar e avaliações, com as fontes. |
+| ✦ HOLOGRAMA (ou "me explica…") | Apresentação animada sobre o que está na foto, com a foto no fundo. |
+
+A foto não é guardada em lugar nenhum. Funciona também fora de casa (nuvem).
 
 ### Conexão criptografada / https (V7.7)
 

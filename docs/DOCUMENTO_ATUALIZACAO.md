@@ -68,7 +68,7 @@
 - Confere que é mesmo uma imagem, com limite de tamanho, e no máximo **10 fotos por minuto** por aparelho.
 - Ações tiradas da foto (lista, lembrete, contato) **sempre pedem confirmação**: um texto escondido numa imagem não consegue mandar o JARVIS fazer nada sozinho.
 
-**Status:** desenho aprovado; falta implementar.
+**Status:** ✅ **Implementada na versão 7.8.0.**
 
 ---
 
@@ -247,6 +247,7 @@ Itens que já estavam na lista e continuam **em espera**:
 ## Anotações da conversa
 _Espaço para ir anotando as decisões de cada ideia._
 
+- **15/11:** Ideia 1 publicada (7.8.0). Próximas: ideia 3 (chat com @agente), 4 (Olho de Deus) e 5 (Holograma).
 - **15/11:** Ideia 1 (upload de fotos) desenhada e decidida: os três jeitos de enviar, as quatro funções, nada guardado e funcionando pela nuvem.
 - **15/11:** Ideia 2 concluída: parte 1 (7.6.0) e parte 2/https (7.7.0).
 - **15/11:** Ideia 2, parte 1 publicada (7.6.0).

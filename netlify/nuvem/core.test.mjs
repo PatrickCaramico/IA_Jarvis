@@ -391,3 +391,21 @@ test("holograma na nuvem: monta a apresentação e recusa resposta quebrada", as
   assert.equal((await ask("me explica a lua")).status, 502);
   assert.equal((await ask("")).status, 400);
 });
+
+test("foto da galeria na nuvem: ler e agir só com confirmação; contato só no PC", async () => {
+  const store = memStore();
+  const token = await login(store);
+  const jpeg = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3, 4]).toString("base64");
+  const reply = JSON.stringify({ tipo: "receita", fala: "Receita de bolo.", acoes: [{ tipo: "compras", itens: ["Cenoura", "Ovos"] }, { tipo: "apagar", itens: ["x"] }] });
+  const fetchFn = async () => new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: reply }] } }] }));
+  const env = { ...ENV, GEMINI_API_KEY: "g" };
+  const r = await handle(req("/photo", { method: "POST", token, body: { image: `data:image/jpeg;base64,${jpeg}`, mode: "ler" } }), { store, env, fetchFn, nowDate: NOW });
+  const data = await r.json();
+  assert.deepEqual(data.leitura.acoes.map((a) => a.tipo), ["compras"]);
+  assert.equal((await call(store, "/state", { token })).data.compras.length, 0); // nada sem CONFIRMAR
+  const ok = await call(store, "/photo/apply", { method: "POST", token, body: { acao: data.leitura.acoes[0] } });
+  assert.equal(ok.status, 200);
+  assert.equal((await call(store, "/state", { token })).data.compras.length, 2);
+  assert.equal((await call(store, "/photo/apply", { method: "POST", token, body: { acao: { tipo: "contato", nome: "Ana", telefone: "11988887777" } } })).status, 400);
+  assert.deepEqual([...store.data.keys()].filter((k) => /foto|photo|image/.test(k)), []); // a foto não fica guardada
+});
