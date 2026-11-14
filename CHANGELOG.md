@@ -2,6 +2,18 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 7.6.0 — 15 de novembro de 2026
+
+**Segurança (ideia 2 do documento de atualização, parte 1)**
+- **Uma chave por aparelho**: o QR code virou só a "chave de pareamento". Cada celular, tablet, TV ou outro PC pede a **própria chave** ao abrir o JARVIS, e ela fica guardada só nele (o PC guarda apenas uma impressão dela).
+- **Aparelho novo precisa da sua aprovação**: depois de escanear o QR, ele mostra "AGUARDANDO APROVAÇÃO" e o PC mostra um cartão **PERMITIR / RECUSAR** (e avisa por voz). Só a tela do próprio PC aprova. O pedido expira em 2 minutos.
+- **Migração sem dor**: nos primeiros 14 dias, os aparelhos que já usavam o JARVIS ganham a própria chave sozinhos, sem escanear de novo. Dá para encerrar antes em Configurações > Segurança.
+- **Configurações > Segurança**: aparelhos conectados (último acesso e endereço) com **REMOVER**, **DESCONECTAR TODOS E TROCAR O QR CODE**, e o que aconteceu nas últimas 24 h.
+- **Tentativas suspeitas**: 5 erros (chave errada, aparelho removido tentando voltar ou PIN do pareamento errado) em 10 minutos **bloqueiam aquele aparelho por 15 minutos**, e o tempo dobra a cada nova vez. O JARVIS **avisa por voz no PC**, manda **notificação para o celular** e registra no 🩺 Diagnóstico. O PIN da tela de bloqueio travado também gera o aviso.
+- **Tela de bloqueio**: ⚡ Otimizar e 🩺 Diagnóstico rodam no máximo 1 vez por minuto enquanto a central está bloqueada.
+- **🩺 Diagnóstico** ganhou o item **Segurança**: alertas das últimas 24 h, aparelhos sem uso há mais de 30 dias e migração ligada.
+- A conexão criptografada (https) na rede de casa fica para a **parte 2**.
+
 ## 7.5.0 — 14 de novembro de 2026
 
 - **Erro de voz no holograma corrigido** ("No audio was received"): o serviço de voz da Microsoft às vezes responde sem áudio quando várias falas são pedidas em sequência. Agora a voz **tenta de novo** sozinha (até 2 vezes), ignora pedaços sem nada para falar (só emoji/pontuação) e, se mesmo assim falhar, avisa em português em vez da mensagem técnica em inglês.

@@ -1,6 +1,6 @@
 # JARVIS — Comandos do dia a dia
 
-**Versão do projeto:** 7.5.0 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
+**Versão do projeto:** 7.6.0 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
 
 > Montado a partir do código do projeto. Se algum comando não responder como descrito, me avise que eu ajusto o guia.
 > Para a lista técnica de rotas, veja [API.md](API.md); para o `.env`, [CONFIGURACAO.md](CONFIGURACAO.md).
@@ -341,6 +341,15 @@ Avisos automáticos (gatilhos): chuva amanhã (à noite), jogo começando (com o
 | "Abre a câmera e analisa esse item" / "analisa isso" (V7) | Abre a câmera, espera a imagem firmar e faz o **diagnóstico**: uma janela com o nome do item, categoria, confiança, resumo, detalhes (marca, modelo, nome científico, preço médio…), ⚠ alertas e 💡 dicas. A fala continua curta. |
 
 "O que você está vendo?" (sem abrir a câmera) continua usando a webcam do PC.
+
+### Segurança: aparelhos (V7.6)
+
+| Situação | O que acontece |
+|---|---|
+| Aparelho novo escaneia o QR code | Fica em **AGUARDANDO APROVAÇÃO**; o PC mostra **PERMITIR / RECUSAR** e avisa por voz. Só a tela do PC aprova; o pedido vale 2 minutos. |
+| Aparelho que já usava o JARVIS (até 14 dias depois da atualização) | Ganha a própria chave sozinho, sem escanear de novo. |
+| Configurações > Segurança | Lista dos aparelhos com **REMOVER**, **DESCONECTAR TODOS E TROCAR O QR CODE**, **exigir aprovação agora** e o que aconteceu nas últimas 24 h. |
+| 5 tentativas erradas em 10 min | Aquele aparelho fica bloqueado por 15 min (dobra a cada vez), com aviso por voz, notificação no celular e registro no 🩺 Diagnóstico. |
 
 ### Diagnóstico (V7.4)
 

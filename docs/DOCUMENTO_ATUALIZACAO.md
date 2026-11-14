@@ -99,7 +99,8 @@
 - O app Android e o modo nuvem precisam continuar funcionando: a migração da chave antiga é automática.
 - O app precisa ser gerado de novo (APK) para aceitar o https.
 
-**Status:** desenho aprovado; falta implementar.
+**Status:** ✅ **Parte 1 implementada na versão 7.6.0** (chave por aparelho, aprovação no PC, aviso e bloqueio de tentativas, Configurações > Segurança, item no Diagnóstico).
+⏳ **Parte 2 pendente: https na rede de casa** (certificado próprio, QR com https, passo a passo no celular e APK novo).
 
 ---
 
@@ -207,4 +208,5 @@ Itens que já estavam na lista e continuam **em espera**:
 ## Anotações da conversa
 _Espaço para ir anotando as decisões de cada ideia._
 
+- **15/11:** Ideia 2, parte 1 publicada (7.6.0). Falta a parte 2 (https).
 - **15/11:** Ideia 2 (segurança) desenhada e decidida: chave por aparelho, aprovação de aparelho novo no PC, todos os avisos de tentativa suspeita e https na rede de casa.

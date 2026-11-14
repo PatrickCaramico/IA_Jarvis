@@ -190,6 +190,11 @@ async def mobile_pair_pin(req: PairPinRequest, request: Request) -> dict:
     finally:
         lock_pin.PIN_PATH = previous
     if not result.get("verified"):
+        from modules import device_access
+
+        device_access.record_failure(request.client.host if request.client else "?", "PIN do pareamento errado")  # V7.6
+        if result.get("reason") == "locked_out":
+            device_access.alert("O PIN do pareamento do celular errou muitas vezes e foi bloqueado.")
         detail = ("PIN bloqueado por excesso de tentativas. Espere alguns minutos."
                   if result.get("reason") == "locked_out"
                   else f"PIN incorreto. Restam {result.get('remaining_attempts', 0)} tentativas.")

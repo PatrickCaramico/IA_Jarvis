@@ -88,8 +88,30 @@ function voiceHeaders() {
   return { "X-Jarvis-Client": clientId(), "X-Jarvis-Device": BACKEND_ON_THIS_PC ? "web" : voiceHere() ? "app" : "pc" };
 }
 
-export function getJarvisToken() {
+// V7.6: cada aparelho tem a PRÓPRIA chave (guardada aqui, vale entre aberturas). A do QR code virou só a
+// "chave de pareamento": serve para pedir a chave própria.
+const DEVICE_KEY = "jarvis.deviceToken";
+export function getDeviceToken() {
+  try {
+    return localStorage.getItem(DEVICE_KEY) || "";
+  } catch {
+    return "";
+  }
+}
+export function setDeviceToken(token) {
+  try {
+    if (token) localStorage.setItem(DEVICE_KEY, token);
+    else localStorage.removeItem(DEVICE_KEY);
+  } catch {
+    /* sem armazenamento: o aparelho pede de novo na próxima abertura */
+  }
+}
+export function getPairingKey() {
   return currentJarvisToken || sessionStorage.getItem("jarvis_token") || "";
+}
+
+export function getJarvisToken() {
+  return getDeviceToken() || getPairingKey();
 }
 
 export function hasMemoryToken() {
@@ -135,6 +157,11 @@ export async function api(path, { timeout, ...options } = {}) {
     // Bloqueio real (seção 17 / Sentinela): o backend recusou por estar bloqueado ou em modo visitante
     if (res.status === 403 && (data.code === "locked" || data.code === "guest")) {
       window.dispatchEvent(new CustomEvent("jarvis_access_denied", { detail: data }));
+    }
+    // V7.6: chave do aparelho removida, ou a do QR não basta mais: o JARVIS pede a chave própria de novo
+    if (res.status === 401 && (data.code === "device_revoked" || data.code === "device_required")) {
+      if (data.code === "device_revoked") setDeviceToken("");
+      window.dispatchEvent(new CustomEvent("jarvis-device-access", { detail: data }));
     }
     const error = new Error(typeof data.detail === "string" ? data.detail : `Erro ${res.status}`);
     error.status = res.status;

@@ -117,7 +117,11 @@ _PUBLIC_EXACT = {
     ("GET", "/api/health"),
     ("GET", "/api/system/update/status"),  # V6.7.2: bolinha de atualização no botão ATUALIZAR do bloqueio
     ("POST", "/api/system/optimize"),
-    ("GET", "/api/system/health-check"),  # V7.4: 🩺 DIAGNÓSTICO na tela de bloqueio (só status, nada pessoal)  # V7.2: ⚡ OTIMIZAR na tela de bloqueio (só limpa sobras de áudio)
+    ("GET", "/api/system/health-check"),
+    ("POST", "/api/security/claim"),  # V7.6: aparelho novo pede a própria chave (aprovada no PC)
+    ("GET", "/api/security/claim"),
+    ("GET", "/api/security/pending"),  # V7.6: só a tela do próprio PC (a rota confere)
+  # V7.4: 🩺 DIAGNÓSTICO na tela de bloqueio (só status, nada pessoal)  # V7.2: ⚡ OTIMIZAR na tela de bloqueio (só limpa sobras de áudio)
     ("GET", "/api/integrations/spotify/track"),  # V4.2.2: a rota confere se o cartão está ligado no bloqueio
     ("GET", "/api/presence"),
     ("GET", "/api/profile"),          # devolve só has_photo quando restrito (sem nome)
@@ -160,6 +164,7 @@ _PUBLIC_EXACT = {
     ("POST", "/api/alarms/snooze"),
 }
 _PUBLIC_PREFIX = (
+    ("POST", "/api/security/pending/"),  # V7.6: PERMITIR/RECUSAR na tela do PC, mesmo bloqueada (só local)
     ("GET", "/api/integrations/google-calendar/callback"),  # o estado OAuth já protege
     ("GET", "/api/integrations/spotify/callback"),
 )

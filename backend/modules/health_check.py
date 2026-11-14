@@ -164,6 +164,32 @@ def check_errors(now: datetime | None = None) -> dict:
                  "Veja os detalhes em TELAS > Relatório de logs (ou Ver-Logs.bat no PC).")
 
 
+def check_security(now: datetime | None = None) -> dict:
+    """V7.6: tentativas suspeitas (24 h), aparelhos esquecidos e migração das chaves."""
+    from modules import device_access
+
+    now = now or datetime.now()
+    alerts = device_access.recent_events(24, ("alert",))
+    devices = device_access.list_devices()
+    idle = []
+    for d in devices:
+        try:
+            if now - datetime.fromisoformat(d.get("last_seen") or "") > timedelta(days=30):
+                idle.append(d["name"])
+        except ValueError:
+            continue
+    parts = [f"{len(devices)} aparelho(s) com chave própria"]
+    if device_access.migration_active(now):
+        parts.append("migração automática ligada")
+    if alerts:
+        return _item("security", "Segurança", FAIL, f"{len(alerts)} alerta(s) nas últimas 24 h. Último: {alerts[0]['message'][:90]}",
+                     "Veja Configurações > Segurança: remova aparelhos que você não conhece e troque o PIN se ele foi tentado.")
+    if idle:
+        return _item("security", "Segurança", WARN, "; ".join(parts) + f". Sem uso há mais de 30 dias: {', '.join(idle[:3])}.",
+                     "Remova em Configurações > Segurança os aparelhos que você não usa mais.")
+    return _item("security", "Segurança", OK, "; ".join(parts) + ". Nenhuma tentativa suspeita em 24 h.")
+
+
 async def run() -> dict:
     started = time.monotonic()
     ai, voice, internet = await asyncio.gather(check_ai(), check_voice(), asyncio.to_thread(check_internet))
@@ -174,6 +200,7 @@ async def run() -> dict:
         await asyncio.to_thread(check_disk),
         await asyncio.to_thread(check_data),
         await asyncio.to_thread(check_errors),
+        await asyncio.to_thread(check_security),
     ]
     return {"version": VERSION, "items": items, "took_ms": int((time.monotonic() - started) * 1000),
             "at": datetime.now().strftime("%d/%m %H:%M")}

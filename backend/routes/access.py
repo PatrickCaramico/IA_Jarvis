@@ -330,6 +330,9 @@ async def pin_verify(req: PinRequest) -> dict:
     lock_log.add("pin", "locked_out" if result["reason"] == "locked_out" else "fail")
     if result["reason"] == "locked_out":
         message = "PIN bloqueado temporariamente por excesso de tentativas."
+        from modules import device_access
+
+        device_access.alert("O PIN errou muitas vezes e foi bloqueado.")  # V7.6: avisa (uma vez a cada 2 min)
     else:
         message = f"PIN incorreto. Restam {result['remaining_attempts']} tentativas."
     return {**result, "name": "", "message": message}
