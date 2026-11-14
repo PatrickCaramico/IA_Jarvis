@@ -3,7 +3,6 @@
 import logging
 import asyncio
 import socket
-import secrets
 from fastapi import HTTPException, Request, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
 from config import settings
@@ -212,10 +211,16 @@ async def websocket_endpoint(ws: WebSocket) -> None:
         if not settings.NETWORK_MODE:
             await ws.close(code=1008, reason="Acesso externo desativado")
             return
+        from modules import device_access
+
         token = ws.query_params.get("token") or ws.headers.get("x-jarvis-token")
-        if not token or not secrets.compare_digest(token, runtime.ACCESS_TOKEN):
+        kind, dev = device_access.classify(token or "")
+        ok = kind == "device" or (kind == "pairing" and device_access.migration_active())  # V7.6
+        if not ok:
             await ws.close(code=1008, reason="Não autorizado")
             return
+        if dev:
+            device_access.touch(dev, ws.client.host if ws.client else "?")
     await runtime.manager.connect(ws)
     await ws.send_json({"type": "state", "state": "processing" if session.busy else "idle"})
     await ws.send_json({"type": "access_state", **access.snapshot()})
@@ -407,17 +412,24 @@ async def speak_on_pc(req: SpeakRequest) -> dict:
 
 
 @router.get("/api/system/health-check")
-async def system_health_check() -> dict:
+async def system_health_check(request: Request) -> dict:
     """V7.4: 🩺 DIAGNÓSTICO: testa de verdade IA, voz, internet, nuvem, disco, dados e erros recentes."""
-    from modules import health_check
+    from modules import device_access, health_check
+
+    # V7.6: com a central bloqueada, no máximo 1 diagnóstico por minuto por aparelho
+    if access.effective_state() != access.UNLOCKED and not device_access.rate_ok(f"diag:{request.client.host if request.client else '?'}", 60):
+        raise HTTPException(status_code=429, detail="Espere um minuto para rodar o diagnóstico de novo.")
 
     return await health_check.run()
 
 
 @router.post("/api/system/optimize")
-async def system_optimize() -> dict:
+async def system_optimize(request: Request) -> dict:
     """V7.2: botão ⚡ OTIMIZAR: limpa sobras de áudio (falas interrompidas), cache de voz velho e libera memória."""
-    from modules import optimizer
+    from modules import device_access, optimizer
+
+    if access.effective_state() != access.UNLOCKED and not device_access.rate_ok(f"opt:{request.client.host if request.client else '?'}", 60):
+        raise HTTPException(status_code=429, detail="Espere um minuto para otimizar de novo.")  # V7.6
 
     return await asyncio.to_thread(optimizer.run)
 

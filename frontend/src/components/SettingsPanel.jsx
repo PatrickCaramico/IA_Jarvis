@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import ClapSettings from "./settings/ClapSettings.jsx";
 import LockSettings from "./settings/LockSettings.jsx";
+import SecuritySettings from "./settings/SecuritySettings.jsx";
 import WaterSettings from "./settings/WaterSettings.jsx";
 import SoundSettings from "./settings/SoundSettings.jsx";
 import VoiceSettings from "./settings/VoiceSettings.jsx";
@@ -245,6 +246,7 @@ export default function SettingsPanel({ api, onClose, onPrefsChange, onOpenMicro
             ["sites", "Meus Sites"],
             ["palmas", "Palmas"],
             ["bloqueio", "Bloqueio"],
+            ["seguranca", "Segurança"],
             ["agua", "Hidratação"],
             ["automacao", "Automação"],
             ["pessoas", "Pessoas"],
@@ -270,6 +272,7 @@ export default function SettingsPanel({ api, onClose, onPrefsChange, onOpenMicro
         )}
         {tab === "palmas" && prefs && <ClapSettings prefs={prefs} onPatch={patchPrefs} />}
         {tab === "bloqueio" && prefs && <LockSettings api={api} prefs={prefs} onPatch={patchPrefs} />}
+        {tab === "seguranca" && <SecuritySettings api={api} />}
         {tab === "agua" && prefs && <WaterSettings api={api} prefs={prefs} onPatch={patchPrefs} />}
         {tab === "automacao" && prefs && <AutomationSettings api={api} prefs={prefs} onPatch={patchPrefs} />}
         {tab === "pessoas" && <PeopleSettings api={api} />}

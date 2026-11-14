@@ -31,6 +31,7 @@ _WRITABLE = (
     ("wellbeing", "_PATH", "humor.json"),  # V6.7
     ("tools", "_TIMERS_PATH", "timers.json"),  # V6.7.1
     ("agents", "_PATH", "lugares.json"),  # V6.8
+    ("device_access", "_PATH", "aparelhos.json"),  # V7.6
 )
 
 
@@ -47,7 +48,18 @@ def _protect_real_data(tmp_path_factory, monkeypatch):
         module = importlib.import_module(f"modules.{module_name}")
         if hasattr(module, attr):
             monkeypatch.setattr(module, attr, base / filename)
+    from modules import device_access
+
+    device_access.reset_for_tests()  # V7.6: cache em memória dos aparelhos
+    monkeypatch.setattr(settings_module(), "ACCESS_TOKEN_FILE", base / "access_token.txt")
     yield
+    device_access.reset_for_tests()
+
+
+def settings_module():
+    from config import settings
+
+    return settings
 
 
 @pytest.fixture

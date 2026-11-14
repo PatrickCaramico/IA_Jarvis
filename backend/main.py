@@ -7,7 +7,6 @@ Este arquivo só configura o log, o middleware de segurança, o CORS e inclui as
 """
 import inspect
 import logging
-import secrets
 from contextlib import asynccontextmanager
 from logging.handlers import RotatingFileHandler
 
@@ -36,6 +35,7 @@ from core import runtime, watchers  # noqa: E402
 from core.runtime import ConnectionManager, manager  # noqa: E402,F401 - reexportados (testes, compatibilidade)
 from routes import access as access_routes  # noqa: E402
 from routes import fan, health, info, integrations, mobile, productivity, profile, profiles, search, system, water  # noqa: E402
+from routes import security as security_routes  # noqa: E402
 from version import VERSION  # noqa: E402
 
 
@@ -75,6 +75,15 @@ async def security_middleware(request: Request, call_next):
                 status_code=403,
                 content={"detail": "Acesso externo não permitido. O modo rede está desativado."},
             )
+        from modules import device_access
+
+        ip = request.client.host if request.client else "?"
+        # V7.6: endereço bloqueado por tentativas suspeitas
+        wait = device_access.blocked_for(ip)
+        if wait:
+            return JSONResponse(status_code=429, content={
+                "detail": f"Aparelho bloqueado por tentativas suspeitas. Tente de novo em {max(1, wait // 60)} min.",
+                "code": "blocked"})
         token = request.headers.get("X-Jarvis-Token") or request.query_params.get("token")
         # V4.5: página de download do app e o APK abrem no celular antes do pareamento (sem token).
         # Não dão acesso a nada do JARVIS; o pareamento (/api/mobile/pair) continua exigindo o token.
@@ -82,11 +91,23 @@ async def security_middleware(request: Request, call_next):
         no_token_ok = (request.method == "GET" and path in mobile.NO_TOKEN_PATHS) or (
             request.method == "POST" and path in mobile.NO_TOKEN_POST
         )
-        if not no_token_ok and (not token or not secrets.compare_digest(token, runtime.ACCESS_TOKEN)):
-            return JSONResponse(
-                status_code=401,
-                content={"detail": "Não autorizado. Token de acesso ausente ou inválido."},
-            )
+        if not no_token_ok:
+            # V7.6: chave do aparelho (cada um tem a sua) ou chave de pareamento (a do QR code)
+            kind, dev = device_access.classify(token or "")
+            if kind == "device":
+                device_access.touch(dev, ip)
+            elif kind == "pairing":
+                if not device_access.pairing_allowed(request.method, path):
+                    return JSONResponse(status_code=401, content={
+                        "detail": "Este aparelho precisa da própria chave. Abra o JARVIS de novo para pedir acesso.",
+                        "code": "device_required"})
+            else:
+                if kind in ("invalid", "revoked"):
+                    device_access.record_failure(ip, "aparelho removido" if kind == "revoked" else "chave errada")
+                return JSONResponse(status_code=401, content={
+                    "detail": ("Este aparelho foi removido do JARVIS. Peça acesso de novo pelo QR code."
+                               if kind == "revoked" else "Não autorizado. Token de acesso ausente ou inválido."),
+                    "code": "device_revoked" if kind == "revoked" else "unauthorized"})
 
     # Bloqueio real (tela de bloqueio, Sentinela e modo visitante): rotas pessoais exigem acesso liberado.
     if not access.is_allowed(request.method, request.url.path):
@@ -125,5 +146,5 @@ app.add_middleware(
 )
 
 
-for _module in (system, access_routes, profile, fan, water, search, productivity, info, integrations, health, mobile, profiles):
+for _module in (system, access_routes, profile, fan, water, search, productivity, info, integrations, health, mobile, profiles, security_routes):
     app.include_router(_module.router)

@@ -15,6 +15,7 @@ import lazyComponent, { PieceBoundary } from "./utils/lazyComponent.jsx";
 import { initialAccessibility, initialBackground } from "./utils/theme.js";
 import { IS_JARVIS_APP, markDevice } from "./utils/device.js";
 import NetworkNotice from "./components/NetworkNotice.jsx";
+import SecurityLayer from "./components/SecurityLayer.jsx";
 import "./mobile.css";
 import "./cloud.css";
 
@@ -35,5 +36,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
     {/* V6.7.6: um erro na tela vira um aviso com RECARREGAR, nunca mais a tela preta */}
     <PieceBoundary fullscreen>{isPopout ? <ScreensPopout /> : <App />}</PieceBoundary>
     {IS_JARVIS_APP && !isPopout && <NetworkNotice />}
+    {/* V7.6: chave por aparelho e aprovação de aparelho novo, por cima de qualquer tela */}
+    {!isPopout && <SecurityLayer />}
   </React.StrictMode>
 );
