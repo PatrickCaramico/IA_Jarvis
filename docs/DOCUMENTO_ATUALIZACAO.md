@@ -56,6 +56,51 @@
 - [ ] **Conferir bibliotecas com falhas conhecidas** de tempos em tempos.
 - [ ] Um item de **segurança no 🩺 DIAGNÓSTICO** (ex.: "porta exposta?", "PIN fraco?", "chave da nuvem padrão?").
 
+#### ✅ Desenho fechado (15/11/2026)
+
+**Raio-x de hoje**
+- ✔ Fora do próprio PC, todo acesso já exige a chave de acesso (a do QR code). O Otimizar e o Diagnóstico também.
+- ✘ A chave é **uma só para todos os aparelhos e vale para sempre**: não dá para expulsar um aparelho.
+- ✘ A chave também é aceita no **endereço da página** (`?token=`), que fica no histórico e em logs.
+- ✘ A conexão na rede de casa é **http, sem criptografia**: alguém no mesmo Wi-Fi pode ver a chave passando.
+- ✘ **Ninguém é avisado** de tentativas erradas.
+
+**Decisões do Patrick**
+| Tema | Decisão |
+|---|---|
+| Chave de acesso | **Uma chave por aparelho**, com a tela "Aparelhos conectados" e o botão REMOVER |
+| Aparelho novo | **Precisa ser aprovado na tela do PC** (PERMITIR / RECUSAR), mesmo depois de escanear o QR |
+| Tentativas suspeitas | **Todos os avisos:** notificação no celular, aviso por voz no PC, bloqueio temporário do aparelho e registro no 🩺 Diagnóstico |
+| Criptografia | **Sim, https na rede de casa**, com passo a passo para o celular aceitar o certificado |
+
+**Como vai funcionar**
+1. **Aparelhos conectados** (Configurações > Segurança):
+   - lista com nome, tipo (celular/tablet/TV/PC), último acesso e de onde;
+   - botões REMOVER (um aparelho) e DESCONECTAR TODOS.
+2. **Chegada de um aparelho novo:**
+   - escaneia o QR e fica em "aguardando aprovação";
+   - o PC mostra um cartão e fala: "Um aparelho novo quer se conectar: Galaxy S23. Permitir?";
+   - aprovado, o aparelho recebe a **própria chave** e vai para a lista;
+   - recusado (ou 2 minutos sem resposta), não entra.
+3. **Chaves:**
+   - só no cabeçalho da requisição; nada de `?token=` no endereço;
+   - a chave antiga (única) continua valendo **uma última vez**, para migrar os aparelhos atuais sem precisar escanear tudo de novo.
+4. **Tentativas suspeitas** (chave errada, PIN errado, aparelho removido tentando voltar):
+   - **5 erros em 10 minutos** bloqueiam aquele aparelho por 15 minutos, e o tempo dobra a cada nova vez;
+   - aviso por voz no PC, notificação no app do celular e registro no 🩺 Diagnóstico (últimas 24 h).
+5. **https na rede de casa:**
+   - o JARVIS cria um certificado próprio na primeira vez;
+   - o QR code passa a apontar para `https://`;
+   - passo a passo na tela para o celular confiar no certificado (uma vez só).
+6. **Rotas da tela de bloqueio** (⚡ Otimizar, 🩺 Diagnóstico): no máximo 1 vez por minuto por aparelho.
+7. **Diagnóstico ganha o item "Segurança":** PIN fraco (ex.: 1234), https ligado, aparelhos sem uso há mais de 30 dias, tentativas suspeitas.
+
+**Cuidados para não quebrar nada**
+- O app Android e o modo nuvem precisam continuar funcionando: a migração da chave antiga é automática.
+- O app precisa ser gerado de novo (APK) para aceitar o https.
+
+**Status:** desenho aprovado; falta implementar.
+
 ---
 
 ### Ideia 3: Chat direto com os subagentes ("chatbots")
@@ -162,4 +207,4 @@ Itens que já estavam na lista e continuam **em espera**:
 ## Anotações da conversa
 _Espaço para ir anotando as decisões de cada ideia._
 
--
+- **15/11:** Ideia 2 (segurança) desenhada e decidida: chave por aparelho, aprovação de aparelho novo no PC, todos os avisos de tentativa suspeita e https na rede de casa.
