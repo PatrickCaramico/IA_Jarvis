@@ -22,7 +22,7 @@ from pathlib import Path
 from urllib.parse import quote
 
 from fastapi import APIRouter, HTTPException, Request
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse, Response
 from pydantic import BaseModel
 
 from config import settings
@@ -37,7 +37,9 @@ APK_PATH = Path(__file__).resolve().parents[2] / "mobile" / "dist" / "JARVIS.apk
 PACKAGE = "com.patrick.jarvis"
 
 # Rotas que o celular usa ANTES de ter o token (liberadas no middleware de main.py, só no modo rede)
-NO_TOKEN_PATHS = {"/api/mobile", "/api/mobile/app.apk"}
+NO_TOKEN_PATHS = {"/api/mobile", "/api/mobile/app.apk", "/api/mobile/certificado", "/api/mobile/certificado.crt"}
+# V7.7: com https ligado, só isto continua por http na rede (páginas públicas, sem chave)
+HTTP_OK_WITH_HTTPS = {"/api/mobile", "/api/mobile/app.apk", "/api/mobile/certificado", "/api/mobile/certificado.crt"}
 NO_TOKEN_POST = {"/api/mobile/pair-pin"}  # pareamento pelo PIN do dono (é como o celular ganha a chave)
 
 
@@ -199,8 +201,10 @@ async def mobile_pair_pin(req: PairPinRequest, request: Request) -> dict:
                   if result.get("reason") == "locked_out"
                   else f"PIN incorreto. Restam {result.get('remaining_attempts', 0)} tentativas.")
         raise HTTPException(status_code=403, detail=detail)
+    from modules import tls
+
     ip = request.url.hostname or local_ip()
-    return {"url": f"http://{ip}:5173/?token={runtime.ACCESS_TOKEN}"}
+    return {"url": f"{tls.frontend_url(ip)}/?token={runtime.ACCESS_TOKEN}"}
 
 
 _POLLERS: dict[str, float] = {}
@@ -249,6 +253,47 @@ async def mobile_notifications(request: Request, since: int = -1) -> dict:
     return feed
 
 
+@router.get("/api/mobile/certificado.crt")
+async def certificate_file() -> Response:
+    """V7.7: certificado raiz do JARVIS (público: só serve para o celular confiar no https deste PC)."""
+    from modules import tls
+
+    data = await asyncio.to_thread(tls.ca_der)
+    return Response(content=data, media_type="application/x-x509-ca-cert",
+                    headers={"Content-Disposition": 'attachment; filename="JARVIS-rede-de-casa.crt"'})
+
+
+@router.get("/api/mobile/certificado", response_class=HTMLResponse)
+async def certificate_page(request: Request) -> HTMLResponse:
+    """V7.7: passo a passo para o celular confiar na conexão criptografada do JARVIS (uma vez só)."""
+    from modules import tls
+
+    ip = request.url.hostname or local_ip()
+    fp = await asyncio.to_thread(tls.ca_fingerprint)
+    on = tls.enabled()
+    https_url = f"{tls.frontend_url(ip)}/"
+    body = (
+        '<div class="c"><h2>CONEXÃO CRIPTOGRAFADA</h2>'
+        '<p class="m">Para o celular conversar com o JARVIS em <b>https</b> (ninguém no Wi-Fi consegue espiar), '
+        'ele precisa confiar no certificado deste PC. É uma vez só.</p>'
+        '<a class="btn" href="/api/mobile/certificado.crt" download="JARVIS-rede-de-casa.crt">1 · BAIXAR O CERTIFICADO</a></div>'
+        '<div class="c w"><h2>2 · INSTALAR NO ANDROID</h2><ol class="m">'
+        '<li>Abra <b>Configurações</b> do celular.</li>'
+        '<li>Procure por <b>“certificado”</b> (ou vá em Segurança › Mais configurações › Criptografia e credenciais).</li>'
+        '<li>Toque em <b>Instalar um certificado › Certificado CA</b> e confirme “Instalar mesmo assim”.</li>'
+        '<li>Escolha o arquivo <b>JARVIS-rede-de-casa.crt</b> (pasta Downloads).</li></ol>'
+        '<p class="m">iPhone: abra o arquivo, instale o perfil em Ajustes e ligue em Ajustes › Geral › Sobre › '
+        'Ajustes de Confiança de Certificados.</p></div>'
+        '<div class="c"><h2>3 · ABRIR O JARVIS</h2>'
+        + (f'<a class="btn" href="{escape(https_url)}">ABRIR {escape(https_url)}</a>'
+           '<p class="m">Ou escaneie de novo o QR code da central (Configurações › Acesso Mobile). '
+           'No app JARVIS, gere e instale a versão nova antes.</p>'
+           if on else '<p class="m">A conexão criptografada ainda está <b>desligada</b> no PC (Configurações › Segurança).</p>')
+        + f'<p class="m fp">Impressão digital do certificado (SHA-256):<br><code>{escape(fp)}</code></p></div>'
+    )
+    return HTMLResponse(_PAGE.format(title="Certificado do JARVIS", sub="CONEXÃO CRIPTOGRAFADA", body=body))
+
+
 @router.get("/api/mobile/pair", response_class=HTMLResponse)
 async def mobile_pair(request: Request) -> HTMLResponse:
     """Página de pareamento (exige o token, que já veio no QR da central liberada).
@@ -263,8 +308,10 @@ async def mobile_pair(request: Request) -> HTMLResponse:
         target = f"{settings.SITE_ORIGIN.rstrip('/')}/app/?api={quote(tunnel, safe='')}&token={runtime.ACCESS_TOKEN}"
         self_url = f"{tunnel}/api/mobile/pair?token={runtime.ACCESS_TOKEN}&app=0"
     else:
-        target = f"http://{ip}:5173/?token={runtime.ACCESS_TOKEN}"
-        self_url = f"http://{ip}:8000/api/mobile/pair?token={runtime.ACCESS_TOKEN}&app=0"
+        from modules import tls
+
+        target = f"{tls.frontend_url(ip)}/?token={runtime.ACCESS_TOKEN}"  # V7.7: https quando ligado
+        self_url = f"{tls.backend_url(ip)}/api/mobile/pair?token={runtime.ACCESS_TOKEN}&app=0"
     deep = f"jarvis://connect?url={quote(target, safe='')}"
     intent = f"intent://connect?url={quote(target, safe='')}#Intent;scheme=jarvis;package={PACKAGE};end"
     auto_intent = (f"intent://connect?url={quote(target, safe='')}#Intent;scheme=jarvis;package={PACKAGE};"

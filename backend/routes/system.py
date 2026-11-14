@@ -150,15 +150,19 @@ def local_ip() -> str:
 @router.get("/api/network-access")
 async def network_access() -> dict:
     """Retorna o endereço local para outro dispositivo na mesma rede."""
+    from modules import tls
+
     ip = local_ip()
-    url = f"http://{ip}:5173?token={runtime.ACCESS_TOKEN}" if ip else ""
+    url = f"{tls.frontend_url(ip)}/?token={runtime.ACCESS_TOKEN}" if ip else ""  # V7.7: https quando ligado
     return {
         "url": url,
         "host": ip,
         "token": runtime.ACCESS_TOKEN,
         "network_mode": settings.NETWORK_MODE,
         # V4.5: app Android. A página de pareamento leva o token; só aparece com a central liberada.
-        "app_pair_url": f"http://{ip}:8000/api/mobile/pair?token={runtime.ACCESS_TOKEN}" if ip else "",
+        "app_pair_url": f"{tls.backend_url(ip)}/api/mobile/pair?token={runtime.ACCESS_TOKEN}" if ip else "",
+        "https": tls.enabled(),
+        "certificate_url": f"http://{ip}:8000/api/mobile/certificado" if ip else "",
         "app_download_url": f"http://{ip}:8000/api/mobile" if ip else "",
         # V6.0: acesso fora de casa pelo Tailscale (vazio se ele não estiver ligado neste PC)
         "remote_host": tailscale_ip(),
@@ -211,8 +215,11 @@ async def websocket_endpoint(ws: WebSocket) -> None:
         if not settings.NETWORK_MODE:
             await ws.close(code=1008, reason="Acesso externo desativado")
             return
-        from modules import device_access
+        from modules import device_access, tls
 
+        if ws.url.scheme == "ws" and tls.enabled():  # V7.7: na rede, só por wss (https)
+            await ws.close(code=1008, reason="Use a conexão criptografada (https)")
+            return
         token = ws.query_params.get("token") or ws.headers.get("x-jarvis-token")
         kind, dev = device_access.classify(token or "")
         ok = kind == "device" or (kind == "pairing" and device_access.migration_active())  # V7.6

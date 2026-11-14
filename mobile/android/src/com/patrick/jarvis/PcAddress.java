@@ -5,6 +5,7 @@ import android.net.Uri;
 /**
  * V6.5: onde está o backend do PC a partir do endereço salvo do app.
  * - Rede de casa: http://IP:5173/?token=X           -> http://IP:8000
+ * - Rede de casa com https (V7.7): https://IP:5443/?token=X -> https://IP:8443
  * - De longe (túnel): https://site/app/?api=https://xxx.trycloudflare.com&token=X -> https://xxx.trycloudflare.com
  */
 final class PcAddress {
@@ -19,6 +20,7 @@ final class PcAddress {
         }
         String host = saved.getHost();
         if (host == null || host.isEmpty()) return null;
+        if ("https".equals(saved.getScheme()) && saved.getPort() == 5443) return "https://" + host + ":8443"; // V7.7
         return "http://" + host + ":8000";
     }
 

@@ -56,6 +56,8 @@ rem V5.6: tambem instala quando falta uma dependencia nova (ex.: icalendar, da a
 set "NEED_PIP="
 if not exist "%BACKEND%\venv\Lib\site-packages\uvicorn" set "NEED_PIP=1"
 if not exist "%BACKEND%\venv\Lib\site-packages\icalendar" set "NEED_PIP=1"
+rem V7.7: certificado da conexao criptografada (https) na rede de casa
+if not exist "%BACKEND%\venv\Lib\site-packages\cryptography" set "NEED_PIP=1"
 if defined NEED_PIP (
   echo  [2/5] Instalando dependencias do backend...
   "%BACKEND%\venv\Scripts\python.exe" -m pip install -r "%BACKEND%\requirements.txt"
@@ -104,7 +106,7 @@ if not defined USE_VITE (
 rem ---------- Ja estava aberto? (V4.4) ----------
 rem Se uma versao anterior ainda ocupa as portas, a nova falhava escondida e a antiga continuava.
 rem Agora o Iniciar sempre substitui: encerra o que estiver nas portas 8000 e 5173 antes de subir.
-powershell -NoProfile -Command "$p = Get-NetTCPConnection -LocalPort 8000,5173 -State Listen -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique; if ($p) { Write-Host '  JARVIS ja estava aberto: reiniciando com a versao atual...'; $p | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue }; $d=(Get-Date).AddSeconds(8); while((Get-Date) -lt $d -and (Get-NetTCPConnection -LocalPort 8000,5173 -State Listen -ErrorAction SilentlyContinue)){ Start-Sleep -Milliseconds 200 } }"
+powershell -NoProfile -Command "$p = Get-NetTCPConnection -LocalPort 8000,5173,8443,5443 -State Listen -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique; if ($p) { Write-Host '  JARVIS ja estava aberto: reiniciando com a versao atual...'; $p | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue }; $d=(Get-Date).AddSeconds(8); while((Get-Date) -lt $d -and (Get-NetTCPConnection -LocalPort 8000,5173,8443,5443 -State Listen -ErrorAction SilentlyContinue)){ Start-Sleep -Milliseconds 200 } }"
 
 rem ---------- 5. Iniciar em segundo plano ----------
 echo  [5/5] Iniciando backend e frontend...
@@ -120,7 +122,12 @@ if "%JARVIS_LOCAL%"=="1" (
   set "HOST=127.0.0.1"
   set "NETMODE=false"
 )
-powershell -NoProfile -Command "$env:JARVIS_NETWORK_MODE='%NETMODE%'; Start-Process -FilePath '%PY%' -ArgumentList ('-m uvicorn main:app --host %HOST% --port 8000 ' + '%RELOAD%').Trim() -WorkingDirectory '%BACKEND%' -WindowStyle Hidden"
+rem V7.7: run_server.py = o mesmo backend, mais o https da rede de casa quando ele esta ligado
+if defined RELOAD (
+  powershell -NoProfile -Command "$env:JARVIS_NETWORK_MODE='%NETMODE%'; Start-Process -FilePath '%PY%' -ArgumentList ('-m uvicorn main:app --host %HOST% --port 8000 ' + '%RELOAD%').Trim() -WorkingDirectory '%BACKEND%' -WindowStyle Hidden"
+) else (
+  powershell -NoProfile -Command "$env:JARVIS_NETWORK_MODE='%NETMODE%'; Start-Process -FilePath '%PY%' -ArgumentList 'run_server.py --host %HOST% --port 8000' -WorkingDirectory '%BACKEND%' -WindowStyle Hidden"
+)
 
 if defined USE_VITE (
   powershell -NoProfile -Command "Start-Process -FilePath 'cmd.exe' -ArgumentList '/c npm run dev -- --host %HOST%' -WorkingDirectory '%FRONTEND%' -WindowStyle Hidden"

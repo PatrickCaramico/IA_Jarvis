@@ -184,6 +184,15 @@ def check_security(now: datetime | None = None) -> dict:
     if alerts:
         return _item("security", "Segurança", FAIL, f"{len(alerts)} alerta(s) nas últimas 24 h. Último: {alerts[0]['message'][:90]}",
                      "Veja Configurações > Segurança: remova aparelhos que você não conhece e troque o PIN se ele foi tentado.")
+    from modules import tls
+
+    if devices and not tls.enabled():  # V7.7
+        parts.append("conexão da rede de casa SEM criptografia (https desligado)")
+        if not idle:
+            return _item("security", "Segurança", WARN, "; ".join(parts) + ".",
+                         "Ligue a conexão criptografada em Configurações > Segurança (https).")
+    elif tls.enabled():
+        parts.append("https ligado")
     if idle:
         return _item("security", "Segurança", WARN, "; ".join(parts) + f". Sem uso há mais de 30 dias: {', '.join(idle[:3])}.",
                      "Remova em Configurações > Segurança os aparelhos que você não usa mais.")

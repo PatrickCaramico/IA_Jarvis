@@ -2,6 +2,22 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 7.7.0 — 15 de novembro de 2026
+
+**Segurança, parte 2: conexão criptografada (https) na rede de casa** (ideia 2 do documento de atualização)
+- **Liga em Configurações › Segurança › LIGAR HTTPS** (só pela tela do PC; o JARVIS reinicia sozinho). Começa **desligado**, para nada mudar até você ativar.
+- O JARVIS cria o **próprio certificado** ("JARVIS · rede de casa") e o do PC para os endereços dele na rede, e refaz sozinho quando o endereço muda.
+- Com https ligado:
+  - celulares, tablets e TVs entram por **https://IP-DO-PC:5443** (backend na 8443);
+  - **a chave de acesso e o PIN nunca viajam por http** na rede (o PC recusa com "abra por https");
+  - quem abrir o endereço antigo (http …:5173) é levado para o https;
+  - o QR code e o pareamento do app passam a usar https.
+- **Este PC continua em http://127.0.0.1** (não sai do computador): a central do PC e o site do Netlify não mudam.
+- **Página do certificado** (no celular: http://IP-DO-PC:8000/api/mobile/certificado), com o passo a passo para Android e iPhone e a impressão digital para conferir.
+- **App Android**: passa a confiar no certificado instalado pelo dono e entende as portas https. É preciso **gerar o APK de novo** (Gerar-App-Android.bat).
+- **🩺 Diagnóstico** avisa quando há aparelhos conectados e o https está desligado.
+- `Iniciar-JARVIS.bat` sobe o backend pelo novo `run_server.py` (o mesmo backend, mais o https quando ligado) e instala a biblioteca do certificado (`cryptography`).
+
 ## 7.6.0 — 15 de novembro de 2026
 
 **Segurança (ideia 2 do documento de atualização, parte 1)**

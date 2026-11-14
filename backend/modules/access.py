@@ -149,6 +149,8 @@ _PUBLIC_EXACT = {
     ("POST", "/api/audio/test"),
     ("GET", "/api/mobile"),           # V4.5: página de download do app Android (sem token, sem dados)
     ("GET", "/api/mobile/app.apk"),
+    ("GET", "/api/mobile/certificado"),  # V7.7: certificado do https (público, sem dados)
+    ("GET", "/api/mobile/certificado.crt"),
     ("GET", "/api/mobile/info"),      # QR de download da Sentinela
     ("GET", "/api/mobile/notifications"),  # avisos do celular pareado (a rota exige a chave sempre)
     ("POST", "/api/mobile/pair-pin"),  # parear o app com o PIN do dono (limite de tentativas do PIN)

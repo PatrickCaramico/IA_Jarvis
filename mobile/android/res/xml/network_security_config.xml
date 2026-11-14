@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- V7.7: conexão criptografada (https) com o JARVIS do PC na rede de casa.
+     O certificado do PC é assinado pela "autoridade" do próprio JARVIS, que o dono instala no celular
+     (página http://IP-DO-PC:8000/api/mobile/certificado). Por isso o app confia nos certificados
+     instalados pelo usuário, além dos do sistema. O http continua liberado para o PC sem https. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

@@ -100,7 +100,7 @@
 - O app precisa ser gerado de novo (APK) para aceitar o https.
 
 **Status:** ✅ **Parte 1 implementada na versão 7.6.0** (chave por aparelho, aprovação no PC, aviso e bloqueio de tentativas, Configurações > Segurança, item no Diagnóstico).
-⏳ **Parte 2 pendente: https na rede de casa** (certificado próprio, QR com https, passo a passo no celular e APK novo).
+✅ **Parte 2 implementada na versão 7.7.0:** https na rede de casa (certificado próprio, QR com https, página do certificado, app Android). Fica desligado até ser ligado em Configurações › Segurança.
 
 ---
 
@@ -208,5 +208,6 @@ Itens que já estavam na lista e continuam **em espera**:
 ## Anotações da conversa
 _Espaço para ir anotando as decisões de cada ideia._
 
-- **15/11:** Ideia 2, parte 1 publicada (7.6.0). Falta a parte 2 (https).
+- **15/11:** Ideia 2 concluída: parte 1 (7.6.0) e parte 2/https (7.7.0). Próxima: ideia 1 (upload de fotos).
+- **15/11:** Ideia 2, parte 1 publicada (7.6.0).
 - **15/11:** Ideia 2 (segurança) desenhada e decidida: chave por aparelho, aprovação de aparelho novo no PC, todos os avisos de tentativa suspeita e https na rede de casa.
