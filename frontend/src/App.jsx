@@ -35,6 +35,7 @@ import { CLOUD_AVAILABLE, cloudRequested, isPhone } from "./utils/cloudApi.js";
 import { installCloudShim } from "./utils/cloudShim.js";
 import { holoCommand, holoIntent } from "./utils/holoIntent.js";
 import { applyPerf } from "./utils/perfMode.js";
+import { isImageFile, prepPhoto } from "./utils/photoPrep.js";
 
 applyPerf(); // V7.2: modo leve escolhido neste aparelho
 
@@ -81,6 +82,7 @@ const BrandingBook = lazyComponent(() => import("./components/BrandingBook.jsx")
 const OptimizerPanel = lazyComponent(() => import("./components/OptimizerPanel.jsx")); // V7.2
 const ReleaseNotes = lazyComponent(() => import("./components/ReleaseNotes.jsx")); // V7.3
 const DiagnosticPanel = lazyComponent(() => import("./components/DiagnosticPanel.jsx")); // V7.4
+const PhotoPanel = lazyComponent(() => import("./components/PhotoPanel.jsx")); // V7.8
 const LogReportWidget = lazyComponent(() => import("./components/LogReportWidget.jsx"));
 const Onboarding = lazyComponent(() => import("./components/Onboarding.jsx"));
 const BioScanModal = lazyComponent(() => import("./components/BioScanModal.jsx"));
@@ -262,6 +264,58 @@ export default function App() {
     window.addEventListener("jarvis-open-notes", open);
     return () => window.removeEventListener("jarvis-open-notes", open);
   }, []);
+  // V7.8: FOTO ENVIADA (galeria, clipe 📎, arrastar no PC). A foto só existe na memória desta tela.
+  const [photoWin, setPhotoWin] = useState(null);
+  const [photoDrag, setPhotoDrag] = useState(false);
+  const openPhotoFile = useCallback(async (file) => {
+    try {
+      const { dataUrl } = await prepPhoto(file);
+      setPhotoWin({ dataUrl, at: Date.now() });
+    } catch (err) {
+      setNotice(err.message);
+    }
+  }, []);
+  useEffect(() => {
+    const onFile = (e) => openPhotoFile(e.detail);
+    window.addEventListener("jarvis-photo-file", onFile);
+    return () => window.removeEventListener("jarvis-photo-file", onFile);
+  }, [openPhotoFile]);
+  useEffect(() => {
+    if (screen !== "main") return undefined;
+    let depth = 0;
+    const hasFile = (e) => Array.from(e.dataTransfer?.types || []).includes("Files");
+    const enter = (e) => {
+      if (!hasFile(e)) return;
+      e.preventDefault();
+      depth += 1;
+      setPhotoDrag(true);
+    };
+    const over = (e) => { if (hasFile(e)) e.preventDefault(); };
+    const leave = () => {
+      depth = Math.max(0, depth - 1);
+      if (!depth) setPhotoDrag(false);
+    };
+    const drop = (e) => {
+      if (!hasFile(e)) return;
+      e.preventDefault();
+      depth = 0;
+      setPhotoDrag(false);
+      const file = Array.from(e.dataTransfer.files || []).find(isImageFile);
+      if (file) openPhotoFile(file);
+      else setNotice("Solte uma imagem (JPG, PNG ou WEBP).");
+    };
+    window.addEventListener("dragenter", enter);
+    window.addEventListener("dragover", over);
+    window.addEventListener("dragleave", leave);
+    window.addEventListener("drop", drop);
+    return () => {
+      window.removeEventListener("dragenter", enter);
+      window.removeEventListener("dragover", over);
+      window.removeEventListener("dragleave", leave);
+      window.removeEventListener("drop", drop);
+    };
+  }, [screen, openPhotoFile]);
+
   // V7.4: 🩺 DIAGNÓSTICO
   const [diagOpen, setDiagOpen] = useState(false);
   useEffect(() => {
@@ -2926,6 +2980,21 @@ export default function App() {
       {optimizerOpen && <OptimizerPanel api={api} onClose={() => setOptimizerOpen(false)} />}
       {notesOpen && <ReleaseNotes highlight={notesOpen.highlight} onClose={() => setNotesOpen(null)} />}
       {diagOpen && <DiagnosticPanel api={api} connected={connected} onClose={() => setDiagOpen(false)} />}
+      {photoDrag && <div className="ph-drop" aria-hidden="true"><div>🖼 SOLTE A IMAGEM AQUI<small>O JARVIS analisa, lê, pesquisa ou explica. A foto não é guardada.</small></div></div>}
+      {photoWin && (
+        <PhotoPanel
+          key={photoWin.at}
+          api={api}
+          photo={photoWin.dataUrl}
+          onClose={() => setPhotoWin(null)}
+          onSpeak={(t) => api("/api/speak", { method: "POST", body: JSON.stringify({ text: t }) }).catch(() => {})}
+          onOpenHolo={(topic, photo) => {
+            setPhotoWin(null);
+            setResponseCards([]);
+            setHolo({ kind: "apresentacao", query: topic, photo, at: Date.now() });
+          }}
+        />
+      )}
       {holo && (
         <HoloStage
           api={api}

@@ -1,2 +1,2 @@
 """Versão do JARVIS: uma fonte só para /api/health, o título do FastAPI e o diagnóstico."""
-VERSION = "7.7.0"
+VERSION = "7.8.0"

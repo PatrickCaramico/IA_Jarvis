@@ -2,6 +2,22 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 7.8.0 — 15 de novembro de 2026
+
+**Foto da galeria (ideia 1 do documento de atualização)**
+- **Três jeitos de mandar uma foto**: 🖼 **GALERIA** na janela da câmera, **📎** no campo de conversa e **arrastar a imagem** para a central no PC ("SOLTE A IMAGEM AQUI").
+- **Antes de sair do aparelho**, a foto é reduzida (no máximo 1600 px) e regravada: isso **apaga a localização (GPS)** e os outros dados escondidos (no teste, 164 KB viraram 33 KB, sem o GPS).
+- **Janela FOTO ENVIADA** com pergunta opcional e 4 botões (com uma pergunta escrita, o JARVIS escolhe sozinho):
+  - **🔍 ANALISAR**: o diagnóstico da câmera (o que é, detalhes, dicas e alertas);
+  - **📄 LER E AGIR**: lê o texto e **sugere** ações (receita → lista de compras, conta → lembrete no vencimento, cartão de visita → contato, lista escrita → tarefas). **Nada acontece sem o CONFIRMAR**, e o PC confere a ação de novo antes de fazer;
+  - **🌐 PESQUISAR**: identifica o item e pesquisa preço, onde comprar e avaliações, com as **fontes**;
+  - **✦ HOLOGRAMA**: identifica o assunto e abre a apresentação animada com **a sua foto no fundo**.
+- **Segurança**:
+  - a foto **nunca é gravada** (nem no PC, nem na nuvem, nem nos registros);
+  - só com a central desbloqueada, no máximo 10 fotos por minuto por aparelho;
+  - a IA é instruída a **não obedecer textos escritos na foto**.
+- **Fora de casa** funciona pela nuvem, sem guardar nada. Lá a pesquisa é uma estimativa da IA (sem busca ao vivo) e salvar contato fica só com o PC ligado.
+
 ## 7.7.0 — 15 de novembro de 2026
 
 **Segurança, parte 2: conexão criptografada (https) na rede de casa** (ideia 2 do documento de atualização)

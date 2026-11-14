@@ -8,6 +8,7 @@ import useEscape from "../hooks/useEscape.js";
 // - O QUE É ISSO?: manda UMA foto à IA (PC ou nuvem) e a resposta aparece e é falada.
 // autoShot: "tira uma foto" -> contagem 3, 2, 1 e foto.
 export default function CameraWindow({ api, onClose, onAnswer, autoShot = false, autoAsk = "" }) {
+  const galleryRef = useRef(null); // V7.8: 🖼 GALERIA
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const [facing, setFacing] = useState("user");
@@ -161,6 +162,14 @@ export default function CameraWindow({ api, onClose, onAnswer, autoShot = false,
           <button type="button" onClick={() => setFacing((f) => (f === "user" ? "environment" : "user"))} disabled={Boolean(error) && facing === "environment"}>↺ TROCAR</button>
           <button type="button" className="camw-shot" onClick={takePhoto} disabled={Boolean(error)} aria-label="Tirar foto">📸 FOTO</button>
           <button type="button" onClick={() => setCount(3)} disabled={Boolean(error) || count > 0}>⏱ 3 s</button>
+          <button type="button" onClick={() => galleryRef.current?.click()} title="Escolher uma foto já salva">🖼 GALERIA</button>
+          <input ref={galleryRef} type="file" accept="image/*" hidden onChange={(e) => {
+            const file = e.target.files?.[0];
+            e.target.value = "";
+            if (!file) return;
+            window.dispatchEvent(new CustomEvent("jarvis-photo-file", { detail: file }));
+            onClose(); // a foto abre na janela FOTO ENVIADA
+          }} />
         </div>
         <p className="camw-note">"O que é isso?" manda só aquela foto à IA, e ela não é guardada.</p>
       </div>
@@ -173,7 +182,7 @@ export default function CameraWindow({ api, onClose, onAnswer, autoShot = false,
 const CONF_LABEL = { alta: "Confiança alta", media: "Confiança média", baixa: "Confiança baixa" };
 
 // V6.9: janela de diagnóstico do item analisado (a foto fica só na tela; fecha e some)
-function Diagnosis({ diag, onClose }) {
+export function Diagnosis({ diag, onClose }) {
   return (
     <section className="camw-diag" role="dialog" aria-label={`Diagnóstico: ${diag.item}`}>
       <header className="camw-diag-head">

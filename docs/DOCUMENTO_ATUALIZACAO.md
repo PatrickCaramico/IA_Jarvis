@@ -31,6 +31,45 @@
   - limitar o tamanho;
   - conferir que é mesmo uma imagem (o PC já faz essa conferência hoje).
 
+#### ✅ Desenho fechado (15/11/2026)
+
+**Decisões do Patrick**
+| Tema | Decisão |
+|---|---|
+| Onde enviar | **Os três:** botão 🖼 GALERIA na janela da câmera, clipe 📎 no campo de conversa e arrastar a imagem na central do PC |
+| O que fazer com a foto | **Tudo:** analisar/diagnóstico, ler texto e agir, pesquisar na internet e explicar no Holograma |
+| Guardar a foto | **Não guardar:** vai para a IA, a resposta volta e a foto some na hora (nada no PC nem na nuvem) |
+| Fora de casa | **Sim, pela nuvem, sem guardar nada** (como a câmera já faz) |
+
+**Como vai funcionar**
+1. **Escolher a foto:**
+   - 🖼 GALERIA na câmera, 📎 no campo de conversa (celular e PC) ou arrastar para a central no PC (aparece "SOLTE A IMAGEM AQUI").
+2. **Antes de sair do aparelho:**
+   - a foto é **reduzida** (no máximo 1600 px) e **regravada**;
+   - isso apaga a **localização (GPS)** e os outros dados escondidos da foto;
+   - fica pequena e rápida de enviar.
+3. **Janela "FOTO ENVIADA":**
+   - miniatura e um campo de pergunta opcional;
+   - 4 botões: 🔍 **ANALISAR** · 📄 **LER E AGIR** · 🌐 **PESQUISAR** · ✦ **HOLOGRAMA**;
+   - escrevendo uma pergunta, o JARVIS escolhe sozinho ("quanto custa isso?" vira pesquisa).
+4. **Cada função:**
+   - 🔍 **Analisar:** a janela de diagnóstico que a câmera já tem (o que é, detalhes, dicas, alertas).
+   - 📄 **Ler e agir:** o JARVIS lê o texto e **propõe** uma ação, que **só acontece depois do seu toque em CONFIRMAR**. Exemplos:
+     - receita → "Adicionar 8 ingredientes à lista de compras";
+     - conta → "Lembrete: pagar a conta de luz de R$ 154,30 no dia 20/11";
+     - cartão de visita → "Salvar contato";
+     - lista escrita à mão → "Adicionar como tarefas".
+   - 🌐 **Pesquisar:** identifica o item e pesquisa (preço médio, onde comprar, avaliações), com as fontes.
+   - ✦ **Holograma:** identifica o assunto e abre a apresentação animada, com **a sua foto** no fundo.
+
+**Segurança (com as regras da ideia 2)**
+- A foto **nunca é gravada**: nem no PC, nem na nuvem, nem nos logs. Fica só na memória enquanto a IA responde.
+- Só com a central **desbloqueada** e pela chave do aparelho. Com https ligado, vai **criptografada**.
+- Confere que é mesmo uma imagem, com limite de tamanho, e no máximo **10 fotos por minuto** por aparelho.
+- Ações tiradas da foto (lista, lembrete, contato) **sempre pedem confirmação**: um texto escondido numa imagem não consegue mandar o JARVIS fazer nada sozinho.
+
+**Status:** ✅ **Implementada na versão 7.8.0.**
+
 ---
 
 ### Ideia 2: Proteção contra ataques (segurança)
@@ -208,6 +247,8 @@ Itens que já estavam na lista e continuam **em espera**:
 ## Anotações da conversa
 _Espaço para ir anotando as decisões de cada ideia._
 
-- **15/11:** Ideia 2 concluída: parte 1 (7.6.0) e parte 2/https (7.7.0). Próxima: ideia 1 (upload de fotos).
+- **15/11:** Ideia 1 publicada (7.8.0). Próximas: ideia 3 (chat com @agente), 4 (Olho de Deus) e 5 (Holograma).
+- **15/11:** Ideia 1 (upload de fotos) desenhada e decidida: os três jeitos de enviar, as quatro funções, nada guardado e funcionando pela nuvem.
+- **15/11:** Ideia 2 concluída: parte 1 (7.6.0) e parte 2/https (7.7.0).
 - **15/11:** Ideia 2, parte 1 publicada (7.6.0).
 - **15/11:** Ideia 2 (segurança) desenhada e decidida: chave por aparelho, aprovação de aparelho novo no PC, todos os avisos de tentativa suspeita e https na rede de casa.
