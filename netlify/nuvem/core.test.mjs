@@ -409,3 +409,24 @@ test("foto da galeria na nuvem: ler e agir só com confirmação; contato só no
   assert.equal((await call(store, "/photo/apply", { method: "POST", token, body: { acao: { tipo: "contato", nome: "Ana", telefone: "11988887777" } } })).status, 400);
   assert.deepEqual([...store.data.keys()].filter((k) => /foto|photo|image/.test(k)), []); // a foto não fica guardada
 });
+
+test("agentes na nuvem: mercado adiciona, ações grandes esperam confirmação, finanças pede o PC", async () => {
+  const store = memStore();
+  const token = await login(store);
+  let reply = { resposta: "Coloquei na lista.", acoes: [{ tipo: "compras_add", itens: ["Carvão", "Picanha"] }, { tipo: "tarefa", texto: "x" }] };
+  let sent;
+  const fetchFn = async (_u, init) => { sent = JSON.parse(init.body); return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: JSON.stringify(reply) }] } }] })); };
+  const env = { ...ENV, GEMINI_API_KEY: "g" };
+  const talk = (agent, message) => handle(req("/agent-chat", { method: "POST", token, body: { agent, message } }), { store, env, fetchFn, nowDate: NOW });
+  const r = await (await talk("@mercado", "lista do churrasco")).json();
+  assert.deepEqual(r.done, ["✓ 2 item(ns) na lista de compras"]);
+  assert.equal((await call(store, "/state", { token })).data.tarefas.length, 0); // ação de outra área ignorada
+  reply = { resposta: "Posso limpar?", acoes: [{ tipo: "compras_limpar_comprados" }] };
+  const r2 = await (await talk("mercado", "limpa os comprados")).json();
+  assert.equal(r2.pending[0].tipo, "compras_limpar_comprados");
+  assert.match(sent.systemInstruction.parts[0].text, /Carvão/); // vê a lista
+  assert.equal(sent.contents.length, 3); // lembra a conversa (2 anteriores + a nova)
+  assert.equal((await talk("financas", "quanto gastei?")).status, 503);
+  const hist = await call(store, "/agent-chat/history?agent=mercado", { token });
+  assert.equal(hist.data.messages.length, 4);
+});

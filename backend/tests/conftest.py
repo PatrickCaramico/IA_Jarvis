@@ -33,6 +33,7 @@ _WRITABLE = (
     ("agents", "_PATH", "lugares.json"),  # V6.8
     ("device_access", "_PATH", "aparelhos.json"),  # V7.6
     ("tls", "_DIR", "tls"),  # V7.7
+    ("agent_chat", "_PATH", "agentes_conversas.json"),  # V7.9
 )
 
 

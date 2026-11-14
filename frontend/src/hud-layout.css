@@ -1247,3 +1247,39 @@
   .agh-grid { grid-template-columns: 1fr; overflow-y: auto; }
   .agh-chat { min-height: 260px; }
 }
+
+/* V7.9: Central de Agentes com abas, conversa por agente e confirmações */
+.agh-tabs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: thin; }
+.agh-tabs button { flex: none; display: flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 999px; border: 1px solid rgba(103, 232, 249, 0.3); background: rgba(3, 10, 24, 0.7); color: rgba(224, 251, 255, 0.75); font: 600 0.72rem "Orbitron", sans-serif; letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer; transition: 160ms ease; }
+.agh-tabs button span { font-size: 1rem; }
+.agh-tabs button.is-on { color: #fff; border-color: #67e8f9; background: rgba(103, 232, 249, 0.16); box-shadow: 0 0 14px rgba(34, 211, 238, 0.3); }
+.agh-grid { animation: agh-in 260ms ease-out; }
+@keyframes agh-in { from { opacity: 0; transform: translateY(6px); } }
+.agh-card h3 code { margin-left: 6px; padding: 1px 6px; border-radius: 6px; background: rgba(103, 232, 249, 0.12); color: #67e8f9; font-size: 0.75rem; }
+.agh-label { display: block; margin: 8px 0 6px; font: 600 0.6rem "Orbitron", sans-serif; letter-spacing: 0.16em; color: rgba(103, 232, 249, 0.8); }
+.agh-clear { margin-top: 12px; border: 1px solid rgba(252, 165, 165, 0.4); background: transparent; color: #fecaca; border-radius: 8px; padding: 6px 10px; font: 600 0.65rem "Orbitron", sans-serif; cursor: pointer; }
+.agh-clear:disabled { opacity: 0.35; cursor: default; }
+.agh-msg { display: flex; flex-direction: column; gap: 4px; }
+.agh-who { font: 600 0.62rem "Orbitron", sans-serif; letter-spacing: 0.08em; color: #67e8f9; }
+.agh-done { font-style: normal; font-size: 0.78rem; color: #86efac; }
+.agh-pending { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 7px 9px; border-radius: 9px; border: 1px solid rgba(251, 191, 36, 0.5); background: rgba(251, 191, 36, 0.08); font-size: 0.8rem; }
+.agh-pending span { flex: 1; min-width: 140px; }
+.agh-pending button { border: 1px solid #86efac; background: rgba(134, 239, 172, 0.18); color: #dcfce7; border-radius: 8px; padding: 5px 10px; font: 700 0.62rem "Orbitron", sans-serif; cursor: pointer; }
+.agh-pending.is-done { border-color: rgba(134, 239, 172, 0.5); background: rgba(134, 239, 172, 0.07); }
+.agh-pending b { color: #86efac; font-weight: 600; }
+.agh-sources { display: flex; flex-wrap: wrap; gap: 8px; font-size: 0.75rem; }
+.agh-sources a { color: #67e8f9; }
+.agh-typing { flex-direction: row !important; gap: 5px !important; padding: 10px 12px !important; }
+.agh-typing i { width: 7px; height: 7px; border-radius: 50%; background: #67e8f9; animation: agh-dot 1s ease-in-out infinite; }
+.agh-typing i:nth-child(2) { animation-delay: 0.15s; }
+.agh-typing i:nth-child(3) { animation-delay: 0.3s; }
+@keyframes agh-dot { 50% { transform: translateY(-4px); opacity: 0.4; } }
+.agh-error { margin: 6px 0 0; color: #fca5a5; font-size: 0.8rem; }
+.agh-examples button:disabled { opacity: 0.5; }
+
+/* @ no campo de conversa */
+.cmd-mention { position: fixed; z-index: 140; min-width: 240px; padding: 6px; border-radius: 14px; border: 1px solid rgba(103, 232, 249, 0.45); background: rgba(3, 10, 24, 0.97); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); }
+.cmd-mention button { width: 100%; display: flex; align-items: center; gap: 10px; padding: 7px 10px; border: 0; border-radius: 9px; background: transparent; color: #e0fbff; text-align: left; cursor: pointer; font-size: 0.86rem; }
+.cmd-mention button.is-on, .cmd-mention button:hover { background: rgba(103, 232, 249, 0.14); }
+.cmd-mention code { color: #67e8f9; }
+.cmd-mention small { margin-left: auto; color: rgba(224, 251, 255, 0.5); font-size: 0.72rem; }

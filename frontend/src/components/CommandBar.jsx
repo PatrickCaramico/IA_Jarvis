@@ -1,4 +1,6 @@
-import { useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { agentSuggestions } from "../utils/agentMention.js";
 
 function MicIcon() {
   return (
@@ -13,6 +15,35 @@ function MicIcon() {
 export default function CommandBar({ onSend, disabled, listening, onToggleMic }) {
   const [value, setValue] = useState("");
   const fileRef = useRef(null);
+  const inputRef = useRef(null);
+  const [pick, setPick] = useState(0);
+  const mentions = agentSuggestions(value); // V7.9: "@" mostra os agentes
+  const formRef = useRef(null);
+  const [box, setBox] = useState(null);
+  // a lista flutua por cima da tela (dentro do painel ela era cortada pela borda)
+  useLayoutEffect(() => {
+    if (!mentions.length || !formRef.current) {
+      setBox(null);
+      return;
+    }
+    const r = formRef.current.getBoundingClientRect();
+    setBox({ left: r.left, width: r.width, bottom: window.innerHeight - r.top + 6 });
+  }, [mentions.length]);
+  const choose = (a) => {
+    setValue(`@${a.id} `);
+    setPick(0);
+    inputRef.current?.focus();
+  };
+  const onKeyDown = (e) => {
+    if (!mentions.length) return;
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      e.preventDefault();
+      setPick((n) => (n + (e.key === "ArrowDown" ? 1 : mentions.length - 1)) % mentions.length);
+    } else if (e.key === "Enter" || e.key === "Tab") {
+      e.preventDefault();
+      choose(mentions[Math.min(pick, mentions.length - 1)]);
+    }
+  };
 
   const submit = (e) => {
     e.preventDefault();
@@ -23,7 +54,19 @@ export default function CommandBar({ onSend, disabled, listening, onToggleMic })
   };
 
   return (
-    <form onSubmit={submit} className="jarvis-command-bar mx-auto flex w-full max-w-2xl items-center gap-3 rounded-full p-2.5">
+    <form ref={formRef} onSubmit={submit} className="jarvis-command-bar relative mx-auto flex w-full max-w-2xl items-center gap-3 rounded-full p-2.5">
+      {mentions.length > 0 && box && createPortal(
+        <div className="cmd-mention" role="listbox" aria-label="Falar direto com um agente"
+          style={{ position: "fixed", left: box.left, width: box.width, bottom: box.bottom, right: "auto" }}>
+          {mentions.map((a, i) => (
+            <button key={a.id} type="button" role="option" aria-selected={i === pick} className={i === pick ? "is-on" : ""}
+              onMouseDown={(e) => { e.preventDefault(); choose(a); }}>
+              <span aria-hidden="true">{a.icon}</span><code>@{a.id}</code><small>{a.label}</small>
+            </button>
+          ))}
+        </div>,
+        document.body,
+      )}
       <button
         type="button"
         onClick={onToggleMic}
@@ -45,9 +88,11 @@ export default function CommandBar({ onSend, disabled, listening, onToggleMic })
         if (file) window.dispatchEvent(new CustomEvent("jarvis-photo-file", { detail: file }));
       }} />
       <input
+        ref={inputRef}
         value={value}
-        onChange={(e) => setValue(e.target.value)}
-        placeholder={listening ? "Ouvindo…" : "Digite um comando para o JARVIS"}
+        onKeyDown={onKeyDown}
+        onChange={(e) => { setValue(e.target.value); setPick(0); }}
+        placeholder={listening ? "Ouvindo…" : "Digite um comando (ou @agente) para o JARVIS"}
         disabled={disabled || listening}
         className="min-w-0 flex-1 bg-transparent px-2 text-base text-arc-100 placeholder:text-arc-300/50 focus:outline-none disabled:opacity-50"
       />

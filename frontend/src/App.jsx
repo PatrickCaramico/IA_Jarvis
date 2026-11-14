@@ -34,6 +34,7 @@ import { IS_JARVIS_APP } from "./utils/device.js";
 import { CLOUD_AVAILABLE, cloudRequested, isPhone } from "./utils/cloudApi.js";
 import { installCloudShim } from "./utils/cloudShim.js";
 import { holoCommand, holoIntent } from "./utils/holoIntent.js";
+import { parseAgentMention } from "./utils/agentMention.js";
 import { applyPerf } from "./utils/perfMode.js";
 import { isImageFile, prepPhoto } from "./utils/photoPrep.js";
 
@@ -234,7 +235,7 @@ export default function App() {
   const [cameraWin, setCameraWin] = useState(null);
   const [agentsOpen, setAgentsOpen] = useState(false); // V6.8.3: Central de Agentes
   useEffect(() => {
-    const open = () => setAgentsOpen(true);
+    const open = (e) => setAgentsOpen({ agent: e?.detail?.agent || "mercado" }); // V7.9: abre na aba pedida
     window.addEventListener("jarvis-open-agents", open);
     return () => window.removeEventListener("jarvis-open-agents", open);
   }, []);
@@ -1663,6 +1664,28 @@ export default function App() {
       setResponse("Otimizando, senhor.");
       return;
     }
+    // V7.9: "@mercado …", "agente mercado, …", "pergunta pro agente de finanças …": fala direto com o agente
+    const mention = parseAgentMention(text);
+    if (mention) {
+      setUserText(text);
+      setError("");
+      setResponseCards([]);
+      setResponse(`${mention.info.icon} ${mention.info.label} está pensando…`);
+      api("/api/agents/chat", { method: "POST", body: JSON.stringify({ agent: mention.agent, message: mention.message }), timeout: 60_000 })
+        .then((r) => {
+          const extra = (r.done || []).length ? `\n${r.done.join("\n")}` : "";
+          const ask = (r.pending || []).length ? "\n(Abri a Central de Agentes para você confirmar.)" : "";
+          setResponse(`${r.icon} ${r.label}: ${r.reply}${extra}${ask}`);
+          window.dispatchEvent(new CustomEvent("jarvis-agent-reply", { detail: { agent: r.agent } }));
+          if ((r.pending || []).length) setAgentsOpen({ agent: r.agent });
+          if (r.holo) setHolo({ kind: "apresentacao", query: r.holo, at: Date.now() });
+        })
+        .catch((err) => {
+          setResponse("");
+          setError(err.message);
+        });
+      return;
+    }
     // V7.1: com o holograma aberto, "próximo passo", "repete", "pausa", "fecha" controlam a tela
     if (holoRef.current) {
       const cmd = holoCommand(text);
@@ -3006,7 +3029,14 @@ export default function App() {
           onPrefetch={(texts) => api("/api/tts/prefetch", { method: "POST", body: JSON.stringify({ texts }) }).catch(() => {})}
         />
       )}
-      {agentsOpen && <AgentsHub api={api} onSend={(t) => send(t)} onClose={() => setAgentsOpen(false)} />}
+      {agentsOpen && (
+        <AgentsHub
+          api={api}
+          initialAgent={agentsOpen.agent || "mercado"}
+          onClose={() => setAgentsOpen(false)}
+          onOpenHolo={(tema) => { setAgentsOpen(false); setResponseCards([]); setHolo({ kind: "apresentacao", query: tema, at: Date.now() }); }}
+        />
+      )}
       {cameraWin && (
         <CameraWindow
           api={api}
@@ -3412,7 +3442,7 @@ export default function App() {
           setGodsEyeOpen(true);
           soundManager.playSuccess();
         }}
-        onOpenAgents={() => setAgentsOpen(true)}
+        onOpenAgents={() => setAgentsOpen({ agent: "mercado" })}
         onCommand={(cmd) => {
           if (cmd === "modo sentinela") {
             enterSentinelMode();

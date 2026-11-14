@@ -164,6 +164,16 @@ const CLOUD_AGENTS = [
     examples: ["abre o YouTube e pesquisa receita de bolo", "procura lofi no YouTube"] },
 ];
 
+// V7.9: os 6 agentes de conversa (fora de casa só Mercado, Secretário e Professor respondem; os outros pedem o PC)
+const CLOUD_CHAT_AGENTS = [
+  { id: "rotas", label: "Agente de rotas", icon: "🧭", desc: "Rotas e lugares salvos (com o PC ligado).", examples: ["quero ir para o trabalho"], aliases: ["rotas", "rota", "mapa"], pc: true },
+  { id: "pesquisa", label: "Agente de pesquisa", icon: "🔎", desc: "Pesquisa na internet e no YouTube (com o PC ligado).", examples: ["procura receita de pão no YouTube"], aliases: ["pesquisa", "busca", "youtube"], pc: true },
+  { id: "mercado", label: "Agente de mercado", icon: "🛒", desc: "Lista de compras, receitas com o que tem em casa e quantidades.", examples: ["monta a lista para um churrasco de 10 pessoas", "o que falta comprar?"], aliases: ["mercado", "compras", "lista"] },
+  { id: "financas", label: "Agente de finanças", icon: "💰", desc: "Gastos e entradas do mês (com o PC ligado).", examples: ["quanto gastei esse mês?"], aliases: ["financas", "finanças", "dinheiro", "gastos"], pc: true },
+  { id: "secretario", label: "Agente secretário", icon: "📅", desc: "Lembretes e tarefas (a agenda do Google com o PC ligado).", examples: ["me lembra de pagar a luz dia 20", "quais são minhas tarefas?"], aliases: ["secretario", "secretário", "agenda"] },
+  { id: "professor", label: "Agente professor", icon: "🧠", desc: "Explica matérias (com o Holograma) e faz perguntas tipo prova.", examples: ["me explica frações", "me faz 3 perguntas sobre a Revolução Francesa"], aliases: ["professor", "prof", "estudos"] },
+];
+
 // V6.7.4: música no próprio celular (só o app Android sabe apertar os botões de mídia e abrir o Spotify)
 function canMusic() {
   try {
@@ -277,7 +287,11 @@ async function route(method, path, query, body) {
       return ok({ items: agenda(await refresh()) });
     // V6.8.3: Central de Agentes fora de casa (o catálogo é o mesmo do PC: backend/modules/agents.py)
     case "GET /api/agents":
-      return ok({ agents: CLOUD_AGENTS, places: (await refresh()).lugares || {} });
+      return ok({ agents: CLOUD_AGENTS, places: (await refresh()).lugares || {}, chat_agents: CLOUD_CHAT_AGENTS });
+    case "POST /api/agents/chat": // V7.9: conversa direta com um agente, fora de casa
+      return ok(await cloud("/agent-chat", { method: "POST", body: { agent: body.agent, message: body.message }, timeout: 45000 }));
+    case "POST /api/agents/chat/confirm":
+      return ok(await cloud("/agent-chat/confirm", { method: "POST", body: { agent: body.agent, acao: body.acao } }));
     case "POST /api/agents/places": {
       await change({ op: "place_set", nome: body.name, endereco: body.address });
       return ok({ places: (await refresh()).lugares || {} });
@@ -368,6 +382,9 @@ async function route(method, path, query, body) {
     if (a) await change({ op: "alarm_remove", hora: a.hora, rotulo: a.rotulo });
     return ok({ status: "ok" });
   }
+  m = path.match(/^\/api\/agents\/chat\/([a-zà-ú@]+)$/i); // V7.9: conversa salva de um agente
+  if (m && method === "GET") return ok(await cloud(`/agent-chat/history?agent=${encodeURIComponent(m[1])}`));
+  if (m && method === "DELETE") return ok(await cloud("/agent-chat/clear", { method: "POST", body: { agent: m[1] } }));
   if (path.startsWith("/api/water")) {
     const st = await refresh();
     emit({ type: "water_updated", data: water(st) });

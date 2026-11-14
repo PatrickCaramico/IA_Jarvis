@@ -1,6 +1,6 @@
 # JARVIS — Comandos do dia a dia
 
-**Versão do projeto:** 7.8.0 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
+**Versão do projeto:** 7.9.0 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
 
 > Montado a partir do código do projeto. Se algum comando não responder como descrito, me avise que eu ajusto o guia.
 > Para a lista técnica de rotas, veja [API.md](API.md); para o `.env`, [CONFIGURACAO.md](CONFIGURACAO.md).
@@ -350,6 +350,21 @@ Avisos automáticos (gatilhos): chuva amanhã (à noite), jogo começando (com o
 | Aparelho que já usava o JARVIS (até 14 dias depois da atualização) | Ganha a própria chave sozinho, sem escanear de novo. |
 | Configurações > Segurança | Lista dos aparelhos com **REMOVER**, **DESCONECTAR TODOS E TROCAR O QR CODE**, **exigir aprovação agora** e o que aconteceu nas últimas 24 h. |
 | 5 tentativas erradas em 10 min | Aquele aparelho fica bloqueado por 15 min (dobra a cada vez), com aviso por voz, notificação no celular e registro no 🩺 Diagnóstico. |
+
+### Conversa com os agentes (V7.9)
+
+| Fale / digite | Agente |
+|---|---|
+| `@mercado monta a lista do churrasco` · "agente mercado, o que falta comprar?" | 🛒 Mercado: lista de compras, receitas, quantidades |
+| `@financas gastei 54,90 no mercado` · "pergunta pro agente de finanças quanto gastei no mês" | 💰 Finanças: gastos, entradas, resumo do mês |
+| `@secretario marca dentista sexta às 10` · "o que tenho amanhã?" | 📅 Secretário: agenda, lembretes, tarefas |
+| `@professor me explica frações` · "fala com o professor: me faz 3 perguntas sobre…" | 🧠 Professor: explicações, Holograma, perguntas tipo prova |
+| `@rotas quero ir para o trabalho` | 🧭 Rotas |
+| `@pesquisa procura receita de pão no YouTube` | 🔎 Pesquisa |
+
+- Digitar `@` no campo de conversa mostra a lista dos agentes.
+- 🤖 AGENTES abre a Central com **uma aba por agente**; cada um lembra as últimas 30 mensagens e tem o botão **LIMPAR**.
+- Ações maiores esperam o **✓ CONFIRMAR**.
 
 ### Foto da galeria (V7.8)
 
