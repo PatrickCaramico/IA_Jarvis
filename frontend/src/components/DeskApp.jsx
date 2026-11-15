@@ -1,5 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import RoboAvatar, { ACCESSORIES, DEFAULT_AVATAR, EXPRESSIONS } from "./RoboAvatar.jsx";
+import RoboAvatar, { DEFAULT_AVATAR, EXPRESSIONS, WARDROBE } from "./RoboAvatar.jsx";
 import NowPlaying, { useNowPlaying } from "./NowPlaying.jsx";
 import { useConversationLog } from "./HudLayout.jsx";
 import { DESK_COLORS, FUNCTIONS, greeting, hexToRgb, isLight, stateText } from "../utils/desk.js";
@@ -14,7 +14,7 @@ const MemoryMap = lazy(() => import("./DeskMemoryMap.jsx"));
 
 const NAV = [
   ["inicio", "⌂", "Início"], ["conversa", "💬", "Conversa"], ["memoria", "✳", "Memória"], ["tarefas", "☰", "Tarefas"],
-  ["lembretes", "🔔", "Lembretes"], ["habitos", "◆", "Hábitos"], ["timers", "⏱", "Timers"], ["musica", "♫", "Música"],
+  ["lembretes", "🔔", "Lembretes"], ["missoes", "🎯", "Missões"], ["habitos", "◆", "Hábitos"], ["timers", "⏱", "Timers"], ["musica", "♫", "Música"],
   ["copiados", "⧉", "Copiados"], ["rotinas", "⚡", "Rotinas"], ["meupc", "🖥", "Meu PC"],
 ];
 const SETTINGS = [
@@ -74,7 +74,7 @@ function ChatBox({ log, send, busy, onMic, listening, interim, compact = false }
 }
 
 // ------------------------------------------------------------------ seções
-function Home({ api, ctx, avatar, setSection }) {
+function Home({ api, ctx, avatar, tema, setSection }) {
   const [tasks] = useLoad(api, "/api/tasks");
   const [rems] = useLoad(api, "/api/reminders?only_pending=true");
   const [habits] = useLoad(api, "/api/desk/habits");
@@ -82,8 +82,9 @@ function Home({ api, ctx, avatar, setSection }) {
   return (
     <div className="dk-home">
       <Card className="dk-hero">
-        <RoboAvatar avatar={avatar} state={ctx.orbState} size={96} />
+        <RoboAvatar avatar={avatar} tema={tema} state={ctx.orbState} size={96} />
         <div>
+          {tema && <span className="dk-pill dk-theme-pill">🎉 Tema: {tema.nome}</span>}
           <h2>{greeting(new Date())}, {ctx.userName || "senhor"}!</h2>
           <p>Escreva, fale, ou diga "{ctx.aiName}, …"</p>
           <div className="dk-row">
@@ -96,6 +97,10 @@ function Home({ api, ctx, avatar, setSection }) {
       <div className="dk-home-grid">
         <Card title="Conversa" icon="💬" className="dk-span2">
           <ChatBox log={ctx.log} send={ctx.send} onMic={ctx.onToggleMic} listening={ctx.listening} interim={ctx.interim} compact />
+        </Card>
+        <Card title="Missões de hoje" icon="🎯" right={ctx.missions && <span className="dk-pill">🔥 {ctx.missions.ofensiva.atual}</span>} className="dk-span2">
+          <MissionList api={api} data={ctx.missions} onChange={ctx.setMissions} compact />
+          <button type="button" className="dk-link" onClick={() => setSection("missoes")}>Ver missões e desafio da semana →</button>
         </Card>
         <Card title="Música" icon="♫"><MusicNow api={api} send={ctx.send} /></Card>
         <button type="button" className="dk-stat" onClick={() => setSection("lembretes")}><b>{(rems?.reminders || []).length}</b><span>lembretes</span></button>
@@ -113,6 +118,85 @@ function LevelBox({ level }) {
       <small>NÍVEL {level.nivel}</small>
       <div className="dk-bar"><b style={{ width: `${level.pct}%` }} /></div>
       <span>{level.no_nivel}/{level.para_subir} XP</span>
+    </div>
+  );
+}
+
+// V8.1 (ideia 7): missões do dia, desafio da semana e ofensiva
+const MISSION_KIND = { uso: ["⚡", "Usar o JARVIS"], sobre: ["💭", "Sobre você"], bem: ["🌿", "Bem-estar"], semana: ["🏆", "Desafio da semana"] };
+
+function MissionRow({ api, m, onChange, cloud }) {
+  const [text, setText] = useState("");
+  const [msg, setMsg] = useState("");
+  const [ico, kind] = MISSION_KIND[m.tipo] || ["🎯", ""];
+  const run = async (path, body) => {
+    try {
+      const r = await api(path, { method: "POST", body: body ? JSON.stringify(body) : undefined });
+      onChange?.(r.missoes || r);
+      setMsg("");
+    } catch (err) {
+      setMsg(err.message);
+    }
+  };
+  const pct = Math.min(100, Math.round(((m.progresso || 0) / (m.meta || 1)) * 100));
+  return (
+    <div className={`dk-mission is-${m.tipo}${m.feita ? " is-done" : ""}`}>
+      <span className="dk-mission-ico" aria-hidden="true">{m.feita ? "✓" : ico}</span>
+      <div className="dk-mission-body">
+        <small>{kind} · +{m.xp} XP</small>
+        <b>{m.texto}</b>
+        {!m.feita && (m.tipo === "uso" || m.tipo === "semana") && m.meta > 1 && (
+          <div className="dk-bar is-thin" aria-label={`${m.progresso} de ${m.meta}`}><b style={{ width: `${pct}%` }} /><span>{m.progresso}/{m.meta}</span></div>
+        )}
+        {!m.feita && m.tipo === "sobre" && !cloud && (
+          <form className="dk-add" onSubmit={(e) => { e.preventDefault(); if (text.trim()) run("/api/desk/missions/answer", { id: m.id, resposta: text.trim() }); }}>
+            <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Sua resposta (vai para a memória)" aria-label={m.texto} maxLength={300} />
+            <button type="submit" className="dk-btn is-main" disabled={!text.trim()}>➤</button>
+          </form>
+        )}
+        {!m.feita && m.tipo === "sobre" && cloud && <small className="dk-muted">Responda no PC (vai para a memória).</small>}
+        {!m.feita && m.tipo === "uso" && m.meta === 1 && <small className="dk-muted">Completa sozinha quando você fizer.</small>}
+        {msg && <p className="dk-err" role="alert">{msg}</p>}
+      </div>
+      {!m.feita && m.tipo === "bem" && <button type="button" className="dk-btn" onClick={() => run(`/api/desk/missions/${m.id}/done`)}>FEITO</button>}
+    </div>
+  );
+}
+
+function MissionList({ api, data, onChange, compact = false }) {
+  if (!data) return <p className="dk-muted">Carregando missões…</p>;
+  return (
+    <div className="dk-missions">
+      {data.itens.map((m) => <MissionRow key={m.id} api={api} m={m} onChange={onChange} cloud={data.cloud} />)}
+      {!compact && data.semana && <MissionRow api={api} m={data.semana} onChange={onChange} cloud={data.cloud} />}
+    </div>
+  );
+}
+
+function Streak({ of }) {
+  if (!of) return null;
+  return (
+    <div className="dk-streak">
+      <span className={`dk-flame${of.feita_hoje ? " is-lit" : ""}`} aria-hidden="true">🔥</span>
+      <div>
+        <b>{of.atual} {of.atual === 1 ? "dia" : "dias"} de ofensiva</b>
+        <small>Recorde: {of.recorde} · {of.feita_hoje ? "hoje já conta ✓" : "faça 1 missão hoje para manter"}</small>
+      </div>
+      <div className="dk-shields" title="Protetores: seguram a ofensiva se você perder um dia (ganha 1 por semana, guarda até 2)">
+        {Array.from({ length: of.max_protetores || 2 }, (_, i) => <i key={i} className={i < of.protetores ? "is-on" : ""}>🛡</i>)}
+      </div>
+    </div>
+  );
+}
+
+function Missions({ api, data, onChange }) {
+  return (
+    <div className="dk-stack">
+      <Card title="Ofensiva" icon="🔥"><Streak of={data?.ofensiva} /></Card>
+      <Card title="Missões de hoje" icon="🎯" right={data && <span className="dk-pill">{data.feitas}/{data.total} hoje</span>}>
+        <p className="dk-muted">Todo dia aparecem 3 missões novas. Cada uma dá XP; o desafio da semana vale bem mais. Itens novos do guarda-roupa liberam por nível e por ofensiva.</p>
+        <MissionList api={api} data={data} onChange={onChange} />
+      </Card>
     </div>
   );
 }
@@ -384,6 +468,8 @@ function Personalize({ api, cfg, setCfg, aiName, onRename }) {
   const [msg, setMsg] = useState("");
   const [name, setName] = useState(aiName);
   const av = { ...DEFAULT_AVATAR, ...(cfg?.avatar || {}) };
+  const [tab, setTab] = useState(WARDROBE[0][0]);
+  const status = cfg?.guarda_roupa || {};
   const save = async (patch) => {
     const optimistic = { ...cfg, ...patch, avatar: { ...av, ...(patch.avatar || {}) } };
     setCfg(optimistic);
@@ -404,7 +490,8 @@ function Personalize({ api, cfg, setCfg, aiName, onRename }) {
     <Card title={`Personalizar o ${aiName}`} icon="🎨">
       <div className="dk-perso">
         <div className="dk-perso-preview">
-          <RoboAvatar avatar={av} size={170} />
+          <RoboAvatar avatar={av} tema={cfg?.tema} size={170} />
+          {cfg?.tema && <p className="dk-muted dk-center">🎉 Tema de {cfg.tema.nome} por cima do seu visual (volta sozinho depois da data).</p>}
           <div className="dk-row is-wrap is-center">
             {EXPRESSIONS.map(([k, label]) => <button type="button" key={k} className={`dk-chip${av.expressao === k ? " is-on" : ""}`} onClick={() => save({ avatar: { expressao: k } })}>{label}</button>)}
           </div>
@@ -417,9 +504,27 @@ function Personalize({ api, cfg, setCfg, aiName, onRename }) {
           <div className="dk-field"><span>Corpo</span><Swatches value={av.corpo} colors={["#e8f4ff", "#ffffff", "#cbd5e1", "#fde68a", "#fecaca", "#bbf7d0", "#ddd6fe", "#1f2937"]} onPick={(c) => save({ avatar: { corpo: c } })} /></div>
           <div className="dk-field"><span>Visor</span><Swatches value={av.visor} colors={["#0b1220", "#111827", "#1e1b4b", "#052e16", "#3b0764", "#450a0a"]} onPick={(c) => save({ avatar: { visor: c } })} /></div>
           <div className="dk-field"><span>Olhos</span><Swatches value={av.olhos} colors={DESK_COLORS} onPick={(c) => save({ avatar: { olhos: c } })} /></div>
-          <div className="dk-field"><span>Acessório</span>
-            <div className="dk-row is-wrap">{ACCESSORIES.map(([k, label]) => <button type="button" key={k} className={`dk-chip${av.acessorio === k ? " is-on" : ""}`} onClick={() => save({ avatar: { acessorio: k } })}>{label}</button>)}</div>
+          <div className="dk-field"><span>Guarda-roupa</span>
+            <div className="dk-tabs" role="tablist">
+              {WARDROBE.map(([slot, label]) => <button type="button" role="tab" key={slot} aria-selected={tab === slot} className={tab === slot ? "is-on" : ""} onClick={() => setTab(slot)}>{label}</button>)}
+            </div>
+            <div className="dk-wardrobe" role="tabpanel">
+              {(WARDROBE.find(([slot]) => slot === tab)?.[2] || []).map(([k, label]) => {
+                const st = (status[tab] || []).find((i) => i.id === k);
+                const locked = st && !st.liberado;
+                return (
+                  <button type="button" key={k} className={`dk-ward${av[tab] === k ? " is-on" : ""}${locked ? " is-locked" : ""}`} disabled={locked}
+                    onClick={() => save({ avatar: { [tab]: k } })} title={locked ? `Libera com ${st.precisa}` : label}>
+                    <RoboAvatar avatar={{ ...av, [tab]: k, ...(tab === "olhos_forma" ? { expressao: "feliz" } : {}) }} size={54} />
+                    <span>{label}</span>
+                    {locked && <small>🔒 {st.precisa}</small>}
+                  </button>
+                );
+              })}
+            </div>
           </div>
+          <label className="dk-field dk-toggle-row"><input type="checkbox" checked={av.temas !== false} onChange={(e) => save({ avatar: { temas: e.target.checked } })} />
+            <span>Temas das datas (Natal, Halloween, Carnaval e dia de jogo do Palmeiras)</span></label>
           <div className="dk-field"><span>Cor do app</span><Swatches value={cfg?.cor || "#22d3ee"} colors={DESK_COLORS} onPick={(c) => save({ cor: c })} /></div>
           {msg && <p className="dk-err" role="alert">{msg}</p>}
         </div>
@@ -568,6 +673,8 @@ export default function DeskApp(props) {
   });
   const [cfg, setCfg] = useState(null);
   const [level, setLevel] = useState(null);
+  const [missions, setMissions] = useState(null);
+  const [toast, setToast] = useState("");
   const [menu, setMenu] = useState(false);
   const [search, setSearch] = useState("");
   const log = useConversationLog(userText, response, error, responseCards);
@@ -575,20 +682,38 @@ export default function DeskApp(props) {
   const loadCfg = useCallback(() => {
     api("/api/desk").then(setCfg).catch(() => setCfg({ avatar: DEFAULT_AVATAR, cor: "#22d3ee", ilha: {} }));
     api("/api/desk/xp").then(setLevel).catch(() => {});
+    api("/api/desk/missions").then(setMissions).catch(() => {});
   }, [api]);
   useEffect(() => { loadCfg(); }, [loadCfg]);
+  const refreshProgress = useCallback(() => {
+    api("/api/desk/xp").then(setLevel).catch(() => {});
+    api("/api/desk/missions").then(setMissions).catch(() => {});
+  }, [api]);
+  const onMissions = useCallback((m) => {
+    if (m && m.itens) setMissions(m);
+    api("/api/desk/xp").then(setLevel).catch(() => {});
+  }, [api]);
+  useEffect(() => { // V8.1: "Item novo liberado: capa de herói!"
+    const novos = missions?.novos || [];
+    if (!novos.length) return undefined;
+    setToast(`Item novo liberado: ${novos.map((n) => n.nome).join(", ")}!`);
+    api("/api/desk/missions/seen", { method: "POST" }).catch(() => {});
+    api("/api/desk").then(setCfg).catch(() => {});
+    const t = setTimeout(() => setToast(""), 6000);
+    return () => clearTimeout(t);
+  }, [missions?.novos, api]);
   useEffect(() => {
     const goTo = (e) => typeof e.detail === "string" && setSection(e.detail);
     window.addEventListener("jarvis-desk-go", goTo);
     return () => window.removeEventListener("jarvis-desk-go", goTo);
   }, []);
   useEffect(() => {
-    const t = setInterval(() => api("/api/desk/xp").then(setLevel).catch(() => {}), 30_000);
+    const t = setInterval(refreshProgress, 30_000);
     return () => clearInterval(t);
-  }, [api]);
+  }, [refreshProgress]);
   useEffect(() => {
-    if (response) api("/api/desk/xp").then(setLevel).catch(() => {});
-  }, [response, api]);
+    if (response) refreshProgress();
+  }, [response, refreshProgress]);
   useEffect(() => {
     try {
       localStorage.setItem("jarvis.desk.section", section);
@@ -600,7 +725,7 @@ export default function DeskApp(props) {
   const accent = cfg?.cor || "#22d3ee";
   const style = useMemo(() => ({ "--dk-accent": accent, "--dk-accent-rgb": hexToRgb(accent), "--dk-on-accent": isLight(accent) ? "#06121f" : "#fff" }), [accent]);
   const orbState = listening ? "listening" : jarvisState;
-  const ctx = { log, send, onToggleMic, listening, interim, userName, aiName, orbState, level };
+  const ctx = { log, send, onToggleMic, listening, interim, userName, aiName, orbState, level, missions, setMissions: onMissions };
   const go = (id) => {
     setSection(id);
     setMenu(false);
@@ -614,7 +739,8 @@ export default function DeskApp(props) {
     case "memoria": body = <Suspense fallback={<Card title="Memória" icon="✳"><p className="dk-muted">Carregando…</p></Card>}><MemoryMap api={api} accent={accent} /></Suspense>; break;
     case "tarefas": body = <Tasks api={api} />; break;
     case "lembretes": body = <Reminders api={api} />; break;
-    case "habitos": body = <Habits api={api} onChange={() => api("/api/desk/xp").then(setLevel).catch(() => {})} />; break;
+    case "habitos": body = <Habits api={api} onChange={refreshProgress} />; break;
+    case "missoes": body = <Missions api={api} data={missions} onChange={onMissions} />; break;
     case "timers": body = <Timers api={api} send={send} />; break;
     case "musica": body = <Music api={api} send={send} />; break;
     case "copiados": body = <Clips api={api} />; break;
@@ -627,18 +753,24 @@ export default function DeskApp(props) {
     case "ilha": body = <Island api={api} cfg={cfg} setCfg={setCfg} />; break;
     case "celular": body = <LinkCard title="Celular e agendas" icon="📱" text="Pareie o celular pelo QR, conecte a agenda do Google e veja os aparelhos." actions={[["📱 QR DO CELULAR", onOpenQr], ["⚙ AGENDA E CONTAS", onOpenSettings]]} />; break;
     case "rosto": body = <LinkCard title="Proteção com rosto" icon="🙂" text="O bloqueio reconhece o seu rosto (e o PIN como alternativa)." actions={[["🔒 BLOQUEAR AGORA", onLock], ["⚙ SEGURANÇA", onOpenSettings]]} />; break;
-    default: body = <Home api={api} ctx={ctx} avatar={cfg?.avatar} setSection={go} />;
+    default: body = <Home api={api} ctx={ctx} avatar={cfg?.avatar} tema={cfg?.tema} setSection={go} />;
   }
 
   return (
     <div className={`dk-root${menu ? " is-menu" : ""}`} style={style} role="application" aria-label="JARVIS, Modo Desk">
       <aside className="dk-side">
         <div className="dk-brand">
-          <RoboAvatar avatar={cfg?.avatar} state={orbState} size={44} />
+          <RoboAvatar avatar={cfg?.avatar} tema={cfg?.tema} state={orbState} size={44} />
           <div>
             <b>{aiName}</b>
             <small><i className={`dk-dot is-${orbState}`} />{stateText(orbState)}</small>
             {level && <div className="dk-mini-level"><span>Nv {level.nivel}</span><i><b style={{ width: `${level.pct}%` }} /></i></div>}
+            {missions && (
+              <button type="button" className={`dk-mini-streak${missions.ofensiva.feita_hoje ? " is-lit" : ""}`} onClick={() => go("missoes")}
+                title={`Ofensiva: ${missions.ofensiva.atual} dias (recorde ${missions.ofensiva.recorde})`}>
+                🔥 {missions.ofensiva.atual} <small>recorde {missions.ofensiva.recorde}</small>
+              </button>
+            )}
           </div>
           <button type="button" className="dk-menu-btn" onClick={() => setMenu((v) => !v)} aria-label="Menu" aria-expanded={menu}>☰</button>
         </div>
@@ -665,6 +797,7 @@ export default function DeskApp(props) {
         </div>
       </aside>
       <main className="dk-main">{body}</main>
+      {toast && <div className="dk-toast" role="status">🎁 {toast}</div>}
     </div>
   );
 }

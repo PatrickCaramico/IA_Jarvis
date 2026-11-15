@@ -427,6 +427,51 @@
 
 ---
 
+### Ideia 7: Robô ainda mais personalizado, Missões e Ofensiva
+
+**O que foi pedido:** deixar o robô do Modo Desk mais personalizável (na linha do gorro de Natal) e criar um botão de **Missões**: tarefas novas todo dia, ligadas ao uso do JARVIS e ao que ele aprende sobre você, para ir subindo de nível, com uma **ofensiva** de dias seguidos.
+
+#### ✅ Desenho fechado (15/11/2026)
+
+**Decisões do Patrick**
+| Tema | Decisão |
+|---|---|
+| Visual novo | **Tudo:** mais chapéus e acessórios, roupinhas, temas automáticos nas datas, olhos e efeitos |
+| Missões | **Todos os tipos:** usar o JARVIS, ensinar sobre você, bem-estar e um desafio da semana |
+| Ofensiva | **Com protetor:** sobe a cada dia com pelo menos 1 missão completa; 1 protetor por semana salva um dia esquecido |
+| Recompensas | **XP + itens desbloqueáveis** por nível e por ofensiva |
+
+**Como vai ficar**
+1. **Guarda-roupa do robô (Personalizar)**, em abas:
+   - **Chapéus:** gorro de Natal, cartola, boné, chapéu de bruxa, tiara de gatinho, coroa e headset gamer;
+   - **Rosto:** óculos, óculos escuros, bigode e laço;
+   - **Roupas:** cachecol, gravata-borboleta, capa de herói, camisa do time e colete de armadura;
+   - **Olhos:** arco-reator, coração, estrela e pixel;
+   - **Efeitos:** brilho, faíscas e neve caindo.
+   - Os itens bloqueados aparecem com cadeado e dizem como liberar ("Nível 5", "7 dias de ofensiva").
+2. **Temas nas datas** (pode desligar):
+   - no **Natal**, o gorro e a neve; no **Halloween**, a abóbora; no **Carnaval**, o confete;
+   - em **dia de jogo do Palmeiras**, a camisa do time.
+   - É só por cima do visual escolhido: passada a data, volta ao normal.
+3. **🎯 Missões** (nova seção no Modo Desk e um cartão no Início)
+   - **3 missões novas por dia**, sorteadas sem repetir as do dia anterior:
+     - uma de **usar o JARVIS**: conversar, concluir tarefas, marcar um hábito, pedir um holograma, usar o Olho de Deus…;
+     - uma de **ensinar sobre você**: ele faz uma pergunta ("qual sua comida favorita?"), você responde ali mesmo e ele guarda na Memória;
+     - uma de **bem-estar**: beber água, fazer uma pausa, caminhar…;
+   - as missões de uso são marcadas **sozinhas** quando você faz a ação; as de bem-estar você marca;
+   - **desafio da semana**: uma missão maior (ex.: "5 dias com todos os hábitos"), com bastante XP.
+4. **🔥 Ofensiva**
+   - sobe 1 a cada dia em que você completa **pelo menos 1 missão**;
+   - você ganha **1 protetor por semana** (guarda até 2), que salva a ofensiva automaticamente se você esquecer um dia;
+   - aparece na barra lateral ao lado do nível, com o recorde.
+5. **Recompensas:** cada missão dá XP (o desafio da semana dá mais); subir de nível e manter a ofensiva libera itens do guarda-roupa, com aviso "Item novo liberado: capa de herói!".
+6. **Voz:** "quais são minhas missões?" e "como está minha ofensiva?".
+7. **Fora de casa:** dá para ver as missões e marcar as de bem-estar pelo celular; o PC aplica na sincronização.
+
+**Status:** implementado na versão 8.1.0.
+
+---
+
 ## Ideias extras do Claude (para avaliar)
 
 | # | Ideia | Por que vale |
@@ -461,6 +506,7 @@ Itens que já estavam na lista e continuam **em espera**:
 ## Anotações da conversa
 _Espaço para ir anotando as decisões de cada ideia._
 
+- **15/11:** Ideia 7 (guarda-roupa do robô, Missões e Ofensiva) desenhada e decidida.
 - **15/11:** Ideia 6 publicada (JARVIS 8.0.0).
 - **15/11:** Ideia 6 (Modo Desk, a partir de 2 vídeos) desenhada e decidida: robô JARVIS, JARVIS.exe com ilha no topo, Hábitos, Copiados, Nível/XP, Memória em mapa e cor escolhida pelo usuário.
 - **15/11:** Ideia 5 concluída (7.14.0). Bloqueio volta ao clássico com a verificação nova do rosto (pedido do Patrick).

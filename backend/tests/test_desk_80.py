@@ -17,7 +17,7 @@ def test_config_validates_everything():
     c = desk.update_config({"avatar": {"corpo": "#FF0000", "olhos": "vermelho", "expressao": "dormindo", "acessorio": "gorro"},
                             "cor": "#a3e635", "ilha": {"tamanho": "grande", "atalho": "Ctrl+Space!!"}})
     assert c["avatar"]["corpo"] == "#ff0000" and c["avatar"]["olhos"] == "#22d3ee"  # cor inválida ignorada
-    assert c["avatar"]["expressao"] == "dormindo" and c["avatar"]["acessorio"] == "gorro"
+    assert c["avatar"]["expressao"] == "dormindo" and c["avatar"]["chapeu"] == "gorro"  # V8.1: acessório virou chapéu
     assert c["cor"] == "#a3e635" and c["ilha"]["tamanho"] == "grande" and c["ilha"]["atalho"] == "PageDown"
 
 

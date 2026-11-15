@@ -27,8 +27,21 @@ HEX = re.compile(r"^#[0-9a-fA-F]{6}$")
 EXPRESSIONS = ("feliz", "pensando", "falando", "ouvindo", "dormindo", "surpreso", "piscando")
 ACCESSORIES = ("nenhum", "fone", "oculos", "gorro", "coroa")
 ISLAND_SIZES = ("pequena", "media", "grande")
+# V8.1: GUARDA-ROUPA do robô (ideia 7). Cada item: (id, None = liberado | {"nivel": n} | {"ofensiva": dias}).
+WARDROBE: dict[str, list[tuple[str, dict | None]]] = {
+    "chapeu": [("nenhum", None), ("gorro", None), ("bone", None), ("fone", None), ("cartola", {"nivel": 3}),
+               ("gatinho", {"nivel": 5}), ("bruxa", {"ofensiva": 7}), ("headset", {"nivel": 8}), ("coroa", {"nivel": 10})],
+    "rosto": [("nenhum", None), ("oculos", None), ("laco", None), ("bigode", {"nivel": 2}), ("oculos_escuros", {"nivel": 4})],
+    "roupa": [("nenhuma", None), ("cachecol", None), ("gravata", {"nivel": 2}), ("camisa", {"nivel": 3}),
+              ("capa", {"ofensiva": 30}), ("armadura", {"nivel": 15})],
+    "olhos_forma": [("reator", None), ("coracao", {"nivel": 2}), ("estrela", {"ofensiva": 3}), ("pixel", {"nivel": 6})],
+    "efeito": [("nenhum", None), ("brilho", {"nivel": 3}), ("neve", {"nivel": 5}), ("faiscas", {"ofensiva": 14})],
+}
+WARDROBE_DEFAULT = {"chapeu": "nenhum", "rosto": "nenhum", "roupa": "nenhuma", "olhos_forma": "reator", "efeito": "nenhum"}
+OLD_ACCESSORY = {"fone": ("chapeu", "fone"), "gorro": ("chapeu", "gorro"), "coroa": ("chapeu", "coroa"), "oculos": ("rosto", "oculos")}
 DEFAULT = {
-    "avatar": {"corpo": "#e8f4ff", "visor": "#0b1220", "olhos": "#22d3ee", "expressao": "feliz", "acessorio": "nenhum"},
+    "avatar": {"corpo": "#e8f4ff", "visor": "#0b1220", "olhos": "#22d3ee", "expressao": "feliz", "acessorio": "nenhum",
+               **WARDROBE_DEFAULT, "temas": True},
     "cor": "#22d3ee",
     "ilha": {"ligada": True, "tamanho": "media", "atalho": "PageDown"},
     "xp": {"total": 0, "hoje": {}, "eventos": []},
@@ -57,6 +70,18 @@ def _load() -> dict:
             out[k].update(v)
         elif k in out:
             out[k] = v
+    return _migrate(out)
+
+
+def _migrate(out: dict) -> dict:
+    """8.0 tinha um só "acessorio": vira chapéu ou rosto do guarda-roupa (uma vez)."""
+    av = out["avatar"]
+    old = av.get("acessorio")
+    if old in OLD_ACCESSORY:
+        slot, item = OLD_ACCESSORY[old]
+        if av.get(slot) in (None, WARDROBE_DEFAULT[slot]):
+            av[slot] = item
+        av["acessorio"] = "nenhum"
     return out
 
 
@@ -66,13 +91,86 @@ def _save(data: dict) -> None:
 
 
 # --------------------------------------------------------------------------- aparência
+def _streak_record() -> int:
+    try:
+        from modules import desk_missions
+
+        return desk_missions.streak_record()
+    except Exception:  # noqa: BLE001
+        return 0
+
+
+def unlock_status(level: int, record: int) -> dict:
+    """{slot: [{"id", "liberado", "precisa"}]} (precisa = "Nível 5" / "7 dias de ofensiva")."""
+    out = {}
+    for slot, items in WARDROBE.items():
+        out[slot] = []
+        for item, req in items:
+            ok = req is None or level >= req.get("nivel", 0) and record >= req.get("ofensiva", 0)
+            need = "" if req is None else f"Nível {req['nivel']}" if "nivel" in req else f"{req['ofensiva']} dias de ofensiva"
+            out[slot].append({"id": item, "liberado": bool(ok), "precisa": need})
+    return out
+
+
+def unlocked_ids(level: int, record: int) -> set[str]:
+    return {f"{slot}:{i['id']}" for slot, items in unlock_status(level, record).items() for i in items if i["liberado"]}
+
+
+def _easter(year: int) -> date:
+    a, b, c = year % 19, year // 100, year % 100
+    d, e = b // 4, b % 4
+    f = (b + 8) // 25
+    g = (b - f + 1) // 3
+    h = (19 * a + b - d - g + 15) % 30
+    i, k = c // 4, c % 4
+    l = (32 + 2 * e + 2 * i - h - k) % 7
+    m = (a + 11 * h + 22 * l) // 451
+    month = (h + l - 7 * m + 114) // 31
+    day = ((h + l - 7 * m + 114) % 31) + 1
+    return date(year, month, day)
+
+
+def game_day(today: date) -> bool:
+    """Dia de jogo do time (pelo cache do Modo Torcedor, sem buscar na internet)."""
+    try:
+        from modules import sports_provider
+
+        cache = sports_provider.load_fan_cache()
+        for m in sports_provider._matches(cache, "palmeiras"):
+            dt = sports_provider._parse_dt(m.get("date"))
+            if dt and dt.date() == today and m.get("status") != "postponed":
+                return True
+    except Exception:  # noqa: BLE001
+        pass
+    return False
+
+
+def season_theme(today: date | None = None) -> dict | None:
+    """Tema das datas (só por cima do visual escolhido): Natal, Halloween, Carnaval e dia de jogo."""
+    today = today or date.today()
+    if (today.month == 12 and today.day <= 26):
+        return {"nome": "Natal", "chapeu": "gorro", "efeito": "neve"}
+    if today.month == 10 and today.day >= 25:
+        return {"nome": "Halloween", "chapeu": "abobora", "efeito": "brilho"}
+    carnaval = _easter(today.year) - timedelta(days=47)  # terça de Carnaval
+    if carnaval - timedelta(days=3) <= today <= carnaval + timedelta(days=1):
+        return {"nome": "Carnaval", "efeito": "confete"}
+    if game_day(today):
+        return {"nome": "Dia de jogo", "roupa": "camisa"}
+    return None
+
+
 def config() -> dict:
     d = _load()
-    return {"avatar": d["avatar"], "cor": d["cor"], "ilha": d["ilha"], "nivel": level_info(d["xp"]["total"])}
+    lv = level_info(d["xp"]["total"])
+    record = _streak_record()
+    return {"avatar": d["avatar"], "cor": d["cor"], "ilha": d["ilha"], "nivel": lv,
+            "tema": season_theme() if d["avatar"].get("temas", True) else None,
+            "guarda_roupa": unlock_status(lv["nivel"], record), "ofensiva_recorde": record}
 
 
 def update_config(patch: dict) -> dict:
-    """Muda só o que veio e só com valores válidos (o resto é ignorado)."""
+    """Muda só o que veio e só com valores válidos (o resto é ignorado). Item bloqueado: ValueError."""
     with _lock:
         d = _load()
         av = patch.get("avatar") if isinstance(patch.get("avatar"), dict) else {}
@@ -81,8 +179,22 @@ def update_config(patch: dict) -> dict:
                 d["avatar"][k] = av[k].lower()
         if av.get("expressao") in EXPRESSIONS:
             d["avatar"]["expressao"] = av["expressao"]
-        if av.get("acessorio") in ACCESSORIES:
-            d["avatar"]["acessorio"] = av["acessorio"]
+        if av.get("acessorio") in OLD_ACCESSORY:  # compatibilidade com o 8.0
+            slot, item = OLD_ACCESSORY[av["acessorio"]]
+            av.setdefault(slot, item)
+        status = unlock_status(level_info(d["xp"]["total"])["nivel"], _streak_record())
+        for slot in WARDROBE:
+            want = av.get(slot)
+            if want is None:
+                continue
+            item = next((i for i in status[slot] if i["id"] == want), None)
+            if not item:
+                continue
+            if not item["liberado"]:
+                raise ValueError(f"Bloqueado: libera com {item['precisa']}.")
+            d["avatar"][slot] = want
+        if isinstance(av.get("temas"), bool):
+            d["avatar"]["temas"] = av["temas"]
         if isinstance(patch.get("cor"), str) and HEX.match(patch["cor"]):
             d["cor"] = patch["cor"].lower()
         ilha = patch.get("ilha") if isinstance(patch.get("ilha"), dict) else {}
@@ -110,6 +222,12 @@ def level_info(total: int) -> dict:
 
 def add_xp(kind: str, today: date | None = None) -> dict | None:
     """Soma XP pela ação; devolve {"ganhou", "subiu", ...} ou None (tipo desconhecido ou teto do dia)."""
+    try:  # V8.1: as missões de "usar o JARVIS" contam mesmo depois do teto de XP do dia
+        from modules import desk_missions
+
+        desk_missions.track(kind, today)
+    except Exception:  # noqa: BLE001
+        pass
     if kind not in XP:
         return None
     pts, cap = XP[kind]
@@ -131,6 +249,19 @@ def add_xp(kind: str, today: date | None = None) -> dict | None:
         _save(d)
         info = level_info(x["total"])
         return {"ganhou": gain, "subiu": info["nivel"] > before, **info}
+
+
+def add_xp_raw(points: int, reason: str) -> dict:
+    """XP de missão (sem teto diário)."""
+    with _lock:
+        d = _load()
+        x = d["xp"]
+        before = level_info(x["total"])["nivel"]
+        x["total"] = int(x.get("total", 0)) + int(points)
+        x["eventos"] = ([{"tipo": reason, "xp": int(points), "em": datetime.now().isoformat(timespec="seconds")}] + x.get("eventos", []))[:30]
+        _save(d)
+        info = level_info(x["total"])
+        return {"ganhou": int(points), "subiu": info["nivel"] > before, **info}
 
 
 def xp_quietly(kind: str) -> None:
@@ -436,4 +567,11 @@ def memory_map() -> dict:
 def cloud_summary() -> dict:
     """Fora de casa: aparência, nível e hábitos (os Copiados nunca saem do PC)."""
     d = _load()
-    return {"avatar": d["avatar"], "cor": d["cor"], "nivel": level_info(d["xp"]["total"]), "habitos": habits()["itens"]}
+    try:
+        from modules import desk_missions
+
+        missoes = desk_missions.cloud_summary()
+    except Exception:  # noqa: BLE001
+        missoes = None
+    return {"avatar": d["avatar"], "cor": d["cor"], "nivel": level_info(d["xp"]["total"]), "habitos": habits()["itens"],
+            "tema": season_theme() if d["avatar"].get("temas", True) else None, "missoes": missoes}

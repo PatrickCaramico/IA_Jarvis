@@ -494,3 +494,18 @@ test("V8.0 nuvem: Modo Desk (resumo e hábito marcado fora de casa)", async () =
   assert.equal(d.avatar.olhos, "#22d3ee"); // cor inválida não passa
   assert.equal(d.habitos[0].sequencia, 2);
 });
+
+test("V8.1 nuvem: missões e ofensiva no resumo do Modo Desk", async () => {
+  const { receiveSnapshot } = await import("./core.mjs");
+  const m = new Map();
+  const store = { get: async (k) => m.get(k), set: async (k, v) => m.set(k, v) };
+  const missoes = { dia: "2026-11-16", itens: [{ id: "bem_agua", tipo: "bem", texto: "Beba 2 copos de água", meta: 1, progresso: 0, feita: false, xp: 15 }, { id: "uso_olho", tipo: "uso", texto: "<b>x</b>", meta: 1 }],
+    ofensiva: { atual: 4, recorde: 9, protetores: 1, feita_hoje: false } };
+  await receiveSnapshot(store, { ack: 0, snapshot: { desk: { avatar: { chapeu: "cartola", efeito: "<script>" }, tema: { nome: "Natal", chapeu: "gorro" }, missoes } } });
+  const d = await store.get("desk_resumo");
+  assert.equal(d.avatar.chapeu, "cartola");
+  assert.equal(d.avatar.efeito, "nenhum");
+  assert.equal(d.tema.chapeu, "gorro");
+  assert.equal(d.missoes.ofensiva.atual, 4);
+  assert.equal(d.missoes.feitas, 0);
+});

@@ -27,3 +27,16 @@ test("V8.0: mapa da memória: centro, assuntos em volta e memórias perto do ass
   assert.ok(d("g:A", "m:A:0") < d("g:B", "m:A:0"));
   for (const p of Object.values(pos)) assert.ok(p.x >= 0 && p.x <= 800 && p.y >= 0 && p.y <= 560);
 });
+
+test("V8.1: guarda-roupa: tema da data por cima e avatar do 8.0 migrado", async () => {
+  const { DEFAULT_AVATAR, WARDROBE, withTheme } = await import("../src/utils/desk.js");
+  assert.deepEqual(WARDROBE.map(([slot]) => slot), ["chapeu", "rosto", "roupa", "olhos_forma", "efeito"]);
+  assert.ok(WARDROBE.every(([slot, , items]) => items.some(([id]) => id === DEFAULT_AVATAR[slot])));
+  assert.equal(withTheme({ acessorio: "coroa" }).chapeu, "coroa");
+  const natal = { nome: "Natal", chapeu: "gorro", efeito: "neve" };
+  const a = withTheme({ chapeu: "cartola", roupa: "capa" }, natal);
+  assert.equal(a.chapeu, "gorro");
+  assert.equal(a.efeito, "neve");
+  assert.equal(a.roupa, "capa");
+  assert.equal(withTheme({ chapeu: "cartola", temas: false }, natal).chapeu, "cartola");
+});

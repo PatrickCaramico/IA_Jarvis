@@ -39,6 +39,7 @@ _WRITABLE = (
     ("holo_extra", "_PATH", "holo_salvos.json"),  # V7.14
     ("desk", "_PATH", "desk.json"),  # V8.0
     ("desk", "_CLIP_PATH", "copiados.json"),
+    ("desk_missions", "_PATH", "missoes.json"),  # V8.1
     ("world_data", "_PREFS_PATH", "olho_avisos.json"),
 )
 

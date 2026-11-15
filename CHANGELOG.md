@@ -2,6 +2,33 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 8.1.0 — 15 de novembro de 2026
+
+**🎯 Missões, 🔥 Ofensiva e guarda-roupa do robô (ideia 7 do documento de atualização)**
+- **👕 Guarda-roupa** em Modo Desk › Personalizar, com abas e prévia de cada item:
+  - **Chapéus:** gorro de Natal, boné, fone, cartola, tiara de gatinho, chapéu de bruxa, headset e coroa.
+  - **Rosto:** óculos, laço, bigode e óculos escuros.
+  - **Roupas:** cachecol, gravata-borboleta, camisa do time, capa de herói e colete de armadura.
+  - **Olhos:** arco-reator, coração, estrela e pixel.
+  - **Efeitos:** brilho, neve e faíscas.
+  - Itens bloqueados mostram 🔒 e como liberar ("Nível 5", "7 dias de ofensiva").
+  - O acessório escolhido no 8.0 passa sozinho para o chapéu ou o rosto.
+- **🎉 Temas das datas** (dá para desligar), por cima do visual escolhido, que volta depois da data:
+  - Natal (1 a 26/12): gorro e neve.
+  - Halloween (25 a 31/10): abóbora.
+  - Carnaval: confete.
+  - Dia de jogo do Palmeiras: camisa do time.
+- **🎯 Missões** (seção nova e cartão no Início): todo dia 3 missões novas, sem repetir as de ontem:
+  - **usar o JARVIS:** completa sozinha quando você faz (conversar, concluir tarefa, criar lembrete, rodar rotina, abrir o Holograma ou o Olho de Deus…);
+  - **sobre você:** uma pergunta respondida ali mesmo; a resposta vai para a memória;
+  - **bem-estar:** beber água, alongar, caminhar… você marca FEITO.
+  - Mais o **🏆 desafio da semana** (150 XP).
+- **🔥 Ofensiva:** dias seguidos com pelo menos 1 missão feita, com o recorde. Aparece na barra lateral e na seção Missões.
+  - **🛡 Protetor:** você ganha 1 por semana e guarda até 2. Se perder um dia, o protetor segura a ofensiva.
+- **🎁 Aviso de item novo:** quando subir de nível ou bater um recorde, aparece "Item novo liberado: capa de herói!".
+- **Por voz:** "quais são minhas missões?" e "como está minha ofensiva?".
+- **Fora de casa (nuvem):** ver as missões e a ofensiva e marcar as de bem-estar; o PC aplica na sincronização.
+
 ## 8.0.1 — 15 de novembro de 2026
 
 **🖥 Modo Desk e JARVIS.exe: botões que faltavam**
