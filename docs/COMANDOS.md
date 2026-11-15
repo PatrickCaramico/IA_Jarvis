@@ -1,6 +1,6 @@
 # JARVIS — Comandos do dia a dia
 
-**Versão do projeto:** 8.0.1 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
+**Versão do projeto:** 8.1.0 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
 
 > Montado a partir do código do projeto. Se algum comando não responder como descrito, me avise que eu ajusto o guia.
 > Para a lista técnica de rotas, veja [API.md](API.md); para o `.env`, [CONFIGURACAO.md](CONFIGURACAO.md).
@@ -456,7 +456,9 @@ Pedidos com YouTube, Google, Maps, música ou notícias continuam no caminho de 
 | "Marquei o treino de hoje" · "como estão meus hábitos?" | Marca o hábito (sequência de dias) e diz quantos faltam hoje. |
 | Modo Desk › Copiados | Histórico do Ctrl+C no PC; toque para copiar de novo (não guarda senha, cartão ou código). |
 | Modo Desk › Memória | Mapa das memórias por assunto; tocar mostra e permite esquecer. |
-| Modo Desk › Personalizar | Cores, expressão e acessório do robô; nome; cor do app. |
+| Modo Desk › Personalizar | Cores e expressão do robô; guarda-roupa (chapéus, rosto, roupas, olhos, efeitos); temas das datas; nome; cor do app. |
+| "Quais são minhas missões?" · "como está minha ofensiva?" | As 3 missões do dia (V8.1) e a ofensiva com recorde e protetores. |
+| Modo Desk › Missões | Missões do dia, desafio da semana e 🔥 ofensiva; responda as perguntas "sobre você" ali mesmo. |
 | ⬇ APP PARA WINDOWS · Gerar-App-Windows.bat | Gera e baixa o JARVIS.exe: janela própria, ilha no topo da tela e tecla para falar (PageDown). |
 
 ### Olho de Deus: globo 3D e dados reais (V7.11)

@@ -65,3 +65,29 @@ export const FUNCTIONS = [
   { icone: "✨", titulo: "Holograma", exemplos: ["me explica o sistema solar", "receita de bolo de cenoura"] },
   { icone: "🛒", titulo: "Lista de compras", exemplos: ["coloca leite na lista", "o que tem na lista?"] },
 ];
+
+// V8.1 (ideia 7): guarda-roupa do robô e temas das datas (desenhados em components/RoboAvatar.jsx)
+export const WARDROBE = [
+  ["chapeu", "🎩 Chapéus", [["nenhum", "Nenhum"], ["gorro", "Gorro de Natal"], ["bone", "Boné"], ["fone", "Fone"], ["cartola", "Cartola"],
+    ["gatinho", "Tiara de gatinho"], ["bruxa", "Chapéu de bruxa"], ["headset", "Headset"], ["coroa", "Coroa"]]],
+  ["rosto", "🕶 Rosto", [["nenhum", "Nenhum"], ["oculos", "Óculos"], ["laco", "Laço"], ["bigode", "Bigode"], ["oculos_escuros", "Óculos escuros"]]],
+  ["roupa", "👕 Roupas", [["nenhuma", "Nenhuma"], ["cachecol", "Cachecol"], ["gravata", "Gravata-borboleta"], ["camisa", "Camisa do time"],
+    ["capa", "Capa de herói"], ["armadura", "Colete de armadura"]]],
+  ["olhos_forma", "👀 Olhos", [["reator", "Arco-reator"], ["coracao", "Coração"], ["estrela", "Estrela"], ["pixel", "Pixel"]]],
+  ["efeito", "✨ Efeitos", [["nenhum", "Nenhum"], ["brilho", "Brilho"], ["neve", "Neve"], ["faiscas", "Faíscas"]]],
+];
+export const DEFAULT_AVATAR = {
+  corpo: "#e8f4ff", visor: "#0b1220", olhos: "#22d3ee", expressao: "feliz", acessorio: "nenhum",
+  chapeu: "nenhum", rosto: "nenhum", roupa: "nenhuma", olhos_forma: "reator", efeito: "nenhum", temas: true,
+};
+const OLD = { fone: ["chapeu", "fone"], gorro: ["chapeu", "gorro"], coroa: ["chapeu", "coroa"], oculos: ["rosto", "oculos"] };
+
+/** O visual que aparece: o escolhido + o tema da data por cima (Natal, Halloween, Carnaval, dia de jogo). */
+export function withTheme(avatar, tema) {
+  const a = { ...DEFAULT_AVATAR, ...(avatar || {}) };
+  const old = OLD[a.acessorio]; // avatar salvo no 8.0
+  if (old && a[old[0]] === DEFAULT_AVATAR[old[0]]) a[old[0]] = old[1];
+  if (!tema || a.temas === false) return a;
+  for (const k of ["chapeu", "rosto", "roupa", "efeito"]) if (tema[k]) a[k] = tema[k];
+  return a;
+}

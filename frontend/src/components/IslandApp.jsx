@@ -43,7 +43,7 @@ export default function IslandApp() {
     <button type="button" className={`il il-${estado}${open ? " is-open" : ""}`} style={{ "--il-accent": st?.cor || "#22d3ee", "--il-rgb": hexToRgb(st?.cor) }}
       onClick={() => window.pywebview?.api?.show_main?.()} title="Abrir o JARVIS">
       <span className="il-row">
-        <RoboAvatar avatar={st?.avatar} state={face} size={open ? 30 : 24} />
+        <RoboAvatar avatar={st?.avatar} tema={st?.tema} state={face} size={open ? 30 : 24} />
         <i className="il-dot" />
         {estado === "offline" ? <span className="il-txt">JARVIS desligado</span>
           : playing ? <span className="il-txt il-music"><b className="il-eq"><i /><i /><i /></b>{track.title}{track.artist ? ` · ${track.artist}` : ""}</span>

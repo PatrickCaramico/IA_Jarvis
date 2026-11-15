@@ -138,6 +138,7 @@ export default function GodsEye({ onClose, api = null, initialCategory = "traffi
   const [alertMsg, setAlertMsg] = useState("");
   const [muted, setMuted] = useState(() => soundManager.config().silent);
   const [homeTried, setHomeTried] = useState(!api);
+  useEffect(() => { api?.("/api/desk/missions/track/olho", { method: "POST" }).catch(() => {}); }, [api]); // V8.1: conta na missão
   const isTraffic = mode === "traffic";
 
   // centro inicial: a cidade do clima (a mesma do JARVIS); lugares salvos do agente de rotas

@@ -720,6 +720,7 @@ export default function HoloStage({ api, request, onClose, onSend, onSpeak, onSt
   const image = request.photo ? { src: request.photo, own: true } : wikiImage; // V7.8: a foto enviada vira o fundo
 
   const [library, setLibrary] = useState(request.library ? null : undefined); // V7.14: lista de salvos
+  useEffect(() => { api?.("/api/desk/missions/track/holograma", { method: "POST" }).catch(() => {}); }, [api]); // V8.1: conta na missão
   const [savedId, setSavedId] = useState(request.savedId || "");
 
   const openSaved = useCallback(async (id) => {

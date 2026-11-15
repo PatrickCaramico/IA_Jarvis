@@ -69,6 +69,14 @@ def apply_op(op: dict) -> bool:
         except ValueError:
             return False
         return True
+    if kind == "mission_done":  # V8.1: missão de bem-estar marcada no celular fora de casa
+        from modules import desk_missions
+
+        try:
+            desk_missions.mark_done(str(op.get("item") or ""))
+        except (KeyError, ValueError):
+            return False
+        return True
     if kind == "holo_save":  # V7.14: apresentação salva no celular fora de casa
         from modules import holo_extra
 

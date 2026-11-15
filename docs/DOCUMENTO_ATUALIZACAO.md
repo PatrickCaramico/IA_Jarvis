@@ -468,7 +468,7 @@
 6. **Voz:** "quais são minhas missões?" e "como está minha ofensiva?".
 7. **Fora de casa:** dá para ver as missões e marcar as de bem-estar pelo celular; o PC aplica na sincronização.
 
-**Status:** desenho aprovado; falta implementar.
+**Status:** implementado na versão 8.1.0.
 
 ---
 

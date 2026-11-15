@@ -8,7 +8,7 @@ import time
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from modules import desk
+from modules import desk, desk_missions
 
 router = APIRouter()
 log = logging.getLogger("jarvis.desk")
@@ -21,7 +21,10 @@ async def desk_get() -> dict:
 
 @router.patch("/api/desk")
 async def desk_patch(body: dict) -> dict:
-    return desk.update_config(body if isinstance(body, dict) else {})
+    try:
+        return desk.update_config(body if isinstance(body, dict) else {})
+    except ValueError as exc:  # item do guarda-roupa ainda bloqueado
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
 
 
 @router.get("/api/desk/xp")
@@ -167,4 +170,65 @@ async def island() -> dict:
     fresh = time.time() - float(st.get("resposta_em") or 0) < 25
     cfg = desk.config()
     return {"estado": st.get("estado", "idle"), "resposta": st.get("resposta", "") if fresh else "",
-            "hora": datetime.now().strftime("%H:%M"), "avatar": cfg["avatar"], "cor": cfg["cor"], "ilha": cfg["ilha"]}
+            "hora": datetime.now().strftime("%H:%M"), "avatar": cfg["avatar"], "cor": cfg["cor"], "ilha": cfg["ilha"], "tema": cfg.get("tema")}
+
+
+# --------------------------------------------------------------------------- V8.1: missões e ofensiva
+class MissionAnswer(BaseModel):
+    id: str
+    resposta: str
+
+
+@router.get("/api/desk/missions")
+async def missions_get() -> dict:
+    return desk_missions.view()
+
+
+@router.post("/api/desk/missions/{ref}/done")
+async def missions_done(ref: str) -> dict:
+    try:
+        out = desk_missions.mark_done(ref)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Missão não encontrada.") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    await _broadcast_missions()
+    return out
+
+
+@router.post("/api/desk/missions/answer")
+async def missions_answer(req: MissionAnswer) -> dict:
+    try:
+        out = await asyncio.to_thread(desk_missions.answer, req.id, req.resposta)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Missão não encontrada.") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    await _broadcast_missions()
+    return out
+
+
+@router.post("/api/desk/missions/seen")
+async def missions_seen() -> dict:
+    desk_missions.seen()
+    return {"ok": True}
+
+
+@router.post("/api/desk/missions/track/{kind}")
+async def missions_track(kind: str) -> dict:
+    """O app avisa quando você abre o Holograma ou o Olho de Deus (contam para as missões de uso)."""
+    if kind not in ("holograma", "olho"):
+        raise HTTPException(status_code=400, detail="Ação desconhecida.")
+    done = desk_missions.track(kind)
+    if done:
+        await _broadcast_missions()
+    return {"completas": done}
+
+
+async def _broadcast_missions() -> None:
+    try:
+        from core import runtime
+
+        await runtime.manager.broadcast({"type": "desk_missions", "data": desk_missions.view()})
+    except Exception:  # noqa: BLE001
+        pass

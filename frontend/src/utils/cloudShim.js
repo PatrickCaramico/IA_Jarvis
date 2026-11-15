@@ -290,7 +290,7 @@ async function route(method, path, query, body) {
       return ok({ agents: CLOUD_AGENTS, places: (await refresh()).lugares || {}, chat_agents: CLOUD_CHAT_AGENTS });
     case "GET /api/desk": { // V8.0: Modo Desk fora de casa (aparência e nível vêm do PC; personalizar é no PC)
       const d = await cloud("/desk");
-      return ok({ avatar: d.avatar || undefined, cor: d.cor, nivel: d.nivel, ilha: { ligada: false, tamanho: "media", atalho: "" }, cloud: true });
+      return ok({ avatar: d.avatar || undefined, cor: d.cor, nivel: d.nivel, tema: d.tema || null, ilha: { ligada: false, tamanho: "media", atalho: "" }, cloud: true });
     }
     case "PATCH /api/desk":
       return { status: 503, data: { detail: "A aparência do JARVIS é personalizada no PC." } };
@@ -305,6 +305,14 @@ async function route(method, path, query, body) {
     }
     case "GET /api/desk/clips":
       return ok({ pausado: false, itens: [], cloud: true });
+    case "GET /api/desk/missions": { // V8.1: missões e ofensiva fora de casa (as de bem-estar dá para marcar)
+      const d = await cloud("/desk");
+      return ok({ ...(d.missoes || { itens: [], feitas: 0, total: 0, semana: null, novos: [], ofensiva: { atual: 0, recorde: 0, protetores: 0, max_protetores: 2 } }), cloud: true });
+    }
+    case "POST /api/desk/missions/seen":
+      return ok({ ok: true });
+    case "POST /api/desk/missions/answer":
+      return { status: 503, data: { detail: "As perguntas sobre você são respondidas no PC (vão para a memória)." } };
     case "GET /api/desk/memory-map":
       return ok({ nos: [{ id: "eu", rotulo: "Você", tipo: "centro" }], ligacoes: [], total: 0, cloud: true });
     case "POST /api/desk/test-ai":
@@ -403,6 +411,10 @@ async function route(method, path, query, body) {
     const itens = d.habitos || [];
     return ok({ itens, feitos_hoje: itens.filter((h) => h.hoje).length, total: itens.length, habito: itens.find((h) => h.id === habit[1]), cloud: true });
   }
+  // V8.1: missão de bem-estar marcada fora de casa; abrir Holograma/Olho de Deus conta só no PC
+  const mission = path.match(/^\/api\/desk\/missions\/([\w-]{1,30})\/done$/);
+  if (mission && method === "POST") return ok({ missoes: { ...(await cloud("/desk/mission", { method: "POST", body: { item: mission[1] } })), cloud: true } });
+  if (/^\/api\/desk\/missions\/track\//.test(path) && method === "POST") return ok({ completas: [], cloud: true });
   // V7.14: uma apresentação salva (rever sem gastar IA) e apagar
   const saved = path.match(/^\/api\/holo\/saved\/([\w-]{1,40})$/);
   if (saved && method === "GET") return ok(await cloud(`/holo/saved?id=${encodeURIComponent(saved[1])}`));

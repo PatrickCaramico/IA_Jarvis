@@ -282,6 +282,8 @@ export function apply(state, op, now = spNow()) {
       return { keys: [], result: op.acao };
     case "habit_toggle": // V8.0: hábito marcado fora de casa (o PC aplica; o resumo da nuvem já mostra marcado)
       return { keys: [], result: op.item };
+    case "mission_done": // V8.1: missão de bem-estar marcada fora de casa (o PC aplica e dá o XP)
+      return { keys: [], result: op.item };
     case "holo_save": // V7.14: apresentação salva fora de casa (a lista da nuvem é atualizada à parte)
     case "holo_delete":
       return { keys: [], result: op.item };
@@ -351,6 +353,22 @@ export async function change(store, op, now = spNow()) {
 }
 
 /** O PC mandou a foto das listas dele: ela vira o estado e as operações ainda não confirmadas são reaplicadas. */
+/** V8.1: resumo das missões e da ofensiva (só números e textos curtos), com as marcadas fora de casa. */
+function missionsSummary(m, pending = []) {
+  if (!m || typeof m !== "object") return null;
+  const n = (v) => Math.max(0, Math.round(Number(v) || 0));
+  const item = (i) => ({ id: clean(i.id, 24), tipo: clean(i.tipo, 8), texto: clean(i.texto, 90), meta: n(i.meta) || 1, progresso: n(i.progresso), feita: Boolean(i.feita), xp: n(i.xp) });
+  const done = new Set(pending.map((o) => o.item));
+  const itens = (Array.isArray(m.itens) ? m.itens : []).slice(0, 5).map(item).map((i) => (done.has(i.id) && i.tipo === "bem" ? { ...i, feita: true, progresso: i.meta } : i));
+  const of = m.ofensiva || {};
+  const marked = itens.some((i) => i.feita && done.has(i.id)) && !of.feita_hoje;
+  return {
+    dia: clean(m.dia, 10), itens, semana: m.semana && m.semana.id ? item(m.semana) : null,
+    feitas: itens.filter((i) => i.feita).length, total: itens.length, novos: [],
+    ofensiva: { atual: n(of.atual) + (marked ? 1 : 0), recorde: Math.max(n(of.recorde), n(of.atual) + (marked ? 1 : 0)), protetores: n(of.protetores), max_protetores: 2, feita_hoje: Boolean(of.feita_hoje) || marked },
+  };
+}
+
 export async function receiveSnapshot(store, { ack = 0, snapshot = {} }, now = spNow()) {
   const log = (await store.get("ops")) || { seq: 0, items: [] };
   log.items = log.items.filter((o) => o.id > Number(ack || 0));
@@ -408,9 +426,16 @@ export async function receiveSnapshot(store, { ack = 0, snapshot = {} }, now = s
       sequencia: Math.max(0, Math.round(Number(h.sequencia) || 0)), semana: (Array.isArray(h.semana) ? h.semana : []).slice(0, 7).map(Boolean), total: Math.max(0, Math.round(Number(h.total) || 0)),
     }));
     for (const o of log.items.filter((x) => x.op === "habit_toggle")) habitos = habitos.map((h) => (h.id === o.item ? { ...h, hoje: o.feito !== false } : h));
+    const word = (v, d) => (typeof v === "string" && /^[a-z_]{1,16}$/.test(v) ? v : d);
+    const tema = dk.tema && typeof dk.tema === "object"
+      ? { nome: clean(dk.tema.nome, 20), chapeu: word(dk.tema.chapeu, undefined), roupa: word(dk.tema.roupa, undefined), efeito: word(dk.tema.efeito, undefined) } : null;
     await store.set("desk_resumo", {
-      avatar: { corpo: hex(av.corpo, "#e8f4ff"), visor: hex(av.visor, "#0b1220"), olhos: hex(av.olhos, "#22d3ee"), expressao: clean(av.expressao, 12) || "feliz", acessorio: clean(av.acessorio, 10) || "nenhum" },
-      cor: hex(dk.cor, "#22d3ee"), nivel: dk.nivel && typeof dk.nivel === "object" ? dk.nivel : { nivel: 1, xp: 0, no_nivel: 0, para_subir: 100, pct: 0 }, habitos,
+      avatar: {
+        corpo: hex(av.corpo, "#e8f4ff"), visor: hex(av.visor, "#0b1220"), olhos: hex(av.olhos, "#22d3ee"), expressao: word(av.expressao, "feliz"), acessorio: word(av.acessorio, "nenhum"),
+        chapeu: word(av.chapeu, "nenhum"), rosto: word(av.rosto, "nenhum"), roupa: word(av.roupa, "nenhuma"), olhos_forma: word(av.olhos_forma, "reator"), efeito: word(av.efeito, "nenhum"), temas: av.temas !== false,
+      },
+      cor: hex(dk.cor, "#22d3ee"), nivel: dk.nivel && typeof dk.nivel === "object" ? dk.nivel : { nivel: 1, xp: 0, no_nivel: 0, para_subir: 100, pct: 0 }, habitos, tema,
+      missoes: missionsSummary(dk.missoes, log.items.filter((x) => x.op === "mission_done")),
     });
   }
   if (Array.isArray(snapshot.holo_salvos)) { // V7.14: apresentações salvas, para rever fora de casa
@@ -1596,6 +1621,17 @@ export async function handle(req, { store, env, fetchFn = fetch, nowDate = new D
       d.habitos = d.habitos.map((h) => (h.id === item ? { ...h, hoje: done, sequencia: Math.max(0, h.sequencia + (done && !h.hoje ? 1 : !done && h.hoje ? -1 : 0)) } : h));
       await store.set("desk_resumo", d);
       return json(d);
+    }
+    if (path === "/desk/mission" && method === "POST") { // V8.1: marcar missão de bem-estar fora de casa
+      const { item } = await body(req);
+      const d = (await store.get("desk_resumo")) || {};
+      const m = d.missoes && (d.missoes.itens || []).find((i) => i.id === item);
+      if (!m) throw new HttpError(404, "Não achei essa missão.");
+      if (m.tipo !== "bem") throw new HttpError(400, "Essa missão se completa no PC.");
+      await recordOp(store, { op: "mission_done", item: clean(item, 24) }, now);
+      d.missoes = missionsSummary(d.missoes, [{ item: m.id }]);
+      await store.set("desk_resumo", d);
+      return json(d.missoes);
     }
     if (path === "/quickcard" && method === "POST") { // V7.14: cartão animado das perguntas rápidas
       const { pergunta, resposta } = await body(req);
