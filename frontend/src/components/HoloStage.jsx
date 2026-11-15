@@ -3,6 +3,8 @@ import { createPortal } from "react-dom";
 import useEscape from "../hooks/useEscape.js";
 import { speechSeconds, stepTimerText } from "../utils/holoIntent.js";
 import "../holo.css";
+import HoloVisual from "./HoloVisual.jsx";
+import { createAmbient, musicPreferred, rememberMusic } from "../utils/holoVisual.js";
 
 // V7.1: HOLOGRAMA. A pesquisa vira uma tela viva:
 // - APRESENTAÇÃO: cenas animadas (ícone, título, legenda palavra a palavra, tópicos, número que sobe) narradas
@@ -172,6 +174,52 @@ function useWikiImage(term) {
   return img;
 }
 
+// V7.13: a foto real da cena (Wikipédia), com o crédito embaixo
+function ScenePhoto({ term }) {
+  const img = useWikiImage(term);
+  if (!img) return null;
+  return (
+    <figure className="holo-photo">
+      <img src={img.src} alt={term} loading="lazy" />
+      <figcaption>Foto: Wikipédia · {term}</figcaption>
+    </figure>
+  );
+}
+
+const isPhone = () => {
+  try {
+    return window.matchMedia("(max-width: 760px)").matches;
+  } catch {
+    return false;
+  }
+};
+
+// V7.13: trilha ambiente baixinha (gerada no aparelho), abaixa quando o JARVIS fala
+function useAmbient(active, speaking) {
+  const [on, setOn] = useState(() => musicPreferred(isPhone()));
+  const engine = useRef(null);
+  useEffect(() => {
+    if (!active || !on || calmScreen()) return undefined;
+    const a = createAmbient();
+    if (!a) return undefined;
+    engine.current = a;
+    a.start();
+    return () => {
+      a.stop();
+      setTimeout(() => a.close(), 600);
+      engine.current = null;
+    };
+  }, [active, on]);
+  useEffect(() => {
+    engine.current?.duck(speaking);
+  }, [speaking]);
+  const toggle = () => setOn((v) => {
+    rememberMusic(!v);
+    return !v;
+  });
+  return { on, toggle };
+}
+
 function useWakeLock() {
   useEffect(() => {
     let lock = null;
@@ -319,15 +367,23 @@ function Presentation({ data, image, speak, stop, onClose, speaking }) {
 
   const renderScene = (s, i, leaving) => (
     <article className={`holo-scene${leaving ? " is-leaving" : ""}`} key={`${i}-${leaving ? "out" : "in"}`} aria-live={leaving ? undefined : "polite"} aria-hidden={leaving || undefined}>
-      <div className={`holo-icon${speaking && !leaving ? " is-talking" : ""}`}>
-        <i className="holo-orbit" aria-hidden="true"><b /></i>
-        <i className="holo-orbit is-2" aria-hidden="true"><b /></i>
-        <span>{s.icone}</span>
-      </div>
+      {!s.visual && (
+        <div className={`holo-icon${speaking && !leaving ? " is-talking" : ""}`}>
+          <i className="holo-orbit" aria-hidden="true"><b /></i>
+          <i className="holo-orbit is-2" aria-hidden="true"><b /></i>
+          <span>{s.icone}</span>
+        </div>
+      )}
       <small className="holo-count">CENA {i + 1} DE {scenes.length}</small>
       {s.titulo && <h2 className="holo-title">{leaving ? s.titulo : <Scramble text={s.titulo} />}</h2>}
       {leaving ? <p className="holo-caption is-static">{s.fala}</p> : <Caption text={s.fala} seconds={seconds} playing={playing} />}
       {!leaving && <VoiceWave active={speaking && playing} />}
+      {!leaving && (s.visual || s.foto) && (
+        <div className={`holo-media${s.visual && s.foto ? " is-two" : ""}`}>
+          {s.visual && <HoloVisual visual={s.visual} lite={isPhone()} />}
+          {s.foto && <ScenePhoto term={s.foto} />}
+        </div>
+      )}
       {s.numero && (
         <div className="holo-number">
           <svg className="holo-gauge" viewBox="0 0 120 120" aria-hidden="true">
@@ -547,6 +603,7 @@ export default function HoloStage({ api, request, onClose, onSend, onSpeak, onSt
     onStop();
     onClose();
   }, [onClose, onStop]);
+  const music = useAmbient(data?.tipo === "apresentacao", speaking);
 
   useEscape(close);
 
@@ -561,6 +618,11 @@ export default function HoloStage({ api, request, onClose, onSend, onSpeak, onSt
       )}
       <div className="holo-scan" aria-hidden="true" />
       <button type="button" className="holo-close" onClick={close} aria-label="Fechar o holograma">✕</button>
+      {data?.tipo === "apresentacao" && (
+        <button type="button" className="holo-music" onClick={music.toggle} aria-pressed={music.on} title={music.on ? "Desligar a trilha" : "Ligar a trilha"}>
+          {music.on ? "🔈 TRILHA" : "🔇 TRILHA"}
+        </button>
+      )}
 
       {!data && !error && (
         <div className="holo-loading" role="status">

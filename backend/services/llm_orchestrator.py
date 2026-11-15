@@ -171,7 +171,7 @@ def _call_openai(prompt: str, frame_b64: Optional[str], history: list[dict]) -> 
 
     response = client.chat.completions.create(
         model=settings.OPENAI_MODEL,
-        max_tokens=settings.LLM_MAX_TOKENS,
+        max_tokens=_max_tokens(),
         messages=[{"role": "system", "content": SYSTEM_PROMPT}, *history,
                   {"role": "user", "content": content}],
     )
@@ -226,7 +226,7 @@ def _call_gemini(prompt: str, frame_b64: Optional[str], history: list[dict], dee
     contents.append(types.Content(role="user", parts=current_parts))
 
     tools = [types.Tool(google_search=types.GoogleSearch())] if deep else None
-    max_tokens = max(int(getattr(settings, "LLM_MAX_TOKENS", 400) or 400), 1000)
+    max_tokens = max(_max_tokens(), 1000)
     thinking_cfg = types.ThinkingConfig(thinking_budget=0)
 
     models_to_try = [settings.GEMINI_MODEL]
@@ -334,7 +334,7 @@ def _call_anthropic(prompt: str, frame_b64: Optional[str], history: list[dict]) 
 
     response = client.messages.create(
         model=settings.ANTHROPIC_MODEL,
-        max_tokens=settings.LLM_MAX_TOKENS,
+        max_tokens=_max_tokens(),
         system=SYSTEM_PROMPT,
         messages=[*history, {"role": "user", "content": content}],
     )
@@ -367,14 +367,27 @@ def ask_with_image(prompt: str, image_b64: str) -> str:
     return (_call_llm(full, image_b64, [], deep=False) or "").strip()
 
 
-def ask_text(prompt: str, web: bool = False) -> str:
+_budget = threading.local()
+
+
+def _max_tokens() -> int:
+    """Limite de resposta: o do .env, ou mais quando a tela pede (V7.13: holograma com animações)."""
+    base = int(getattr(settings, "LLM_MAX_TOKENS", 400) or 400)
+    return max(base, int(getattr(_budget, "value", 0) or 0))
+
+
+def ask_text(prompt: str, web: bool = False, max_tokens: int | None = None) -> str:
     """V7.1: pergunta avulsa só com texto (sem histórico, sem câmera), para as telas montadas pela IA.
 
     V7.8: web=True pesquisa no Google antes de responder (Gemini); as fontes ficam em get_last_grounding_data().
     """
     now = datetime.now()
     full = f"Data e hora atuais: {_WEEKDAYS[now.weekday()]}, {now:%d/%m/%Y}, {now:%H:%M}.\n{prompt}"
-    return (_call_llm(full, None, [], deep=web) or "").strip()
+    _budget.value = max_tokens or 0
+    try:
+        return (_call_llm(full, None, [], deep=web) or "").strip()
+    finally:
+        _budget.value = 0
 
 
 async def generate_jarvis_response(

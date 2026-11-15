@@ -1,14 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-// versão "csp" com o worker num arquivo próprio: a versão padrão embute o worker como texto e o minificador
-// do build quebra esse texto ("We is not defined"), e aí nenhum ponto aparece no globo
-import maplibregl from "maplibre-gl/dist/maplibre-gl-csp.js";
-import workerUrl from "maplibre-gl/dist/maplibre-gl-csp-worker.js?url";
-import "maplibre-gl/dist/maplibre-gl.css";
-
-maplibregl.setWorkerUrl(workerUrl);
-import { feature, mesh } from "topojson-client";
-import countries50 from "world-atlas/countries-50m.json?url";
-import countries110 from "world-atlas/countries-110m.json?url";
+import { maplibregl, loadWorld } from "./hudStyle.js";
 import { firesGeo, flightsGeo, issTrack, launchesGeo, quakesGeo, radarTiles } from "./world.js";
 
 // V7.11: globo 3D de verdade (MapLibre, projeção "globe"). V7.12: visual "HUD" sem nenhuma chave de mapa: oceano
@@ -20,17 +11,6 @@ const SAT = [`${ESRI}/World_Imagery/MapServer/tile/{z}/{y}/{x}`];
 const PLACES = [`${ESRI}/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}`];
 const HUD_LAYERS = ["ge-land", "ge-streets", "ge-coast-glow", "ge-borders", "ge-coast"];
 const SAT_LAYERS = ["ge-sat", "ge-places"];
-
-async function loadWorld(lite) {
-  const url = lite ? countries110 : countries50;
-  const topo = await (await fetch(url)).json();
-  const obj = topo.objects.countries;
-  return {
-    land: feature(topo, obj),
-    borders: mesh(topo, obj, (a, b) => a !== b),
-    coast: mesh(topo, obj, (a, b) => a === b),
-  };
-}
 
 const EMPTY = { type: "FeatureCollection", features: [] };
 const PICKABLE = ["ge-quakes", "ge-fires", "ge-flights", "ge-launches"];

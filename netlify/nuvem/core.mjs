@@ -788,7 +788,7 @@ async function callLlm(fetchFn, cfg, system, history) {
     headers: { "Content-Type": "application/json", "x-api-key": cfg.key, "anthropic-version": "2023-06-01" },
     body: JSON.stringify({
       model: cfg.model,
-      max_tokens: 1400, // V7.1: o holograma é um JSON maior que a conversa
+      max_tokens: 2400, // V7.1/V7.13: o holograma (com as animações das cenas) é um JSON maior que a conversa
       system,
       messages: history.map((m) => ({ role: m.role === "user" ? "user" : "assistant", content: m.text })),
     }),
@@ -994,8 +994,42 @@ export function holoPrompt(query, kind) {
     + "Responda SOMENTE com um JSON compacto: "
     + '{"tipo": "apresentacao", "titulo": "título curto", "wiki": "assunto como título de artigo da Wikipédia", '
     + '"cenas": [{"icone": "1 emoji", "titulo": "até 6 palavras", "fala": "1 ou 2 frases narradas, tom de documentário, tratando o usuário por senhor", '
-    + '"pontos": ["até 3 tópicos curtos"], "numero": {"valor": 0, "unidade": "ex.: anos-luz", "rotulo": "o que significa"}}]}. '
-    + 'De 4 a 6 cenas: gancho curioso, do simples ao surpreendente, fecha com uma curiosidade. "numero" só com dado real e marcante (senão null). Nada inventado.';
+    + '"pontos": ["até 3 tópicos curtos"], "numero": {"valor": 0, "unidade": "ex.: anos-luz", "rotulo": "o que significa"}, '
+    + '"foto": "título de um artigo da Wikipédia com uma boa foto desta cena, ou null", "visual": null}]}. '
+    + 'De 4 a 6 cenas: gancho curioso, do simples ao surpreendente, fecha com uma curiosidade. "numero" só com dado real e marcante (senão null). Nada inventado.\n'
+    + HOLO_VISUAL_RULES;
+}
+
+// V7.13: animação de cada cena (igual a backend/modules/holo.py)
+const HOLO_SCIENCE = ["sistema_solar", "atomo", "ciclo_agua", "coracao", "terra_camadas", "dna", "celula"];
+const HOLO_VISUAL_RULES = 'Em "visual", quando ajudar a entender, use UM destes (no máximo um por cena; varie entre as cenas; nas outras, null):\n'
+  + '- {"tipo": "grafico", "estilo": "barras|linha", "titulo": "curto", "unidade": "ex.: milhões", "dados": [{"rotulo": "2000", "valor": 6.1}]} com 2 a 8 pontos REAIS (anos, países, comparações);\n'
+  + '- {"tipo": "linha_do_tempo", "marcos": [{"data": "1969", "texto": "até 8 palavras"}]} com 2 a 6 marcos;\n'
+  + '- {"tipo": "mapa", "lugares": [{"nome": "Paris", "lat": 48.86, "lon": 2.35}], "rota": false} com 1 a 5 lugares (rota true liga os lugares na ordem, para viagens e rotas);\n'
+  + `- {"tipo": "ciencia", "modelo": "${HOLO_SCIENCE.join("|")}"} para espaço, átomo, água, corpo, Terra, genética.\n`
+  + "Nunca invente números ou datas: sem dado real, use null.";
+
+export function cleanVisual(v) {
+  if (!v || typeof v !== "object") return null;
+  const arr = (x) => (Array.isArray(x) ? x : []);
+  if (v.tipo === "grafico") {
+    const dados = arr(v.dados).filter((d) => d && typeof d === "object").map((d) => ({ rotulo: short(d.rotulo, 20), valor: holoNumber(d.valor) }))
+      .filter((d) => d.rotulo && d.valor !== null);
+    if (dados.length < 2 || dados.length > 8) return null;
+    return { tipo: "grafico", estilo: v.estilo === "linha" ? "linha" : "barras", titulo: short(v.titulo, 60), unidade: short(v.unidade, 20), dados };
+  }
+  if (v.tipo === "linha_do_tempo") {
+    const marcos = arr(v.marcos).filter((m) => m && typeof m === "object").map((m) => ({ data: short(m.data, 20), texto: short(m.texto, 80) })).filter((m) => m.data && m.texto);
+    return marcos.length >= 2 ? { tipo: "linha_do_tempo", marcos: marcos.slice(0, 6) } : null;
+  }
+  if (v.tipo === "mapa") {
+    const lugares = arr(v.lugares).filter((l) => l && typeof l === "object").map((l) => ({ nome: short(l.nome, 40), lat: holoNumber(l.lat), lon: holoNumber(l.lon) }))
+      .filter((l) => l.nome && l.lat !== null && l.lon !== null && Math.abs(l.lat) <= 90 && Math.abs(l.lon) <= 180)
+      .map((l) => ({ ...l, lat: Math.round(l.lat * 1e4) / 1e4, lon: Math.round(l.lon * 1e4) / 1e4 })).slice(0, 5);
+    return lugares.length ? { tipo: "mapa", lugares, rota: Boolean(v.rota) && lugares.length > 1 } : null;
+  }
+  if (v.tipo === "ciencia" && HOLO_SCIENCE.includes(v.modelo)) return { tipo: "ciencia", modelo: v.modelo };
+  return null;
 }
 
 const holoNumber = (v) => {
@@ -1031,6 +1065,8 @@ export function parseHolo(raw, kind) {
       fala: short(c.fala, 400),
       pontos: arr(c.pontos).filter((p) => typeof p === "string" && p.trim()).map((p) => short(p, 120)).slice(0, 3),
       numero: valor === null ? null : { valor, unidade: short(c.numero.unidade, 30), rotulo: short(c.numero.rotulo, 60) },
+      visual: cleanVisual(c.visual),
+      foto: typeof c.foto === "string" ? short(c.foto, 80) : "",
     };
   }).slice(0, 7);
   if (cenas.length < 2) throw new HttpError(502, "A apresentação veio vazia. Tente de novo, senhor.");
