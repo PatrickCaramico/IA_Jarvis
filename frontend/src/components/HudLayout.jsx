@@ -564,6 +564,7 @@ const CONTROL_SECTIONS = [
       { id: "branding", icon: "📘", label: "BRANDING BOOK", sub: "Identidade visual do JARVIS" }, // V7.2
       { id: "optimize", icon: "⚡", label: "OTIMIZAR", sub: "Medir e deixar mais rápido" }, // V7.2
       { id: "notes", icon: "📝", label: "NOTAS DA VERSÃO", sub: "O que mudou em cada versão" }, // V7.3
+      { id: "holo_saved", icon: "⭐", label: "HOLOGRAMAS SALVOS", sub: "Rever apresentações e receitas" }, // V7.14
       { id: "diagnostic", icon: "🩺", label: "DIAGNÓSTICO", sub: "Testar IA, voz, internet e mais" }, // V7.4
       // V6.6.5: app Android: espelha a tela do JARVIS numa TV (Chromecast, Smart TV, Miracast)
       { id: "cast", icon: "📺", label: "TRANSMITIR", sub: "Para a TV ou outro aparelho" },
@@ -709,6 +710,10 @@ function HudControlsMenu({
       case "notes":
         setOpen(false);
         window.dispatchEvent(new CustomEvent("jarvis-open-notes"));
+        break;
+      case "holo_saved":
+        setOpen(false);
+        window.dispatchEvent(new CustomEvent("jarvis-open-holo-saved"));
         break;
       case "diagnostic":
         setOpen(false);

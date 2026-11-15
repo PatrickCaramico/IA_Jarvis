@@ -299,7 +299,105 @@ function useNarration({ speak, stop, enabled }) {
   return { say, halt, clear };
 }
 
-function Presentation({ data, image, speak, stop, onClose, speaking }) {
+// V7.14: QUIZ no final: 3 perguntas de múltipla escolha (toque ou fale a letra), com placar e explicação
+const LETTERS = ["A", "B", "C", "D"];
+function Quiz({ api, data, say, onDone }) {
+  const [qs, setQs] = useState(null);
+  const [err, setErr] = useState("");
+  const [i, setI] = useState(0);
+  const [pick, setPick] = useState(null);
+  const [score, setScore] = useState(0);
+  useEffect(() => {
+    let alive = true;
+    api("/api/holo/quiz", { method: "POST", body: JSON.stringify({ titulo: data.titulo, falas: data.cenas.map((c) => c.fala) }), timeout: 45_000 })
+      .then((d) => {
+        if (!alive) return;
+        setQs(d.perguntas);
+        say(`Vamos lá, senhor. Pergunta 1. ${d.perguntas[0].pergunta}`);
+      })
+      .catch((e) => alive && setErr(e.message || "Não consegui montar o quiz."));
+    return () => {
+      alive = false;
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const q = qs?.[i];
+  const choose = useCallback((n) => {
+    if (!q || pick !== null || n < 0 || n > 3) return;
+    setPick(n);
+    const right = n === q.certa;
+    if (right) setScore((v) => v + 1);
+    say(`${right ? "Certo!" : `Não, era a letra ${LETTERS[q.certa]}.`} ${q.explicacao || ""}`);
+  }, [pick, q, say]);
+  const next = () => {
+    if (i + 1 >= qs.length) {
+      setI(qs.length);
+      const total = qs.length;
+      say(score === total ? `Perfeito, senhor! ${score} de ${total}.` : `Você acertou ${score} de ${total}, senhor.`);
+      return;
+    }
+    setI(i + 1);
+    setPick(null);
+    say(`Pergunta ${i + 2}. ${qs[i + 1].pergunta}`);
+  };
+  useHoloCommands((c) => {
+    if (c && typeof c === "object" && c.type === "quiz") choose(c.letter);
+    else if (c === "next" && pick !== null) next();
+  });
+  if (err) return <div className="holo-quiz"><p>{err}</p><button type="button" className="holo-cta" onClick={onDone}>VOLTAR</button></div>;
+  if (!qs) return <div className="holo-quiz" role="status"><small>🧠 MONTANDO O QUIZ…</small><div className="holo-loadbar"><b /></div></div>;
+  if (i >= qs.length) {
+    return (
+      <div className="holo-quiz is-end">
+        <small>🧠 QUIZ · RESULTADO</small>
+        <strong className="holo-quiz-score">{score}/{qs.length}</strong>
+        <p>{score === qs.length ? "Perfeito! 🏆" : score >= qs.length / 2 ? "Muito bem!" : "Vale assistir de novo 😉"}</p>
+        <button type="button" className="holo-cta" onClick={onDone}>VOLTAR</button>
+      </div>
+    );
+  }
+  return (
+    <div className="holo-quiz" key={i}>
+      <small>🧠 QUIZ · PERGUNTA {i + 1} DE {qs.length} · {score} {score === 1 ? "acerto" : "acertos"}</small>
+      <h3>{q.pergunta}</h3>
+      <div className="holo-quiz-opts">
+        {q.opcoes.map((o, n) => (
+          <button type="button" key={n} onClick={() => choose(n)} disabled={pick !== null}
+            className={pick === null ? "" : n === q.certa ? "is-right" : n === pick ? "is-wrong" : "is-dim"}>
+            <b>{LETTERS[n]}</b>{o}
+          </button>
+        ))}
+      </div>
+      {pick !== null && (
+        <>
+          <p className="holo-quiz-exp" role="status">{pick === q.certa ? "✓ Certo! " : `✗ Era a ${LETTERS[q.certa]}. `}{q.explicacao}</p>
+          <button type="button" className="holo-cta" onClick={next}>{i + 1 >= qs.length ? "VER RESULTADO" : "PRÓXIMA ▶"}</button>
+        </>
+      )}
+      {pick === null && <p className="holo-hint">Toque ou diga "letra A", "B", "C" ou "D".</p>}
+    </div>
+  );
+}
+
+// V7.14: ⭐ SALVAR (rever depois sem gastar IA)
+function SaveButton({ api, data, query, savedId }) {
+  const [state, setState] = useState(savedId ? "ok" : "");
+  const save = async () => {
+    setState("…");
+    try {
+      await api("/api/holo/saved", { method: "POST", body: JSON.stringify({ data, query }) });
+      setState("ok");
+    } catch (e) {
+      setState(e.message || "erro");
+    }
+  };
+  return (
+    <button type="button" className="holo-save" onClick={save} disabled={state === "…" || state === "ok"} title={state && state !== "ok" && state !== "…" ? state : "Guardar para rever depois"}>
+      {state === "ok" ? "★ SALVO" : state === "…" ? "…" : "☆ SALVAR"}
+    </button>
+  );
+}
+
+function Presentation({ data, image, speak, stop, onClose, speaking, api }) {
   const [idx, setIdx] = useState(0);
   const [prev, setPrev] = useState(null); // cena que está saindo (se dissolve enquanto a nova entra)
   const [playing, setPlaying] = useState(true);
@@ -308,6 +406,30 @@ function Presentation({ data, image, speak, stop, onClose, speaking }) {
   const scene = scenes[idx];
   const seconds = speechSeconds(scene?.fala);
   const { say, halt } = useNarration({ speak, stop, enabled: true });
+  const [bubble, setBubble] = useState(null); // V7.14: pergunta no meio { q, a }
+  const [askOpen, setAskOpen] = useState(false);
+  const [askText, setAskText] = useState("");
+  const [quiz, setQuiz] = useState(false);
+
+  const ask = useCallback(async (pergunta) => {
+    const q = String(pergunta || "").trim();
+    if (!q) return;
+    halt();
+    setPlaying(false);
+    setAskOpen(false);
+    setAskText("");
+    setBubble({ q, a: "" });
+    try {
+      const r = await api("/api/holo/ask", { method: "POST", body: JSON.stringify({ titulo: data.titulo, cena: scenes[idx]?.fala || "", pergunta: q }), timeout: 45_000 });
+      setBubble({ q, a: r.resposta });
+      say(r.resposta, () => {
+        setBubble(null);
+        setPlaying(true); // continua da mesma cena
+      });
+    } catch (e) {
+      setBubble({ q, a: e.message || "Não consegui responder agora, senhor." });
+    }
+  }, [api, data.titulo, halt, idx, say, scenes]);
 
   const go = useCallback((next) => {
     if (next >= scenes.length) {
@@ -335,14 +457,21 @@ function Presentation({ data, image, speak, stop, onClose, speaking }) {
   }, [idx, playing, ended]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const cmd = useCallback((c) => {
+    if (c && typeof c === "object") {
+      if (c.type === "ask" && !quiz) ask(c.text);
+      return;
+    }
+    if (quiz) return; // no quiz, os comandos são dele
     if (c === "next") { halt(); go(idx + 1); setPlaying(true); }
     else if (c === "prev") { halt(); go(idx - 1); setPlaying(true); }
     else if (c === "repeat") { halt(); setPlaying(false); setTimeout(() => setPlaying(true), 50); }
     else if (c === "pause") { halt(); setPlaying(false); }
     else if (c === "play") setPlaying(true);
     else if (c === "close") { halt(); onClose(); }
-  }, [go, halt, idx, onClose]);
+  }, [ask, go, halt, idx, onClose, quiz]);
   useHoloCommands(cmd);
+
+  if (quiz) return <Quiz api={api} data={data} say={(t) => say(t)} onDone={() => setQuiz(false)} />;
 
   if (ended) {
     return (
@@ -358,6 +487,7 @@ function Presentation({ data, image, speak, stop, onClose, speaking }) {
           ))}
         </div>
         <div className="holo-controls">
+          <button type="button" className="is-main" onClick={() => { halt(); setQuiz(true); }}>🧠 QUIZ: TESTAR O QUE APRENDI</button>
           <button type="button" onClick={() => { setIdx(0); setEnded(false); setPlaying(true); }}>↻ ASSISTIR DE NOVO</button>
           <button type="button" onClick={() => cmd("close")}>✕ FECHAR</button>
         </div>
@@ -416,7 +546,21 @@ function Presentation({ data, image, speak, stop, onClose, speaking }) {
         {prev !== null && scenes[prev] && renderScene(scenes[prev], prev, true)}
         {renderScene(scene, idx, false)}
       </div>
+      {bubble && (
+        <div className="holo-bubble" role="status" aria-live="polite">
+          <small>❓ {bubble.q}</small>
+          <p>{bubble.a || "Pensando…"}</p>
+          {bubble.a && <button type="button" onClick={() => { halt(); setBubble(null); setPlaying(true); }}>CONTINUAR ▶</button>}
+        </div>
+      )}
+      {askOpen && (
+        <form className="holo-ask" onSubmit={(e) => { e.preventDefault(); ask(askText); }}>
+          <input autoFocus value={askText} onChange={(e) => setAskText(e.target.value)} placeholder="Pergunte sobre esta cena…" aria-label="Pergunta sobre a cena" />
+          <button type="submit" disabled={!askText.trim()}>PERGUNTAR</button>
+        </form>
+      )}
       <div className="holo-controls">
+        <button type="button" onClick={() => { setAskOpen((v) => !v); if (playing) cmd("pause"); }} aria-label="Fazer uma pergunta" title='Ou diga "espera, o que é…?"'>❓</button>
         <button type="button" onClick={() => cmd("prev")} disabled={idx === 0} aria-label="Cena anterior">⟵</button>
         <button type="button" className="is-main" onClick={() => cmd(playing ? "pause" : "play")} aria-label={playing ? "Pausar" : "Continuar"}>{playing ? "❚❚" : "▶"}</button>
         <button type="button" onClick={() => cmd("next")} aria-label="Próxima cena">⟶</button>
@@ -575,7 +719,32 @@ export default function HoloStage({ api, request, onClose, onSend, onSpeak, onSt
   const wikiImage = useWikiImage(request.photo ? "" : data?.wiki || "");
   const image = request.photo ? { src: request.photo, own: true } : wikiImage; // V7.8: a foto enviada vira o fundo
 
+  const [library, setLibrary] = useState(request.library ? null : undefined); // V7.14: lista de salvos
+  const [savedId, setSavedId] = useState(request.savedId || "");
+
+  const openSaved = useCallback(async (id) => {
+    setError("");
+    try {
+      const item = await api(`/api/holo/saved/${encodeURIComponent(id)}`);
+      setSavedId(id);
+      setLibrary(undefined);
+      setData(item.data);
+    } catch (e) {
+      setError(e.message || "Não consegui abrir a apresentação salva.");
+    }
+  }, [api]);
+
   useEffect(() => {
+    if (!request.library) return;
+    api("/api/holo/saved").then((d) => setLibrary(d.itens || [])).catch((e) => { setLibrary([]); setError(e.message); });
+  }, [api, request.library]);
+
+  useEffect(() => {
+    if (request.library) return undefined;
+    if (request.savedId) {
+      openSaved(request.savedId);
+      return undefined;
+    }
     let alive = true;
     setData(null);
     setError("");
@@ -593,11 +762,21 @@ export default function HoloStage({ api, request, onClose, onSend, onSpeak, onSt
     };
   }, [api, request]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const removeSaved = async (item) => {
+    if (!window.confirm(`Apagar "${item.titulo}" dos salvos?`)) return;
+    try {
+      const d = await api(`/api/holo/saved/${encodeURIComponent(item.id)}`, { method: "DELETE" });
+      setLibrary(d.itens || []);
+    } catch (e) {
+      setError(e.message);
+    }
+  };
+
   useEffect(() => {
-    if (data || error) return undefined;
+    if (data || error || library !== undefined) return undefined;
     const t = setInterval(() => setLine((n) => (n + 1) % LOADING_LINES.length), 1400);
     return () => clearInterval(t);
-  }, [data, error]);
+  }, [data, error, library]);
 
   const close = useCallback(() => {
     onStop();
@@ -624,11 +803,36 @@ export default function HoloStage({ api, request, onClose, onSend, onSpeak, onSt
         </button>
       )}
 
-      {!data && !error && (
+      {data && (
+        <SaveButton api={api} data={data} query={request.query || ""} savedId={savedId} key={`${data.titulo}-${savedId}`} />
+      )}
+      {library !== undefined && !data && (
+        <div className="holo-library">
+          <small>⭐ HOLOGRAMAS SALVOS</small>
+          <h2>Rever sem gastar IA</h2>
+          {library === null ? <p role="status">Carregando…</p> : library.length === 0 ? (
+            <p>Nada salvo ainda. No fim (ou durante) uma apresentação ou receita, toque em ☆ SALVAR.</p>
+          ) : (
+            <ul>
+              {library.map((it) => (
+                <li key={it.id}>
+                  <button type="button" className="holo-library-open" onClick={() => openSaved(it.id)}>
+                    <span>{it.tipo === "receita" ? "🍳" : "✦"}</span>
+                    <b>{it.titulo}</b>
+                    <small>{it.salvo_em}</small>
+                  </button>
+                  <button type="button" className="holo-library-del" onClick={() => removeSaved(it)} aria-label={`Apagar ${it.titulo}`}>🗑</button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+      {!data && !error && library === undefined && (
         <div className="holo-loading" role="status">
           <div className="holo-rings" aria-hidden="true"><i /><i /><i /><b>✦</b></div>
           <small>MONTANDO O HOLOGRAMA</small>
-          <h2><Scramble text={request.query} duration={1400} /></h2>
+          <h2><Scramble text={request.query || "Apresentação salva"} duration={1400} /></h2>
           <div className="holo-loadbar" aria-hidden="true"><b /></div>
           <p key={line}>{LOADING_LINES[line]}</p>
         </div>
@@ -640,7 +844,7 @@ export default function HoloStage({ api, request, onClose, onSend, onSpeak, onSt
           <button type="button" className="holo-cta" onClick={close}>FECHAR</button>
         </div>
       )}
-      {data?.tipo === "apresentacao" && <Presentation data={data} image={image} speak={onSpeak} stop={onStop} onClose={close} speaking={speaking} />}
+      {data?.tipo === "apresentacao" && <Presentation data={data} image={image} speak={onSpeak} stop={onStop} onClose={close} speaking={speaking} api={api} />}
       {data?.tipo === "receita" && <Recipe data={data} image={image} api={api} speak={onSpeak} stop={onStop} onSend={onSend} onClose={close} speaking={speaking} />}
     </div>,
     document.body,

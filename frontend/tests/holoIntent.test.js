@@ -34,3 +34,20 @@ test("tempo de fala e timer do passo", () => {
   assert.equal(stepTimerText(90, ""), "timer de 1 hora e 30 minutos");
   assert.equal(stepTimerText(0, "x"), "");
 });
+
+test("V7.14: perguntas no meio, quiz por voz, salvos e cartão rápido", async () => {
+  const { holoQuestion, quizLetter, savedHoloIntent, quickQuestion } = await import("../src/utils/holoIntent.js");
+  assert.equal(holoQuestion("espera, o que é horizonte de eventos?"), true);
+  assert.equal(holoQuestion("qual a temperatura do sol"), true);
+  assert.equal(holoQuestion("legal"), false);
+  assert.equal(quizLetter("letra b"), 1);
+  assert.equal(quizLetter("é a c"), 2);
+  assert.equal(quizLetter("alternativa d"), 3);
+  assert.equal(quizLetter("a"), 0);
+  assert.equal(quizLetter("acho que a lua"), -1);
+  assert.equal(savedHoloIntent("abre os hologramas salvos"), true);
+  assert.equal(savedHoloIntent("minhas apresentações salvas"), true);
+  assert.equal(quickQuestion("quanto está o dólar hoje?"), true);
+  assert.equal(quickQuestion("quem ganhou o jogo do palmeiras"), true);
+  assert.equal(quickQuestion("toca uma música"), false);
+});

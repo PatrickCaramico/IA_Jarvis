@@ -36,6 +36,7 @@ _WRITABLE = (
     ("agent_chat", "_PATH", "agentes_conversas.json"),  # V7.9
     ("fin_control", "_PATH", "financas_controle.json"),  # V7.10
     ("world_data", "_TLE_PATH", "olho_tle.json"),  # V7.11
+    ("holo_extra", "_PATH", "holo_salvos.json"),  # V7.14
     ("world_data", "_PREFS_PATH", "olho_avisos.json"),
 )
 
