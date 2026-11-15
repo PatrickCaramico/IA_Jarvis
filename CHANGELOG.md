@@ -2,6 +2,12 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 8.0.1 — 15 de novembro de 2026
+
+**🖥 Modo Desk e JARVIS.exe: botões que faltavam**
+- **Corrigido:** no bloqueio, o 🖥 MODO DESK só ligava o modo e nada mudava na tela. Agora o botão **🖥 ENTRAR NO MODO DESK** já começa a entrada (rosto ou PIN), e a central abre no Modo Desk. Com ele ligado, o botão mostra **MODO DESK: LIGADO**; tocar de novo desliga.
+- **⬇ APP WINDOWS** agora aparece também na central clássica (ao lado do 🖥 MODO DESK), no ⚡ CONTROLES (APP PARA WINDOWS) e na barra lateral do Modo Desk (⬇). Antes ficava só em Modo Desk › Ilha e no bloqueio.
+
 ## 8.0.0 — 15 de novembro de 2026
 
 **🖥 JARVIS 8: Modo Desk, o JARVIS como app de assistente pessoal (ideia 6 do documento de atualização)**

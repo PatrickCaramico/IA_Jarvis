@@ -660,6 +660,7 @@ export default function DeskApp(props) {
         </nav>
         <div className="dk-side-foot">
           <button type="button" className="dk-btn" onClick={onClassic} title="Voltar para a central clássica">◐ CENTRAL CLÁSSICA</button>
+          <button type="button" className="dk-btn" onClick={() => window.dispatchEvent(new CustomEvent("jarvis-desktop-download"))} title="Baixar o JARVIS.exe (app para Windows)">⬇</button>
           <button type="button" className="dk-btn" onClick={onLock}>🔒</button>
         </div>
       </aside>

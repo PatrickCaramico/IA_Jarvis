@@ -151,6 +151,7 @@ export default function LockScreen({
   updateNote = "", // V5.7.1: resposta do ATUALIZAR APP ("O app já está na versão mais nova…")
   updateProgress = null, // V6.1: 0–100 enquanto o app baixa a versão nova
   phoneApp = false, // V4.5: dentro do app do celular (o rosto usaria a webcam do PC: entra pelo PIN)
+  deskOn = false, // V8.0.1: o Modo Desk abre ao entrar?
   lockStyle = "classico", // V7.12: "orbe" (igual ao vídeo: orbe de linhas, estado em cima, cartões numa faixa) | "classico"
   onLockStyle = null,
 }) {
@@ -252,8 +253,17 @@ export default function LockScreen({
       )}
       {(phase === "ready" || phase === "failed") && (
         <>
-          <button type="button" className="ls-chip" onClick={(e) => { e.stopPropagation(); window.dispatchEvent(new CustomEvent("jarvis-desk-toggle", { detail: true })); }}
-            title="Ao entrar, abrir o Modo Desk (o JARVIS como app de assistente)">🖥 MODO DESK</button>
+          {/* V8.0.1: liga o Modo Desk e já começa a entrada (antes só ligava e nada mudava na tela) */}
+          <button type="button" className={`ls-chip${deskOn ? " is-strong" : ""}`} aria-pressed={deskOn}
+            onClick={(e) => {
+              e.stopPropagation();
+              const next = !deskOn;
+              window.dispatchEvent(new CustomEvent("jarvis-desk-toggle", { detail: next }));
+              if (next && !phoneApp) handleBtnClick();
+            }}
+            title={deskOn ? "Desligar: entrar na central clássica" : "Entrar no Modo Desk (o JARVIS como app de assistente)"}>
+            {deskOn ? "🖥 MODO DESK: LIGADO" : "🖥 ENTRAR NO MODO DESK"}
+          </button>
           <button type="button" className="ls-chip" onClick={(e) => { e.stopPropagation(); window.dispatchEvent(new CustomEvent("jarvis-desktop-download")); }}
             title="Baixar o JARVIS.exe (app para Windows com a ilha no topo)">⬇ APP WINDOWS</button>
           <button type="button" className="ls-chip" onClick={(e) => { e.stopPropagation(); window.dispatchEvent(new CustomEvent("jarvis-open-branding")); }}
