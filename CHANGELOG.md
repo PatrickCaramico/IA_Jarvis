@@ -2,6 +2,12 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 7.14.1 — 15 de novembro de 2026
+
+**📱 Correções no celular**
+- **Corrigido:** no celular fora de casa (modo nuvem), o 🔒 BLOQUEAR levava ao bloqueio de rosto do PC, que não funciona longe do notebook. O celular ficava preso em "isso precisa do notebook ligado". Agora bloquear pede o **PIN da nuvem** de novo.
+- **Corrigido:** na Central de Agentes, no celular, o botão 🗑 LIMPAR CONVERSA ficava por cima da conversa.
+
 ## 7.14.0 — 15 de novembro de 2026
 
 **🔒 Bloqueio: volta o layout clássico, com a verificação nova**

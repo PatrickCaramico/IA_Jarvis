@@ -32,7 +32,7 @@ import { API_URL, BACKEND_ON_THIS_PC, api, clientId, getJarvisToken, hasMemoryTo
 import { enqueueHere, stopSpeech } from "./utils/speakHere.js";
 import { applyAccessibility, applyBackground, applyFanMode, applyTheme } from "./utils/theme.js";
 import { IS_JARVIS_APP } from "./utils/device.js";
-import { CLOUD_AVAILABLE, cloudRequested, isPhone } from "./utils/cloudApi.js";
+import { CLOUD_AVAILABLE, cloudRequested, isPhone, setCloudToken } from "./utils/cloudApi.js";
 import { installCloudShim } from "./utils/cloudShim.js";
 import { holoCommand, holoIntent, holoQuestion, quickQuestion, quizLetter, savedHoloIntent } from "./utils/holoIntent.js";
 import QuickCard from "./components/QuickCard.jsx";
@@ -2142,6 +2142,12 @@ export default function App() {
   }, [userText, response, error, jarvisState, listening]);
 
   const returnToWaiting = useCallback(async (notifyBackend = true) => {
+    // V7.14.1: no modo nuvem (celular fora de casa) não existe o rosto do PC: bloquear = pedir o PIN da nuvem de novo
+    if (cloudActive) {
+      setCloudToken("");
+      window.location.reload();
+      return;
+    }
     cancelMic();
     busyRef.current = false;
     setShowBioScan(false);
@@ -2172,7 +2178,7 @@ export default function App() {
     setSessionStartedAt(null);
     setSessionElapsed(0);
     setScreen("lock");
-  }, [cancelMic, loadPinStatus]);
+  }, [cancelMic, cloudActive, loadPinStatus]);
 
   const toggleMic = useCallback(() => {
     if (!supported) {
