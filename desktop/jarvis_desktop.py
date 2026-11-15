@@ -1,12 +1,13 @@
-"""V8.0: JARVIS.exe, o app do JARVIS para Windows (ideia 6, Modo Desk).
+"""V8.0: o app do JARVIS para Windows (ideia 6, Modo Desk).
 
 - Janela própria com o Modo Desk (sem barra do navegador).
 - A ILHA: uma barrinha sempre visível no topo da tela (avatar, hora, música e respostas). Tocar nela mostra a janela.
 - Tecla de atalho para falar com o JARVIS de qualquer lugar (PageDown por padrão; muda em Configurações › Ilha).
 - Se o JARVIS não estiver rodando, liga sozinho (Iniciar-JARVIS.bat site, sem abrir o navegador).
 
-O JARVIS de sempre continua por trás (mesmos dados, voz e celular): o .exe é só a "casa" dele no Windows.
-Gerado no PC pelo Gerar-App-Windows.bat (PyInstaller + pywebview); não precisa de Python para rodar.
+O JARVIS de sempre continua por trás (mesmos dados, voz e celular): o app é só a "casa" dele no Windows.
+V8.1.1: instalado pelo Gerar-App-Windows.bat como um atalho "JARVIS" que abre este arquivo com o pythonw.exe
+oficial (assinado). Antes era um JARVIS.exe do PyInstaller, que o McAfee acusava como vírus (falso positivo).
 """
 from __future__ import annotations
 
@@ -62,8 +63,14 @@ def start_jarvis(root: str = JARVIS_ROOT) -> bool:
     bat = Path(root) / "Iniciar-JARVIS.bat"
     if not bat.exists():
         return False
-    flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
-    subprocess.Popen(["cmd.exe", "/c", str(bat), "site"], cwd=str(bat.parent), creationflags=flags)  # noqa: S603,S607
+    # V8.1.1: janela visível (minimizada), nada escondido: processo oculto é o que antivírus vigiam
+    info = None
+    if hasattr(subprocess, "STARTUPINFO"):
+        info = subprocess.STARTUPINFO()
+        info.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        info.wShowWindow = 7  # SW_SHOWMINNOACTIVE
+    flags = getattr(subprocess, "CREATE_NEW_CONSOLE", 0)
+    subprocess.Popen(["cmd.exe", "/c", str(bat), "site"], cwd=str(bat.parent), creationflags=flags, startupinfo=info)  # noqa: S603,S607
     for _ in range(60):
         if jarvis_up():
             return True
@@ -132,7 +139,7 @@ def main() -> None:
         webview.create_window("JARVIS", html=(
             "<body style='background:#0b0d12;color:#eef2f7;font-family:sans-serif;display:grid;place-items:center;height:100vh;margin:0'>"
             "<div style='text-align:center'><h2>O JARVIS não está rodando</h2>"
-            f"<p>Abra a pasta do JARVIS ({JARVIS_ROOT}) e rode o Iniciar-JARVIS.bat. Depois abra o JARVIS.exe de novo.</p></div></body>"))
+            f"<p>Abra a pasta do JARVIS ({JARVIS_ROOT}) e rode o Iniciar-JARVIS.bat. Depois abra o atalho JARVIS de novo.</p></div></body>"))
         webview.start()
         return
     cfg = (get_json(f"{API}/api/desk") or {}).get("ilha") or {}

@@ -1,37 +1,58 @@
-"""V8.0: JARVIS.exe (app para Windows com a ilha no topo). O executável é gerado no PC pelo Gerar-App-Windows.bat
-(PyInstaller + pywebview) e fica em data/desktop/JARVIS.exe; o botão ⬇ APP PARA WINDOWS baixa daqui.
-Só a partir deste PC: o executável guarda o caminho da pasta do JARVIS e não serve para outro computador."""
+"""App do JARVIS para Windows (janela própria + ilha no topo + tecla para falar).
+
+V8.1.1: não existe mais JARVIS.exe para baixar. O exe do PyInstaller (8.0) era acusado como vírus pelo McAfee
+(falso positivo). Agora o Gerar-App-Windows.bat cria um atalho "JARVIS" que abre o app com o pythonw.exe oficial
+do Python (assinado). O instalador grava data/desktop/app.json; daqui dá para ver se já foi instalado e abrir o app.
+"""
 from __future__ import annotations
 
-import time
+import json
+import os
+import sys
 
 from fastapi import APIRouter, HTTPException, Request
-from fastapi.responses import FileResponse
 
 from config import settings
 from core import runtime
 
 router = APIRouter()
-EXE = settings.DATA_DIR / "desktop" / "JARVIS.exe"
+MARK = settings.DATA_DIR / "desktop" / "app.json"
+OLD_EXE = settings.DATA_DIR / "desktop" / "JARVIS.exe"
+HOW = "Na pasta do JARVIS, dê dois cliques em Gerar-App-Windows.bat (uma vez; leva uns minutos)."
+
+
+def _mark() -> dict | None:
+    try:
+        data = json.loads(MARK.read_text(encoding="utf-8-sig"))
+        return data if isinstance(data, dict) else None
+    except (OSError, ValueError):
+        return None
 
 
 @router.get("/api/desktop/info")
 async def desktop_info(request: Request) -> dict:
-    ok = EXE.exists()
+    mark = _mark()
+    local = runtime.is_local_conn(request)
     return {
-        "disponivel": ok and runtime.is_local_conn(request),
-        "gerado": ok,
-        "local": runtime.is_local_conn(request),
-        "tamanho_mb": round(EXE.stat().st_size / 1_048_576, 1) if ok else None,
-        "gerado_em": time.strftime("%d/%m/%Y %H:%M", time.localtime(EXE.stat().st_mtime)) if ok else None,
-        "como_gerar": "Na pasta do JARVIS, dê dois cliques em Gerar-App-Windows.bat (uma vez; leva uns minutos).",
+        "instalado": bool(mark), "local": local, "versao": (mark or {}).get("versao"),
+        "instalado_em": (mark or {}).get("instalado_em"), "exe_antigo": OLD_EXE.exists(), "como_instalar": HOW,
     }
 
 
-@router.get("/api/desktop/app")
-async def desktop_app(request: Request):
+@router.post("/api/desktop/open")
+async def desktop_open(request: Request) -> dict:
+    """Abre o app pelo atalho (só no próprio PC do JARVIS)."""
     if not runtime.is_local_conn(request):
-        raise HTTPException(status_code=403, detail="O JARVIS.exe é baixado no próprio PC do JARVIS.")
-    if not EXE.exists():
-        raise HTTPException(status_code=404, detail="O JARVIS.exe ainda não foi gerado. Rode Gerar-App-Windows.bat.")
-    return FileResponse(EXE, media_type="application/vnd.microsoft.portable-executable", filename="JARVIS.exe")
+        raise HTTPException(status_code=403, detail="O app abre no próprio PC do JARVIS.")
+    lnk = (_mark() or {}).get("atalho") or ""
+    if not lnk or not os.path.exists(lnk):
+        raise HTTPException(status_code=404, detail="O app ainda não foi instalado. " + HOW)
+    if sys.platform != "win32":
+        raise HTTPException(status_code=501, detail="O app é para Windows.")
+    os.startfile(lnk)  # type: ignore[attr-defined]  # noqa: S606 - atalho criado pelo próprio instalador
+    return {"ok": True}
+
+
+@router.get("/api/desktop/app")
+async def desktop_app() -> dict:
+    raise HTTPException(status_code=410, detail="Não há mais JARVIS.exe para baixar (o antivírus acusava). " + HOW)
