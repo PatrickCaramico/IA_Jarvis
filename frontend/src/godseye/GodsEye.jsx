@@ -130,7 +130,7 @@ export default function GodsEye({ onClose, api = null, initialCategory = "traffi
   const [layersOn, setLayersOn] = useState(() => Object.fromEntries(LAYERS.map((l) => [l.id, initialLayer ? l.id === initialLayer || l.id === "chuva" : true])));
   const [data, setData] = useState({});
   const [errors, setErrors] = useState({});
-  const [base, setBase] = useState("dark");
+  const [base, setBase] = useState("hud");
   const [pick, setPick] = useState(null);
   const [fly, setFly] = useState(null);
   const [globeOk, setGlobeOk] = useState(true);
@@ -253,7 +253,7 @@ export default function GodsEye({ onClose, api = null, initialCategory = "traffi
   useEscape(close); // V7.4: Esc fecha mesmo com um botão focado
 
   const summary = summaryText(data);
-  const card = pickCard(pick);
+  const card = pickCard(pick, data.lancamentos?.itens);
   const events = (data.terremotos?.total || 0) + (data.queimadas?.total || 0) + (data.voos?.no_ar || 0);
   const activeCount = Object.values(layersOn).filter(Boolean).length;
   const onReady = useCallback((ok) => setGlobeOk(ok), []);
@@ -286,7 +286,7 @@ export default function GodsEye({ onClose, api = null, initialCategory = "traffi
           <div className="ge-traffic-actions">
             {home && <button type="button" onClick={() => { setFocus(null); setFly({ lat: home.lat, lon: home.lon, zoom: 5.2 }); }}>🏠 MINHA CIDADE</button>}
             <button type="button" onClick={locateMe}>📍 ONDE ESTOU</button>
-            <button type="button" onClick={() => setBase((b) => (b === "dark" ? "sat" : "dark"))} aria-pressed={base === "sat"}>{base === "sat" ? "🌑 ESCURO" : "🛰 SATÉLITE"}</button>
+            <button type="button" onClick={() => setBase((b) => (b === "hud" ? "sat" : "hud"))} aria-pressed={base === "sat"}>{base === "sat" ? "🌐 HUD" : "🛰 SATÉLITE"}</button>
             <button type="button" onClick={() => setFly({ lat: where.lat, lon: where.lon, zoom: 1.4 })}>🌍 MUNDO</button>
           </div>
           <div className="ge-layer-list">
@@ -330,8 +330,23 @@ export default function GodsEye({ onClose, api = null, initialCategory = "traffi
       )}
 
       {!isTraffic && card && (
-        <aside className="ge-pick" aria-label={card.title}>
-          <header><span>{card.icon}</span><strong>{card.title}</strong><button type="button" onClick={() => setPick(null)} aria-label="Fechar cartão">✕</button></header>
+        <aside className={`ge-pick${card.image || card.text ? " is-rich" : ""}`} aria-label={card.title}>
+          <header>
+            <span>{card.icon}</span>
+            <div><strong>{card.title}</strong>{card.subtitle && <small>{card.subtitle}</small>}</div>
+            <button type="button" onClick={() => setPick(null)} aria-label="Fechar cartão">✕</button>
+          </header>
+          {card.image && (
+            <div className="ge-pick-hero" style={{ backgroundImage: `url("${card.image}")` }}>
+              {card.badge && <em className={`is-${card.badgeKind || "info"}`}>● {card.badge}</em>}
+              <b>{card.hero}</b><small>{card.heroSub}</small>
+            </div>
+          )}
+          {!card.image && card.badge && <em className={`ge-pick-badge is-${card.badgeKind || "info"}`}>● {card.badge}</em>}
+          {card.links?.length > 0 && (
+            <div className="ge-pick-links">{card.links.map((l) => <a key={l.url} href={l.url} target="_blank" rel="noreferrer">{l.label}</a>)}</div>
+          )}
+          {card.text && <p className="ge-pick-text">{card.text}</p>}
           {card.lines.filter(Boolean).map((line) => <p key={line}>{line}</p>)}
         </aside>
       )}

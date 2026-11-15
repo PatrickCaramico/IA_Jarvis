@@ -119,3 +119,18 @@ def test_world_routes(monkeypatch):
     r = client.post("/api/world/alerts", json={"perto": False})
     assert r.json()["ligados"]["perto"] is False
     assert client.get("/api/world/alerts").json()["ligados"]["perto"] is False
+
+
+def test_launches_parser_v22_and_v23():
+    v22 = {"results": [{"id": "a1", "name": "Falcon 9 | Bandwagon 6", "net": "2026-11-04T08:04:00Z", "status": {"abbrev": "Success"},
+                        "rocket": {"configuration": {"full_name": "Falcon 9 Block 5"}}, "launch_service_provider": {"name": "SpaceX"},
+                        "mission": {"name": "Bandwagon 6", "description": "Rideshare", "orbit": {"name": "Low Earth Orbit"}},
+                        "pad": {"name": "SLC-40", "latitude": "28.56", "longitude": "-80.57", "location": {"name": "Cape Canaveral", "country_code": "USA"}},
+                        "image": "https://img/x.jpg", "vidURLs": [{"url": "https://youtube.com/w"}], "infoURLs": [], "probability": 95},
+                       {"id": "sem-base", "pad": {}}]}
+    v23 = {"results": [{"id": "b2", "name": "Long March 5", "net": "2026-11-20T10:00:00Z", "status": {"abbrev": "Go"},
+                        "pad": {"latitude": 19.6, "longitude": 110.9, "country": {"name": "China"}}, "image": {"image_url": "https://img/y.jpg"}}]}
+    a = world_data.parse_launches(v22, "recente")
+    b = world_data.parse_launches(v23, "proximo")
+    assert len(a) == 1 and a[0]["situacao"] == "sucesso" and a[0]["video"] == "https://youtube.com/w" and a[0]["lat"] == 28.56
+    assert b[0]["situacao"] == "confirmado" and b[0]["foto"] == "https://img/y.jpg" and b[0]["pais"] == "China"

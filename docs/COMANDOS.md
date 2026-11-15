@@ -1,6 +1,6 @@
 # JARVIS — Comandos do dia a dia
 
-**Versão do projeto:** 7.11.0 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
+**Versão do projeto:** 7.11.1 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
 
 > Montado a partir do código do projeto. Se algum comando não responder como descrito, me avise que eu ajusto o guia.
 > Para a lista técnica de rotas, veja [API.md](API.md); para o `.env`, [CONFIGURACAO.md](CONFIGURACAO.md).
@@ -456,6 +456,7 @@ Pedidos com YouTube, Google, Maps, música ou notícias continuam no caminho de 
 | "Tem queimada perto?" | Focos de queimada a menos de 50 km (e o mais próximo). |
 | "Quando a estação espacial passa?" | A próxima passagem visível no seu céu: hora, direção e nuvens. |
 | "Mostra o radar de chuva" | Abre o radar animado e diz quando vai chover. |
+| "Qual o próximo lançamento de foguete?" (V7.11.1) | Diz qual é, de qual empresa e quando; no globo, toque na base para ver foto, ▶ ASSISTIR e ↗ SITE. |
 | Tocar num ponto | Cartão com os detalhes (voo, altitude, força do terremoto, município da queimada). |
 | Avisos (no painel) | Chuva forte chegando · queimada/terremoto perto · ISS visível. Cada um liga e desliga. |
 

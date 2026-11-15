@@ -8,7 +8,9 @@ const OPEN_METEO = "https://api.open-meteo.com/v1/forecast";
 const FLIGHTS = ["https://api.adsb.lol/v2/point", "https://api.airplanes.live/v2/point"];
 const INPE = "https://dataserver-coids.inpe.br/queimadas/queimadas/focos/csv/diario/Brasil/focos_diario_br_";
 const CELESTRAK = "https://celestrak.org/NORAD/elements/gp.php?CATNR=25544&FORMAT=TLE";
-export const LAYERS = ["chuva", "voos", "terremotos", "queimadas", "iss"];
+export const LAYERS = ["chuva", "voos", "terremotos", "queimadas", "iss", "lancamentos"];
+const LAUNCHES = ["https://ll.thespacedevs.com/2.2.0/launch/", "https://ll.thespacedevs.com/2.3.0/launches/"];
+const LAUNCH_STATUS = { go: "confirmado", tbd: "a confirmar", tbc: "a confirmar", success: "sucesso", failure: "falhou", "partial failure": "falha parcial", "in flight": "em voo", hold: "em espera" };
 const FLIGHT_RADIUS_KM = 150;
 const NEAR_KM = 50;
 const STRONG_RAIN_MM15 = 1.25;
@@ -416,11 +418,65 @@ async function iss(store, fetchFn, lat, lon, nowMs, light = false) {
   return out;
 }
 
+// --------------------------------------------------------------------------- lançamentos (igual a world_data.launches)
+const urlOf = (v) => {
+  const u = String((v && typeof v === "object" ? v.image_url || v.url : v) || "");
+  return u.startsWith("https://") ? u : "";
+};
+
+export function parseLaunches(data, kind) {
+  const out = [];
+  for (const r of data?.results || []) {
+    const pad = r.pad || {};
+    const la = num(pad.latitude);
+    const lo = num(pad.longitude);
+    if (la == null || lo == null) continue;
+    const st = r.status || {};
+    const key = String(st.abbrev || st.name || "").trim().toLowerCase();
+    const mission = r.mission || {};
+    const rocket = r.rocket?.configuration || {};
+    const loc = pad.location || {};
+    out.push({
+      id: String(r.id || "").slice(0, 40), nome: String(r.name || "").slice(0, 120), quando: String(r.net || ""),
+      janela: [String(r.window_start || ""), String(r.window_end || "")],
+      situacao: LAUNCH_STATUS[key] || String(st.name || "").slice(0, 30).toLowerCase(), status: key,
+      foguete: String(rocket.full_name || rocket.name || "").slice(0, 60), empresa: String(r.launch_service_provider?.name || "").slice(0, 60),
+      missao: String(mission.name || "").slice(0, 80), descricao: String(mission.description || "").slice(0, 600), orbita: String(mission.orbit?.name || "").slice(0, 40),
+      base: String(pad.name || "").slice(0, 80), local: String(loc.name || "").slice(0, 80), pais: String(pad.country?.name || loc.country_code || "").slice(0, 40),
+      lat: round(la, 4), lon: round(lo, 4), foto: urlOf(r.image),
+      video: (r.vidURLs || []).map(urlOf).find(Boolean) || "", site: (r.infoURLs || []).map(urlOf).find(Boolean) || "",
+      ao_vivo: Boolean(r.webcast_live), chance: num(r.probability), tipo: kind,
+    });
+  }
+  return out;
+}
+
+async function launches(fetchFn, nowMs) {
+  const items = [];
+  let ok = false;
+  for (const [kind, label, limit] of [["upcoming", "proximo", 12], ["previous", "recente", 8]]) {
+    for (const base of LAUNCHES) {
+      try {
+        const data = await cached(`ll${base}${kind}`, 1800_000, () => getJson(fetchFn, `${base}${kind}/?limit=${limit}&mode=detailed`, 15_000), nowMs);
+        items.push(...parseLaunches(data, label));
+        ok = true;
+        break;
+      } catch {
+        /* tenta a outra versão */
+      }
+    }
+  }
+  if (!ok) throw new Error("sem lançamentos");
+  const prox = items.filter((i) => i.tipo === "proximo").sort((a, b) => a.quando.localeCompare(b.quando));
+  return { itens: items, total: items.length, proximo: prox[0] || null, atualizado: new Date(nowMs).toISOString(), fonte: "The Space Devs" };
+}
+
 // --------------------------------------------------------------------------- entrada
 export async function worldLayer(name, { lat = null, lon = null, limit = 4000, light = false, store, fetchFn = fetch, nowMs = Date.now() }) {
   if (!LAYERS.includes(name)) throw Object.assign(new Error("Camada desconhecida."), { status: 404 });
   if (lat == null && (name === "chuva" || name === "voos")) throw Object.assign(new Error("Informe a cidade (lat e lon)."), { status: 400 });
   if (name === "terremotos") return quakes(fetchFn, lat, lon, nowMs);
+  if (name === "lancamentos") return launches(fetchFn, nowMs);
   if (name === "voos") return flights(fetchFn, lat, lon, nowMs);
   if (name === "queimadas") return fires(fetchFn, lat, lon, nowMs, Math.max(200, Math.min(limit, 6000)));
   if (name === "chuva") return rain(fetchFn, lat, lon, nowMs);

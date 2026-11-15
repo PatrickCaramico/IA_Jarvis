@@ -33,7 +33,10 @@ FLIGHTS = ("https://api.adsb.lol/v2/point/{lat:.4f}/{lon:.4f}/{nm}", "https://ap
 INPE = "https://dataserver-coids.inpe.br/queimadas/queimadas/focos/csv/diario/Brasil/focos_diario_br_{d}.csv"
 CELESTRAK = "https://celestrak.org/NORAD/elements/gp.php?CATNR=25544&FORMAT=TLE"
 
-LAYERS = ("chuva", "voos", "terremotos", "queimadas", "iss")
+LAUNCHES = ("https://ll.thespacedevs.com/2.2.0/launch/{kind}/", "https://ll.thespacedevs.com/2.3.0/launches/{kind}/")
+LAYERS = ("chuva", "voos", "terremotos", "queimadas", "iss", "lancamentos")
+LAUNCH_STATUS = {"go": "confirmado", "tbd": "a confirmar", "tbc": "a confirmar", "success": "sucesso", "failure": "falhou",
+                 "partial failure": "falha parcial", "in flight": "em voo", "hold": "em espera"}
 FLIGHT_RADIUS_KM = 150
 NEAR_KM = 50
 STRONG_RAIN_MM15 = 1.25  # 1,25 mm em 15 min = 5 mm/h: chuva forte
@@ -324,6 +327,67 @@ def _tz_offset(lon: float) -> timedelta:
     return off if off is not None else timedelta(hours=round(lon / 15))
 
 
+# --------------------------------------------------------------------------- lançamentos de foguetes
+def _url_of(v) -> str:
+    if isinstance(v, dict):
+        v = v.get("image_url") or v.get("url") or ""
+    v = str(v or "")
+    return v if v.startswith("https://") else ""
+
+
+def parse_launches(data: dict, kind: str) -> list[dict]:
+    """Launch Library 2 (The Space Devs): aceita as versões 2.2 e 2.3 da resposta."""
+    out = []
+    for r in (data or {}).get("results") or []:
+        pad = r.get("pad") or {}
+        la, lo = _f(pad.get("latitude")), _f(pad.get("longitude"))
+        if la is None or lo is None:
+            continue
+        st = r.get("status") or {}
+        st_key = str(st.get("abbrev") or st.get("name") or "").strip().lower()
+        mission = r.get("mission") or {}
+        rocket = ((r.get("rocket") or {}).get("configuration") or {})
+        loc = pad.get("location") or {}
+        country = (pad.get("country") or {}).get("name") or loc.get("country_code") or ""
+        vids = [_url_of(v) for v in r.get("vidURLs") or []]
+        infos = [_url_of(v) for v in r.get("infoURLs") or []]
+        out.append({
+            "id": str(r.get("id") or "")[:40], "nome": str(r.get("name") or "")[:120],
+            "quando": str(r.get("net") or ""), "janela": [str(r.get("window_start") or ""), str(r.get("window_end") or "")],
+            "situacao": LAUNCH_STATUS.get(st_key, str(st.get("name") or "")[:30].lower()), "status": st_key,
+            "foguete": str(rocket.get("full_name") or rocket.get("name") or "")[:60],
+            "empresa": str((r.get("launch_service_provider") or {}).get("name") or "")[:60],
+            "missao": str(mission.get("name") or "")[:80], "descricao": str(mission.get("description") or "")[:600],
+            "orbita": str((mission.get("orbit") or {}).get("name") or "")[:40],
+            "base": str(pad.get("name") or "")[:80], "local": str(loc.get("name") or "")[:80], "pais": str(country)[:40],
+            "lat": round(la, 4), "lon": round(lo, 4), "foto": _url_of(r.get("image")),
+            "video": next((v for v in vids if v), ""), "site": next((v for v in infos if v), ""),
+            "ao_vivo": bool(r.get("webcast_live")), "chance": _f(r.get("probability")), "tipo": kind,
+        })
+    return out
+
+
+def launches() -> dict:
+    """Próximos lançamentos e os mais recentes. A fonte gratuita permite poucas consultas por hora: cache de 30 min."""
+    items: list[dict] = []
+    ok = False
+    for kind, label, limit in (("upcoming", "proximo", 12), ("previous", "recente", 8)):
+        for url in LAUNCHES:
+            try:
+                data = http_client.get_json(url.format(kind=kind), params={"limit": limit, "mode": "detailed"}, timeout=15, ttl=1800)
+            except Exception as exc:  # noqa: BLE001 - tenta a outra versão da API
+                log.info("Lançamentos (%s) indisponíveis em %s: %s", kind, url, exc)
+                continue
+            items += parse_launches(data, label)
+            ok = True
+            break
+    if not ok:
+        raise RuntimeError("sem dados de lançamentos")
+    prox = sorted((i for i in items if i["tipo"] == "proximo"), key=lambda i: i["quando"])
+    return {"itens": items, "total": len(items), "proximo": prox[0] if prox else None,
+            "atualizado": _now().isoformat(), "fonte": "The Space Devs"}
+
+
 # --------------------------------------------------------------------------- casa e resumo
 def home() -> dict | None:
     """A cidade do JARVIS (a mesma do clima)."""
@@ -352,6 +416,8 @@ def layer(name: str, lat: float | None, lon: float | None, limit: int = 4000, li
         lat, lon = h["lat"], h["lon"]
     if name == "terremotos":
         return quakes(lat, lon)
+    if name == "lancamentos":
+        return launches()
     if name == "voos":
         return flights(lat, lon)
     if name == "queimadas":

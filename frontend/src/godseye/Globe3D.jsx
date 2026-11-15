@@ -6,29 +6,40 @@ import workerUrl from "maplibre-gl/dist/maplibre-gl-csp-worker.js?url";
 import "maplibre-gl/dist/maplibre-gl.css";
 
 maplibregl.setWorkerUrl(workerUrl);
-import { firesGeo, flightsGeo, issTrack, quakesGeo, radarTiles } from "./world.js";
+import { feature, mesh } from "topojson-client";
+import countries50 from "world-atlas/countries-50m.json?url";
+import countries110 from "world-atlas/countries-110m.json?url";
+import { firesGeo, flightsGeo, issTrack, launchesGeo, quakesGeo, radarTiles } from "./world.js";
 
-// V7.11: globo 3D de verdade (MapLibre, projeção "globe"). Mapas gratuitos e sem chave: CARTO (escuro, estilo HUD)
-// e Esri (satélite). As camadas chegam prontas do PC (ou da nuvem) e só são desenhadas aqui.
+// V7.11: globo 3D de verdade (MapLibre, projeção "globe"). V7.12: visual "HUD" sem nenhuma chave de mapa: oceano
+// azul, continentes e fronteiras em neon desenhados a partir do Natural Earth (pacote world-atlas, vem junto com o
+// site). Ao aproximar, entram as ruas (Esri, sem chave); a visão satélite também é da Esri.
+const ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services";
+const STREETS = [`${ESRI}/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}`];
+const SAT = [`${ESRI}/World_Imagery/MapServer/tile/{z}/{y}/{x}`];
+const PLACES = [`${ESRI}/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}`];
+const HUD_LAYERS = ["ge-land", "ge-streets", "ge-coast-glow", "ge-borders", "ge-coast"];
+const SAT_LAYERS = ["ge-sat", "ge-places"];
 
-const BASES = {
-  dark: {
-    tiles: ["a", "b", "c", "d"].map((s) => `https://${s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png`),
-    attribution: "© OpenStreetMap · © CARTO",
-  },
-  sat: {
-    tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
-    attribution: "© Esri, Maxar, Earthstar Geographics",
-  },
-};
-const LABELS = ["a", "b", "c", "d"].map((s) => `https://${s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}@2x.png`);
+async function loadWorld(lite) {
+  const url = lite ? countries110 : countries50;
+  const topo = await (await fetch(url)).json();
+  const obj = topo.objects.countries;
+  return {
+    land: feature(topo, obj),
+    borders: mesh(topo, obj, (a, b) => a !== b),
+    coast: mesh(topo, obj, (a, b) => a === b),
+  };
+}
+
 const EMPTY = { type: "FeatureCollection", features: [] };
-const PICKABLE = ["ge-quakes", "ge-fires", "ge-flights"];
+const PICKABLE = ["ge-quakes", "ge-fires", "ge-flights", "ge-launches"];
 const LAYER_IDS = {
   terremotos: ["ge-quakes", "ge-quakes-glow"],
   queimadas: ["ge-fires"],
   voos: ["ge-flights"],
   iss: ["ge-iss-track"],
+  lancamentos: ["ge-launches", "ge-launches-ring"],
 };
 
 function planeImage() {
@@ -54,7 +65,7 @@ function marker(className, html) {
   return el;
 }
 
-export default function Globe3D({ home, layersOn, data, base = "dark", lite = false, flyTo, onPick, onReady }) {
+export default function Globe3D({ home, layersOn, data, base = "hud", lite = false, flyTo, onPick, onReady }) {
   const boxRef = useRef(null);
   const mapRef = useRef(null);
   const issMarker = useRef(null);
@@ -65,6 +76,7 @@ export default function Globe3D({ home, layersOn, data, base = "dark", lite = fa
   const readyRef = useRef(onReady);
   const issRef = useRef(null);
   const startRef = useRef(home);
+  const liteRef = useRef(lite);
   useEffect(() => {
     pickRef.current = onPick;
     readyRef.current = onReady;
@@ -73,6 +85,7 @@ export default function Globe3D({ home, layersOn, data, base = "dark", lite = fa
   // cria o globo uma vez
   useEffect(() => {
     const start = startRef.current;
+    const lite = liteRef.current;
     let map;
     try {
       map = new maplibregl.Map({
@@ -80,13 +93,30 @@ export default function Globe3D({ home, layersOn, data, base = "dark", lite = fa
         style: {
           version: 8,
           projection: { type: "globe" },
+          sky: {
+            "sky-color": "#04112e", "horizon-color": "#1d6bff", "fog-color": "#0a2d6e",
+            "atmosphere-blend": ["interpolate", ["linear"], ["zoom"], 0, 1, 5, 1, 7, 0],
+          },
           sources: {
-            base: { type: "raster", tiles: BASES.dark.tiles, tileSize: 256, maxzoom: 19, attribution: BASES.dark.attribution },
-            labels: { type: "raster", tiles: LABELS, tileSize: 256, maxzoom: 19 },
+            streets: { type: "raster", tiles: STREETS, tileSize: 256, minzoom: 5, maxzoom: 16, attribution: "Ruas © Esri" },
+            sat: { type: "raster", tiles: SAT, tileSize: 256, maxzoom: 19, attribution: "Satélite © Esri, Maxar" },
+            places: { type: "raster", tiles: PLACES, tileSize: 256, maxzoom: 19 },
+            world: { type: "geojson", data: EMPTY, attribution: "Natural Earth" },
+            borders: { type: "geojson", data: EMPTY },
+            coast: { type: "geojson", data: EMPTY },
           },
           layers: [
-            { id: "base", type: "raster", source: "base" },
-            { id: "labels", type: "raster", source: "labels", layout: { visibility: "none" } },
+            { id: "ge-ocean", type: "background", paint: { "background-color": "#0a2d6e" } },
+            { id: "ge-sat", type: "raster", source: "sat", layout: { visibility: "none" } },
+            { id: "ge-land", type: "fill", source: "world", paint: { "fill-color": "#11408f", "fill-opacity": 0.92 } },
+            {
+              id: "ge-streets", type: "raster", source: "streets", minzoom: 5,
+              paint: { "raster-opacity": ["interpolate", ["linear"], ["zoom"], 5, 0, 7.5, 0.55, 12, 0.8], "raster-saturation": -1, "raster-brightness-max": 0.75 },
+            },
+            { id: "ge-coast-glow", type: "line", source: "coast", paint: { "line-color": "#22d3ee", "line-width": ["interpolate", ["linear"], ["zoom"], 1, 4, 6, 9], "line-blur": 5, "line-opacity": 0.45 } },
+            { id: "ge-borders", type: "line", source: "borders", paint: { "line-color": "#38bdf8", "line-width": 0.7, "line-opacity": 0.55 } },
+            { id: "ge-coast", type: "line", source: "coast", paint: { "line-color": "#5eead4", "line-width": ["interpolate", ["linear"], ["zoom"], 1, 1, 6, 1.8], "line-opacity": 0.95 } },
+            { id: "ge-places", type: "raster", source: "places", layout: { visibility: "none" } },
           ],
         },
         center: [start ? start.lon - 70 : -50, start ? start.lat * 0.4 : -12],
@@ -100,14 +130,21 @@ export default function Globe3D({ home, layersOn, data, base = "dark", lite = fa
     }
     mapRef.current = map;
     map.on("load", () => {
+      loadWorld(lite).then((w) => {
+        if (!mapRef.current) return;
+        map.getSource("world")?.setData(w.land);
+        map.getSource("borders")?.setData(w.borders);
+        map.getSource("coast")?.setData(w.coast);
+      }).catch(() => {});
       map.addImage("ge-plane", planeImage(), { sdf: true });
       map.addSource("ge-quakes", { type: "geojson", data: EMPTY });
       map.addSource("ge-fires", { type: "geojson", data: EMPTY });
       map.addSource("ge-flights", { type: "geojson", data: EMPTY });
       map.addSource("ge-iss-track", { type: "geojson", data: EMPTY });
+      map.addSource("ge-launches", { type: "geojson", data: EMPTY });
       map.addLayer({
         id: "ge-fires", type: "circle", source: "ge-fires",
-        paint: { "circle-radius": ["interpolate", ["linear"], ["zoom"], 1, 1.6, 6, 3.5, 10, 6], "circle-color": "#fb923c", "circle-opacity": 0.85, "circle-blur": 0.35, "circle-stroke-width": 0.5, "circle-stroke-color": "#fed7aa" },
+        paint: { "circle-radius": ["interpolate", ["linear"], ["zoom"], 1, 1.6, 6, 3.5, 10, 6], "circle-color": "#f97316", "circle-opacity": 0.9, "circle-blur": 0.25, "circle-stroke-width": 0.6, "circle-stroke-color": "#fdba74" },
       });
       map.addLayer({
         id: "ge-quakes-glow", type: "circle", source: "ge-quakes",
@@ -126,12 +163,20 @@ export default function Globe3D({ home, layersOn, data, base = "dark", lite = fa
         paint: { "line-color": "#e879f9", "line-width": 1.6, "line-opacity": 0.75, "line-dasharray": [2, 2] },
       });
       map.addLayer({
+        id: "ge-launches-ring", type: "circle", source: "ge-launches",
+        paint: { "circle-radius": 14, "circle-color": "transparent", "circle-stroke-width": 1.5, "circle-stroke-color": ["case", ["==", ["get", "tipo"], "proximo"], "#fbbf24", "#f43f5e"], "circle-stroke-opacity": 0.8 },
+      });
+      map.addLayer({
+        id: "ge-launches", type: "circle", source: "ge-launches",
+        paint: { "circle-radius": 6, "circle-color": ["case", ["==", ["get", "tipo"], "proximo"], "#fbbf24", "#f43f5e"], "circle-stroke-width": 2, "circle-stroke-color": "#fff" },
+      });
+      map.addLayer({
         id: "ge-flights", type: "symbol", source: "ge-flights",
         layout: {
-          "icon-image": "ge-plane", "icon-size": ["interpolate", ["linear"], ["zoom"], 4, 0.32, 9, 0.6],
+          "icon-image": "ge-plane", "icon-size": ["interpolate", ["linear"], ["zoom"], 1, 0.3, 4, 0.42, 9, 0.7],
           "icon-rotate": ["get", "rumo"], "icon-rotation-alignment": "map", "icon-allow-overlap": true,
         },
-        paint: { "icon-color": "#facc15", "icon-halo-color": "#422006", "icon-halo-width": 1 },
+        paint: { "icon-color": "#fde047", "icon-halo-color": "#713f12", "icon-halo-width": 0.6 },
       });
       for (const id of PICKABLE) {
         map.on("click", id, (e) => {
@@ -165,13 +210,13 @@ export default function Globe3D({ home, layersOn, data, base = "dark", lite = fa
     else map.flyTo({ ...target, speed: 0.7, curve: 1.5 });
   }, [ready, flyTo, lite]);
 
-  // mapa escuro ou satélite
+  // visão HUD (neon) ou satélite
   useEffect(() => {
     const map = mapRef.current;
     if (!ready) return;
-    const b = BASES[base] || BASES.dark;
-    map.getSource("base")?.setTiles(b.tiles);
-    map.setLayoutProperty("labels", "visibility", base === "sat" ? "visible" : "none");
+    const sat = base === "sat";
+    for (const id of HUD_LAYERS) map.setLayoutProperty(id, "visibility", sat ? "none" : "visible");
+    for (const id of SAT_LAYERS) map.setLayoutProperty(id, "visibility", sat ? "visible" : "none");
   }, [ready, base]);
 
   // casa
@@ -190,6 +235,7 @@ export default function Globe3D({ home, layersOn, data, base = "dark", lite = fa
     map.getSource("ge-fires")?.setData(firesGeo(data.queimadas));
     map.getSource("ge-flights")?.setData(flightsGeo(data.voos));
     map.getSource("ge-iss-track")?.setData(issTrack(data.iss));
+    map.getSource("ge-launches")?.setData(launchesGeo(data.lancamentos));
     for (const [layer, ids] of Object.entries(LAYER_IDS)) {
       for (const id of ids) map.setLayoutProperty(id, "visibility", layersOn[layer] ? "visible" : "none");
     }

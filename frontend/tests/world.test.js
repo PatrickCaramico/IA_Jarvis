@@ -40,3 +40,16 @@ test("V7.11: dados para o globo", () => {
   assert.equal(pickCard({ kind: "voos", voo: "GLO1", modelo: "B738", alt_m: 3048, vel_kmh: 556, rumo: 90, dist_km: 4 }).title, "Voo GLO1");
   assert.equal(pickCard(null), null);
 });
+
+test("V7.11.1: lançamentos no globo e na voz", async () => {
+  const { relTime, worldIntent: wi, speakFor: sf, pickCard: pc } = await import("../src/godseye/world.js");
+  const now = new Date("2026-11-15T12:00:00Z");
+  assert.equal(relTime("2026-11-20T12:00:00Z", now), "em 5 dias");
+  assert.equal(relTime("2026-11-15T10:30:00Z", now), "há 1 h 30 min");
+  assert.equal(wi("qual o proximo lancamento de foguete?").layer, "lancamentos");
+  const l = { id: "x", nome: "LM5", missao: "Tianwen", foguete: "Long March 5", empresa: "CASC", quando: "2026-11-20T12:00:00Z", situacao: "confirmado", tipo: "proximo", local: "Wenchang", video: "https://v", site: "", lat: 1, lon: 2 };
+  assert.match(sf("lancamentos", { proximo: l }, "x", now), /próximo lançamento é Tianwen, num Long March 5 da CASC, em 5 dias, saindo de Wenchang/);
+  const card = pc({ kind: "lancamentos", id: "x" }, [l]);
+  assert.equal(card.hero, "Próximo lançamento");
+  assert.deepEqual(card.links, [{ label: "▶ ASSISTIR", url: "https://v" }]);
+});
