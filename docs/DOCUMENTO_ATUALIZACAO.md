@@ -353,6 +353,80 @@
 
 ---
 
+### Ideia 6: Modo Desk (o JARVIS como app de assistente pessoal no PC)
+
+**O que foi pedido:** a partir de 2 vídeos de outro assistente para Windows, levar o JARVIS a outro patamar:
+- uma interface nova, com um botão para alternar (a versão atual continua);
+- os mesmos recursos e configurações;
+- um avatar estilizado, mantendo a essência do JARVIS;
+- um executável para baixar pelo botão no bloqueio e na central.
+
+**Observação:** o app dos vídeos é um produto de outra pessoa, com nome e mascote próprios. O layout e as funções servem de inspiração; o nosso é o JARVIS, com identidade, nome e avatar próprios.
+
+#### ✅ Desenho fechado (15/11/2026)
+
+**Decisões do Patrick**
+| Tema | Decisão |
+|---|---|
+| Avatar | **Robô JARVIS:** cabeça arredondada, visor escuro e olhos de luz em forma de arco-reator, com expressões e cores personalizáveis |
+| Executável | **App + ilha no topo:** JARVIS.exe com janela própria e a "ilha" no topo da tela do Windows |
+| Recursos novos | **Todos:** Hábitos, Copiados, Nível e XP, Memória em mapa |
+| Cor | **Você escolhe:** começa no ciano do JARVIS; em Personalizar troca para verde-limão, roxo, laranja… |
+
+**Como vai ficar**
+1. **Botão 🖥 MODO DESK** na central, no ⚡ CONTROLES e no bloqueio: troca para o layout novo (e volta para o atual com um toque). Fica lembrado por aparelho.
+2. **Layout** (fundo escuro, cartões arredondados, cor de destaque escolhida por você)
+   - **barra lateral:** o avatar com o nome, o estado ("Pronto", "Ouvindo", "Falando") e o nível, mais as seções:
+     - Início, Conversa, Memória, Tarefas, Lembretes, Hábitos, Timers, Música, Copiados, Rotinas e Meu PC;
+     - Configurações;
+   - **Início:**
+     - "Boa noite, Patrick!" com o avatar;
+     - campo "Escreva ou fale com o JARVIS" e a conversa recente;
+     - o player de música;
+     - contadores (lembretes, tarefas, hábitos de hoje) e a barra de XP;
+   - **Configurações** com busca, em grupos:
+     - **Assistente:** Personalizar, Cérebro (IA), Funções, Voz, Rotinas, Ilha;
+     - **Conexões:** Celular e agendas, Proteção com rosto, Atalhos.
+3. **Avatar robô JARVIS (Personalizar)**
+   - cor do corpo, cor do visor, cor dos olhos;
+   - expressões: feliz, pensando, falando, ouvindo, dormindo, surpreso, piscando;
+   - acessórios: nenhum, fone, óculos, gorro de Natal e coroa;
+   - nome do assistente, cor principal do app e tamanho da ilha;
+   - o avatar reage sozinho: ouvindo, pensando e falando.
+4. **Cérebro (IA)**
+   - cartões para escolher como ele pensa: automático (troca sozinho quando uma IA chega no limite), eu escolho a IA (ChatGPT, Claude, Gemini…), e o estado de cada chave;
+   - **Testar esta IA** mostra a resposta e o tempo.
+5. **Funções:** catálogo do que dá para falar, com exemplos (YouTube, volume, música, lembretes, timers, clima, cotações, verificar o PC…), e atalhos próprios ("abre o meu programa X").
+6. **Meu PC:** a varredura do ⚡ OTIMIZAR com o avatar no centro do anel de progresso ("Olhando a memória, vendo o processador, arquivos temporários, disco…").
+7. **Recursos novos**
+   - **Hábitos:**
+     - hábitos do dia (beber água, ler, treinar) com marcar, sequência de dias e lembrete;
+     - "Jarvis, marquei o treino de hoje".
+   - **Copiados:**
+     - histórico do que você copiou no PC (as últimas 50), para copiar de novo com um clique;
+     - fica só no PC, não vai para a nuvem;
+     - não guarda o que parece senha, cartão ou código;
+     - botões para pausar e para apagar tudo.
+   - **Nível e XP:** o JARVIS ganha XP com tarefas feitas, hábitos, conversas e rotinas; sobe de nível, com a barrinha na lateral.
+   - **Memória em mapa:** as memórias do JARVIS (pessoas, preferências, coisas importantes) num mapa de bolinhas ligadas por assunto; tocar abre, e dá para adicionar e apagar.
+8. **JARVIS.exe (app para Windows)**
+   - **Gerar-App-Windows.bat** monta o executável no seu PC, como o app Android;
+   - o botão **⬇ APP PARA WINDOWS** (no bloqueio e na central) baixa o executável do PC;
+   - janela própria com o Modo Desk, sem barra do navegador;
+   - **ilha no topo da tela**, sempre visível, como no vídeo:
+     - em repouso: o avatar pequeno e a hora;
+     - durante música: a música tocando;
+     - quando você fala com ele: a resposta;
+   - tecla de atalho para falar com o JARVIS de qualquer lugar;
+   - o JARVIS de sempre continua por trás (mesmos dados, mesma voz, mesmo celular); o .exe é só a "casa" nova dele no Windows.
+9. **Fora de casa (celular):** o Modo Desk funciona no navegador do celular, em versão compacta. A ilha e os Copiados são só no PC.
+
+**Versão:** como é um salto grande, a proposta é chamar de **JARVIS 8.0** (a versão atual é a 7.14.2).
+
+**Status:** desenho aprovado; falta implementar.
+
+---
+
 ## Ideias extras do Claude (para avaliar)
 
 | # | Ideia | Por que vale |
@@ -387,6 +461,7 @@ Itens que já estavam na lista e continuam **em espera**:
 ## Anotações da conversa
 _Espaço para ir anotando as decisões de cada ideia._
 
+- **15/11:** Ideia 6 (Modo Desk, a partir de 2 vídeos) desenhada e decidida: robô JARVIS, JARVIS.exe com ilha no topo, Hábitos, Copiados, Nível/XP, Memória em mapa e cor escolhida pelo usuário.
 - **15/11:** Ideia 5 concluída (7.14.0). Bloqueio volta ao clássico com a verificação nova do rosto (pedido do Patrick).
 - **15/11:** Ideia 5, parte 1 publicada (7.13.0). Antes: Olho de Deus sem chave de mapa e lançamentos (7.11.1) e bloqueio estilo ORBE (7.12.0), a pedido do Patrick com os vídeos.
 - **15/11:** Ideia 5 (Holograma e pesquisa animada) desenhada e decidida: 4 tipos de animação, fotos nas cenas, trilha ambiente, perguntar no meio, quiz, salvar e rever, e cartão animado para perguntas rápidas.
