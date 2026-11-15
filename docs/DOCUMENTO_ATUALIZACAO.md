@@ -300,7 +300,7 @@
    - os dados ficam guardados por poucos minutos (cache), para não pesar e não ser bloqueado pelas fontes.
 8. **O que sai** — o globo desenhado e as categorias sem dados (navios, Starlink, câmeras, rádios), que voltam quando houver fonte gratuita boa.
 
-**Status:** desenho aprovado; falta implementar.
+**Status:** ✅ **Implementada na versão 7.11.0.**
 
 ---
 
@@ -362,6 +362,7 @@ Itens que já estavam na lista e continuam **em espera**:
 ## Anotações da conversa
 _Espaço para ir anotando as decisões de cada ideia._
 
+- **15/11:** Ideia 4 publicada (7.11.0). Próxima: ideia 5 (Holograma e pesquisa animada).
 - **15/11:** Ideia 4 (Olho de Deus) desenhada e decidida: globo 3D real, radar de chuva, voos, terremotos, queimadas e ISS, avisos de chuva, perto de mim e ISS (cada um desligável), categorias sem dados escondidas.
 - **15/11:** Ideia 3.1 publicada (7.10.0). Próximas: ideia 4 (Olho de Deus) e 5 (Holograma).
 - **15/11:** Ideia 3.1 (finanças completo) desenhada e decidida: dívidas, contas fixas, cartão, orçamento/metas, plano comparando os dois métodos, avisos D-3 e no dia, nuvem só anota e mostra resumo.

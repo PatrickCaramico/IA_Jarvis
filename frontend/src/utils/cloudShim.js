@@ -288,6 +288,14 @@ async function route(method, path, query, body) {
     // V6.8.3: Central de Agentes fora de casa (o catálogo é o mesmo do PC: backend/modules/agents.py)
     case "GET /api/agents":
       return ok({ agents: CLOUD_AGENTS, places: (await refresh()).lugares || {}, chat_agents: CLOUD_CHAT_AGENTS });
+    case "GET /api/world/alerts": // V7.11: os avisos do Olho de Deus saem do PC
+      return ok({ ligados: { chuva: true, perto: true, iss: true }, cloud: true });
+    case "POST /api/world/alerts":
+      return { status: 503, data: { detail: "Os avisos do Olho de Deus são ligados e desligados no PC." } };
+    case "GET /api/world/home": {
+      const w = await cloud("/weather");
+      return ok({ home: w.coords ? { lat: w.coords.lat, lon: w.coords.lon, nome: w.place } : null });
+    }
     case "GET /api/finance/dashboard": { // V7.10: fora de casa, só o resumo
       const f = await cloud("/finance");
       return ok({ ...f, cloud: true, atrasados_qtd: f.atrasados || 0, dividas: [], contas: [], cartoes: [], atrasados: [], plano: { tem_dividas: false } });
@@ -356,6 +364,10 @@ async function route(method, path, query, body) {
       return ok({ items: [], profiles: [] });
     default:
       break;
+  }
+  // V7.11: camadas e resumo do Olho de Deus (fontes públicas, a nuvem busca igual ao PC)
+  if (method === "GET" && path.startsWith("/api/world/")) {
+    return ok({ ...(await cloud(`/world/${path.slice(11)}${query.toString() ? `?${query}` : ""}`, { timeout: 30000 })), cloud: true });
   }
   // rotas com id: /api/tasks/3/complete, /api/tasks/3, /api/shopping/2, /api/reminders/4, /api/alarms/1
   let m = path.match(/^\/api\/tasks\/(\d+)(\/complete)?$/);

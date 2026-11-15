@@ -11,6 +11,8 @@
 // Este arquivo não depende do Netlify: recebe o armazenamento, as variáveis e o fetch por parâmetro
 // (assim os testes rodam com Node puro, em netlify/nuvem/core.test.mjs).
 
+import { worldLayer, worldSummary } from "./world.mjs";
+
 export const TZ = "America/Sao_Paulo";
 const TOKEN_DAYS = 60;
 const MAX_HISTORY = 24;
@@ -1458,6 +1460,29 @@ export async function handle(req, { store, env, fetchFn = fetch, nowDate = new D
       return new Response(audio, { status: 200, headers: { "Content-Type": "audio/mpeg", "Cache-Control": "no-store" } });
     }
     if (path === "/news" && method === "GET") return json(await getNews(fetchFn, url.searchParams.get("q") || ""));
+    if (path.startsWith("/world/") && method === "GET") { // V7.11: OLHO DE DEUS (fontes públicas, igual ao PC)
+      const coord = (k, lim) => {
+        const v = url.searchParams.get(k);
+        const n = v == null || v === "" ? null : Number(v);
+        if (n != null && !(Number.isFinite(n) && Math.abs(n) <= lim)) throw new HttpError(400, "Coordenadas inválidas.");
+        return n;
+      };
+      const lat = coord("lat", 90);
+      const lon = coord("lon", 180);
+      const name = path.slice(7);
+      try {
+        if (name === "summary") {
+          if (lat == null || lon == null) throw new HttpError(400, "Informe a cidade (lat e lon).");
+          return json(await worldSummary({ lat, lon, store, fetchFn, nowMs: nowDate.getTime() }));
+        }
+        const limit = Math.max(1, Math.min(6000, Number(url.searchParams.get("limit")) || 4000));
+        return json(await worldLayer(name, { lat, lon: lat == null ? null : lon, limit, light: url.searchParams.get("leve") === "1" || url.searchParams.get("leve") === "true", store, fetchFn, nowMs: nowDate.getTime() }));
+      } catch (err) {
+        if (err instanceof HttpError) throw err;
+        if (err.status) throw new HttpError(err.status, err.message);
+        throw new HttpError(502, "A fonte desses dados não respondeu agora. Tente em instantes.");
+      }
+    }
     if (path === "/weather" && method === "GET") {
       const perfil = (await store.get("perfil")) || {};
       return json(await getWeather(fetchFn, url.searchParams.get("city") || perfil.cidade || env.WEATHER_CITY || "São Paulo"));

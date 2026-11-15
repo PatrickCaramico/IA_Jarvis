@@ -27,6 +27,7 @@ import { buildDailySummary, shouldSpeakSummary } from "./utils/lockSummary.js";
 import { statusSentence } from "./utils/waterMath.js";
 import { subscribeNow } from "./hooks/useNow.js";
 import { soundManager } from "./utils/soundEffects.js";
+import { askWorld, worldIntent } from "./godseye/world.js";
 import { API_URL, BACKEND_ON_THIS_PC, api, clientId, getJarvisToken, hasMemoryToken, publicUrl, setJarvisToken, voiceHere } from "./utils/api.js";
 import { enqueueHere, stopSpeech } from "./utils/speakHere.js";
 import { applyAccessibility, applyBackground, applyFanMode, applyTheme } from "./utils/theme.js";
@@ -230,6 +231,7 @@ export default function App() {
   const [relockWarning, setRelockWarning] = useState(null); // segundos até bloquear
   const [summaryActive, setSummaryActive] = useState(false);
   const [godsEyeOpen, setGodsEyeOpen] = useState(false);
+  const [godsEyeLayer, setGodsEyeLayer] = useState(null); // V7.11: abre o globo já na camada pedida por voz
   const [notice, setNotice] = useState("");
   // V6.8.2: câmera do aparelho (null | { auto })
   const [cameraWin, setCameraWin] = useState(null);
@@ -1561,9 +1563,24 @@ export default function App() {
       || /\bolho\s+de\s+deus\b.*\b(abrir|abra|abre|ativar|ativa|mostrar|mostra|iniciar|inicia)\b/.test(normalized)) {
       keepHubClean();
       setUserText(text);
+      setGodsEyeLayer(null);
       setGodsEyeOpen(true);
       soundManager.playSuccess();
       speakLocal("Olho de Deus ativado. Monitorando o planeta.");
+      return;
+    }
+    // V7.11: "mostra os voos agora", "tem terremoto hoje?", "tem queimada perto?", "quando a estação espacial passa?"
+    const world = worldIntent(normalized);
+    if (world) {
+      keepHubClean();
+      setUserText(text);
+      setGodsEyeLayer(world.layer);
+      setGodsEyeOpen(true);
+      soundManager.playSuccess();
+      askWorld(api, world.layer).then((reply) => {
+        setResponse(reply);
+        speakLocal(reply);
+      });
       return;
     }
     // V6.9: "mostra o trânsito" / "como está o trânsito?" abre o Olho de Deus no mapa ao vivo
@@ -1571,6 +1588,7 @@ export default function App() {
       && !/\b(para|pra|pro|ate)\b\s+\S/.test(normalized.split(/transito|engarrafamento|congestionamento/)[1] || "")) {
       keepHubClean();
       setUserText(text);
+      setGodsEyeLayer(null);
       setGodsEyeOpen(true);
       soundManager.playSuccess();
       speakLocal("Mostrando o trânsito ao vivo da sua cidade, senhor.");
@@ -3482,7 +3500,7 @@ export default function App() {
         commandSlot={<CommandBar onSend={(text) => send(text)} disabled={busy} listening={listening} onToggleMic={toggleMic} />}
         tasksSlot={<TodoWidget api={api} onSend={send} />}
       />
-      {godsEyeOpen && <GodsEye api={api} onClose={() => setGodsEyeOpen(false)} />}
+      {godsEyeOpen && <GodsEye key={godsEyeLayer || "olho"} api={api} initialLayer={godsEyeLayer} onClose={() => { setGodsEyeOpen(false); setGodsEyeLayer(null); }} />}
     </>
   );
 }

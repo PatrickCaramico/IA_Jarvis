@@ -2,6 +2,27 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 7.11.0 — 15 de novembro de 2026
+
+**🌐 Olho de Deus com globo 3D e dados reais (ideia 4 do documento de atualização)**
+- **Globo 3D de verdade** no lugar do desenho: gira, dá zoom até a rua e voa até a sua cidade. Visão escura (HUD) e satélite; 🌍 MUNDO, 🏠 MINHA CIDADE e 📍 ONDE ESTOU. O trânsito do Waze continua na aba 🚦.
+- **Camadas ao vivo, de fontes públicas e sem chave** (cada uma liga e desliga e mostra quando atualizou):
+  - ☁ **radar de chuva** das últimas 2 h, animado (RainViewer), e o gráfico da chuva das próximas 3 h na cidade (Open-Meteo);
+  - ✈ **voos** num raio de 150 km: voo, modelo, altitude, velocidade e rumo (ADS-B público), a cada 15 s;
+  - 🌎 **terremotos** das últimas 24 h no mundo (USGS), o tamanho mostra a força;
+  - 🔥 **queimadas** no Brasil nas últimas 24 h (INPE), com quantas estão a menos de 50 km;
+  - 🛰 **Estação Espacial**: onde está agora, a órbita e as próximas passagens visíveis no seu céu, com a previsão de nuvens.
+- **Toque num ponto** (avião, terremoto, foco de fogo, ISS) e aparece um cartão com os detalhes.
+- **Faixa "o que está acontecendo"** no topo: "Sem chuva nas próximas 3 h · 42 voos por perto · ISS passa visível hoje às 19:42".
+- **Avisos automáticos** (voz no PC e notificação no celular), cada um com botão para desligar no painel:
+  - chuva forte chegando ("em uns 30 minutos");
+  - queimada a menos de 50 km ou terremoto de força 5 ou mais na América do Sul;
+  - Estação Espacial visível, 10 minutos antes, só com céu limpo.
+- **Voz**: "mostra os voos agora", "tem terremoto hoje?", "tem queimada perto?", "quando a estação espacial passa?". O JARVIS responde e abre o globo na camada certa.
+- **Fora de casa** funciona igual, pela nuvem. Os avisos saem do PC.
+- Saíram as categorias sem dados (navios, Starlink, câmeras, rádios) e os leitores de placa (privacidade).
+- No celular: menos pontos e animação mais leve.
+
 ## 7.10.0 — 15 de novembro de 2026
 
 **💰 Agente de finanças completo: controle de dívidas (ideia 3.1 do documento de atualização)**
