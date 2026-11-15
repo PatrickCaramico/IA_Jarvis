@@ -2,6 +2,14 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 7.14.2 — 15 de novembro de 2026
+
+**📱 App Android: sem a página de erro "Página da Web não disponível"**
+- **Corrigido:** quando o PC não respondia na rede de casa, o app podia mostrar a página de erro do Android ("net::ERR_CONNECTION_TIMED_OUT") e ficar nela. Agora:
+  - antes de abrir o PC, o app confere também se a **tela** da central responde (porta 5443 ou 5173), não só o backend;
+  - se a central do PC não abrir em **15 segundos**, o app cancela e vai para o **modo nuvem** (e continua conferindo o PC em segundo plano, como antes).
+- Para receber no celular: rode **Gerar-App-Android.bat** no PC; o celular se atualiza a partir do PC.
+
 ## 7.14.1 — 15 de novembro de 2026
 
 **📱 Correções no celular**
