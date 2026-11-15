@@ -58,6 +58,9 @@ public class MainActivity extends Activity {
     static final String CLOUD_URL = "https://" + CLOUD_HOST + "/app/?nuvem=1";
     static final String KEY_CLOUD_TOKEN = "cloud_token";
     private static final long PC_PROBE_MS = 20_000;
+    // V7.14.2: a central do PC tem 15 s para abrir; senão o app vai para a nuvem (antes ficava até o
+    // "tempo esgotado" do WebView, com a página de erro crua do Android na tela)
+    private static final long PC_LOAD_LIMIT_MS = 15_000;
     private static final int REQ_MIC = 7;
     private static final int REQ_NOTIFY = 8;
     private static final int REQ_MIC_SPEECH = 9;
@@ -159,10 +162,19 @@ public class MainActivity extends Activity {
                 currentUrl = url;
                 pageReady = false;
                 if (isHttp(url)) mainFrameFailed = false;
+                retryHandler.removeCallbacks(pcLoadWatchdog);
+                Uri pu = isHttp(url) ? Uri.parse(url) : null;
+                if (pu != null && !CLOUD_HOST.equals(pu.getHost())) retryHandler.postDelayed(pcLoadWatchdog, PC_LOAD_LIMIT_MS);
+            }
+
+            @Override
+            public void onPageCommitVisible(WebView view, String url) {
+                retryHandler.removeCallbacks(pcLoadWatchdog); // a central começou a aparecer: o PC respondeu
             }
 
             @Override
             public void onPageFinished(WebView view, String url) {
+                retryHandler.removeCallbacks(pcLoadWatchdog);
                 // A central do PC abriu de verdade: zera as tentativas
                 if (isHttp(url) && !mainFrameFailed) {
                     Uri pu = Uri.parse(url);
@@ -379,6 +391,15 @@ public class MainActivity extends Activity {
     // ------------------------------------------------------------------ reconexão (V5.2)
     /** Nova tentativa com o endereço salvo, só se a tela "reconectando" estiver aberta. */
     // ------------------------------------------------------------------ V6.6: modo nuvem
+    /** V7.14.2: a central do PC não abriu a tempo (Wi-Fi sem o PC, firewall, PC dormindo): vai para a nuvem. */
+    private final Runnable pcLoadWatchdog = () -> {
+        Uri cur = currentUrl == null ? null : Uri.parse(currentUrl);
+        if (cur == null || CLOUD_HOST.equals(cur.getHost()) || pageReady) return;
+        mainFrameFailed = true;
+        web.stopLoading();
+        if (savedUri() != null) openCloud(web);
+    };
+
     private final Runnable pcProbe = new Runnable() {
         @Override
         public void run() {
@@ -471,11 +492,33 @@ public class MainActivity extends Activity {
                 // com o mesmo endereço numa Wi-Fi de fora não passa por aqui.
                 String server = c.getHeaderField("content-type");
                 c.disconnect();
-                if ((code == 200 || code == 403) && server != null && server.contains("json")) return true;
+                if ((code == 200 || code == 403) && server != null && server.contains("json")) return frontAnswers(saved);
             } catch (Exception ignored) {
             }
         }
         return false;
+    }
+
+    /**
+     * V7.14.2: a TELA da central (5173 ou 5443) também responde? Antes só o backend era testado: com o backend no ar
+     * e a tela não (porta bloqueada, servidor da tela parado), o app abria a central, esperava o tempo esgotar e
+     * mostrava a página de erro do Android, em ciclo. Pelo túnel, a tela vem do site: não precisa testar.
+     */
+    private boolean frontAnswers(Uri saved) {
+        if (saved.getQueryParameter("api") != null) return true;
+        int port = saved.getPort();
+        String origin = saved.getScheme() + "://" + saved.getHost() + (port > 0 ? ":" + port : "") + "/";
+        try {
+            java.net.HttpURLConnection c = (java.net.HttpURLConnection) new java.net.URL(origin).openConnection();
+            c.setConnectTimeout(3000);
+            c.setReadTimeout(4000);
+            c.setRequestMethod("HEAD");
+            int code = c.getResponseCode();
+            c.disconnect();
+            return code > 0 && code < 500;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     private void speak(String text) {
