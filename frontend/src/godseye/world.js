@@ -6,6 +6,7 @@ export const LAYERS = [
   { id: "terremotos", label: "Terremotos 24 h", icon: "🌎", color: "#fb7185", refresh: 300_000 },
   { id: "queimadas", label: "Queimadas 24 h", icon: "🔥", color: "#fb923c", refresh: 900_000 },
   { id: "iss", label: "Estação Espacial", icon: "🛰", color: "#e879f9", refresh: 10_000 },
+  { id: "lancamentos", label: "Lançamentos de foguetes", icon: "🚀", color: "#f43f5e", refresh: 1_800_000 },
 ];
 export const LAYER_IDS = LAYERS.map((l) => l.id);
 
@@ -26,6 +27,7 @@ export function layerValue(id, data) {
   if (id === "terremotos") return String(data.total ?? 0);
   if (id === "queimadas") return data.perto ? `${data.perto} perto` : String(data.total ?? 0);
   if (id === "iss") return data.agora ? `${Math.round(data.agora.alt_km)} km` : "—";
+  if (id === "lancamentos") return data.proximo ? relTime(data.proximo.quando) : String(data.total ?? 0);
   return "—";
 }
 
@@ -48,6 +50,11 @@ export function speakFor(id, data, city = "sua cidade", now = new Date()) {
     return `Nenhuma queimada a menos de ${data.perto_km || 50} quilômetros de ${city}. ${plural(data.total ?? 0, "foco", "focos")} no Brasil nas últimas 24 horas.${far}`;
   }
   if (id === "chuva") return `${data.resumo?.texto || "Sem dados de chuva"} em ${city}.`;
+  if (id === "lancamentos") {
+    const p = data.proximo;
+    if (!p) return "Não encontrei lançamentos marcados agora.";
+    return `O próximo lançamento é ${p.missao || p.nome}, num ${p.foguete || "foguete"}${p.empresa ? ` da ${p.empresa}` : ""}, ${relTime(p.quando, now, true)}${p.local ? `, saindo de ${p.local}` : ""}.`;
+  }
   if (id === "iss") {
     const p = data.passagens?.[0];
     if (!p) return "A Estação Espacial não passa visível no seu céu nos próximos 3 dias.";
@@ -60,6 +67,7 @@ export function speakFor(id, data, city = "sua cidade", now = new Date()) {
 /** "mostra os voos agora", "tem terremoto hoje?", "vai chover?", "quando a estação espacial passa?" (texto já normalizado). */
 export function worldIntent(n) {
   const t = ` ${String(n || "")} `;
+  if (/\b(lancamentos?|foguetes?|spacex|falcon)\b/.test(t) && !/\b(lancamento de (nota|gasto|despesa))\b/.test(t)) return { layer: "lancamentos", ask: true };
   if (/\b(estacao espacial|\biss\b)/.test(t)) return { layer: "iss", ask: /\b(quando|que horas|passa|vai passar|onde)\b/.test(t) };
   if (/\b(voos?|avi(ao|oes)|aeronaves?)\b/.test(t) && /\b(mostra|mostre|mostrar|ver|veja|quantos|tem|abre|abra|agora|passando|em cima)\b/.test(t)) return { layer: "voos", ask: true };
   if (/\b(terremotos?|sismos?|abalos? sismicos?)\b/.test(t)) return { layer: "terremotos", ask: true };
@@ -87,6 +95,25 @@ export function flightsGeo(data) {
 }
 
 /** A trilha da ISS cortada onde cruza a linha de data (senão o globo desenha uma linha atravessando o mundo). */
+export function launchesGeo(data) {
+  return fc((data?.itens || []).map((l) => point(l.lon, l.lat, { kind: "lancamentos", id: l.id, tipo: l.tipo, ao_vivo: l.ao_vivo })));
+}
+
+/** "em 3 dias", "há 11 dias", "em 2 h 10 min". */
+export function relTime(iso, now = new Date(), long = false) {
+  const t = Date.parse(iso);
+  if (!Number.isFinite(t)) return "";
+  const diff = t - now.getTime();
+  const abs = Math.abs(diff);
+  const min = Math.round(abs / 60_000);
+  let txt;
+  if (min < 60) txt = `${min} min`;
+  else if (min < 48 * 60) txt = `${Math.floor(min / 60)} h${min % 60 ? ` ${min % 60} min` : ""}`;
+  else txt = `${Math.round(min / 1440)} dias`;
+  if (long) txt = txt.replace(/\bh\b/, "horas").replace("min", "minutos");
+  return diff >= 0 ? `em ${txt}` : `há ${txt}`;
+}
+
 export function issTrack(data) {
   const lines = [];
   let cur = [];
@@ -113,13 +140,26 @@ export function fmtTime(iso) {
 }
 
 /** Linhas do cartão de um ponto tocado no globo. */
-export function pickCard(p) {
+export function pickCard(p, launchList = []) {
   if (!p) return null;
   const dist = p.dist_km != null && p.dist_km !== "null" ? `${p.dist_km} km de você` : null;
   if (p.kind === "terremotos") return { icon: "🌎", title: `Terremoto ${pt(p.mag)}`, lines: [p.lugar, fmtTime(p.quando), p.prof_km != null ? `${p.prof_km} km de profundidade` : null, dist] };
   if (p.kind === "queimadas") return { icon: "🔥", title: "Foco de queimada", lines: [[p.municipio, p.estado].filter(Boolean).join(" · "), p.bioma, fmtTime(p.quando), dist] };
   if (p.kind === "voos") {
     return { icon: "✈", title: `Voo ${p.voo}`, lines: [[p.modelo, p.matricula].filter(Boolean).join(" · "), p.alt_m != null ? `${Number(p.alt_m).toLocaleString("pt-BR")} m de altitude` : null, p.vel_kmh != null ? `${p.vel_kmh} km/h · rumo ${p.rumo}°` : null, dist] };
+  }
+  if (p.kind === "lancamentos") {
+    const l = (launchList || []).find((x) => x.id === p.id);
+    if (!l) return null;
+    const when = fmtTime(l.quando);
+    return {
+      icon: "🚀", title: l.missao || l.nome, subtitle: [l.foguete, l.empresa].filter(Boolean).join(" · "),
+      badge: l.ao_vivo ? "AO VIVO" : l.situacao, badgeKind: /sucesso/.test(l.situacao) ? "ok" : /falh/.test(l.situacao) ? "bad" : "info",
+      image: l.foto, hero: l.tipo === "proximo" ? "Próximo lançamento" : "Lançado", heroSub: relTime(l.quando),
+      text: l.descricao,
+      lines: [when ? `Quando: ${when}` : null, l.orbita ? `Órbita: ${l.orbita}` : null, l.base ? `Base: ${l.base}` : null, l.local ? `Local: ${l.local}` : null, l.chance != null ? `Tempo bom: ${l.chance}%` : null],
+      links: [l.video && { label: l.ao_vivo ? "▶ AO VIVO" : "▶ ASSISTIR", url: l.video }, l.site && { label: "↗ SITE", url: l.site }].filter(Boolean),
+    };
   }
   if (p.kind === "iss") return { icon: "🛰", title: "Estação Espacial (ISS)", lines: [`${Math.round(p.alt_km)} km de altitude`, `${Number(p.vel_kmh).toLocaleString("pt-BR")} km/h`, "uma volta na Terra a cada ~92 minutos"] };
   return null;

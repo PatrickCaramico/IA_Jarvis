@@ -1732,7 +1732,7 @@ body {
 }
 
 /* V7.11: OLHO DE DEUS com globo 3D e dados reais */
-.ge-globe3d, .ge-globe3d.maplibregl-map { position: absolute; inset: 0; z-index: 1; background: radial-gradient(circle at 50% 50%, #04203a 0%, #020916 62%); }
+.ge-globe3d, .ge-globe3d.maplibregl-map { position: absolute; inset: 0; z-index: 1; background: radial-gradient(circle at 50% 50%, #0a2a66 0%, #04112e 55%, #020916 100%); }
 .ge-globe3d .maplibregl-canvas { outline: none; }
 .ge-root .maplibregl-ctrl.maplibregl-ctrl-attrib { background: rgba(3, 20, 38, 0.72); color: rgba(186, 230, 253, 0.7); font-size: 10px; }
 .ge-root .maplibregl-ctrl-attrib a { color: rgba(186, 230, 253, 0.8); }
@@ -1758,6 +1758,20 @@ body {
 .ge-pick header strong { flex: 1; font: 12px "Orbitron", monospace; letter-spacing: 0.06em; }
 .ge-pick header button { color: #67e8f9; cursor: pointer; }
 .ge-pick p { margin: 3px 0; color: rgba(223, 251, 255, 0.85); font-size: 12px; }
+.ge-pick header div { flex: 1; min-width: 0; }
+.ge-pick header small { display: block; margin-top: 2px; color: rgba(186, 230, 253, 0.6); font-size: 11px; }
+.ge-pick.is-rich { top: 108px; right: auto; left: 28px; bottom: auto; width: min(360px, calc(100vw - 32px)); max-height: calc(100dvh - 190px); overflow-y: auto; z-index: 5; }
+.ge-pick-hero { position: relative; display: grid; align-content: end; min-height: 150px; margin: 4px 0 8px; padding: 10px 12px; border-radius: 8px; background-size: cover; background-position: center; box-shadow: inset 0 -80px 60px -20px rgba(2, 9, 22, 0.92); }
+.ge-pick-hero b { font: 700 20px "Orbitron", monospace; color: #fff; text-shadow: 0 2px 10px #000; }
+.ge-pick-hero small { color: rgba(255, 255, 255, 0.8); font-size: 11px; }
+.ge-pick-hero em, .ge-pick-badge { position: absolute; top: 8px; left: 8px; padding: 2px 8px; border-radius: 99px; font: 10px "Orbitron", monospace; font-style: normal; color: #052e16; background: #86efac; }
+.ge-pick-badge { position: static; display: inline-block; margin: 2px 0 6px; }
+.ge-pick-hero em.is-bad, .ge-pick-badge.is-bad { background: #fda4af; color: #4c0519; }
+.ge-pick-hero em.is-info, .ge-pick-badge.is-info { background: #fde68a; color: #422006; }
+.ge-pick-links { display: flex; gap: 6px; margin: 4px 0 8px; }
+.ge-pick-links a { padding: 5px 10px; border: 1px solid rgba(244, 63, 94, 0.6); border-radius: 99px; color: #ffe4e6; background: rgba(244, 63, 94, 0.18); font: 10px "Orbitron", monospace; text-decoration: none; }
+.ge-pick-links a:first-child { background: #e11d48; border-color: #e11d48; color: #fff; }
+.ge-pick-text { color: rgba(223, 251, 255, 0.75) !important; line-height: 1.4; }
 .ge-home-pin, .ge-iss-pin { display: grid; justify-items: center; gap: 2px; pointer-events: none; }
 .ge-home-pin i { width: 12px; height: 12px; border: 2px solid #ecfeff; border-radius: 50%; background: #22d3ee; box-shadow: 0 0 0 6px rgba(34, 211, 238, 0.2), 0 0 16px #22d3ee; animation: ge-pulse 2s infinite; }
 .ge-home-pin span, .ge-iss-pin span { color: #ecfeff; font: 9px "Orbitron", monospace; letter-spacing: 0.1em; text-shadow: 0 0 6px #020916; }
@@ -1769,7 +1783,7 @@ body {
   .ge-root .maplibregl-ctrl-bottom-right { bottom: 58px; }
   .ge-world-panel { top: auto; bottom: 66px; left: 8px; width: calc(100vw - 76px); max-height: 46dvh; }
   .ge-root.is-globe .ge-traffic-show { top: auto; bottom: 70px; left: 12px; }
-  .ge-pick { right: 64px; left: 8px; bottom: 66px; width: auto; }
+  .ge-pick, .ge-pick.is-rich { top: auto; right: 64px; left: 8px; bottom: 66px; width: auto; max-height: 52dvh; }
 }
 @media (prefers-reduced-motion: reduce) {
   .ge-home-pin i, .ge-iss-pin i { animation: none; }

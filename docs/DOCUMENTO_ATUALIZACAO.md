@@ -313,18 +313,43 @@
 **O que já existe hoje**
 - Pedidos como "me explica…", "pesquisa sobre…" e "receita de…" abrem o Holograma: cenas narradas, partículas, esfera 3D, ondas de voz e receita viva.
 
-**Pontos a decidir / possibilidades**
-- [ ] **Animação por tipo de assunto**, por exemplo:
-  - planeta girando para astronomia;
-  - mapa com rota para viagem;
-  - gráfico subindo para economia;
-  - corpo humano para saúde;
-  - linha do tempo para história.
-- [ ] **Imagens e vídeos curtos** da internet em cada cena (Wikipédia já entra no fundo; dá para ir além).
-- [ ] **Pesquisa rápida animada:** perguntas curtas ("quem ganhou o jogo?") ganham um cartão animado pequeno, sem abrir o Holograma inteiro.
-- [ ] **Perguntar no meio da apresentação** ("espera, o que é horizonte de eventos?"): ele responde e continua.
-- [ ] **Salvar ou compartilhar** uma apresentação para rever depois.
-- [ ] **Modo quiz** no final ("quer testar o que aprendeu?").
+#### ✅ Desenho fechado (15/11/2026)
+
+**Decisões do Patrick**
+| Tema | Decisão |
+|---|---|
+| Animações por assunto | **Todas:** gráficos e números, linha do tempo, mapa e globo, espaço e ciência |
+| Perguntas rápidas | **Cartão animado pequeno** no canto; o Holograma inteiro só abre em "me explica…" |
+| Extras | **Todos:** perguntar no meio, quiz no final, salvar e rever, fotos reais nas cenas |
+| Som | **Trilha ambiente baixinha**, que abaixa quando o JARVIS fala, com botão para desligar |
+
+**Como vai ficar**
+1. **Cada cena com a animação certa** (a IA escolhe o tipo; se os dados não forem bons, a cena fica no modo de hoje)
+   - 📊 **gráficos e números:** barras ou linha que crescem na tela (preços, população, recordes, comparações);
+   - 🕰 **linha do tempo:** a linha avança e acende cada data e marco (história, biografias, invenções);
+   - 🌍 **mapa e globo:** o globo 3D do Olho de Deus voa até o lugar, com marcadores e rota (países, viagens, batalhas);
+   - 🪐 **espaço e ciência:** diagramas animados prontos (planetas e órbitas, átomo, ciclo da água, coração batendo, camadas da Terra…).
+   - Os números e datas vêm da IA com a regra de não inventar; se ela não tiver certeza, a cena não usa gráfico.
+2. **Fotos reais nas cenas:** cada cena pode ter uma foto do assunto (Wikipédia/Wikimedia), com o crédito pequeno embaixo.
+3. **Trilha ambiente:** som de fundo suave, estilo documentário, gerado no próprio aparelho (sem música de terceiros). Ele abaixa quando o JARVIS fala, e o botão 🔈 desliga e lembra a escolha.
+4. **Perguntar no meio:** "espera, o que é horizonte de eventos?" (voz ou digitando)
+   - a apresentação pausa, a resposta aparece num balão e é falada;
+   - depois continua da mesma cena.
+5. **Quiz no final:** "quer testar o que aprendeu?"
+   - 3 perguntas de múltipla escolha sobre o que foi mostrado;
+   - responde tocando ou falando a letra, com placar e a explicação de cada uma.
+6. **Salvar e rever**
+   - ⭐ SALVAR guarda a apresentação (ou receita) numa lista; rever não gasta IA;
+   - até 30 salvas, no PC, que vão para a nuvem na sincronização, para rever no celular fora de casa;
+   - apagar uma salva pede confirmação.
+7. **Cartão animado para perguntas rápidas** ("quem ganhou o jogo?", "quanto está o dólar?", "qual a altura do Everest?")
+   - o JARVIS responde falando, como hoje, e mostra um cartão pequeno no canto que some sozinho;
+   - tipos de cartão: **número** (com mini-gráfico quando houver série, ex.: dólar na semana), **placar**, **foto + fato** e **lista curta**;
+   - botão "▶ VER NO HOLOGRAMA" no cartão, se quiser a apresentação inteira.
+8. **Fora de casa:** tudo funciona igual pela nuvem (o mapa usa o mesmo globo).
+9. **Celular:** animações mais leves e menos partículas; a trilha começa desligada para não tocar alto em público.
+
+**Status:** desenho aprovado; falta implementar.
 
 ---
 
@@ -362,6 +387,7 @@ Itens que já estavam na lista e continuam **em espera**:
 ## Anotações da conversa
 _Espaço para ir anotando as decisões de cada ideia._
 
+- **15/11:** Ideia 5 (Holograma e pesquisa animada) desenhada e decidida: 4 tipos de animação, fotos nas cenas, trilha ambiente, perguntar no meio, quiz, salvar e rever, e cartão animado para perguntas rápidas.
 - **15/11:** Ideia 4 publicada (7.11.0). Próxima: ideia 5 (Holograma e pesquisa animada).
 - **15/11:** Ideia 4 (Olho de Deus) desenhada e decidida: globo 3D real, radar de chuva, voos, terremotos, queimadas e ISS, avisos de chuva, perto de mim e ISS (cada um desligável), categorias sem dados escondidas.
 - **15/11:** Ideia 3.1 publicada (7.10.0). Próximas: ideia 4 (Olho de Deus) e 5 (Holograma).

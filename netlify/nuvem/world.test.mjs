@@ -65,3 +65,12 @@ test("V7.11 nuvem: camadas, reserva de voos e resumo", async () => {
   const s = await worldSummary({ lat: -23.55, lon: -46.63, store, fetchFn, nowMs });
   assert.match(s.texto, /1 voos por perto · nenhum terremoto forte hoje · 1 foco de queimada a menos de 50 km/);
 });
+
+test("V7.11.1 nuvem: lançamentos de foguetes", async () => {
+  const { parseLaunches } = await import("./world.mjs");
+  const l = parseLaunches({ results: [{ id: "a", name: "F9", net: "2026-11-04T08:04:00Z", status: { abbrev: "Go" }, pad: { latitude: "28.5", longitude: "-80.5" }, image: { image_url: "https://i/x.jpg" }, vidURLs: [{ url: "http://inseguro" }] }, { id: "b", pad: {} }] }, "proximo");
+  assert.equal(l.length, 1);
+  assert.equal(l[0].situacao, "confirmado");
+  assert.equal(l[0].foto, "https://i/x.jpg");
+  assert.equal(l[0].video, ""); // só https
+});

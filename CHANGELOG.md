@@ -2,6 +2,19 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 7.11.1 — 15 de novembro de 2026
+
+**🌐 Olho de Deus: visual novo e sem chave de mapa**
+- **Corrigido:** o mapa escuro do globo passou a pedir chave ("API KEY REQUIRED"). Agora o globo é desenhado no próprio JARVIS, sem nenhuma chave:
+  - oceano azul, continentes e contornos em neon, com brilho de atmosfera;
+  - ao aproximar, aparecem as ruas;
+  - a visão satélite continua.
+- **🚀 Lançamentos de foguetes** (nova camada): os próximos e os mais recentes do mundo inteiro, na base de lançamento (dados públicos do The Space Devs). Toque num lançamento e abre um cartão com:
+  - foto, situação (confirmado, sucesso, falhou), foguete, empresa, órbita, base e chance de tempo bom;
+  - botões ▶ ASSISTIR e ↗ SITE.
+- "Qual o próximo lançamento de foguete?" responde e abre o globo nessa camada.
+- Aviões e queimadas com cores mais fortes, como no vídeo.
+
 ## 7.11.0 — 15 de novembro de 2026
 
 **🌐 Olho de Deus com globo 3D e dados reais (ideia 4 do documento de atualização)**
