@@ -2,6 +2,26 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 7.12.0 — 15 de novembro de 2026
+
+**🔵 Tela de bloqueio nova, igual ao vídeo (estilo ORBE)**
+- **Orbe de linhas entrelaçadas** no centro de um azul royal com grade. As linhas ondulam e giram, com pontos de energia correndo por elas, e reagem ao estado:
+  - **EM ESPERA**: respira devagar;
+  - **OUVINDO**: abre um pouco;
+  - **FALANDO**: pulsa como voz;
+  - **ESCANEANDO**: gira mais rápido.
+- O estado aparece em cima, com a linha pontilhada animada.
+- **Identificação facial dentro do orbe**: a câmera aparece num círculo, com a máscara de pontos, a linha de varredura e "ESCANEANDO · 40%". Quando reconhece, fica verde: **IDENTIDADE CONFIRMADA**.
+- **Cartões passando numa faixa** (sistemas, relógio, clima, mercado, manchete, Spotify, água…). Param quando o mouse passa por cima, e tocar num cartão abre os detalhes, como antes.
+- Botão redondo embaixo para entrar (ou espaço, ou palmas, como antes).
+- **Todas as funções continuam**, guardadas no **⚙ GERENCIAR HUB** (no topo):
+  - PIN, visitante, nova pessoa e atualizar;
+  - Branding, Otimizar, Notas e Diagnóstico;
+  - fundo, áudio, Modo Torcedor e alterar a foto do rosto.
+- Quando o rosto não é reconhecido, USAR PIN e CRIAR PERFIL aparecem na hora, fora do hub.
+- Quer o bloqueio antigo? ⚙ GERENCIAR HUB › **◐ ESTILO** troca entre ORBE e CLÁSSICO (vale para este aparelho).
+- No celular: menos linhas e animação mais leve.
+
 ## 7.11.1 — 15 de novembro de 2026
 
 **🌐 Olho de Deus: visual novo e sem chave de mapa**
