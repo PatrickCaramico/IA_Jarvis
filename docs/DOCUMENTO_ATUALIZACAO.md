@@ -349,7 +349,7 @@
 8. **Fora de casa:** tudo funciona igual pela nuvem (o mapa usa o mesmo globo).
 9. **Celular:** animações mais leves e menos partículas; a trilha começa desligada para não tocar alto em público.
 
-**Status:** desenho aprovado; falta implementar.
+**Status:** parte 1 ✅ **na versão 7.13.0** (animações por cena, fotos e trilha). Parte 2 (perguntar no meio, quiz, salvar e rever, cartão rápido) em seguida.
 
 ---
 
@@ -387,6 +387,7 @@ Itens que já estavam na lista e continuam **em espera**:
 ## Anotações da conversa
 _Espaço para ir anotando as decisões de cada ideia._
 
+- **15/11:** Ideia 5, parte 1 publicada (7.13.0). Antes: Olho de Deus sem chave de mapa e lançamentos (7.11.1) e bloqueio estilo ORBE (7.12.0), a pedido do Patrick com os vídeos.
 - **15/11:** Ideia 5 (Holograma e pesquisa animada) desenhada e decidida: 4 tipos de animação, fotos nas cenas, trilha ambiente, perguntar no meio, quiz, salvar e rever, e cartão animado para perguntas rápidas.
 - **15/11:** Ideia 4 publicada (7.11.0). Próxima: ideia 5 (Holograma e pesquisa animada).
 - **15/11:** Ideia 4 (Olho de Deus) desenhada e decidida: globo 3D real, radar de chuva, voos, terremotos, queimadas e ISS, avisos de chuva, perto de mim e ISS (cada um desligável), categorias sem dados escondidas.

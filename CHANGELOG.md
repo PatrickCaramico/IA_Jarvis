@@ -2,6 +2,22 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 7.13.0 — 15 de novembro de 2026
+
+**✨ Holograma com animação em cada cena (ideia 5, parte 1)**
+- **Cada cena ganha a animação certa** (a IA escolhe; sem dado confiável, a cena fica como antes):
+  - 📊 **gráficos** que crescem na tela: barras ou linha, com os valores (preços, população, recordes);
+  - 🕰 **linha do tempo** que acende cada data e marco;
+  - 🌍 **mapa**: o globo neon do Olho de Deus voa de lugar em lugar, com marcadores e rota tracejada;
+  - 🪐 **ciência**: Sistema Solar girando, átomo, ciclo da água, coração batendo, camadas da Terra, DNA e célula.
+- **Fotos reais nas cenas** (Wikipédia), com o crédito embaixo.
+- **🔈 Trilha ambiente** baixinha, gerada no próprio aparelho (sem música de terceiros):
+  - abaixa quando o JARVIS fala;
+  - o botão TRILHA liga e desliga, e a escolha fica lembrada;
+  - no celular começa desligada.
+- Funciona igual fora de casa (nuvem).
+- **Corrigido:** no celular, tocar num botão do Holograma podia empurrar a tela para o lado.
+
 ## 7.12.0 — 15 de novembro de 2026
 
 **🔵 Tela de bloqueio nova, igual ao vídeo (estilo ORBE)**

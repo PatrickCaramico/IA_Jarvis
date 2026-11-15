@@ -14,6 +14,19 @@ import json
 import re
 
 KINDS = ("receita", "apresentacao")
+# V7.13: animação de cada cena (ideia 5): gráfico, linha do tempo, mapa ou diagrama de ciência
+SCIENCE = ("sistema_solar", "atomo", "ciclo_agua", "coracao", "terra_camadas", "dna", "celula")
+VISUAL_RULES = (
+    "Em \"visual\", quando ajudar a entender, use UM destes (no máximo um por cena; varie entre as cenas; "
+    "nas outras, null):\n"
+    '- {"tipo": "grafico", "estilo": "barras|linha", "titulo": "curto", "unidade": "ex.: milhões", '
+    '"dados": [{"rotulo": "2000", "valor": 6.1}]} com 2 a 8 pontos REAIS (anos, países, comparações);\n'
+    '- {"tipo": "linha_do_tempo", "marcos": [{"data": "1969", "texto": "até 8 palavras"}]} com 2 a 6 marcos;\n'
+    '- {"tipo": "mapa", "lugares": [{"nome": "Paris", "lat": 48.86, "lon": 2.35}], "rota": false} com 1 a 5 '
+    "lugares (rota true liga os lugares na ordem, para viagens e rotas);\n"
+    '- {"tipo": "ciencia", "modelo": "' + "|".join(SCIENCE) + '"} para espaço, átomo, água, corpo, Terra, genética.\n'
+    "Nunca invente números ou datas: sem dado real, use null."
+)
 
 _RECIPE = re.compile(r"\breceitas?\b", re.I)
 
@@ -44,10 +57,12 @@ def build_prompt(query: str, kind: str) -> str:
         '"cenas": [{"icone": "1 emoji", "titulo": "título da cena (até 6 palavras)", '
         '"fala": "1 ou 2 frases narradas pelo JARVIS, tom de documentário, tratando o usuário por senhor", '
         '"pontos": ["até 3 tópicos curtos"], '
-        '"numero": {"valor": 0, "unidade": "ex.: anos-luz", "rotulo": "o que o número significa"}}]}\n'
+        '"numero": {"valor": 0, "unidade": "ex.: anos-luz", "rotulo": "o que o número significa"}, '
+        '"foto": "título de um artigo da Wikipédia com uma boa foto desta cena, ou null", '
+        '"visual": null}]}\n'
         "De 4 a 6 cenas: começa com um gancho curioso, explica do simples ao surpreendente e fecha com uma "
         "curiosidade. Use \"numero\" só quando houver um dado real e marcante (senão, null). Seja correto: "
-        "nada de dado inventado."
+        "nada de dado inventado.\n" + VISUAL_RULES
     )
 
 
@@ -78,6 +93,40 @@ def _number(value) -> float | None:
         return float(text) if text else None
     except ValueError:
         return None
+
+
+def clean_visual(v) -> dict | None:
+    """Confere a animação da cena; qualquer coisa estranha vira None (a cena fica no modo de sempre)."""
+    if not isinstance(v, dict):
+        return None
+    tipo = v.get("tipo")
+    if tipo == "grafico":
+        dados = []
+        for d in v.get("dados") or []:
+            if isinstance(d, dict):
+                val = _number(d.get("valor"))
+                if val is not None and _short(d.get("rotulo"), 20):
+                    dados.append({"rotulo": _short(d.get("rotulo"), 20), "valor": val})
+        if not 2 <= len(dados) <= 8:
+            return None
+        return {"tipo": "grafico", "estilo": "linha" if v.get("estilo") == "linha" else "barras",
+                "titulo": _short(v.get("titulo"), 60), "unidade": _short(v.get("unidade"), 20), "dados": dados}
+    if tipo == "linha_do_tempo":
+        marcos = [{"data": _short(m.get("data"), 20), "texto": _short(m.get("texto"), 80)}
+                  for m in v.get("marcos") or [] if isinstance(m, dict) and _short(m.get("data"), 20) and _short(m.get("texto"), 80)]
+        return {"tipo": "linha_do_tempo", "marcos": marcos[:6]} if len(marcos) >= 2 else None
+    if tipo == "mapa":
+        lugares = []
+        for lugar in v.get("lugares") or []:
+            if not isinstance(lugar, dict):
+                continue
+            lat, lon = _number(lugar.get("lat")), _number(lugar.get("lon"))
+            if lat is not None and lon is not None and -90 <= lat <= 90 and -180 <= lon <= 180 and _short(lugar.get("nome"), 40):
+                lugares.append({"nome": _short(lugar.get("nome"), 40), "lat": round(lat, 4), "lon": round(lon, 4)})
+        return {"tipo": "mapa", "lugares": lugares[:5], "rota": bool(v.get("rota")) and len(lugares) > 1} if lugares else None
+    if tipo == "ciencia" and v.get("modelo") in SCIENCE:
+        return {"tipo": "ciencia", "modelo": v["modelo"]}
+    return None
 
 
 def parse(raw: str, kind: str) -> dict:
@@ -116,6 +165,8 @@ def parse(raw: str, kind: str) -> dict:
             "pontos": [_short(p, 120) for p in scene.get("pontos") or [] if isinstance(p, str) and p.strip()][:3],
             "numero": {"valor": value, "unidade": _short(num.get("unidade"), 30), "rotulo": _short(num.get("rotulo"), 60)}
             if value is not None else None,
+            "visual": clean_visual(scene.get("visual")),
+            "foto": _short(scene.get("foto") if isinstance(scene.get("foto"), str) else "", 80),
         })
     if len(scenes) < 2:
         raise ValueError("A apresentação veio vazia.")

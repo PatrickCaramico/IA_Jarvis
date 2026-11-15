@@ -475,7 +475,7 @@ async def holo_build(req: HoloRequest) -> dict:
         raise HTTPException(status_code=400, detail="Diga o assunto.")
     kind = req.kind if req.kind in holo.KINDS else holo.guess_kind(query)
     try:
-        raw = await asyncio.to_thread(llm_orchestrator.ask_text, holo.build_prompt(query, kind))
+        raw = await asyncio.to_thread(llm_orchestrator.ask_text, holo.build_prompt(query, kind), False, 2400)
         return holo.parse(raw, kind)
     except ValueError as exc:
         raise HTTPException(status_code=502, detail=f"{exc} Tente de novo, senhor.") from exc

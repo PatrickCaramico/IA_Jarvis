@@ -450,3 +450,17 @@ test("finanças fora de casa: só o resumo na nuvem; anotações vão para o PC"
   const ops = (await store.get("ops")).items;
   assert.deepEqual(ops.at(-1), { op: "fin_action", acao: { tipo: "divida_pagar", nome: "Carro", valor: null }, id: ops.at(-1).id, at: ops.at(-1).at });
 });
+
+test("V7.13 nuvem: animações das cenas do holograma", async () => {
+  const { cleanVisual, parseHolo, holoPrompt } = await import("./core.mjs");
+  assert.deepEqual(cleanVisual({ tipo: "ciencia", modelo: "atomo" }), { tipo: "ciencia", modelo: "atomo" });
+  assert.equal(cleanVisual({ tipo: "ciencia", modelo: "dragao" }), null);
+  assert.equal(cleanVisual({ tipo: "grafico", dados: [{ rotulo: "a", valor: 1 }] }), null);
+  assert.equal(cleanVisual({ tipo: "grafico", dados: [{ rotulo: "a", valor: "1,5" }, { rotulo: "b", valor: 2 }] }).dados[0].valor, 1.5);
+  assert.deepEqual(cleanVisual({ tipo: "mapa", lugares: [{ nome: "Rio", lat: -22.9, lon: -43.2 }, { nome: "x", lat: 300, lon: 0 }], rota: true }), { tipo: "mapa", lugares: [{ nome: "Rio", lat: -22.9, lon: -43.2 }], rota: false });
+  const h = parseHolo(JSON.stringify({ tipo: "apresentacao", titulo: "T", cenas: [{ fala: "a", visual: { tipo: "linha_do_tempo", marcos: [{ data: "1", texto: "x" }, { data: "2", texto: "y" }] }, foto: "Lua" }, { fala: "b" }] }), "apresentacao");
+  assert.equal(h.cenas[0].visual.marcos.length, 2);
+  assert.equal(h.cenas[0].foto, "Lua");
+  assert.equal(h.cenas[1].visual, null);
+  assert.match(holoPrompt("a lua", "apresentacao"), /linha_do_tempo/);
+});
