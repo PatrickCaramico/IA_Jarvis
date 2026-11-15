@@ -75,23 +75,6 @@ body {
 .ge-status small { display: block; margin-top: 6px; color: rgba(186, 230, 253, 0.5); font: 9px "Rajdhani", sans-serif; letter-spacing: 0.12em; }
 .ge-live-dot { display: inline-block; width: 7px; height: 7px; margin-right: 7px; border-radius: 50%; background: #22d3ee; box-shadow: 0 0 12px #22d3ee; animation: ge-pulse 1.8s infinite; }
 
-.ge-scene { position: absolute; inset: 0; display: grid; place-items: center; perspective: 900px; }
-.ge-stars { position: absolute; inset: 0; }
-.ge-stars i { position: absolute; display: block; width: var(--size, 2px); height: var(--size, 2px); border-radius: 50%; background: #dffbff; opacity: 0.5; animation: ge-twinkle 3s var(--delay, 0s) infinite ease-in-out; }
-.ge-globe { position: relative; width: min(58vw, 560px); aspect-ratio: 1; border: 1px solid rgba(34, 211, 238, 0.75); border-radius: 50%; background: radial-gradient(circle at 35% 30%, #123a5d, #06152f 58%, #020a18 100%); box-shadow: inset -48px -20px 70px rgba(0, 0, 0, 0.65), 0 0 28px rgba(34, 211, 238, 0.22), 0 0 100px rgba(14, 116, 144, 0.2); overflow: hidden; }
-.ge-globe::after { content: ""; position: absolute; inset: 0; border-radius: 50%; background: linear-gradient(110deg, transparent 42%, rgba(103, 232, 249, 0.15) 48%, transparent 54%); }
-.ge-globe-grid { position: absolute; inset: -10%; border: 1px solid rgba(103, 232, 249, 0.27); border-radius: 50%; }
-.ge-globe-grid-latitude { transform: rotateX(68deg); box-shadow: 0 0 0 18px rgba(103, 232, 249, 0.08), 0 0 0 52px rgba(103, 232, 249, 0.05); }
-.ge-globe-grid-longitude { transform: rotateY(68deg); box-shadow: 0 0 0 18px rgba(103, 232, 249, 0.08), 0 0 0 52px rgba(103, 232, 249, 0.05); }
-.ge-continent { position: absolute; border: 1px solid rgba(103, 232, 249, 0.65); background: rgba(34, 211, 238, 0.1); filter: drop-shadow(0 0 5px rgba(34, 211, 238, 0.45)); transform: rotate(-18deg); }
-.ge-continent-a { width: 23%; height: 35%; left: 25%; top: 24%; clip-path: polygon(20% 0, 75% 12%, 100% 43%, 67% 55%, 76% 100%, 33% 78%, 0 38%); }
-.ge-continent-b { width: 20%; height: 29%; left: 59%; top: 39%; clip-path: polygon(8% 12%, 72% 0, 100% 38%, 75% 62%, 85% 100%, 27% 82%, 0 45%); transform: rotate(12deg); }
-.ge-continent-c { width: 13%; height: 16%; left: 43%; top: 65%; clip-path: polygon(0 17%, 68% 0, 100% 55%, 54% 100%, 15% 71%); transform: rotate(22deg); }
-.ge-event { position: absolute; width: 8px; height: 8px; border: 1px solid #fb923c; border-radius: 50%; background: #fed7aa; box-shadow: 0 0 0 5px rgba(251, 146, 60, 0.16), 0 0 16px #fb923c; animation: ge-event-pulse 2s infinite; }
-.ge-event-a { left: 39%; top: 48%; } .ge-event-b { left: 65%; top: 58%; animation-delay: 0.7s; } .ge-event-c { left: 51%; top: 35%; animation-delay: 1.3s; }
-.ge-orbit { position: absolute; width: min(66vw, 640px); aspect-ratio: 2.8; border: 1px solid rgba(103, 232, 249, 0.38); border-radius: 50%; transform: rotate(-18deg); animation: ge-orbit 18s linear infinite; }
-.ge-orbit-two { width: min(62vw, 600px); transform: rotate(62deg); animation-duration: 24s; animation-direction: reverse; border-color: rgba(167, 139, 250, 0.28); }
-.ge-atmosphere { position: absolute; width: min(64vw, 620px); aspect-ratio: 1; border: 1px solid rgba(103, 232, 249, 0.16); border-radius: 50%; box-shadow: 0 0 55px rgba(34, 211, 238, 0.16); }
 
 .ge-layer-panel { position: absolute; z-index: 3; top: 108px; left: 28px; width: min(320px, calc(100vw - 110px)); border: 1px solid rgba(34, 211, 238, 0.35); border-radius: 8px; background: rgba(3, 20, 38, 0.72); box-shadow: 0 18px 45px rgba(0, 0, 0, 0.35); backdrop-filter: blur(16px); }
 .ge-layer-panel header { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(103, 232, 249, 0.16); padding: 13px 15px; }
@@ -120,17 +103,12 @@ body {
 .hl-gods-eye-trigger:hover { color: #dffbff; text-shadow: 0 0 10px #22d3ee; }
 @keyframes ge-fade-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes ge-pulse { 50% { opacity: 0.35; } }
-@keyframes ge-twinkle { 50% { opacity: 0.15; transform: scale(0.7); } }
-@keyframes ge-event-pulse { 50% { box-shadow: 0 0 0 12px rgba(251, 146, 60, 0.03), 0 0 22px #fb923c; } }
-@keyframes ge-orbit { to { transform: rotate(342deg); } }
 @media (max-width: 760px) {
   .ge-status { top: 80px; left: 16px; }
   .ge-layer-panel { top: 120px; left: 16px; }
   .ge-dock { right: 8px; }
   .ge-dock button { width: 50px; }
   .ge-dock button small { display: none; }
-  .ge-globe { width: min(82vw, 480px); }
-  .ge-orbit, .ge-atmosphere { width: 90vw; }
   .ge-stats { max-width: calc(100vw - 32px); overflow: auto; }
 }
 
@@ -1751,4 +1729,48 @@ body {
 @media (max-width: 760px) {
   .ge-traffic-panel { top: auto; bottom: 70px; max-height: 45dvh; overflow-y: auto; }
   .ge-traffic-show { top: 120px; left: 16px; }
+}
+
+/* V7.11: OLHO DE DEUS com globo 3D e dados reais */
+.ge-globe3d, .ge-globe3d.maplibregl-map { position: absolute; inset: 0; z-index: 1; background: radial-gradient(circle at 50% 50%, #04203a 0%, #020916 62%); }
+.ge-globe3d .maplibregl-canvas { outline: none; }
+.ge-root .maplibregl-ctrl.maplibregl-ctrl-attrib { background: rgba(3, 20, 38, 0.72); color: rgba(186, 230, 253, 0.7); font-size: 10px; }
+.ge-root .maplibregl-ctrl-attrib a { color: rgba(186, 230, 253, 0.8); }
+.ge-root .maplibregl-ctrl-attrib-button { filter: invert(1) hue-rotate(180deg); }
+.ge-root.is-globe .ge-status { padding: 6px 10px; border-radius: 8px; background: rgba(3, 20, 38, 0.78); backdrop-filter: blur(10px); }
+.ge-summary { position: absolute; z-index: 3; top: 80px; left: 50%; transform: translateX(-50%); max-width: min(860px, calc(100vw - 32px)); margin: 0; padding: 7px 14px; border: 1px solid rgba(34, 211, 238, 0.3); border-radius: 999px; color: #dffbff; background: rgba(3, 20, 38, 0.8); backdrop-filter: blur(10px); font-size: 12px; line-height: 1.35; text-align: center; box-shadow: 0 0 24px rgba(34, 211, 238, 0.12); }
+.ge-world-panel { max-height: calc(100dvh - 190px); overflow-y: auto; overscroll-behavior: contain; }
+.ge-layer-name em { display: block; margin-top: 2px; color: rgba(186, 230, 253, 0.5); font-size: 10px; font-style: normal; }
+.ge-layer-name em.ge-layer-err { color: #fda4af; }
+.ge-iss-passes, .ge-alerts { margin: 2px 8px 8px; padding: 8px 10px; border: 1px solid rgba(232, 121, 249, 0.25); border-radius: 6px; background: rgba(88, 28, 135, 0.12); font-size: 11px; }
+.ge-iss-passes small, .ge-alerts small { display: block; margin-bottom: 4px; color: rgba(186, 230, 253, 0.55); font: 9px "Orbitron", monospace; letter-spacing: 0.1em; }
+.ge-iss-passes p { margin: 3px 0; color: #f5d0fe; }
+.ge-iss-passes .is-clear { color: #86efac; } .ge-iss-passes .is-cloudy { color: #cbd5e1; }
+.ge-alerts { border-color: rgba(34, 211, 238, 0.22); background: rgba(8, 47, 73, 0.25); }
+.ge-alerts .ge-layer-row { min-height: 32px; font-size: 12px; }
+.ge-rain-bars { display: flex; align-items: flex-end; gap: 3px; height: 46px; margin: 0 10px 8px 34px; }
+.ge-rain-bars span { position: relative; flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; }
+.ge-rain-bars i { display: block; border-radius: 2px 2px 0 0; background: rgba(148, 163, 184, 0.35); }
+.ge-rain-bars i.is-rain { background: #60a5fa; } .ge-rain-bars i.is-strong { background: #f43f5e; box-shadow: 0 0 8px #f43f5e; }
+.ge-rain-bars small { position: absolute; bottom: -13px; left: 0; color: rgba(186, 230, 253, 0.5); font-size: 9px; }
+.ge-pick { position: absolute; z-index: 4; right: 104px; bottom: 70px; width: min(300px, calc(100vw - 32px)); padding: 10px 12px; border: 1px solid rgba(34, 211, 238, 0.45); border-radius: 8px; background: rgba(3, 20, 38, 0.88); backdrop-filter: blur(14px); box-shadow: 0 0 28px rgba(34, 211, 238, 0.2); animation: ge-fade-in 180ms ease-out; }
+.ge-pick header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.ge-pick header strong { flex: 1; font: 12px "Orbitron", monospace; letter-spacing: 0.06em; }
+.ge-pick header button { color: #67e8f9; cursor: pointer; }
+.ge-pick p { margin: 3px 0; color: rgba(223, 251, 255, 0.85); font-size: 12px; }
+.ge-home-pin, .ge-iss-pin { display: grid; justify-items: center; gap: 2px; pointer-events: none; }
+.ge-home-pin i { width: 12px; height: 12px; border: 2px solid #ecfeff; border-radius: 50%; background: #22d3ee; box-shadow: 0 0 0 6px rgba(34, 211, 238, 0.2), 0 0 16px #22d3ee; animation: ge-pulse 2s infinite; }
+.ge-home-pin span, .ge-iss-pin span { color: #ecfeff; font: 9px "Orbitron", monospace; letter-spacing: 0.1em; text-shadow: 0 0 6px #020916; }
+.ge-iss-pin { pointer-events: auto; cursor: pointer; }
+.ge-iss-pin i { width: 18px; height: 18px; border-radius: 50%; background: radial-gradient(circle, #fff 0 25%, #e879f9 45%, transparent 70%); box-shadow: 0 0 18px #e879f9; animation: ge-pulse 1.4s infinite; }
+.ge-globe-fail { position: absolute; z-index: 3; top: 50%; left: 50%; transform: translate(-50%, -50%); max-width: 360px; padding: 12px 16px; border: 1px solid rgba(251, 113, 133, 0.5); border-radius: 8px; background: rgba(3, 20, 38, 0.9); color: #fecdd3; text-align: center; }
+@media (max-width: 760px) {
+  .ge-summary { top: 140px; border-radius: 10px; font-size: 11px; }
+  .ge-root .maplibregl-ctrl-bottom-right { bottom: 58px; }
+  .ge-world-panel { top: auto; bottom: 66px; left: 8px; width: calc(100vw - 76px); max-height: 46dvh; }
+  .ge-root.is-globe .ge-traffic-show { top: auto; bottom: 70px; left: 12px; }
+  .ge-pick { right: 64px; left: 8px; bottom: 66px; width: auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ge-home-pin i, .ge-iss-pin i { animation: none; }
 }

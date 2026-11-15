@@ -1,6 +1,6 @@
 # JARVIS — Comandos do dia a dia
 
-**Versão do projeto:** 7.10.0 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
+**Versão do projeto:** 7.11.0 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
 
 > Montado a partir do código do projeto. Se algum comando não responder como descrito, me avise que eu ajusto o guia.
 > Para a lista técnica de rotas, veja [API.md](API.md); para o `.env`, [CONFIGURACAO.md](CONFIGURACAO.md).
@@ -445,6 +445,19 @@ Pedidos com YouTube, Google, Maps, música ou notícias continuam no caminho de 
 | 🏠 MINHA CIDADE · 📍 ONDE ESTOU · ＋/－ | Volta para a sua cidade, centraliza onde você está (pede permissão de localização) e aproxima/afasta. |
 | Lugares salvos | Os lugares do agente de rotas viram atalhos no painel. |
 | 🧭 IR ATÉ AQUI NO WAZE | Abre a navegação no app do Waze. |
+
+### Olho de Deus: globo 3D e dados reais (V7.11)
+
+| Fale / toque | O que acontece |
+|---|---|
+| 🌐 GLOBO (no Olho de Deus) | Globo 3D com radar de chuva, voos, terremotos, queimadas e Estação Espacial ao vivo. Cada camada liga e desliga no painel. |
+| "Mostra os voos agora" | Abre o globo nos voos e diz quantos aviões voam perto da sua cidade. |
+| "Tem terremoto hoje?" | Quantos terremotos houve em 24 h e qual foi o maior. |
+| "Tem queimada perto?" | Focos de queimada a menos de 50 km (e o mais próximo). |
+| "Quando a estação espacial passa?" | A próxima passagem visível no seu céu: hora, direção e nuvens. |
+| "Mostra o radar de chuva" | Abre o radar animado e diz quando vai chover. |
+| Tocar num ponto | Cartão com os detalhes (voo, altitude, força do terremoto, município da queimada). |
+| Avisos (no painel) | Chuva forte chegando · queimada/terremoto perto · ISS visível. Cada um liga e desliga. |
 
 ### Central de Agentes (V6.8.3)
 
