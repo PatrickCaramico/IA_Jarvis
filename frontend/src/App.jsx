@@ -231,7 +231,23 @@ export default function App() {
   const [relockWarning, setRelockWarning] = useState(null); // segundos até bloquear
   const [summaryActive, setSummaryActive] = useState(false);
   const [godsEyeOpen, setGodsEyeOpen] = useState(false);
-  const [godsEyeLayer, setGodsEyeLayer] = useState(null); // V7.11: abre o globo já na camada pedida por voz
+  const [godsEyeLayer, setGodsEyeLayer] = useState(null);
+  // V7.12: estilo da tela de bloqueio neste aparelho: "orbe" (igual ao vídeo, padrão) ou "classico"
+  const [lockStyle, setLockStyle] = useState(() => {
+    try {
+      return localStorage.getItem("jarvis.lockStyle") === "classico" ? "classico" : "orbe";
+    } catch {
+      return "orbe";
+    }
+  });
+  const changeLockStyle = useCallback((value) => {
+    setLockStyle(value);
+    try {
+      localStorage.setItem("jarvis.lockStyle", value);
+    } catch {
+      /* sem armazenamento: vale até fechar */
+    }
+  }, []); // V7.11: abre o globo já na camada pedida por voz
   const [notice, setNotice] = useState("");
   // V6.8.2: câmera do aparelho (null | { auto })
   const [cameraWin, setCameraWin] = useState(null);
@@ -2850,6 +2866,8 @@ export default function App() {
           updateNote={appUpdateNote}
           updateProgress={appUpdatePct}
           phoneApp={REMOTE_SCREEN}
+          lockStyle={lockStyle}
+          onLockStyle={changeLockStyle}
           onBiometric={IS_JARVIS_APP && (() => { try { return window.JarvisApp?.hasBiometric?.(); } catch { return false; } })()
             ? () => window.JarvisApp.biometricUnlock() : null}
           audioToggle={{ onOpen: () => setAudioOpen(true) }}

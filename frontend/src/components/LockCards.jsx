@@ -7,7 +7,8 @@ import LockDetail from "./LockDetail.jsx";
 // Cartões somente leitura da tela de bloqueio (seção 17.4). Nada pessoal antes do acesso:
 // só relógio, clima, próximo jogo (Modo Torcedor) e água de hoje.
 // allRight (V4.4): todos os cartões à direita, porque a esquerda fica com o painel do jogo (Modo Torcedor).
-export default function LockCards({ api, cards = [], fanModeEnabled = false, hidden = false, allRight = false }) {
+// V7.12: layout "strip": todos os cartões numa faixa que passa devagar pela tela (tela de bloqueio estilo ORBE).
+export default function LockCards({ api, cards = [], fanModeEnabled = false, hidden = false, allRight = false, layout = "columns" }) {
   const [weather, setWeather] = useState(null);
   const [match, setMatch] = useState(null);
   const [water, setWater] = useState(null);
@@ -130,13 +131,14 @@ export default function LockCards({ api, cards = [], fanModeEnabled = false, hid
     .sort((a, b) => LEFT_ORDER.indexOf(a.key) - LEFT_ORDER.indexOf(b.key));
   // V5.9: cada cartão abre a mini janela de detalhes (toque, clique, Enter ou espaço com o foco nele)
   const NAMES = { status: "sistemas", spotify: "Spotify", today: "hoje", clock: "agora", weather: "clima", fan: "próximo jogo", water: "água", rates: "mercado", headline: "manchetes" };
-  const clickable = (el) => (
+  const clickable = (el, copy = false) => (
     <div
-      key={el.key}
+      key={copy ? `${el.key}-copia` : el.key}
+      aria-hidden={copy || undefined}
       className="lc-click"
       role="button"
-      tabIndex={0}
-      aria-label={`Ver detalhes: ${NAMES[el.key] || el.key}`}
+      tabIndex={copy ? -1 : 0}
+      aria-label={copy ? undefined : `Ver detalhes: ${NAMES[el.key] || el.key}`}
       onClick={(e) => { e.stopPropagation(); setDetail(el.key); }}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); setDetail(el.key); }
@@ -145,6 +147,20 @@ export default function LockCards({ api, cards = [], fanModeEnabled = false, hid
       {el}
     </div>
   );
+  if (layout === "strip") {
+    const all = [...left, ...right];
+    return (
+      <div className="lc-strip" aria-label="Informações da tela de bloqueio">
+        <div className="lc-strip-track" style={{ "--lc-n": all.length }}>
+          {all.map((el) => clickable(el))}
+          {all.map((el) => clickable(el, true))}
+        </div>
+        {detail && (
+          <LockDetail kind={detail} api={api} data={{ health, status, weather, info, water, match }} onClose={() => setDetail(null)} />
+        )}
+      </div>
+    );
+  }
   return (
     <div className="lc-wrap" aria-label="Informações da tela de bloqueio">
       {left.length > 0 && <div className="lc-row lc-left">{left.map(clickable)}</div>}

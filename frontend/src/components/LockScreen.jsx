@@ -10,6 +10,7 @@ import useNow from "../hooks/useNow.js";
 import { APP_VERSION } from "../utils/version.js";
 import FanLockPanel from "./FanLockPanel.jsx";
 import MobileAppQr from "./MobileAppQr.jsx";
+import LockOrbe from "./LockOrbe.jsx";
 
 // Tela inicial biométrica do J.A.R.V.I.S.
 // phase: "ready" | "scanning" | "verified" | "failed" | "pin"
@@ -150,6 +151,8 @@ export default function LockScreen({
   updateNote = "", // V5.7.1: resposta do ATUALIZAR APP ("O app já está na versão mais nova…")
   updateProgress = null, // V6.1: 0–100 enquanto o app baixa a versão nova
   phoneApp = false, // V4.5: dentro do app do celular (o rosto usaria a webcam do PC: entra pelo PIN)
+  lockStyle = "orbe", // V7.12: "orbe" (igual ao vídeo: orbe de linhas, estado em cima, cartões numa faixa) | "classico"
+  onLockStyle = null,
 }) {
   const scanning = phase === "scanning";
   const orbState = scanning ? "processing" : phase === "ready" || phase === "pin" ? "idle" : jarvisState;
@@ -205,6 +208,12 @@ export default function LockScreen({
     </>
   ) : null;
 
+  // V7.12: troca entre o estilo ORBE (vídeo) e o clássico
+  const styleToggle = onLockStyle ? (
+    <button type="button" className="ls-chip" onClick={(e) => { e.stopPropagation(); onLockStyle(lockStyle === "orbe" ? "classico" : "orbe"); }}>
+      ◐ ESTILO: {lockStyle === "orbe" ? "ORBE" : "CLÁSSICO"}
+    </button>
+  ) : null;
   // Verificação rápida falhou: pode ser alguém novo. O convite para criar perfil fica em destaque.
   const unknownFace = Boolean(onNewProfile) && phase === "failed" && !phoneApp;
   const secondaryActions = (
@@ -250,6 +259,7 @@ export default function LockScreen({
             title="Testar IA, voz, internet, microfone e câmera">🩺 DIAGNÓSTICO</button>
         </>
       )}
+      {lockStyle !== "orbe" && styleToggle}
       {updateProgress != null && (
         <div className="ls-update-progress"><ProgressBar pct={updateProgress} label="Atualizando o app" /></div>
       )}
@@ -257,6 +267,62 @@ export default function LockScreen({
     </div>
     </>
   );
+
+  // ---------------------------------------------------------------- V7.12: estilo ORBE (padrão)
+  if (lockStyle === "orbe") {
+    const st = sentinel?.state || "sleeping";
+    const listening = sentinelOn ? st === "awake" || st === "listening" : false;
+    const wake = sentinel?.wakeLabel || "Jarvis";
+    const autoEntering = Boolean(clap?.autoEntering || sentinel?.autoEntering);
+    const orbeHint = phoneEntry
+      ? (phase === "failed" && message ? message : phoneHint)
+      : phase === "scanning"
+        ? "Olhe para a câmera"
+        : phase === "verified"
+          ? (autoEntering ? "Abrindo a central…" : "Toque no orbe para entrar")
+          : phase === "failed"
+            ? "Toque para tentar de novo"
+            : phase === "pin"
+              ? "Digite o PIN"
+              : sentinelOn && sentinel.micStatus === "listening" && !sentinel.muted
+                ? `Diga "abrir central" ou "${wake}, …"`
+                : clapHint ? "Toque, aperte espaço ou bata palmas 2x" : "Toque no orbe ou aperte espaço";
+    const failedActions = phase === "failed" && !phoneApp ? (
+      <div className="lo-quick">
+        {showPinButton && <button type="button" className={`ls-chip ${failCount >= 2 ? "is-strong" : ""}`} onClick={onUsePin}>⌨ USAR PIN</button>}
+        {unknownFace && <button type="button" className="ls-chip is-strong" onClick={(e) => { e.stopPropagation(); onNewProfile(); }}>＋ SOU NOVO: CRIAR PERFIL</button>}
+      </div>
+    ) : null;
+    return (
+      <LockOrbe
+        phase={phase}
+        name={name}
+        photoUrl={photoUrl}
+        message={phase === "failed" ? message : ""}
+        jarvisState={sentinelOn && (st === "awake" || st === "listening") && jarvisState !== "speaking" ? "idle" : jarvisState}
+        hint={orbeHint}
+        caption={sentinelOn && phase !== "scanning" ? sentinel.interim || sentinel.caption || "" : ""}
+        listening={listening}
+        liveScan={liveFrame}
+        pinBlock={pinBlock}
+        mainLabel={phase === "verified" ? "Entrar" : phase === "failed" ? "Tentar novamente" : "Ativar e entrar"}
+        onMain={handleBtnClick}
+        mainVisible={!(phase === "verified" && autoEntering) && !phoneEntry}
+        phoneButtons={phonePinButton}
+        failedActions={failedActions}
+        hubActions={secondaryActions}
+        cards={cards}
+        cardsList={sentinelOn && sentinel.showClock ? cardsList.filter((c) => c !== "clock") : cardsList}
+        fanPanelNode={fanPanel && phase !== "scanning" && phase !== "pin" ? <FanLockPanel api={cards.api} refreshKey={cards.fanRefresh} /> : null}
+        mic={mic || (sentinelOn && !phoneApp ? { muted: sentinel.muted, onToggle: () => sentinel.onToggleMute?.() } : null)}
+        clapNode={<ClapIndicator clap={clap} />}
+        stampNode={<BlueprintStamp sheet={sentinelOn ? "SENTINELA" : "BLOQUEIO"} fan={fanToggle} bg={bgToggle} audio={audioToggle} />}
+        phoneApp={phoneApp}
+        onChangePhoto={onChangePhoto}
+        styleToggle={styleToggle}
+      />
+    );
+  }
 
   // ---------------------------------------------------------------- Sentinela
   if (sentinelOn) {

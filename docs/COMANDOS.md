@@ -1,6 +1,6 @@
 # JARVIS — Comandos do dia a dia
 
-**Versão do projeto:** 7.11.1 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
+**Versão do projeto:** 7.12.0 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
 
 > Montado a partir do código do projeto. Se algum comando não responder como descrito, me avise que eu ajusto o guia.
 > Para a lista técnica de rotas, veja [API.md](API.md); para o `.env`, [CONFIGURACAO.md](CONFIGURACAO.md).
@@ -267,6 +267,8 @@ Monitore sua meta diária de hidratação (padrão 2000 ml). O lembrete vem a ca
 | "Mudar meta de água para 2500ml" | Atualiza sua meta diária personalizada. |
 
 ### Bloqueio, Modo Sentinela e visitante
+
+**V7.12, estilo ORBE (padrão):** o orbe de linhas mostra o estado (EM ESPERA, OUVINDO, FALANDO, ESCANEANDO); o rosto aparece dentro dele na identificação. Os botões ficam em **⚙ GERENCIAR HUB** (no topo); **◐ ESTILO** volta para o bloqueio clássico.
 
 A central fica bloqueada até o rosto ser reconhecido (ou o PIN digitado). Com o **Modo Sentinela**
 ligado (Configurações > Bloqueio, ou o botão **MODO SENTINELA** no menu ⚡ CONTROLES), o JARVIS fica
