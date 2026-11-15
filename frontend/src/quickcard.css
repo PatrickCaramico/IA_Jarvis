@@ -1,0 +1,30 @@
+/* V7.14: cartão animado das perguntas rápidas */
+.qc { position: fixed; z-index: 90; right: 18px; bottom: 96px; width: min(320px, calc(100vw - 24px)); overflow: hidden; padding: 12px 14px 10px; border: 1px solid rgba(103, 232, 249, 0.5); border-radius: 14px; color: #e0fbff; background: linear-gradient(160deg, rgba(8, 47, 73, 0.95), rgba(30, 27, 75, 0.95)); box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45), 0 0 30px rgba(103, 232, 249, 0.25); backdrop-filter: blur(14px); animation: qc-in 420ms cubic-bezier(.2, 1.2, .3, 1) both; }
+.qc header { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.qc header strong { font: 11px "Orbitron", monospace; letter-spacing: 0.08em; color: #a5f3fc; }
+.qc header button { color: #67e8f9; cursor: pointer; }
+.qc p { margin: 6px 0 0; font-size: 13px; color: rgba(224, 251, 255, 0.85); }
+.qc-num { display: flex; align-items: baseline; gap: 6px; margin-top: 6px; }
+.qc-num b { font: 700 34px "Orbitron", monospace; color: #fff; text-shadow: 0 0 18px rgba(103, 232, 249, 0.8); animation: qc-pop 600ms 200ms both; }
+.qc-num small { color: #67e8f9; font-size: 14px; }
+.qc-spark { display: block; width: 100%; height: 70px; margin-top: 4px; }
+.qc-spark .hv-line { fill: none; stroke: #22d3ee; stroke-width: 4; stroke-dasharray: 1; stroke-dashoffset: 1; animation: qc-draw 1.6s 0.3s ease-out forwards; }
+.qc-spark .hv-area { fill: rgba(34, 211, 238, 0.16); }
+.qc-score { display: grid; grid-template-columns: 1fr auto auto auto 1fr; align-items: center; gap: 8px; margin-top: 8px; text-align: center; }
+.qc-score span { font-size: 13px; font-weight: 700; }
+.qc-score b { font: 700 34px "Orbitron", monospace; color: #fff; animation: qc-pop 600ms 250ms both; }
+.qc-score i { color: #67e8f9; font-style: normal; }
+.qc-img { display: block; width: 100%; height: 130px; margin-top: 8px; border-radius: 10px; object-fit: cover; animation: qc-pop 500ms both; }
+.qc-credit { display: block; margin-top: 2px; color: rgba(224, 251, 255, 0.5); font-size: 10px; }
+.qc-list { margin: 8px 0 0; padding-left: 20px; font-size: 13px; }
+.qc-list li { animation: qc-in 400ms both; }
+.qc footer { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 10px; }
+.qc footer small { color: rgba(224, 251, 255, 0.5); font-size: 10px; }
+.qc footer button { margin-left: auto; padding: 5px 10px; border: 1px solid rgba(103, 232, 249, 0.5); border-radius: 99px; color: #e0fbff; background: rgba(34, 211, 238, 0.15); font: 10px "Orbitron", monospace; cursor: pointer; }
+.qc-timer { position: absolute; left: 0; bottom: 0; height: 2px; width: 100%; background: #22d3ee; transform-origin: left; animation: qc-timer 18s linear forwards; }
+@keyframes qc-in { from { opacity: 0; transform: translateY(18px) scale(0.96); } }
+@keyframes qc-pop { from { opacity: 0; transform: scale(0.6); } }
+@keyframes qc-draw { to { stroke-dashoffset: 0; } }
+@keyframes qc-timer { to { transform: scaleX(0); } }
+@media (max-width: 760px) { .qc { right: 12px; bottom: 150px; } }
+@media (prefers-reduced-motion: reduce) { .qc, .qc *, .qc-spark .hv-line { animation: none !important; stroke-dashoffset: 0; } }

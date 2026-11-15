@@ -464,3 +464,22 @@ test("V7.13 nuvem: animações das cenas do holograma", async () => {
   assert.equal(h.cenas[1].visual, null);
   assert.match(holoPrompt("a lua", "apresentacao"), /linha_do_tempo/);
 });
+
+test("V7.14 nuvem: quiz, salvos e cartão rápido", async () => {
+  const { parseQuiz, parseCard, holoSavedApply, receiveSnapshot } = await import("./core.mjs");
+  const q = parseQuiz(JSON.stringify({ perguntas: [{ pergunta: "?", opcoes: ["a", "b", "c", "d"], certa: 3 }, { pergunta: "x", opcoes: ["a"], certa: 0 }] }));
+  assert.equal(q.length, 1);
+  assert.equal(q[0].certa, 3);
+  assert.equal(parseCard('{"tipo":"placar","time1":"A","gols1":"2","time2":"B","gols2":0}').gols1, 2);
+  assert.equal(parseCard('{"tipo":null}'), null);
+  let list = holoSavedApply([], { op: "holo_save", item: "a1", data: { titulo: "Lua", tipo: "apresentacao", cenas: [] }, query: "lua" });
+  list = holoSavedApply(list, { op: "holo_save", item: "a2", data: { titulo: "Lua", tipo: "apresentacao", cenas: [] } });
+  assert.equal(list.length, 1); // mesmo título não duplica
+  assert.equal(holoSavedApply(list, { op: "holo_delete", item: "a2" }).length, 0);
+  // a foto do PC chega e as operações ainda não aplicadas continuam valendo
+  const m = new Map();
+  const store = { get: async (k) => m.get(k), set: async (k, v) => m.set(k, v) };
+  m.set("ops", { seq: 1, items: [{ op: "holo_delete", item: "p2", id: 1, at: "x" }] });
+  await receiveSnapshot(store, { ack: 0, snapshot: { holo_salvos: [{ id: "p1", titulo: "Marte", tipo: "apresentacao", data: { titulo: "Marte" } }, { id: "p2", titulo: "Lua", tipo: "apresentacao", data: { titulo: "Lua" } }] } });
+  assert.deepEqual((await store.get("holo_salvos")).map((i) => i.titulo), ["Marte"]); // a exclusão feita fora de casa continua valendo
+});

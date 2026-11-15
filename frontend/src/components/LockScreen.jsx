@@ -10,7 +10,7 @@ import useNow from "../hooks/useNow.js";
 import { APP_VERSION } from "../utils/version.js";
 import FanLockPanel from "./FanLockPanel.jsx";
 import MobileAppQr from "./MobileAppQr.jsx";
-import LockOrbe from "./LockOrbe.jsx";
+import LockOrbe, { FaceCircle } from "./LockOrbe.jsx";
 
 // Tela inicial biométrica do J.A.R.V.I.S.
 // phase: "ready" | "scanning" | "verified" | "failed" | "pin"
@@ -151,13 +151,16 @@ export default function LockScreen({
   updateNote = "", // V5.7.1: resposta do ATUALIZAR APP ("O app já está na versão mais nova…")
   updateProgress = null, // V6.1: 0–100 enquanto o app baixa a versão nova
   phoneApp = false, // V4.5: dentro do app do celular (o rosto usaria a webcam do PC: entra pelo PIN)
-  lockStyle = "orbe", // V7.12: "orbe" (igual ao vídeo: orbe de linhas, estado em cima, cartões numa faixa) | "classico"
+  lockStyle = "classico", // V7.12: "orbe" (igual ao vídeo: orbe de linhas, estado em cima, cartões numa faixa) | "classico"
   onLockStyle = null,
 }) {
   const scanning = phase === "scanning";
   const orbState = scanning ? "processing" : phase === "ready" || phase === "pin" ? "idle" : jarvisState;
   const tone = phase === "verified" ? "ok" : phase === "failed" ? "fail" : "default";
   const liveFrame = scanning && liveScan?.frame ? liveScan : null;
+  // V7.13.1: a verificação nova (rosto no círculo com máscara de pontos e progresso) vale nos dois estilos
+  const lastFrame = liveFrame || (phase === "verified" && liveScan?.frame ? liveScan : null); // o rosto que foi confirmado
+  const newCheck = Boolean(lastFrame) || scanning || (phase === "verified" && Boolean(photoUrl));
   const sentinelOn = Boolean(sentinel?.enabled);
   const now = useClock(sentinelOn && sentinel?.showClock);
 
@@ -381,7 +384,10 @@ export default function LockScreen({
         {pinBlock || (
           <div className={`ls-orb-wrapper snt-orb ${clap?.pulse ? "is-clap-pulse" : ""}`} key={`orb-${clap?.pulse || 0}`}>
             <div className={`ls-hud-ring${scanning ? " is-scanning" : ""}`} />
-            <ArcReactorHUD state={orbSentinelState} photoUrl={photoUrl} tone={tone} liveFrame={liveFrame} className="snt-hud" />
+            <div className={newCheck ? "ls-reactor-hidden" : undefined}>
+              <ArcReactorHUD state={orbSentinelState} photoUrl={newCheck ? null : photoUrl} tone={tone} liveFrame={null} className="snt-hud" />
+            </div>
+            {newCheck && <div className="ls-face-over"><FaceCircle scan={lastFrame} phase={phase} photoUrl={photoUrl} /></div>}
           </div>
         )}
 
@@ -492,7 +498,10 @@ export default function LockScreen({
       {pinBlock || (
         <div className={`ls-orb-wrapper ${clap?.pulse ? "is-clap-pulse" : ""}`} key={`orb-${clap?.pulse || 0}`}>
           <div className={`ls-hud-ring${scanning ? " is-scanning" : ""}`} />
-          <ArcReactorHUD state={orbState} photoUrl={photoUrl} tone={tone} liveFrame={liveFrame} />
+          <div className={newCheck ? "ls-reactor-hidden" : undefined}>
+            <ArcReactorHUD state={orbState} photoUrl={newCheck ? null : photoUrl} tone={tone} liveFrame={null} />
+          </div>
+          {newCheck && <div className="ls-face-over"><FaceCircle scan={lastFrame} phase={phase} photoUrl={photoUrl} /></div>}
         </div>
       )}
 

@@ -34,7 +34,8 @@ import { applyAccessibility, applyBackground, applyFanMode, applyTheme } from ".
 import { IS_JARVIS_APP } from "./utils/device.js";
 import { CLOUD_AVAILABLE, cloudRequested, isPhone } from "./utils/cloudApi.js";
 import { installCloudShim } from "./utils/cloudShim.js";
-import { holoCommand, holoIntent } from "./utils/holoIntent.js";
+import { holoCommand, holoIntent, holoQuestion, quickQuestion, quizLetter, savedHoloIntent } from "./utils/holoIntent.js";
+import QuickCard from "./components/QuickCard.jsx";
 import { parseAgentMention } from "./utils/agentMention.js";
 import { applyPerf } from "./utils/perfMode.js";
 import { isImageFile, prepPhoto } from "./utils/photoPrep.js";
@@ -232,12 +233,13 @@ export default function App() {
   const [summaryActive, setSummaryActive] = useState(false);
   const [godsEyeOpen, setGodsEyeOpen] = useState(false);
   const [godsEyeLayer, setGodsEyeLayer] = useState(null);
-  // V7.12: estilo da tela de bloqueio neste aparelho: "orbe" (igual ao vídeo, padrão) ou "classico"
+  // V7.12: estilo da tela de bloqueio neste aparelho. V7.13.1: o padrão voltou a ser o "classico" (a verificação
+  // nova do rosto continua nele); "orbe" (igual ao vídeo) fica como opção em ◐ ESTILO.
   const [lockStyle, setLockStyle] = useState(() => {
     try {
-      return localStorage.getItem("jarvis.lockStyle") === "classico" ? "classico" : "orbe";
+      return localStorage.getItem("jarvis.lockStyle") === "orbe" ? "orbe" : "classico";
     } catch {
-      return "orbe";
+      return "classico";
     }
   });
   const changeLockStyle = useCallback((value) => {
@@ -354,6 +356,12 @@ export default function App() {
   }, []);
   // V7.1: HOLOGRAMA (pesquisa vira tela viva: apresentação narrada ou receita com modo cozinha)
   const [holo, setHolo] = useState(null);
+  const [quickCard, setQuickCard] = useState(null); // V7.14: cartão animado das perguntas rápidas
+  useEffect(() => {
+    const open = () => setHolo({ library: true, at: Date.now() });
+    window.addEventListener("jarvis-open-holo-saved", open);
+    return () => window.removeEventListener("jarvis-open-holo-saved", open);
+  }, []);
   const holoRef = useRef(null);
   holoRef.current = holo;
   // V6.8: link aberto por um agente que o navegador bloqueou (aparece como botão por 20 s)
@@ -1729,6 +1737,26 @@ export default function App() {
         if (cmd === "close") setHolo(null);
         return;
       }
+      // V7.14: resposta do quiz ("letra b") e pergunta no meio da apresentação ("espera, o que é…?")
+      const letter = quizLetter(text);
+      if (letter >= 0) {
+        setUserText(text);
+        window.dispatchEvent(new CustomEvent("jarvis-holo-cmd", { detail: { type: "quiz", letter } }));
+        return;
+      }
+      if (holoQuestion(text)) {
+        setUserText(text);
+        window.dispatchEvent(new CustomEvent("jarvis-holo-cmd", { detail: { type: "ask", text } }));
+        return;
+      }
+    }
+    // V7.14: "hologramas salvos" abre a lista para rever
+    if (savedHoloIntent(text)) {
+      keepHubClean();
+      setUserText(text);
+      setHolo({ library: true, at: Date.now() });
+      setResponse("Seus hologramas salvos, senhor.");
+      return;
     }
     // V7.1: "receita de bolo", "me explica como funciona…", "pesquisa sobre…" viram holograma
     const holoAsk = holoIntent(text);
@@ -1964,6 +1992,12 @@ export default function App() {
       const data = await api(endpoint, { method: "POST", body: JSON.stringify({ message: text }) });
       if (data.status === "canceled") return; // você cancelou: descarta a resposta
       setResponse(data.response);
+      // V7.14: pergunta rápida ganha um cartão animado no canto (placar, número com mini-gráfico, foto, lista)
+      if (quickQuestion(text) && data.response) {
+        api("/api/quickcard", { method: "POST", body: JSON.stringify({ pergunta: text, resposta: data.response }), timeout: 30_000 })
+          .then((r) => r?.card && setQuickCard({ ...r.card, pergunta: text, at: Date.now() }))
+          .catch(() => {});
+      }
       if (data.cards) {
         setResponseCards(data.cards);
         const deepCardHttp = (data.cards || []).find((c) => c.type === "deep_search");
@@ -3053,6 +3087,10 @@ export default function App() {
             setHolo({ kind: "apresentacao", query: topic, photo, at: Date.now() });
           }}
         />
+      )}
+      {quickCard && !holo && (
+        <QuickCard key={quickCard.at} card={quickCard} onClose={() => setQuickCard(null)}
+          onHolo={() => { setQuickCard(null); setHolo({ kind: "apresentacao", query: quickCard.pergunta, at: Date.now() }); }} />
       )}
       {holo && (
         <HoloStage

@@ -303,3 +303,42 @@
 @media (prefers-reduced-motion: reduce) {
   .hv-bar, .hv-line, .hv-ecg, .hv-tl-line, .hv-spin, .hv-heart, .hv-rung, .hv-cloud, .hv-drop, .hv-vapor, .holo-photo img, .hv-layer { animation: none !important; stroke-dashoffset: 0; opacity: 1; }
 }
+
+/* ===== V7.14: perguntar no meio, quiz, salvar e salvos ===== */
+.holo-save { position: absolute !important; z-index: 3; top: max(14px, env(safe-area-inset-top)); left: 14px; height: 40px; padding: 0 14px; border-radius: 99px; border: 1px solid rgba(250, 204, 21, 0.55); background: rgba(2, 10, 24, 0.6); color: #fde68a; font: 10px "Orbitron", monospace; letter-spacing: 0.08em; cursor: pointer; }
+.holo-save:disabled { opacity: 0.85; cursor: default; }
+.holo-bubble { width: min(620px, 100%); margin: 6px 0 10px; padding: 12px 16px; border: 1px solid rgba(250, 204, 21, 0.5); border-radius: 14px; background: rgba(66, 32, 6, 0.55); box-shadow: 0 0 30px rgba(250, 204, 21, 0.18); text-align: left; animation: holo-fade-up 400ms both; }
+.holo-bubble small { color: #fde68a; font-size: 12px; }
+.holo-bubble p { margin: 6px 0 0; font-size: 15px; line-height: 1.45; }
+.holo-bubble button { margin-top: 8px; padding: 5px 12px; border: 1px solid rgba(250, 204, 21, 0.6); border-radius: 99px; color: #fde68a; background: transparent; font: 10px "Orbitron", monospace; cursor: pointer; }
+.holo-ask { display: flex; gap: 8px; width: min(620px, 100%); margin: 6px 0 10px; }
+.holo-ask input { flex: 1; min-width: 0; padding: 10px 14px; border: 1px solid rgba(103, 232, 249, 0.5); border-radius: 99px; color: #e0fbff; background: rgba(2, 10, 24, 0.7); font-size: 14px; }
+.holo-ask button { padding: 0 14px; border: 1px solid rgba(103, 232, 249, 0.6); border-radius: 99px; color: #06122b; background: #67e8f9; font: 10px "Orbitron", monospace; cursor: pointer; }
+.holo-quiz { width: min(720px, 100%); display: grid; justify-items: center; gap: 12px; text-align: center; animation: holo-materialize 600ms both; }
+.holo-quiz > small { color: #a5f3fc; font: 11px "Orbitron", monospace; letter-spacing: 0.1em; }
+.holo-quiz h3 { margin: 0; font: 700 clamp(1.1rem, 3.4vw, 1.7rem) "Orbitron", sans-serif; color: #fff; text-shadow: 0 0 18px rgba(103, 232, 249, 0.6); }
+.holo-quiz-opts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; width: 100%; }
+.holo-quiz-opts button { display: flex; gap: 10px; align-items: center; padding: 12px 14px; border: 1px solid rgba(103, 232, 249, 0.4); border-radius: 12px; color: #e0fbff; background: rgba(8, 47, 73, 0.55); font-size: 14px; text-align: left; cursor: pointer; transition: 200ms; }
+.holo-quiz-opts button b { display: grid; place-items: center; flex: none; width: 28px; height: 28px; border-radius: 50%; color: #06122b; background: #67e8f9; font: 700 12px "Orbitron", monospace; }
+.holo-quiz-opts button:hover:not(:disabled) { border-color: #67e8f9; transform: translateY(-2px); }
+.holo-quiz-opts .is-right { border-color: #4ade80; background: rgba(22, 101, 52, 0.55); box-shadow: 0 0 22px rgba(74, 222, 128, 0.45); }
+.holo-quiz-opts .is-right b { background: #4ade80; }
+.holo-quiz-opts .is-wrong { border-color: #fb7185; background: rgba(136, 19, 55, 0.5); animation: hv-shake 400ms; }
+.holo-quiz-opts .is-wrong b { background: #fb7185; }
+.holo-quiz-opts .is-dim { opacity: 0.45; }
+.holo-quiz-exp { margin: 0; max-width: 620px; color: rgba(224, 251, 255, 0.9); }
+.holo-quiz-score { font: 700 clamp(3rem, 12vw, 5.5rem) "Orbitron", monospace; color: #fff; text-shadow: 0 0 30px rgba(103, 232, 249, 0.8); animation: holo-pop 700ms both; }
+.holo-library { width: min(640px, 100%); display: grid; gap: 10px; text-align: center; }
+.holo-library > small { color: #fde68a; font: 11px "Orbitron", monospace; letter-spacing: 0.12em; }
+.holo-library h2 { margin: 0; font: 700 clamp(1.3rem, 4vw, 2rem) "Orbitron", sans-serif; }
+.holo-library ul { display: grid; gap: 8px; margin: 8px 0 0; padding: 0; list-style: none; max-height: 60dvh; overflow-y: auto; }
+.holo-library li { display: flex; gap: 8px; animation: holo-fade-up 400ms both; }
+.holo-library-open { flex: 1; display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; padding: 12px 14px; border: 1px solid rgba(103, 232, 249, 0.35); border-radius: 12px; color: #e0fbff; background: rgba(8, 47, 73, 0.55); text-align: left; cursor: pointer; }
+.holo-library-open:hover { border-color: #67e8f9; }
+.holo-library-open small { color: rgba(224, 251, 255, 0.5); font-size: 11px; }
+.holo-library-del { width: 46px; border: 1px solid rgba(251, 113, 133, 0.4); border-radius: 12px; background: rgba(76, 5, 25, 0.4); cursor: pointer; }
+@keyframes hv-shake { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+@media (max-width: 760px) {
+  .holo-quiz-opts { grid-template-columns: minmax(0, 1fr); }
+  .holo-save { padding: 0 10px; }
+}

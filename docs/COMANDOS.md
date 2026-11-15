@@ -1,6 +1,6 @@
 # JARVIS — Comandos do dia a dia
 
-**Versão do projeto:** 7.13.0 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
+**Versão do projeto:** 7.14.0 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
 
 > Montado a partir do código do projeto. Se algum comando não responder como descrito, me avise que eu ajusto o guia.
 > Para a lista técnica de rotas, veja [API.md](API.md); para o `.env`, [CONFIGURACAO.md](CONFIGURACAO.md).
@@ -268,7 +268,7 @@ Monitore sua meta diária de hidratação (padrão 2000 ml). O lembrete vem a ca
 
 ### Bloqueio, Modo Sentinela e visitante
 
-**V7.12, estilo ORBE (padrão):** o orbe de linhas mostra o estado (EM ESPERA, OUVINDO, FALANDO, ESCANEANDO); o rosto aparece dentro dele na identificação. Os botões ficam em **⚙ GERENCIAR HUB** (no topo); **◐ ESTILO** volta para o bloqueio clássico.
+**V7.14:** o bloqueio padrão é o **clássico**, com a verificação nova do rosto (círculo com a máscara de pontos e IDENTIDADE CONFIRMADA). **◐ ESTILO** troca para o estilo **ORBE** (V7.12, igual ao vídeo: orbe de linhas, cartões numa faixa e botões em ⚙ GERENCIAR HUB).
 
 A central fica bloqueada até o rosto ser reconhecido (ou o PIN digitado). Com o **Modo Sentinela**
 ligado (Configurações > Bloqueio, ou o botão **MODO SENTINELA** no menu ⚡ CONTROLES), o JARVIS fica
@@ -458,6 +458,10 @@ Pedidos com YouTube, Google, Maps, música ou notícias continuam no caminho de 
 | "Tem queimada perto?" | Focos de queimada a menos de 50 km (e o mais próximo). |
 | "Quando a estação espacial passa?" | A próxima passagem visível no seu céu: hora, direção e nuvens. |
 | "Mostra o radar de chuva" | Abre o radar animado e diz quando vai chover. |
+| Holograma aberto: "espera, o que é…?" (V7.14) | Pausa, responde num balão (e falando) e continua da mesma cena. Também pelo botão ❓. |
+| No fim da apresentação: 🧠 QUIZ · "letra B" | 3 perguntas de múltipla escolha, com placar e explicação. |
+| ☆ SALVAR · "hologramas salvos" | Guarda a apresentação ou receita; a lista abre também em ⚡ CONTROLES › HOLOGRAMAS SALVOS. |
+| "Quanto está o dólar?" · "quem ganhou o jogo?" | Além da resposta, um cartão animado no canto (número com mini-gráfico, placar, foto ou lista). |
 | "Qual o próximo lançamento de foguete?" (V7.11.1) | Diz qual é, de qual empresa e quando; no globo, toque na base para ver foto, ▶ ASSISTIR e ↗ SITE. |
 | Tocar num ponto | Cartão com os detalhes (voo, altitude, força do terremoto, município da queimada). |
 | Avisos (no painel) | Chuva forte chegando · queimada/terremoto perto · ISS visível. Cada um liga e desliga. |

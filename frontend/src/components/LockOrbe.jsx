@@ -10,17 +10,19 @@ import { orbeLabel } from "../utils/lockOrbe.js";
 // centro, o estado em cima (EM ESPERA, OUVINDO, FALANDO…), o rosto aparece DENTRO do orbe durante a identificação
 // e os cartões passam numa faixa. Todas as funções do bloqueio continuam: ficam no ⚙ GERENCIAR HUB.
 
-function FaceCircle({ scan, phase, photoUrl }) {
+// V7.13.1: também usado no bloqueio CLÁSSICO (o Patrick gostou da verificação nova, não do layout)
+export function FaceCircle({ scan, phase, photoUrl }) {
   const pct = scan ? similarityPct(scan.score, scan.threshold) : 0;
   const verified = phase === "verified";
-  const img = scan?.frame ? `data:image/jpeg;base64,${scan.frame}` : verified ? photoUrl : null;
+  const [broken, setBroken] = useState(false);
+  const img = scan?.frame ? `data:image/jpeg;base64,${scan.frame}` : verified && !broken ? photoUrl : null;
   if (!img && phase !== "scanning") return null;
   return (
     <div className={`lo-face${verified ? " is-ok" : ""}${phase === "failed" ? " is-fail" : ""}`}>
       <small className="lo-face-top">◉ IDENTIFICAÇÃO BIOMÉTRICA — LOCAL</small>
       <div className="lo-face-ring" style={{ "--pct": verified ? 100 : pct }}>
         <div className="lo-face-img">
-          {img ? <img src={img} alt="Câmera da identificação facial" /> : <span className="lo-face-wait">◌</span>}
+          {img ? <img src={img} alt="Câmera da identificação facial" onError={() => setBroken(true)} /> : <span className="lo-face-wait">{verified ? "✓" : "◌"}</span>}
           {!verified && <i className="lo-face-mesh" aria-hidden="true" />}
           {!verified && <i className="lo-face-scan" aria-hidden="true" />}
           <b className="tl" /><b className="tr" /><b className="bl" /><b className="br" />

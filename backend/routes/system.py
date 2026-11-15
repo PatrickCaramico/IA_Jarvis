@@ -484,6 +484,122 @@ async def holo_build(req: HoloRequest) -> dict:
         raise HTTPException(status_code=502, detail="Não consegui montar o holograma agora.") from exc
 
 
+class HoloAskRequest(BaseModel):
+    titulo: str = ""
+    cena: str = ""
+    pergunta: str
+
+
+@router.post("/api/holo/ask")
+async def holo_ask(req: HoloAskRequest) -> dict:
+    """V7.14: pergunta no meio da apresentação: resposta curta no contexto da cena."""
+    from modules import holo_extra
+    from services import llm_orchestrator
+
+    if not (req.pergunta or "").strip():
+        raise HTTPException(status_code=400, detail="Faça a pergunta.")
+    try:
+        raw = await asyncio.to_thread(llm_orchestrator.ask_text, holo_extra.ask_prompt(req.titulo, req.cena, req.pergunta))
+        return {"resposta": holo_extra.parse_ask(raw)}
+    except Exception as exc:  # noqa: BLE001
+        log.warning("Pergunta no holograma falhou: %s", exc)
+        raise HTTPException(status_code=502, detail="Não consegui responder agora, senhor.") from exc
+
+
+class HoloQuizRequest(BaseModel):
+    titulo: str = ""
+    falas: list[str] = []
+
+
+@router.post("/api/holo/quiz")
+async def holo_quiz(req: HoloQuizRequest) -> dict:
+    """V7.14: quiz de 3 perguntas sobre a apresentação."""
+    from modules import holo_extra
+    from services import llm_orchestrator
+
+    falas = [f for f in req.falas if isinstance(f, str) and f.strip()][:7]
+    if not falas:
+        raise HTTPException(status_code=400, detail="Sem apresentação para o quiz.")
+    try:
+        raw = await asyncio.to_thread(llm_orchestrator.ask_text, holo_extra.quiz_prompt(req.titulo, falas), False, 1500)
+        return {"perguntas": holo_extra.parse_quiz(raw)}
+    except Exception as exc:  # noqa: BLE001
+        log.warning("Quiz do holograma falhou: %s", exc)
+        raise HTTPException(status_code=502, detail="Não consegui montar o quiz agora, senhor.") from exc
+
+
+class HoloSaveRequest(BaseModel):
+    data: dict
+    query: str = ""
+
+
+@router.get("/api/holo/saved")
+async def holo_saved() -> dict:
+    from modules import holo_extra
+
+    return {"itens": holo_extra.listing()}
+
+
+@router.get("/api/holo/saved/{item_id}")
+async def holo_saved_get(item_id: str) -> dict:
+    from modules import holo_extra
+
+    item = holo_extra.get(item_id)
+    if not item:
+        raise HTTPException(status_code=404, detail="Não achei essa apresentação salva.")
+    return item
+
+
+@router.post("/api/holo/saved")
+async def holo_saved_add(req: HoloSaveRequest) -> dict:
+    """V7.14: ⭐ SALVAR: guarda a apresentação (ou receita) para rever sem gastar IA."""
+    from modules import holo_extra
+
+    try:
+        return {"item": holo_extra.save(req.data, req.query), "itens": holo_extra.listing()}
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.delete("/api/holo/saved/{item_id}")
+async def holo_saved_delete(item_id: str) -> dict:
+    from modules import holo_extra
+
+    if not holo_extra.delete(item_id):
+        raise HTTPException(status_code=404, detail="Não achei essa apresentação salva.")
+    return {"itens": holo_extra.listing()}
+
+
+class QuickCardRequest(BaseModel):
+    pergunta: str
+    resposta: str = ""
+
+
+@router.post("/api/quickcard")
+async def quick_card(req: QuickCardRequest) -> dict:
+    """V7.14: cartão animado das perguntas rápidas ("quanto está o dólar?", "quem ganhou o jogo?")."""
+    from modules import holo_extra
+    from services import llm_orchestrator
+
+    q = (req.pergunta or "").strip()[:240]
+    if not holo_extra.is_quick(q):
+        return {"card": None}
+    code = holo_extra.currency_of(q)
+    if code:
+        try:
+            return {"card": await asyncio.to_thread(holo_extra.currency_card, code)}
+        except Exception as exc:  # noqa: BLE001 - cai no cartão montado pela IA
+            log.info("Cotação para o cartão indisponível: %s", exc)
+    if not (req.resposta or "").strip():
+        return {"card": None}
+    try:
+        raw = await asyncio.to_thread(llm_orchestrator.ask_text, holo_extra.card_prompt(q, req.resposta))
+        return {"card": holo_extra.parse_card(raw)}
+    except Exception as exc:  # noqa: BLE001
+        log.info("Cartão rápido falhou: %s", exc)
+        return {"card": None}
+
+
 class CameraAskRequest(BaseModel):
     image: str
     question: str = ""

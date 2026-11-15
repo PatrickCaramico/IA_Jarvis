@@ -314,6 +314,16 @@ async function route(method, path, query, body) {
       return ok(await cloud("/photo/apply", { method: "POST", body: { acao: body.acao } }));
     case "POST /api/tts/prefetch": // V7.5: na nuvem a voz é gerada na hora
       return ok({ started: 0 });
+    case "POST /api/holo/ask": // V7.14: perguntar no meio, quiz, salvos e cartão rápido, fora de casa
+      return ok(await cloud("/holo/ask", { method: "POST", body: { titulo: body.titulo, cena: body.cena, pergunta: body.pergunta }, timeout: 45000 }));
+    case "POST /api/holo/quiz":
+      return ok(await cloud("/holo/quiz", { method: "POST", body: { titulo: body.titulo, falas: body.falas }, timeout: 45000 }));
+    case "GET /api/holo/saved":
+      return ok(await cloud("/holo/saved"));
+    case "POST /api/holo/saved":
+      return ok(await cloud("/holo/saved", { method: "POST", body: { data: body.data, query: body.query } }));
+    case "POST /api/quickcard":
+      return ok(await cloud("/quickcard", { method: "POST", body: { pergunta: body.pergunta, resposta: body.resposta }, timeout: 30000 }));
     case "POST /api/holo": // V7.1: HOLOGRAMA fora de casa
       return ok(await cloud("/holo", { method: "POST", body: { query: body.query, kind: body.kind }, timeout: 60000 }));
     case "POST /api/camera/ask":
@@ -365,6 +375,10 @@ async function route(method, path, query, body) {
     default:
       break;
   }
+  // V7.14: uma apresentação salva (rever sem gastar IA) e apagar
+  const saved = path.match(/^\/api\/holo\/saved\/([\w-]{1,40})$/);
+  if (saved && method === "GET") return ok(await cloud(`/holo/saved?id=${encodeURIComponent(saved[1])}`));
+  if (saved && method === "DELETE") return ok(await cloud("/holo/saved/delete", { method: "POST", body: { id: saved[1] } }));
   // V7.11: camadas e resumo do Olho de Deus (fontes públicas, a nuvem busca igual ao PC)
   if (method === "GET" && path.startsWith("/api/world/")) {
     return ok({ ...(await cloud(`/world/${path.slice(11)}${query.toString() ? `?${query}` : ""}`, { timeout: 30000 })), cloud: true });

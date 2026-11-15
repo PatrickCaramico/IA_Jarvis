@@ -280,6 +280,9 @@ export function apply(state, op, now = spNow()) {
     }
     case "fin_action": // V7.10: anotação financeira; só o PC aplica (a nuvem guarda só o resumo)
       return { keys: [], result: op.acao };
+    case "holo_save": // V7.14: apresentação salva fora de casa (a lista da nuvem é atualizada à parte)
+    case "holo_delete":
+      return { keys: [], result: op.item };
     default:
       throw new HttpError(400, "Operação desconhecida.");
   }
@@ -393,6 +396,13 @@ export async function receiveSnapshot(store, { ack = 0, snapshot = {} }, now = s
       metas: (Array.isArray(f.metas) ? f.metas : []).slice(0, 10).map((m) => ({ nome: clean(m.nome, 60), pct: Math.round(num(m.pct)) })),
       dividas: names(f.dividas), contas: names(f.contas), cartoes: names(f.cartoes), atualizado: now.stamp,
     });
+  }
+  if (Array.isArray(snapshot.holo_salvos)) { // V7.14: apresentações salvas, para rever fora de casa
+    const pending = log.items.filter((o) => o.op === "holo_save" || o.op === "holo_delete");
+    let list = snapshot.holo_salvos.slice(0, 20).filter((i) => i && i.id && i.data && typeof i.data === "object")
+      .map((i) => ({ id: clean(i.id, 16), titulo: clean(i.titulo, 80), tipo: clean(i.tipo, 15), pergunta: clean(i.pergunta, 240), salvo_em: clean(i.salvo_em, 16), data: i.data }));
+    for (const o of pending) list = holoSavedApply(list, o);
+    await store.set("holo_salvos", list);
   }
   if (snapshot.perfil && typeof snapshot.perfil === "object") {
     const p = snapshot.perfil;
@@ -1073,6 +1083,96 @@ export function parseHolo(raw, kind) {
   return { ...base, cenas };
 }
 
+// --------------------------------------------------------------------------- V7.14: Holograma parte 2 (igual a backend/modules/holo_extra.py)
+export function holoSavedApply(list, op) {
+  // o id da apresentação vai em "item" (o "id" da operação é o número dela na fila para o PC)
+  if (op.op === "holo_delete") return list.filter((i) => i.id !== op.item);
+  if (op.op === "holo_save" && op.data) {
+    const rest = list.filter((i) => i.id !== op.item && i.titulo !== op.data.titulo);
+    return [{ id: op.item, titulo: short(op.data.titulo, 80), tipo: op.data.tipo, pergunta: short(op.query, 240), salvo_em: op.at || "", data: op.data }, ...rest].slice(0, 30);
+  }
+  return list;
+}
+
+const HOLO_GUARD = "Responda em português do Brasil, como o J.A.R.V.I.S., tratando o usuário por senhor. Não invente dados: sem certeza, diga.";
+export const holoAskPrompt = (titulo, cena, pergunta) => `Você está apresentando um holograma sobre "${short(titulo, 80)}". A cena atual diz: "${short(cena, 400)}".\n`
+  + `O usuário interrompeu e perguntou: "${short(pergunta, 240)}".\n${HOLO_GUARD} Responda em 1 a 3 frases curtas (vai ser falado) e termine pronto para continuar a apresentação. Só o texto da resposta, sem listas.`;
+export const holoQuizPrompt = (titulo, falas) => `Crie um QUIZ de 3 perguntas sobre a apresentação "${short(titulo, 80)}", usando SÓ o que foi dito nela:\n"${falas.map((f) => short(f, 400)).join(" ").slice(0, 2400)}"\n`
+  + 'Responda SOMENTE com um JSON: {"perguntas": [{"pergunta": "curta", "opcoes": ["A", "B", "C", "D"], "certa": 0, "explicacao": "1 frase dizendo por quê"}]}. '
+  + "4 opções por pergunta, uma certa (índice 0 a 3, varie a posição), as erradas plausíveis. Português do Brasil.";
+
+export function parseQuiz(raw) {
+  const m = String(raw || "").match(/\{[\s\S]*\}/);
+  let data;
+  try { data = m ? JSON.parse(m[0]) : null; } catch { data = null; }
+  const out = (Array.isArray(data?.perguntas) ? data.perguntas : []).filter((q) => q && typeof q === "object").map((q) => {
+    const opcoes = (Array.isArray(q.opcoes) ? q.opcoes : []).map((o) => short(o, 90)).filter(Boolean);
+    const certa = holoNumber(q.certa);
+    return opcoes.length === 4 && certa !== null && certa >= 0 && certa <= 3 && short(q.pergunta, 200)
+      ? { pergunta: short(q.pergunta, 200), opcoes, certa: Math.trunc(certa), explicacao: short(q.explicacao, 240) } : null;
+  }).filter(Boolean).slice(0, 3);
+  if (!out.length) throw new HttpError(502, "Não consegui montar o quiz agora, senhor.");
+  return out;
+}
+
+const QUICK = /\b(quanto (esta|está|custa|vale|mede|pesa)|qual (e|é|a|o) (altura|tamanho|populacao|população|capital|distancia|distância|cotacao|cotação|temperatura|idade)|quem ganhou|quem venceu|placar|resultado do jogo|cotacao|cotação|(dolar|dólar|euro|bitcoin) (hoje|agora)|quantos (habitantes|anos|metros|km|quilometros))\b/i;
+const CURRENCY = { dolar: "USD", "dólar": "USD", euro: "EUR", bitcoin: "BTC", libra: "GBP" };
+export const isQuick = (q) => String(q || "").split(/\s+/).length <= 14 && (QUICK.test(q || "") || Object.keys(CURRENCY).some((c) => String(q || "").toLowerCase().includes(c)));
+export const currencyOf = (q) => { const t = String(q || "").toLowerCase(); const k = Object.keys(CURRENCY).find((w) => new RegExp(`(^|[^\\p{L}])${w}([^\\p{L}]|$)`, "u").test(t)); return k ? CURRENCY[k] : null; };
+
+async function currencyCard(fetchFn, code) {
+  const res = await fetchFn(`https://economia.awesomeapi.com.br/json/daily/${code}-BRL/7`);
+  if (!res.ok) throw new Error("sem cotação");
+  const days = (await res.json()).filter((d) => d && holoNumber(String(d.bid)) !== null);
+  if (!days.length) throw new Error("sem cotação");
+  const serie = days.reverse().map((d) => {
+    const t = new Date((Number(d.timestamp) || 0) * 1000);
+    return { rotulo: `${String(t.getUTCDate()).padStart(2, "0")}/${String(t.getUTCMonth() + 1).padStart(2, "0")}`, valor: Math.round(Number(d.bid) * 100) / 100 };
+  });
+  const now = serie[serie.length - 1].valor;
+  const first = serie[0].valor;
+  const name = { USD: "Dólar", EUR: "Euro", BTC: "Bitcoin", GBP: "Libra" }[code];
+  return { tipo: "numero", titulo: `${name} hoje`, valor: now, prefixo: "R$", unidade: "", rotulo: `${now >= first ? "subiu" : "caiu"} ${Math.abs(((now - first) / first) * 100).toFixed(1).replace(".", ",")}% na semana`, serie, fonte: "AwesomeAPI" };
+}
+
+const cardPrompt = (q, a) => `O usuário perguntou: "${short(q, 200)}" e o JARVIS respondeu: "${short(a, 600)}".\n`
+  + "Monte um CARTÃO visual pequeno com essa resposta. Responda SOMENTE com um JSON, um destes formatos:\n"
+  + '{"tipo": "numero", "titulo": "curto", "valor": 8848, "prefixo": "", "unidade": "m", "rotulo": "o que é"}\n'
+  + '{"tipo": "placar", "titulo": "campeonato", "time1": "Nome", "gols1": 2, "time2": "Nome", "gols2": 1, "rotulo": "quando/onde"}\n'
+  + '{"tipo": "foto", "titulo": "assunto", "wiki": "título do artigo da Wikipédia", "fato": "1 frase"}\n'
+  + '{"tipo": "lista", "titulo": "curto", "itens": ["até 5 itens curtos"]}\n'
+  + 'Use SÓ dados que estão na resposta. Se a resposta não tiver dado concreto, responda {"tipo": null}.';
+
+export function parseCard(raw) {
+  const m = String(raw || "").match(/\{[\s\S]*\}/);
+  let d;
+  try { d = m ? JSON.parse(m[0]) : null; } catch { d = null; }
+  if (!d || typeof d !== "object") return null;
+  const titulo = short(d.titulo, 60);
+  if (d.tipo === "numero") { const valor = holoNumber(typeof d.valor === "number" ? d.valor : String(d.valor ?? "")); return valor === null ? null : { tipo: "numero", titulo, valor, prefixo: short(d.prefixo, 6), unidade: short(d.unidade, 20), rotulo: short(d.rotulo, 80) }; }
+  if (d.tipo === "placar") {
+    const g1 = holoNumber(typeof d.gols1 === "number" ? d.gols1 : String(d.gols1 ?? ""));
+    const g2 = holoNumber(typeof d.gols2 === "number" ? d.gols2 : String(d.gols2 ?? ""));
+    if (g1 === null || g2 === null || !short(d.time1, 30) || !short(d.time2, 30)) return null;
+    return { tipo: "placar", titulo, time1: short(d.time1, 30), gols1: Math.trunc(g1), time2: short(d.time2, 30), gols2: Math.trunc(g2), rotulo: short(d.rotulo, 80) };
+  }
+  if (d.tipo === "foto" && short(d.wiki, 80)) return { tipo: "foto", titulo, wiki: short(d.wiki, 80), fato: short(d.fato, 200) };
+  if (d.tipo === "lista") { const itens = (Array.isArray(d.itens) ? d.itens : []).filter((i) => typeof i === "string" && i.trim()).map((i) => short(i, 80)).slice(0, 5); return itens.length ? { tipo: "lista", titulo, itens } : null; }
+  return null;
+}
+
+async function quickCard(fetchFn, env, pergunta, resposta) {
+  const q = short(pergunta, 240);
+  if (!isQuick(q)) return null;
+  const code = currencyOf(q);
+  if (code) {
+    try { return await currencyCard(fetchFn, code); } catch { /* cai no cartão da IA */ }
+  }
+  const cfg = llmConfig(env);
+  if (!cfg || !String(resposta || "").trim()) return null;
+  try { return parseCard(await callLlm(fetchFn, cfg, cardPrompt(q, resposta), [{ role: "user", text: q }])); } catch { return null; }
+}
+
 // --------------------------------------------------------------------------- V6.8.2: "o que é isso?" pela câmera
 // V6.9: além da fala curta, um DIAGNÓSTICO do item (a tela da câmera mostra numa janela)
 const VISION_PROMPT = (q) => "A imagem anexada é uma foto feita AGORA pela câmera do celular do usuário, a pedido dele. "
@@ -1419,6 +1519,57 @@ export async function handle(req, { store, env, fetchFn = fetch, nowDate = new D
       if (!cfg) throw new HttpError(503, "A nuvem ainda não tem a chave da IA.");
       const k = HOLO_KINDS.includes(kind) ? kind : guessHoloKind(q);
       return json(parseHolo(await callLlm(fetchFn, cfg, holoPrompt(q, k), [{ role: "user", text: q }]), k));
+    }
+    if (path === "/holo/ask" && method === "POST") { // V7.14: pergunta no meio da apresentação
+      const { titulo, cena, pergunta } = await body(req);
+      if (!clean(pergunta, 240)) throw new HttpError(400, "Faça a pergunta.");
+      const cfg = llmConfig(env);
+      if (!cfg) throw new HttpError(503, "A nuvem ainda não tem a chave da IA.");
+      const raw = await callLlm(fetchFn, cfg, holoAskPrompt(titulo, cena, pergunta), [{ role: "user", text: clean(pergunta, 240) }]);
+      return json({ resposta: String(raw || "").replace(/\s+/g, " ").trim().slice(0, 500) || "Não consegui responder agora, senhor." });
+    }
+    if (path === "/holo/quiz" && method === "POST") {
+      const { titulo, falas } = await body(req);
+      const list = (Array.isArray(falas) ? falas : []).filter((f) => typeof f === "string" && f.trim()).slice(0, 7);
+      if (!list.length) throw new HttpError(400, "Sem apresentação para o quiz.");
+      const cfg = llmConfig(env);
+      if (!cfg) throw new HttpError(503, "A nuvem ainda não tem a chave da IA.");
+      return json({ perguntas: parseQuiz(await callLlm(fetchFn, cfg, holoQuizPrompt(titulo, list), [{ role: "user", text: "quiz" }])) });
+    }
+    if (path === "/holo/saved" && method === "GET") {
+      const list = (await store.get("holo_salvos")) || [];
+      const id = url.searchParams.get("id");
+      if (id) {
+        const item = list.find((i) => i.id === id);
+        if (!item) throw new HttpError(404, "Não achei essa apresentação salva.");
+        return json(item);
+      }
+      return json({ itens: list.map(({ data, ...rest }) => rest) });
+    }
+    if (path === "/holo/saved" && method === "POST") {
+      const { data, query, id } = await body(req);
+      if (!data || typeof data !== "object" || !HOLO_KINDS.includes(data.tipo)) throw new HttpError(400, "Apresentação inválida.");
+      const clean2 = parseHolo(JSON.stringify(data), data.tipo); // confere de novo antes de guardar
+      const list = (await store.get("holo_salvos")) || [];
+      const same = list.find((i) => i.titulo === clean2.titulo);
+      const op = { op: "holo_save", item: clean(id, 16) || same?.id || Math.random().toString(16).slice(2, 14), data: clean2, query: clean(query, 240) };
+      await recordOp(store, op, now);
+      const next = holoSavedApply(list, { ...op, at: now.stamp });
+      await store.set("holo_salvos", next);
+      return json({ item: { id: op.item, titulo: clean2.titulo, tipo: clean2.tipo }, itens: next.map(({ data: _d, ...rest }) => rest) });
+    }
+    if (path === "/holo/saved/delete" && method === "POST") {
+      const { id } = await body(req);
+      const list = (await store.get("holo_salvos")) || [];
+      if (!list.some((i) => i.id === id)) throw new HttpError(404, "Não achei essa apresentação salva.");
+      await recordOp(store, { op: "holo_delete", item: id }, now);
+      const next = holoSavedApply(list, { op: "holo_delete", item: id });
+      await store.set("holo_salvos", next);
+      return json({ itens: next.map(({ data: _d, ...rest }) => rest) });
+    }
+    if (path === "/quickcard" && method === "POST") { // V7.14: cartão animado das perguntas rápidas
+      const { pergunta, resposta } = await body(req);
+      return json({ card: await quickCard(fetchFn, env, pergunta, resposta) });
     }
     if (path === "/photo" && method === "POST") { // V7.8: foto da galeria (não é guardada)
       const { image, question, mode } = await body(req);

@@ -61,6 +61,19 @@ def apply_op(op: dict) -> bool:
     if kind == "shopping_add":
         shopping.add([str(t) for t in op.get("itens") or []])
         return True
+    if kind == "holo_save":  # V7.14: apresentação salva no celular fora de casa
+        from modules import holo_extra
+
+        try:
+            holo_extra.save(op.get("data") or {}, op.get("query") or "", str(op.get("item") or "")[:16] or None)
+        except ValueError:
+            return False
+        return True
+    if kind == "holo_delete":
+        from modules import holo_extra
+
+        holo_extra.delete(str(op.get("item") or ""))
+        return True
     if kind == "fin_action":  # V7.10: anotação financeira feita no celular fora de casa
         from modules import agent_chat
 
@@ -158,6 +171,15 @@ def apply_op(op: dict) -> bool:
 
 
 # ---------------------------------------------------------------- foto das listas do PC
+def _holo_saved() -> list:
+    try:
+        from modules import holo_extra
+
+        return holo_extra.cloud_list()
+    except Exception:  # noqa: BLE001
+        return []
+
+
 def snapshot() -> dict:
     st = water.get_status()
     try:
@@ -204,7 +226,8 @@ def snapshot() -> dict:
             "agenda": _agenda(),  # V6.7.4: "o que tenho amanhã?" também fora de casa
             "lugares": _places(),  # V6.8: o agente de rotas também funciona fora de casa
         },
-        "financas": _finance(),  # V7.10: só o resumo (os detalhes ficam no PC)
+        "financas": _finance(),
+        "holo_salvos": _holo_saved(),  # V7.14: para rever as apresentações salvas fora de casa  # V7.10: só o resumo (os detalhes ficam no PC)
     }
 
 

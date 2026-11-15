@@ -48,3 +48,33 @@ export function stepTimerText(minutes, title) {
   const dur = h ? `${h} hora${h > 1 ? "s" : ""}${rest ? ` e ${rest} minutos` : ""}` : `${m} minutos`;
   return `timer de ${dur}${title ? ` para ${title}` : ""}`;
 }
+
+// V7.14: com a apresentação aberta, uma PERGUNTA pausa, é respondida e a apresentação continua
+const QUESTION = /^(espera|peraí|perai|pera|mas|e |o que|oque|qual|quais|quem|como|por que|porque|pq|quando|onde|quanto|quantos|quantas|me explica|explica|isso quer dizer|o que significa)\b/;
+export function holoQuestion(text) {
+  const raw = String(text || "").trim();
+  const n = norm(raw);
+  if (n.split(" ").length < 2) return false;
+  return raw.endsWith("?") || QUESTION.test(n);
+}
+
+// V7.14: resposta do quiz falada: "letra b", "é a c", "alternativa d", "a resposta é a"
+export function quizLetter(text) {
+  const n = norm(text);
+  const m = n.match(/^(?:(?:e |eh |letra |alternativa |opcao |resposta |a resposta e |acho que e |acho que e a |e a |e o )*)([abcd])$/)
+    || n.match(/\b(?:letra|alternativa|opcao)\s+([abcd])\b/);
+  return m ? "abcd".indexOf(m[1]) : -1;
+}
+
+// V7.14: "hologramas salvos", "minhas apresentações salvas"
+export function savedHoloIntent(text) {
+  const n = norm(text);
+  return /\b(hologramas?|apresentacoes|apresentacao|receitas?) salv(o|os|a|as)\b/.test(n) && !/\b(apaga|apague|exclui|deleta)\b/.test(n);
+}
+
+// V7.14: o cartão animado das perguntas rápidas só aparece nelas (o PC decide de novo)
+export function quickQuestion(text) {
+  const n = norm(text);
+  if (n.split(" ").length > 14) return false;
+  return /\b(quanto (esta|custa|vale|mede|pesa)|qual (e|a|o) (altura|tamanho|populacao|capital|distancia|cotacao|temperatura|idade)|quem ganhou|quem venceu|placar|resultado do jogo|cotacao|dolar|euro|bitcoin|quantos (habitantes|anos|metros|km|quilometros))\b/.test(n);
+}
