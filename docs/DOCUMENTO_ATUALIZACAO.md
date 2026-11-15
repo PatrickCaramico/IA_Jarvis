@@ -262,16 +262,45 @@
 - Mapa de **trânsito ao vivo** (Waze), com busca, "onde estou" e lugares salvos.
 - As outras categorias (voos, satélites, terremotos, clima…) ainda **sem dados reais**.
 
-**Pontos a decidir / possibilidades**
-- [ ] Quais camadas trazer primeiro, com dados reais e gratuitos?
-  - ✈ **Voos** passando por cima da cidade, ao vivo.
-  - 🌎 **Terremotos** das últimas 24 h no mundo.
-  - 🔥 **Queimadas** no Brasil (dados do INPE/NASA).
-  - ☁ **Radar de chuva** ao vivo.
-  - 🛰 **Estação Espacial** passando agora e quando ela passa visível na sua cidade.
-- [ ] Um **globo 3D de verdade**, que gira e dá zoom, no lugar do desenho atual.
-- [ ] **Alertas:** o JARVIS avisa sozinho ("chuva forte chegando na sua região em 30 min").
-- [ ] Comandos de voz: "mostra os voos agora", "tem terremoto hoje?".
+#### ✅ Desenho fechado (15/11/2026)
+
+**Decisões do Patrick**
+| Tema | Decisão |
+|---|---|
+| Camadas novas | **Todas:** radar de chuva, voos ao vivo, terremotos e queimadas, Estação Espacial (o trânsito do Waze continua) |
+| Mapa | **Globo 3D real**, que gira e dá zoom até a rua; o desenho atual sai |
+| Avisos sozinho | **Chuva forte chegando**, **perto de mim** (queimada e terremoto) e **Estação Espacial visível**, com um botão para desligar cada um ("só quando eu pedir") |
+| Categorias sem dados | **Esconder por enquanto**; leitores de placa saem de vez, por privacidade |
+
+**Como vai ficar**
+1. **Globo 3D**
+   - globo de verdade (MapLibre, mapas gratuitos e sem chave) que abre girando devagar e voa até a sua cidade;
+   - visão escura (estilo HUD) e visão satélite;
+   - clicar num ponto (avião, terremoto, foco de fogo) abre um cartão com os detalhes;
+   - mais leve no celular: menos pontos e animação reduzida.
+2. **Camadas com dados reais e gratuitos** (cada uma liga e desliga, com a hora da última atualização)
+   - 🚦 **Trânsito** — o mapa do Waze de hoje, que continua sendo a primeira aba;
+   - ☁ **Radar de chuva** — a chuva das últimas 2 horas, animada sobre o globo (RainViewer), e a previsão de chuva para as próximas horas na sua cidade (Open-Meteo);
+   - ✈ **Voos ao vivo** — aviões num raio de ~150 km da cidade: voo, altitude, velocidade e rota quando houver (dados públicos de ADS-B), atualizando a cada 15 s;
+   - 🌎 **Terremotos** — últimas 24 h no mundo, o tamanho do ponto mostra a força (USGS);
+   - 🔥 **Queimadas** — focos no Brasil nas últimas 24 h (INPE), com quantos estão perto da sua cidade;
+   - 🛰 **Estação Espacial** — onde a ISS está agora, a trilha da órbita e as próximas passagens visíveis no seu céu.
+3. **Resumo "o que está acontecendo"** — uma faixa no topo: "Sem chuva nas próximas 3 h · 42 voos por perto · 3 terremotos fortes hoje · ISS passa visível às 19:42".
+4. **Avisos automáticos** (voz no PC e notificação no celular; cada um pode ser desligado)
+   - **chuva forte chegando:** "Chuva forte na sua região em uns 30 minutos." (das 7h às 23h, no máximo 1 aviso a cada 3 h);
+   - **perto de mim:** queimada a menos de 50 km da cidade, ou terremoto de força 5 ou mais no Brasil e vizinhos;
+   - **Estação Espacial visível:** 10 minutos antes de passar, só à noite e com céu limpo.
+5. **Voz e conversa**
+   - "abre o Olho de Deus", "mostra os voos agora", "tem terremoto hoje?", "vai chover?", "tem queimada perto?", "quando a estação espacial passa?";
+   - o JARVIS responde falando e abre o globo já na camada certa.
+6. **Fora de casa** — funciona igual no celular, pela nuvem: os dados são públicos e não dependem do PC. Os avisos automáticos saem do PC.
+7. **Privacidade e segurança**
+   - só fontes públicas e oficiais; nada de câmeras de pessoas nem leitores de placa;
+   - a sua localização só é usada para centralizar o mapa e calcular o "perto de mim"; não vai para outros serviços além das buscas de mapa e clima;
+   - os dados ficam guardados por poucos minutos (cache), para não pesar e não ser bloqueado pelas fontes.
+8. **O que sai** — o globo desenhado e as categorias sem dados (navios, Starlink, câmeras, rádios), que voltam quando houver fonte gratuita boa.
+
+**Status:** desenho aprovado; falta implementar.
 
 ---
 
@@ -333,6 +362,7 @@ Itens que já estavam na lista e continuam **em espera**:
 ## Anotações da conversa
 _Espaço para ir anotando as decisões de cada ideia._
 
+- **15/11:** Ideia 4 (Olho de Deus) desenhada e decidida: globo 3D real, radar de chuva, voos, terremotos, queimadas e ISS, avisos de chuva, perto de mim e ISS (cada um desligável), categorias sem dados escondidas.
 - **15/11:** Ideia 3.1 publicada (7.10.0). Próximas: ideia 4 (Olho de Deus) e 5 (Holograma).
 - **15/11:** Ideia 3.1 (finanças completo) desenhada e decidida: dívidas, contas fixas, cartão, orçamento/metas, plano comparando os dois métodos, avisos D-3 e no dia, nuvem só anota e mostra resumo.
 - **15/11:** Ideia 3 publicada (7.9.0). Próximas: ideia 4 (Olho de Deus) e 5 (Holograma).
