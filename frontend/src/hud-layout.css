@@ -1350,6 +1350,8 @@
 .agh { width: min(980px, calc(100vw - 24px)); max-width: 100%; }
 @media (max-width: 760px) {
   .agh-grid { overflow-y: auto; }
-  .agh-grid > .agh-col { overflow: visible; }
+  .agh-grid > .agh-col { overflow: visible; min-height: auto; }
+  /* V7.14.1: no celular as linhas crescem com o conteúdo (antes a coluna encolhia e o LIMPAR caía em cima do chat) */
+  .agh-grid { grid-auto-rows: max-content; align-content: start; }
   .agh-grid > .agh-chat { min-height: 360px; }
 }
