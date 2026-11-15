@@ -74,7 +74,8 @@
 .lo-hub .ls-secondary { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-start; margin: 0; }
 .lo-hub-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .lo-hub .bp-corner { position: static; display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; transform: none; }
-.lo-hub .bp-stamp { display: none; }
+.lo-hub .bp-corner .bp-stamp { display: none !important; }
+.lo-hub .bp-corner .bp-fan-btn { position: static !important; }
 .lo-root .ls-pin, .lo-root .pp-root { position: relative; z-index: 5; }
 
 @keyframes lo-dots { to { background-position: 10px 0; } }
@@ -98,3 +99,8 @@
   .lc-strip-track, .lo-main, .lo-face-mesh, .lo-face-scan, .lo-face-wait { animation: none; }
   .lc-strip { overflow-x: auto; }
 }
+
+/* V7.13.1: a verificação nova do rosto por cima do reator do bloqueio clássico */
+.ls-face-over { position: absolute; inset: 0; z-index: 4; display: grid; place-items: center; pointer-events: none; }
+.ls-face-over .lo-face-ring { width: min(30vmin, 250px); }
+.ls-reactor-hidden { visibility: hidden; }

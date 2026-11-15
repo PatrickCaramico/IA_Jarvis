@@ -2,6 +2,31 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 7.14.0 — 15 de novembro de 2026
+
+**🔒 Bloqueio: volta o layout clássico, com a verificação nova**
+- A pedido do Patrick, o bloqueio voltou a ser o **clássico**, mas a identificação facial é a nova:
+  - durante a verificação, o rosto aparece num círculo com a máscara de pontos, a varredura e "ESCANEANDO · %";
+  - ao reconhecer, o anel fica verde: **IDENTIDADE CONFIRMADA**.
+- O estilo ORBE continua como opção: no bloqueio, botão **◐ ESTILO**.
+- Corrigido: no ⚙ GERENCIAR HUB do estilo ORBE, os textos do carimbo ficavam por cima dos botões.
+
+**✨ Holograma, parte 2 (ideia 5)**
+- **❓ Perguntar no meio da apresentação:** "espera, o que é horizonte de eventos?" (por voz) ou pelo botão ❓.
+  - A apresentação pausa e a resposta aparece num balão, também falada.
+  - Depois ela continua da mesma cena.
+- **🧠 Quiz no final:** 3 perguntas de múltipla escolha sobre o que foi mostrado.
+  - Responda tocando ou falando "letra B".
+  - Tem placar e a explicação de cada resposta.
+- **⭐ Salvar e rever:** ☆ SALVAR guarda a apresentação ou a receita (até 30), e rever não gasta IA.
+  - "hologramas salvos" ou ⚡ CONTROLES › HOLOGRAMAS SALVOS abre a lista; apagar pede confirmação.
+  - Os salvos vão para a nuvem, para rever no celular fora de casa.
+- **Cartão animado nas perguntas rápidas**, no canto, que some sozinho:
+  - **placar** ("quem ganhou o jogo?");
+  - **número com mini-gráfico** ("quanto está o dólar?" mostra a semana);
+  - **foto + fato** e **lista curta**.
+  - ▶ VER NO HOLOGRAMA abre a apresentação completa.
+
 ## 7.13.0 — 15 de novembro de 2026
 
 **✨ Holograma com animação em cada cena (ideia 5, parte 1)**

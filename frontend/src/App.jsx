@@ -233,12 +233,13 @@ export default function App() {
   const [summaryActive, setSummaryActive] = useState(false);
   const [godsEyeOpen, setGodsEyeOpen] = useState(false);
   const [godsEyeLayer, setGodsEyeLayer] = useState(null);
-  // V7.12: estilo da tela de bloqueio neste aparelho: "orbe" (igual ao vídeo, padrão) ou "classico"
+  // V7.12: estilo da tela de bloqueio neste aparelho. V7.13.1: o padrão voltou a ser o "classico" (a verificação
+  // nova do rosto continua nele); "orbe" (igual ao vídeo) fica como opção em ◐ ESTILO.
   const [lockStyle, setLockStyle] = useState(() => {
     try {
-      return localStorage.getItem("jarvis.lockStyle") === "classico" ? "classico" : "orbe";
+      return localStorage.getItem("jarvis.lockStyle") === "orbe" ? "orbe" : "classico";
     } catch {
-      return "orbe";
+      return "classico";
     }
   });
   const changeLockStyle = useCallback((value) => {
