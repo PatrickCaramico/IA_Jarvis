@@ -42,11 +42,19 @@ AGENTS: dict[str, dict] = {
                 "examples": ["monta a lista para um churrasco de 10 pessoas", "o que falta comprar?", "que receita dá pra fazer com ovo e batata?"],
                 "actions": ["compras_add", "compras_limpar_comprados"],
                 "rules": "Você cuida da lista de compras. Use compras_add com os itens (com quantidade quando ajudar). Para tirar da lista o que já foi comprado use compras_limpar_comprados."},
-    "financas": {"label": "Agente de finanças", "icon": "💰", "aliases": ["financas", "finanças", "dinheiro", "gastos"],
-                 "desc": "Anota gastos e entradas e resume o mês por categoria.",
-                 "examples": ["gastei 54 reais no mercado", "quanto gastei esse mês?", "em que estou gastando mais?"],
-                 "actions": ["gasto", "entrada"],
-                 "rules": "Você cuida das finanças. Para anotar use gasto ou entrada com valor (número) e descrição. Para resumos use os dados do mês recebidos; não invente valores."},
+    "financas": {"label": "Agente de finanças", "icon": "💰", "aliases": ["financas", "finanças", "dinheiro", "gastos", "dividas", "dívidas"],
+                 "desc": "Controle financeiro: dívidas e parcelas, contas fixas, cartão, orçamento, metas e plano para quitar.",
+                 "examples": ["quanto eu devo no total?", "paguei a parcela do carro", "monta um plano para quitar minhas dívidas",
+                              "gastei 200 no cartão Nubank em 3x", "o que vence essa semana?"],
+                 "actions": ["gasto", "entrada", "divida_add", "divida_pagar", "divida_quitar", "divida_editar", "divida_remover",
+                             "conta_add", "conta_pagar", "conta_remover", "cartao_add", "cartao_compra", "fatura_pagar",
+                             "orcamento_set", "meta_add", "meta_guardar", "plano"],
+                 "rules": ("Você é o controle financeiro do usuário, focado em ajudá-lo a sair das dívidas, com empatia e sem julgamento. "
+                           "Use SÓ os números dos dados recebidos; nunca invente valores. Antes de cadastrar uma dívida, se faltar algo "
+                           "importante (saldo, parcela, dia do vencimento), pergunte. Gasto do dia a dia: gasto/entrada. Compra no cartão: "
+                           "cartao_compra (com parcelas). Pagou parcela/dívida: divida_pagar (sem valor = a parcela). Conta do mês paga: "
+                           "conta_pagar. Pediu plano/estratégia para quitar: plano (valor = quanto a mais por mês pode pagar). "
+                           "Categorias do orçamento: Mercado, Contas, Moradia, Transporte, Comida, Saúde, Lazer, Assinaturas, Compras, Outros.")},
     "secretario": {"label": "Agente secretário", "icon": "📅", "aliases": ["secretario", "secretário", "agenda"],
                    "desc": "Agenda, lembretes e tarefas num lugar só.",
                    "examples": ["o que tenho amanhã?", "marca dentista sexta às 10", "me lembra de pagar a luz dia 20"],
@@ -122,12 +130,13 @@ def context(agent: str) -> str:
             comprados = [i["texto"] for i in items if i.get("comprado")]
             return f"Lista de compras. Falta: {', '.join(falta) or 'nada'}. Já comprado: {', '.join(comprados) or 'nada'}."
         if agent == "financas":
-            from modules import finances
+            from modules import fin_control, finances
 
             s = finances.summary("month")
             cats = "; ".join(f"{k}: {money(v)}" for k, v in list(s["by_category"].items())[:8]) or "sem gastos"
             last = "; ".join(f"{i['desc']} {money(i['amount'])} ({i['category']})" for i in s["items"][-8:]) or "nenhum"
-            return (f"Mês atual: gastos {money(s['spent'])}, entradas {money(s['earned'])}, saldo {money(s['balance'])}. "
+            return (fin_control.resumo_texto() + " "  # V7.10: dívidas, contas, cartões, orçamento, metas
+                    f"Gastos do dia a dia no mês: gastos {money(s['spent'])}, entradas {money(s['earned'])}, saldo {money(s['balance'])}. "
                     f"Por categoria: {cats}. Últimos lançamentos: {last}.")
         if agent == "secretario":
             from modules import calendar_hub, reminders, tasks
@@ -164,6 +173,13 @@ def build_prompt(agent: str, message: str, now: Optional[datetime] = None) -> st
         + ", ".join(a["actions"]) + ". Formatos: "
         '{"tipo": "compras_add", "itens": ["..."]}, {"tipo": "compras_limpar_comprados"}, '
         '{"tipo": "gasto", "valor": 54.9, "descricao": "mercado"}, {"tipo": "entrada", "valor": 3000, "descricao": "salário"}, '
+        '{"tipo": "divida_add", "nome": "Banco X", "descricao": "empréstimo", "saldo": 5000, "parcela": 450, "total_parcelas": 12, "pagas": 3, "juros_mes": 2.5, "dia": 10}, '
+        '{"tipo": "divida_pagar", "nome": "Banco X", "valor": 450}, {"tipo": "divida_quitar", "nome": "..."}, {"tipo": "divida_editar", "nome": "...", "saldo": 4200}, '
+        '{"tipo": "divida_remover", "nome": "..."}, {"tipo": "conta_add", "nome": "Luz", "valor": 180, "dia": 15, "categoria": "Contas"}, '
+        '{"tipo": "conta_pagar", "nome": "Luz"}, {"tipo": "conta_remover", "nome": "..."}, {"tipo": "cartao_add", "nome": "Nubank", "fechamento": 3, "vencimento": 10, "limite": 5000}, '
+        '{"tipo": "cartao_compra", "cartao": "Nubank", "valor": 300, "descricao": "tênis", "parcelas": 3}, {"tipo": "fatura_pagar", "nome": "Nubank"}, '
+        '{"tipo": "orcamento_set", "categoria": "Mercado", "valor": 800}, {"tipo": "meta_add", "nome": "Reserva de emergência", "valor": 6000}, '
+        '{"tipo": "meta_guardar", "nome": "Reserva", "valor": 200}, {"tipo": "plano", "valor": 300}, '
         '{"tipo": "lembrete", "texto": "Dentista", "data_hora": "AAAA-MM-DD HH:MM"}, {"tipo": "tarefa", "texto": "..."}, '
         '{"tipo": "tarefa_concluir", "texto": "..."}, {"tipo": "rota", "destino": "...", "modo": "carro"}, '
         '{"tipo": "youtube", "busca": "..."}, {"tipo": "web", "consulta": "..."}, {"tipo": "holograma", "tema": "..."}. '
@@ -185,6 +201,10 @@ def clean_action(agent: str, a: dict) -> Optional[dict]:
     if not isinstance(a, dict) or a.get("tipo") not in AGENTS[agent]["actions"]:
         return None
     t = a["tipo"]
+    from modules import fin_control
+
+    if t in fin_control.ACTIONS:  # V7.10: controle financeiro
+        return fin_control.clean_action(a)
     if t == "compras_add":
         itens = [x for x in dict.fromkeys(_short(i, 80) for i in (a.get("itens") or []) if isinstance(i, str)) if x][:30]
         return {"tipo": t, "itens": itens} if itens else None
@@ -223,11 +243,21 @@ def clean_action(agent: str, a: dict) -> Optional[dict]:
 
 
 def needs_confirm(action: dict) -> bool:
+    from modules import fin_control
+
+    if action["tipo"] in fin_control.ACTIONS:
+        return fin_control.needs_confirm(action)
+    if action["tipo"] in ("gasto", "entrada") and action.get("valor", 0) > fin_control.BIG_VALUE:
+        return True
     return action["tipo"] in CONFIRM_ACTIONS or len(action.get("itens") or []) > BIG_BATCH
 
 
 def describe(action: dict) -> str:
     t = action["tipo"]
+    from modules import fin_control
+
+    if t in fin_control.ACTIONS:
+        return fin_control.describe(action)
     return {
         "compras_add": lambda a: f"Adicionar {len(a['itens'])} item(ns) à lista: {', '.join(a['itens'][:6])}{'…' if len(a['itens']) > 6 else ''}",
         "compras_limpar_comprados": lambda a: "Tirar da lista tudo o que já foi comprado",
@@ -260,6 +290,10 @@ def parse(agent: str, raw: str) -> tuple[str, list[dict]]:
 def run_action(action: dict) -> str:
     """Executa uma ação de dados (as de abrir coisas — rota, youtube, holograma, web — são tratadas na rota)."""
     t = action["tipo"]
+    from modules import fin_control
+
+    if t in fin_control.ACTIONS:
+        return fin_control.run(action)
     if t == "compras_add":
         from modules import shopping
 

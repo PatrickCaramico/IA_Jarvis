@@ -61,6 +61,14 @@ def apply_op(op: dict) -> bool:
     if kind == "shopping_add":
         shopping.add([str(t) for t in op.get("itens") or []])
         return True
+    if kind == "fin_action":  # V7.10: anotação financeira feita no celular fora de casa
+        from modules import agent_chat
+
+        action = agent_chat.clean_action("financas", op.get("acao") or {})
+        if not action or action["tipo"] in ("plano",):
+            return False
+        agent_chat.run_action(action)
+        return True
     if kind == "shopping_set":
         item = _find(shopping.list_items(), "texto", op.get("texto", ""))
         return bool(item and shopping.set_bought(item["id"], bool(op.get("comprado"))))
@@ -196,7 +204,18 @@ def snapshot() -> dict:
             "agenda": _agenda(),  # V6.7.4: "o que tenho amanhã?" também fora de casa
             "lugares": _places(),  # V6.8: o agente de rotas também funciona fora de casa
         },
+        "financas": _finance(),  # V7.10: só o resumo (os detalhes ficam no PC)
     }
+
+
+def _finance() -> dict:
+    try:
+        from modules import fin_control
+
+        return fin_control.cloud_summary()
+    except Exception:  # noqa: BLE001
+        log.debug("Resumo financeiro indisponível", exc_info=True)
+        return {}
 
 
 _AGENDA_TTL = 10 * 60

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import useEscape from "../hooks/useEscape.js";
 import { CHAT_AGENTS } from "../utils/agentMention.js";
+import FinancePanel from "./FinancePanel.jsx";
 
 // V6.8.3: Central de Agentes. V7.9: UMA ABA POR AGENTE, cada uma com a própria conversa (salva no PC, últimas 30
 // mensagens) — fala direto com o agente, sem passar pelo JARVIS principal. Ações simples acontecem na hora; as
@@ -89,6 +90,7 @@ export default function AgentsHub({ api, onClose, onOpenHolo, initialAgent = "me
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [finKey, setFinKey] = useState(0); // V7.10: atualiza o painel de finanças depois de cada resposta
   const endRef = useRef(null);
   useEscape(onClose);
 
@@ -128,6 +130,7 @@ export default function AgentsHub({ api, onClose, onOpenHolo, initialAgent = "me
     try {
       const r = await api("/api/agents/chat", { method: "POST", body: JSON.stringify({ agent: tab, message }), timeout: 60_000 });
       setMessages((m) => [...m, { role: "agent", text: r.reply, done: r.done, pending: r.pending, sources: r.sources }]);
+      if (tab === "financas") setFinKey((k) => k + 1);
       if (r.holo) onOpenHolo?.(r.holo);
     } catch (err) {
       setError(err.message);
@@ -159,7 +162,7 @@ export default function AgentsHub({ api, onClose, onOpenHolo, initialAgent = "me
           ))}
         </nav>
 
-        <div className="agh-grid" key={tab}>
+        <div className={`agh-grid${tab === "financas" ? " is-fin" : ""}`} key={tab}>
           <section className="agh-col">
             <article className="agh-card">
               <h3>{agent.icon} {agent.label} <code>@{agent.id}</code></h3>
@@ -172,6 +175,7 @@ export default function AgentsHub({ api, onClose, onOpenHolo, initialAgent = "me
                 ))}
               </div>
               {tab === "rotas" && <Places api={api} onSend={send} />}
+              {tab === "financas" && <FinancePanel api={api} refreshKey={finKey} onAsk={send} />}
               <button type="button" className="agh-clear" onClick={clearChat} disabled={!messages.length}>🗑 LIMPAR CONVERSA</button>
             </article>
           </section>
@@ -184,7 +188,7 @@ export default function AgentsHub({ api, onClose, onOpenHolo, initialAgent = "me
                   {m.role !== "user" && <b className="agh-who">{agent.icon} {agent.label.replace(/^Agente (de |do |da )?/i, "")}</b>}
                   <span>{m.text}</span>
                   {(m.done || []).map((d) => <em key={d} className="agh-done">{d}</em>)}
-                  {(m.pending || []).map((p, j) => <PendingCard key={j} api={api} agent={tab} action={p} />)}
+                  {(m.pending || []).map((p, j) => <PendingCard key={j} api={api} agent={tab} action={p} onDone={() => setFinKey((k) => k + 1)} />)}
                   {(m.sources || []).length > 0 && (
                     <span className="agh-sources">{m.sources.map((s) => <a key={s.url} href={s.url} target="_blank" rel="noreferrer">{s.name || "fonte"}</a>)}</span>
                   )}

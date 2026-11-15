@@ -203,6 +203,56 @@
 
 ---
 
+### Ideia 3.1: Agente de finanças completo (controle de dívidas)
+
+**O que foi pedido:** usar o agente de finanças no dia a dia como controle financeiro, principalmente das dívidas.
+
+#### ✅ Desenho fechado (15/11/2026)
+
+**Decisões do Patrick**
+| Tema | Decisão |
+|---|---|
+| O que controlar | **Tudo:** dívidas e parcelamentos, contas fixas do mês, cartão de crédito, orçamento e metas |
+| Plano para quitar | **Comparar e sugerir:** "menor dívida primeiro" × "maior juros primeiro", com tempo e juros de cada um |
+| Avisos de vencimento | **3 dias antes e no dia**, por voz no PC e notificação no celular |
+| Fora de casa | **Anotar e ver resumo** (os detalhes completos ficam só no PC) |
+
+**O que o agente vai saber fazer**
+1. **Dívidas e parcelamentos**
+   - cadastrar: credor, o que é, saldo, valor e número de parcelas (ex.: 7 de 12), juros ao mês e dia do vencimento;
+   - "paguei a parcela do carro", "paguei R$ 500 a mais no cartão", "quitei o empréstimo";
+   - o saldo cai, a parcela conta e fica o histórico de pagamentos.
+2. **Contas fixas do mês**
+   - aluguel, luz, água, internet, celular… com valor e vencimento;
+   - marca "paga" em cada mês e mostra o que ainda falta pagar.
+3. **Cartão de crédito**
+   - cartões com dia de fechamento e vencimento;
+   - compras à vista ou parceladas, que caem nas faturas certas;
+   - "quanto está minha fatura?", "quanto já tenho comprometido no mês que vem?".
+4. **Orçamento e metas**
+   - limite por categoria (ex.: R$ 800 de mercado), com aviso a 80% e a 100%;
+   - metas, como uma reserva de emergência, com quanto falta e em quanto tempo chega.
+5. **Plano para sair das dívidas**
+   - compara os dois jeitos lado a lado, com e sem um valor extra por mês ("se eu pagar R$ 300 a mais?"):
+     - **menor dívida primeiro:** dá motivação, porque as dívidas vão sumindo;
+     - **maior juros primeiro:** paga menos juros no total;
+   - para cada um, mostra em quantos meses quita tudo e quanto paga de juros, e recomenda um.
+6. **Avisos**
+   - 3 dias antes e no dia do vencimento: "Hoje vence a parcela do carro, R$ 890,00" (voz no PC e notificação no celular);
+   - avisos também de fatura e orçamento estourando.
+7. **Painel de finanças** (aba 💰 da Central de Agentes)
+   - total devido, quanto vence neste mês, contas a pagar, fatura atual;
+   - barras do orçamento, progresso das metas e de cada dívida;
+   - próximos vencimentos (30 dias) e o plano para quitar.
+8. **Segurança**
+   - tudo fica só no PC;
+   - ações grandes pedem **✓ CONFIRMAR**: quitar, apagar, pagamento acima de R$ 1.000 e mudar dados de uma dívida;
+   - fora de casa, o celular só **anota** (gasto ou pagamento, que chegam ao PC na sincronização) e vê o **resumo**.
+
+**Status:** ✅ **Implementada na versão 7.10.0.**
+
+---
+
 ### Ideia 4: Olho de Deus mais completo
 
 **O que foi pedido**
@@ -283,6 +333,8 @@ Itens que já estavam na lista e continuam **em espera**:
 ## Anotações da conversa
 _Espaço para ir anotando as decisões de cada ideia._
 
+- **15/11:** Ideia 3.1 publicada (7.10.0). Próximas: ideia 4 (Olho de Deus) e 5 (Holograma).
+- **15/11:** Ideia 3.1 (finanças completo) desenhada e decidida: dívidas, contas fixas, cartão, orçamento/metas, plano comparando os dois métodos, avisos D-3 e no dia, nuvem só anota e mostra resumo.
 - **15/11:** Ideia 3 publicada (7.9.0). Próximas: ideia 4 (Olho de Deus) e 5 (Holograma).
 - **15/11:** Ideia 3 (chat com @agente) desenhada e decidida: abas e @ no campo, memória de 30 mensagens por agente, 4 agentes novos (Mercado, Finanças, Secretário, Professor) e voz.
 - **15/11:** Ideia 1 publicada (7.8.0). Próximas: ideia 3 (chat com @agente), 4 (Olho de Deus) e 5 (Holograma).

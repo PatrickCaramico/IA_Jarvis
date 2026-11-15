@@ -51,6 +51,9 @@ async def lifespan(app: FastAPI):
     runtime.track_service(watchers.notifications_watcher_loop())
     runtime.track_service(watchers.news_watcher_loop())  # V6.5: notícias novas no celular
     runtime.track_service(cloud_sync.sync_loop())  # V6.6: modo nuvem (celular com o notebook desligado)
+    from modules import fin_control
+
+    runtime.track_service(fin_control.alerts_loop())  # V7.10: vencimentos (3 dias antes e no dia) e orçamento
     runtime.track(tts.preload())  # V4.4: voz carrega depois que o servidor já está no ar
     from modules import tools
 

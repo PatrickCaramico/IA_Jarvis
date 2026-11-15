@@ -430,3 +430,23 @@ test("agentes na nuvem: mercado adiciona, ações grandes esperam confirmação,
   const hist = await call(store, "/agent-chat/history?agent=mercado", { token });
   assert.equal(hist.data.messages.length, 4);
 });
+
+test("finanças fora de casa: só o resumo na nuvem; anotações vão para o PC", async () => {
+  const store = memStore();
+  const token = await login(store);
+  await receiveSnapshot(store, { ack: 0, snapshot: { financas: { total_devido: 7300.5, parcelas_mes: 1340, a_pagar_mes: 890, atrasados: 0,
+    proximos: [{ tipo: "divida", nome: "Carro", valor: 890, data: "2026-11-20", atrasada: false }], dividas: ["Carro"], contas: ["Luz"], cartoes: ["Nubank"],
+    saldo_detalhado_secreto: "não deveria ir" } } }, spNow(NOW));
+  const resumo = await call(store, "/finance", { token });
+  assert.equal(resumo.data.total_devido, 7300.5);
+  assert.equal(resumo.data.saldo_detalhado_secreto, undefined); // só os campos do resumo
+  let sent;
+  const reply = { resposta: "Anotado, senhor.", acoes: [{ tipo: "divida_pagar", nome: "Carro" }, { tipo: "divida_add", nome: "X", saldo: 10 }] };
+  const fetchFn = async (_u, init) => { sent = JSON.parse(init.body); return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: JSON.stringify(reply) }] } }] })); };
+  const r = await (await handle(req("/agent-chat", { method: "POST", token, body: { agent: "financas", message: "paguei a parcela do carro" } }), { store, env: { ...ENV, GEMINI_API_KEY: "g" }, fetchFn, nowDate: NOW })).json();
+  assert.equal(r.done.length, 1); // divida_add (cadastrar) não roda fora de casa
+  assert.match(r.done[0], /vai para o PC/);
+  assert.match(sent.systemInstruction.parts[0].text, /R\$ 7\.300,50/);
+  const ops = (await store.get("ops")).items;
+  assert.deepEqual(ops.at(-1), { op: "fin_action", acao: { tipo: "divida_pagar", nome: "Carro", valor: null }, id: ops.at(-1).id, at: ops.at(-1).at });
+});
