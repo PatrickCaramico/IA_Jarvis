@@ -2952,6 +2952,7 @@ export default function App() {
           updateProgress={appUpdatePct}
           phoneApp={REMOTE_SCREEN}
           lockStyle={lockStyle}
+          deskOn={deskMode}
           onLockStyle={changeLockStyle}
           onBiometric={IS_JARVIS_APP && (() => { try { return window.JarvisApp?.hasBiometric?.(); } catch { return false; } })()
             ? () => window.JarvisApp.biometricUnlock() : null}
