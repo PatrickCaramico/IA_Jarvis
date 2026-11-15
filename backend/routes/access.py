@@ -455,7 +455,9 @@ async def lock_status() -> dict:
     from modules.when import describe
 
     devices = runtime.manager.devices()
-    phones = sum(1 for d in devices if d["kind"] in ("app", "browser"))
+    # "phones" = conexões que NÃO são uma aba da central no PC (o ouvido offline do PC fica quieto só com aba aberta).
+    # V8.0: o JARVIS.exe conta aqui: a janela dele não tem o reconhecimento de voz do navegador.
+    phones = sum(1 for d in devices if d["kind"] in ("app", "browser", "desktop"))
     next_alarm = None
     try:
         items = alarms.list_alarms()

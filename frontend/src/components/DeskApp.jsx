@@ -1,0 +1,669 @@
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import RoboAvatar, { ACCESSORIES, DEFAULT_AVATAR, EXPRESSIONS } from "./RoboAvatar.jsx";
+import NowPlaying, { useNowPlaying } from "./NowPlaying.jsx";
+import { useConversationLog } from "./HudLayout.jsx";
+import { DESK_COLORS, FUNCTIONS, greeting, hexToRgb, isLight, stateText } from "../utils/desk.js";
+import { IS_DESKTOP_APP } from "../utils/device.js";
+import "../desk.css";
+
+// V8.0: MODO DESK (ideia 6): o JARVIS como app de assistente pessoal. Barra lateral com o avatar robô, Início,
+// Conversa, Memória, Tarefas, Lembretes, Hábitos, Timers, Música, Copiados, Rotinas, Meu PC e Configurações.
+// Usa o JARVIS de sempre por trás (mesmas rotas); o botão 🖥 MODO DESK troca de volta para a central clássica.
+
+const MemoryMap = lazy(() => import("./DeskMemoryMap.jsx"));
+
+const NAV = [
+  ["inicio", "⌂", "Início"], ["conversa", "💬", "Conversa"], ["memoria", "✳", "Memória"], ["tarefas", "☰", "Tarefas"],
+  ["lembretes", "🔔", "Lembretes"], ["habitos", "◆", "Hábitos"], ["timers", "⏱", "Timers"], ["musica", "♫", "Música"],
+  ["copiados", "⧉", "Copiados"], ["rotinas", "⚡", "Rotinas"], ["meupc", "🖥", "Meu PC"],
+];
+const SETTINGS = [
+  ["Assistente", [["personalizar", "🎨", "Personalizar"], ["cerebro", "🧠", "Cérebro (IA)"], ["funcoes", "🧩", "Funções"], ["voz", "🎙", "Voz"], ["ilha", "▭", "Ilha"]]],
+  ["Conexões", [["celular", "📱", "Celular e agendas"], ["rosto", "🙂", "Proteção com rosto"], ["atalhos", "⌘", "Atalhos"]]],
+];
+
+function useLoad(api, path, deps = []) {
+  const [data, setData] = useState(null);
+  const [err, setErr] = useState("");
+  const load = useCallback(() => {
+    api(path).then((d) => { setData(d); setErr(""); }).catch((e) => setErr(e.message || "Não consegui carregar."));
+  }, [api, path]);
+  useEffect(() => { load(); }, [load, ...deps]); // eslint-disable-line react-hooks/exhaustive-deps
+  return [data, load, setData, err];
+}
+
+function Card({ title, icon, right, children, className = "" }) {
+  return (
+    <section className={`dk-card ${className}`}>
+      {(title || right) && <header>{icon && <span className="dk-card-ico">{icon}</span>}<h3>{title}</h3>{right}</header>}
+      {children}
+    </section>
+  );
+}
+
+function ChatBox({ log, send, busy, onMic, listening, interim, compact = false }) {
+  const [text, setText] = useState("");
+  const endRef = useRef(null);
+  const msgs = log.filter((m) => m.role === "user" || m.role === "jarvis" || m.role === "error").slice(compact ? -6 : -60);
+  useEffect(() => { endRef.current?.scrollIntoView({ block: "end" }); }, [msgs.length]);
+  const submit = (e) => {
+    e.preventDefault();
+    const t = text.trim();
+    if (!t) return;
+    send(t);
+    setText("");
+  };
+  return (
+    <div className={`dk-chat${compact ? " is-compact" : ""}`}>
+      <div className="dk-msgs" aria-live="polite">
+        {msgs.length === 0 && <p className="dk-muted">Nenhuma conversa ainda. Escreva abaixo ou toque no microfone.</p>}
+        {msgs.map((m) => (
+          <p key={m.id} className={`dk-msg is-${m.role}`}>{m.text}</p>
+        ))}
+        {listening && <p className="dk-msg is-user is-live">{interim || "Ouvindo…"}</p>}
+        <div ref={endRef} />
+      </div>
+      {IS_DESKTOP_APP && <p className="dk-muted dk-hint">🎙 No app, fale "Jarvis, …" (o ouvido do PC atende) ou escreva aqui.</p>}
+      <form className="dk-input" onSubmit={submit}>
+        <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Escreva ou fale com o JARVIS…" aria-label="Mensagem para o JARVIS" disabled={busy && false} />
+        <button type="submit" className="dk-icon-btn" disabled={!text.trim()} aria-label="Enviar">➤</button>
+        <button type="button" className={`dk-mic${listening ? " is-on" : ""}`} onClick={onMic} aria-label={listening ? "Parar de ouvir" : "Falar"}>🎙</button>
+      </form>
+    </div>
+  );
+}
+
+// ------------------------------------------------------------------ seções
+function Home({ api, ctx, avatar, setSection }) {
+  const [tasks] = useLoad(api, "/api/tasks");
+  const [rems] = useLoad(api, "/api/reminders?only_pending=true");
+  const [habits] = useLoad(api, "/api/desk/habits");
+  const pend = (tasks?.tasks || []).filter((t) => !t.concluida).length;
+  return (
+    <div className="dk-home">
+      <Card className="dk-hero">
+        <RoboAvatar avatar={avatar} state={ctx.orbState} size={96} />
+        <div>
+          <h2>{greeting(new Date())}, {ctx.userName || "senhor"}!</h2>
+          <p>Escreva, fale, ou diga "{ctx.aiName}, …"</p>
+          <div className="dk-row">
+            <button type="button" className="dk-btn is-main" onClick={ctx.onToggleMic}>🎙 Falar com o {ctx.aiName}</button>
+            <button type="button" className="dk-btn" onClick={() => setSection("conversa")}>💬 Conversar</button>
+          </div>
+        </div>
+        <LevelBox level={ctx.level} />
+      </Card>
+      <div className="dk-home-grid">
+        <Card title="Conversa" icon="💬" className="dk-span2">
+          <ChatBox log={ctx.log} send={ctx.send} onMic={ctx.onToggleMic} listening={ctx.listening} interim={ctx.interim} compact />
+        </Card>
+        <Card title="Música" icon="♫"><MusicNow api={api} send={ctx.send} /></Card>
+        <button type="button" className="dk-stat" onClick={() => setSection("lembretes")}><b>{(rems?.reminders || []).length}</b><span>lembretes</span></button>
+        <button type="button" className="dk-stat" onClick={() => setSection("tarefas")}><b>{pend}</b><span>tarefas</span></button>
+        <button type="button" className="dk-stat" onClick={() => setSection("habitos")}><b>{habits ? `${habits.feitos_hoje}/${habits.total}` : "—"}</b><span>hábitos hoje</span></button>
+      </div>
+    </div>
+  );
+}
+
+function LevelBox({ level }) {
+  if (!level) return null;
+  return (
+    <div className="dk-level" title={`${level.xp} XP no total`}>
+      <small>NÍVEL {level.nivel}</small>
+      <div className="dk-bar"><b style={{ width: `${level.pct}%` }} /></div>
+      <span>{level.no_nivel}/{level.para_subir} XP</span>
+    </div>
+  );
+}
+
+function Tasks({ api }) {
+  const [data, load] = useLoad(api, "/api/tasks?include_completed=true");
+  const [text, setText] = useState("");
+  const add = async (e) => {
+    e.preventDefault();
+    if (!text.trim()) return;
+    await api("/api/tasks", { method: "POST", body: JSON.stringify({ texto: text.trim() }) }).catch(() => {});
+    setText("");
+    load();
+  };
+  const list = data?.tasks || [];
+  const open = list.filter((t) => !t.concluida);
+  const done = list.filter((t) => t.concluida).slice(-8);
+  return (
+    <Card title="Tarefas" icon="☰" right={<small className="dk-muted">Toque no círculo para concluir</small>}>
+      <form className="dk-add" onSubmit={add}><input value={text} onChange={(e) => setText(e.target.value)} placeholder="Nova tarefa e Enter" aria-label="Nova tarefa" /></form>
+      <ul className="dk-list">
+        {open.map((t) => (
+          <li key={t.id}>
+            <button type="button" className="dk-check" aria-label={`Concluir ${t.texto}`} onClick={() => api(`/api/tasks/${t.id}/complete`, { method: "PATCH" }).then(load).catch(() => {})} />
+            <span>{t.texto}</span>
+            <button type="button" className="dk-del" aria-label={`Apagar ${t.texto}`} onClick={() => api(`/api/tasks/${t.id}`, { method: "DELETE" }).then(load).catch(() => {})}>✕</button>
+          </li>
+        ))}
+        {open.length === 0 && <li className="dk-muted">Nada pendente. 🎉</li>}
+      </ul>
+      {done.length > 0 && <><small className="dk-label">FEITAS</small><ul className="dk-list is-done">{done.map((t) => <li key={t.id}><span className="dk-check is-on" aria-hidden="true">✓</span><span>{t.texto}</span></li>)}</ul></>}
+    </Card>
+  );
+}
+
+function Reminders({ api }) {
+  const [data, load] = useLoad(api, "/api/reminders?only_pending=true");
+  const [text, setText] = useState("");
+  const [when, setWhen] = useState("");
+  const add = async (e) => {
+    e.preventDefault();
+    if (!text.trim() || !when) return;
+    await api("/api/reminders", { method: "POST", body: JSON.stringify({ texto: text.trim(), data_hora: when.replace("T", " ") }) }).catch(() => {});
+    setText("");
+    setWhen("");
+    load();
+  };
+  return (
+    <Card title="Lembretes" icon="🔔">
+      <form className="dk-add is-two" onSubmit={add}>
+        <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Lembrar de…" aria-label="Texto do lembrete" />
+        <input type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} aria-label="Quando" />
+        <button type="submit" className="dk-btn is-main">＋</button>
+      </form>
+      <ul className="dk-list">
+        {(data?.reminders || []).map((r) => (
+          <li key={r.id}><span className="dk-pill">{String(r.data_hora || "").slice(5, 16).replace("-", "/")}</span><span>{r.texto}</span>
+            <button type="button" className="dk-del" aria-label={`Apagar ${r.texto}`} onClick={() => api(`/api/reminders/${r.id}`, { method: "DELETE" }).then(load).catch(() => {})}>✕</button></li>
+        ))}
+        {(data?.reminders || []).length === 0 && <li className="dk-muted">Nenhum lembrete. Diga "me lembra de ligar pro cliente às 15h".</li>}
+      </ul>
+    </Card>
+  );
+}
+
+function Habits({ api, onChange }) {
+  const [data, , setData] = useLoad(api, "/api/desk/habits");
+  const [form, setForm] = useState({ nome: "", icone: "", lembrete: "" });
+  const [msg, setMsg] = useState("");
+  const add = async (e) => {
+    e.preventDefault();
+    if (!form.nome.trim()) return;
+    try {
+      setData(await api("/api/desk/habits", { method: "POST", body: JSON.stringify(form) }));
+      setForm({ nome: "", icone: "", lembrete: "" });
+      setMsg("");
+    } catch (err) {
+      setMsg(err.message);
+    }
+  };
+  const toggle = async (h) => {
+    try {
+      setData(await api(`/api/desk/habits/${h.id}/toggle`, { method: "POST", body: JSON.stringify({ feito: !h.hoje }) }));
+      onChange?.();
+    } catch (err) {
+      setMsg(err.message);
+    }
+  };
+  const remove = async (h) => {
+    if (!window.confirm(`Apagar o hábito "${h.nome}"?`)) return;
+    setData(await api(`/api/desk/habits/${h.id}`, { method: "DELETE" }).catch(() => data));
+  };
+  const days = ["D", "S", "T", "Q", "Q", "S", "S"];
+  const today = new Date().getDay();
+  return (
+    <Card title="Hábitos" icon="◆" right={data && <span className="dk-pill">{data.feitos_hoje}/{data.total} hoje</span>}>
+      <div className="dk-habits">
+        {(data?.itens || []).map((h) => (
+          <div key={h.id} className={`dk-habit${h.hoje ? " is-done" : ""}`}>
+            <button type="button" className="dk-habit-main" onClick={() => toggle(h)} aria-pressed={h.hoje}>
+              <span className="dk-habit-ico">{h.icone || "✓"}</span>
+              <span className="dk-habit-txt"><b>{h.nome}</b><small>🔥 {h.sequencia} {h.sequencia === 1 ? "dia" : "dias"}{h.lembrete ? ` · ⏰ ${h.lembrete}` : ""}</small></span>
+              <span className="dk-habit-box">{h.hoje ? "✓" : ""}</span>
+            </button>
+            <div className="dk-week" aria-label="Últimos 7 dias">
+              {h.semana.map((v, i) => <i key={i} className={v ? "is-on" : ""} title={days[(today - 6 + i + 7) % 7]}>{days[(today - 6 + i + 7) % 7]}</i>)}
+            </div>
+            <button type="button" className="dk-del" onClick={() => remove(h)} aria-label={`Apagar ${h.nome}`}>✕</button>
+          </div>
+        ))}
+        {data && data.itens.length === 0 && <p className="dk-muted">Crie seu primeiro hábito: beber água, ler, treinar… Depois é só dizer "marquei o treino de hoje".</p>}
+      </div>
+      {!data?.cloud && (
+        <form className="dk-add is-three" onSubmit={add}>
+          <input value={form.icone} onChange={(e) => setForm({ ...form, icone: e.target.value })} placeholder="📚" aria-label="Ícone" maxLength={4} />
+          <input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} placeholder="Novo hábito (ex.: Ler 10 páginas)" aria-label="Nome do hábito" />
+          <input type="time" value={form.lembrete} onChange={(e) => setForm({ ...form, lembrete: e.target.value })} aria-label="Lembrete (opcional)" />
+          <button type="submit" className="dk-btn is-main">＋</button>
+        </form>
+      )}
+      {msg && <p className="dk-err" role="alert">{msg}</p>}
+    </Card>
+  );
+}
+
+function fmtSecs(s) {
+  const m = Math.floor(s / 60);
+  return m >= 60 ? `${Math.floor(m / 60)}h${String(m % 60).padStart(2, "0")}` : `${m}:${String(s % 60).padStart(2, "0")}`;
+}
+
+function Timers({ api, send }) {
+  const [data, load] = useLoad(api, "/api/timers");
+  useEffect(() => {
+    const t = setInterval(load, 1000);
+    return () => clearInterval(t);
+  }, [load]);
+  return (
+    <Card title="Timers" icon="⏱">
+      <div className="dk-row is-wrap">
+        {[1, 5, 10, 25, 45].map((m) => <button type="button" key={m} className="dk-btn" onClick={() => send(`timer de ${m} ${m === 1 ? "minuto" : "minutos"}`)}>＋ {m} min</button>)}
+      </div>
+      <div className="dk-timers">
+        {(data?.timers || []).map((t) => {
+          const pct = t.total_seconds ? (t.seconds_left / t.total_seconds) * 100 : 0;
+          return (
+            <div key={t.id} className="dk-timer" style={{ "--p": pct }}>
+              <b>{fmtSecs(t.seconds_left)}</b><small>{t.label || "timer"}</small>
+            </div>
+          );
+        })}
+        {(data?.timers || []).length === 0 && <p className="dk-muted">Nenhum timer rodando. Diga "timer de 10 minutos para a pizza".</p>}
+      </div>
+    </Card>
+  );
+}
+
+// o cartão do Spotify quando algo toca; senão, um convite para tocar
+function MusicNow({ api, send }) {
+  const { track } = useNowPlaying(api);
+  if (track && (track.state === "playing" || track.state === "paused")) return <NowPlaying api={api} variant="lock" controls />;
+  return (
+    <div className="dk-music-empty">
+      <span>Nada tocando agora.</span>
+      <button type="button" className="dk-btn is-main" onClick={() => send("toca minha playlist")}>▶ TOCAR MINHA PLAYLIST</button>
+    </div>
+  );
+}
+
+function Music({ api, send }) {
+  return (
+    <Card title="Música" icon="♫">
+      <MusicNow api={api} send={send} />
+      <div className="dk-row is-wrap">
+        {["toca minha playlist", "próxima música", "pausa a música", "aumenta o volume", "abaixa o volume"].map((c) => (
+          <button type="button" key={c} className="dk-btn" onClick={() => send(c)}>"{c}"</button>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
+function Clips({ api }) {
+  const [data, load, setData] = useLoad(api, "/api/desk/clips");
+  const [copied, setCopied] = useState("");
+  useEffect(() => {
+    const t = setInterval(load, 4000);
+    return () => clearInterval(t);
+  }, [load]);
+  const copy = async (c) => {
+    try {
+      await navigator.clipboard.writeText(c.texto);
+      setCopied(c.id);
+      setTimeout(() => setCopied(""), 1500);
+    } catch {
+      setCopied("");
+    }
+  };
+  if (data?.cloud) return <Card title="Copiados" icon="⧉"><p className="dk-muted">Os Copiados ficam só no PC (por privacidade). Abra o Modo Desk no computador.</p></Card>;
+  return (
+    <Card title="Copiados" icon="⧉" right={(
+      <div className="dk-row">
+        <button type="button" className="dk-btn" onClick={async () => setData(await api("/api/desk/clips/pause", { method: "POST", body: JSON.stringify({ pausado: !data?.pausado }) }))}>{data?.pausado ? "▶ RETOMAR" : "❚❚ PAUSAR"}</button>
+        <button type="button" className="dk-btn is-danger" onClick={async () => { if (window.confirm("Apagar todo o histórico de copiados?")) setData(await api("/api/desk/clips", { method: "DELETE" })); }}>🗑 LIMPAR</button>
+      </div>
+    )}>
+      <p className="dk-muted">O que você copia no PC (Ctrl+C) aparece aqui. Fica só neste PC; o que parece senha, cartão ou código não é guardado.</p>
+      <ul className="dk-clips">
+        {(data?.itens || []).map((c) => (
+          <li key={c.id}>
+            <button type="button" className="dk-clip" onClick={() => copy(c)} title="Copiar de novo">
+              <span>{c.texto.length > 220 ? `${c.texto.slice(0, 220)}…` : c.texto}</span>
+              <small>{copied === c.id ? "✓ copiado" : c.em}</small>
+            </button>
+            <button type="button" className="dk-del" onClick={async () => setData(await api(`/api/desk/clips/${c.id}`, { method: "DELETE" }))} aria-label="Apagar">✕</button>
+          </li>
+        ))}
+        {data && data.itens.length === 0 && <li className="dk-muted">{data.pausado ? "Pausado." : "Nada copiado ainda (os Copiados funcionam com o JARVIS rodando no Windows)."}</li>}
+      </ul>
+    </Card>
+  );
+}
+
+function Routines({ api }) {
+  const [data] = useLoad(api, "/api/protocols");
+  const [msg, setMsg] = useState("");
+  const list = Object.entries(data?.protocols || {});
+  const run = async (key, label) => {
+    setMsg(`Rodando ${label}…`);
+    try {
+      const r = await api("/api/protocols/run", { method: "POST", body: JSON.stringify({ name: key }) });
+      setMsg(r.reply || `${label}: pronto.`);
+    } catch (err) {
+      setMsg(err.message);
+    }
+  };
+  return (
+    <Card title="Rotinas" icon="⚡">
+      <div className="dk-grid3">
+        {list.map(([key, p]) => (
+          <button type="button" key={key} className="dk-tile" onClick={() => run(key, p.label || key)}>
+            <b>{p.label || key}</b><small>{(p.steps || []).length} passos</small>
+          </button>
+        ))}
+      </div>
+      {msg && <p className="dk-muted" role="status">{msg}</p>}
+      <p className="dk-muted">Diga "modo trabalho", "modo dormir"… As rotinas são editadas em Configurações › Protocolos.</p>
+    </Card>
+  );
+}
+
+function MyPc({ avatar }) {
+  return (
+    <Card title="Meu PC" icon="🖥">
+      <div className="dk-pc">
+        <div className="dk-pc-ring"><RoboAvatar avatar={avatar} state="processing" size={96} /></div>
+        <div>
+          <h3>Verificar o PC</h3>
+          <p className="dk-muted">Memória, processador, programas que abrem com o PC, arquivos temporários, disco e lixeira. Mostra o que dá para melhorar e só limpa o que você aprovar.</p>
+          <button type="button" className="dk-btn is-main" onClick={() => window.dispatchEvent(new CustomEvent("jarvis-open-optimizer"))}>▶ VERIFICAR AGORA</button>
+          <button type="button" className="dk-btn" onClick={() => window.dispatchEvent(new CustomEvent("jarvis-open-diagnostic"))}>🩺 DIAGNÓSTICO DO JARVIS</button>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+// ------------------------------------------------------------------ configurações
+function Personalize({ api, cfg, setCfg, aiName, onRename }) {
+  const [msg, setMsg] = useState("");
+  const [name, setName] = useState(aiName);
+  const av = { ...DEFAULT_AVATAR, ...(cfg?.avatar || {}) };
+  const save = async (patch) => {
+    const optimistic = { ...cfg, ...patch, avatar: { ...av, ...(patch.avatar || {}) } };
+    setCfg(optimistic);
+    try {
+      setCfg(await api("/api/desk", { method: "PATCH", body: JSON.stringify(patch) }));
+      setMsg("");
+    } catch (err) {
+      setMsg(err.message);
+    }
+  };
+  const Swatches = ({ value, onPick, colors }) => (
+    <div className="dk-swatches">
+      {colors.map((c) => <button type="button" key={c} style={{ background: c }} className={value === c ? "is-on" : ""} onClick={() => onPick(c)} aria-label={`Cor ${c}`} />)}
+      <label className="dk-swatch-custom" title="Outra cor"><input type="color" value={value} onChange={(e) => onPick(e.target.value)} />🎨</label>
+    </div>
+  );
+  return (
+    <Card title={`Personalizar o ${aiName}`} icon="🎨">
+      <div className="dk-perso">
+        <div className="dk-perso-preview">
+          <RoboAvatar avatar={av} size={170} />
+          <div className="dk-row is-wrap is-center">
+            {EXPRESSIONS.map(([k, label]) => <button type="button" key={k} className={`dk-chip${av.expressao === k ? " is-on" : ""}`} onClick={() => save({ avatar: { expressao: k } })}>{label}</button>)}
+          </div>
+        </div>
+        <div className="dk-perso-form">
+          <label className="dk-field"><span>Nome</span>
+            <span className="dk-row"><input value={name} onChange={(e) => setName(e.target.value)} maxLength={20} aria-label="Nome do assistente" />
+              <button type="button" className="dk-btn" onClick={() => onRename(name)} disabled={!name.trim() || name === aiName}>SALVAR</button></span>
+          </label>
+          <div className="dk-field"><span>Corpo</span><Swatches value={av.corpo} colors={["#e8f4ff", "#ffffff", "#cbd5e1", "#fde68a", "#fecaca", "#bbf7d0", "#ddd6fe", "#1f2937"]} onPick={(c) => save({ avatar: { corpo: c } })} /></div>
+          <div className="dk-field"><span>Visor</span><Swatches value={av.visor} colors={["#0b1220", "#111827", "#1e1b4b", "#052e16", "#3b0764", "#450a0a"]} onPick={(c) => save({ avatar: { visor: c } })} /></div>
+          <div className="dk-field"><span>Olhos</span><Swatches value={av.olhos} colors={DESK_COLORS} onPick={(c) => save({ avatar: { olhos: c } })} /></div>
+          <div className="dk-field"><span>Acessório</span>
+            <div className="dk-row is-wrap">{ACCESSORIES.map(([k, label]) => <button type="button" key={k} className={`dk-chip${av.acessorio === k ? " is-on" : ""}`} onClick={() => save({ avatar: { acessorio: k } })}>{label}</button>)}</div>
+          </div>
+          <div className="dk-field"><span>Cor do app</span><Swatches value={cfg?.cor || "#22d3ee"} colors={DESK_COLORS} onPick={(c) => save({ cor: c })} /></div>
+          {msg && <p className="dk-err" role="alert">{msg}</p>}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+const PROVIDERS = [["gemini", "Gemini", "Google · tem uso grátis"], ["openai", "ChatGPT", "OpenAI"], ["anthropic", "Claude", "Anthropic"]];
+
+function Brain({ api }) {
+  const [prefs, , setPrefs] = useLoad(api, "/api/prefs");
+  const [test, setTest] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const choose = async (p) => {
+    try {
+      setPrefs(await api("/api/prefs", { method: "PATCH", body: JSON.stringify({ llm_provider: p }) }));
+    } catch (err) {
+      setTest({ erro: err.message });
+    }
+  };
+  const run = async () => {
+    setBusy(true);
+    setTest(null);
+    try {
+      setTest(await api("/api/desk/test-ai", { method: "POST", timeout: 60_000 }));
+    } catch (err) {
+      setTest({ erro: err.message });
+    }
+    setBusy(false);
+  };
+  const cur = prefs?.llm_provider || "gemini";
+  const cd = prefs?.ai_cooldown;
+  return (
+    <Card title="Cérebro (IA)" icon="🧠">
+      <div className={`dk-banner${cd?.active ? " is-warn" : ""}`}>
+        {cd?.active ? `⏳ A IA chegou no limite: volta em ${Math.ceil((cd.remaining || 0) / 60)} min.` : `✓ Funcionando com ${PROVIDERS.find((p) => p[0] === cur)?.[1] || cur}`}
+      </div>
+      <small className="dk-label">COMO O JARVIS PENSA</small>
+      <div className="dk-grid3">
+        {PROVIDERS.map(([k, label, sub]) => (
+          <button type="button" key={k} className={`dk-tile${cur === k ? " is-on" : ""}`} onClick={() => choose(k)} aria-pressed={cur === k}>
+            <b>{label}</b><small>{sub}</small>{cur === k && <i className="dk-tick">✓</i>}
+          </button>
+        ))}
+      </div>
+      <p className="dk-muted">As chaves ficam no arquivo .env do PC (nunca aparecem aqui). Se a IA escolhida chegar no limite, o JARVIS avisa e as funções simples (música, volume, timers, abrir apps) continuam funcionando.</p>
+      <small className="dk-label">TESTAR</small>
+      <div className="dk-row"><button type="button" className="dk-btn is-main" onClick={run} disabled={busy}>{busy ? "Testando…" : "▶ TESTAR ESTA IA"}</button></div>
+      {test && (test.erro ? <p className="dk-err" role="alert">{test.erro}</p> : <p className="dk-test"><b>{test.segundos}s</b> · {test.resposta}</p>)}
+    </Card>
+  );
+}
+
+function Functions({ api, send }) {
+  const [q, setQ] = useState("");
+  const list = FUNCTIONS.filter((f) => !q || `${f.titulo} ${f.exemplos.join(" ")}`.toLowerCase().includes(q.toLowerCase()));
+  return (
+    <Card title="Funções" icon="🧩" right={<input className="dk-search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar função…" aria-label="Buscar função" />}>
+      <p className="dk-muted">O que dá para falar com o JARVIS. Toque num exemplo para testar.</p>
+      <div className="dk-grid2">
+        {list.map((f) => (
+          <div key={f.titulo} className="dk-func">
+            <b>{f.icone} {f.titulo}</b>
+            <div className="dk-row is-wrap">{f.exemplos.map((e) => <button type="button" key={e} className="dk-chip" onClick={() => send(e)}>"{e}"</button>)}</div>
+          </div>
+        ))}
+      </div>
+      <Shortcuts api={api} />
+    </Card>
+  );
+}
+
+function Shortcuts({ api }) {
+  const [data, load] = useLoad(api, "/api/shortcuts");
+  const [form, setForm] = useState({ name: "", app: "" });
+  const add = async (e) => {
+    e.preventDefault();
+    if (!form.name.trim() || !form.app.trim()) return;
+    const isUrl = /^https?:\/\//i.test(form.app.trim());
+    await api("/api/shortcuts", { method: "POST", body: JSON.stringify({ name: form.name.trim(), apps: isUrl ? [] : [form.app.trim()], urls: isUrl ? [form.app.trim()] : [] }) }).catch(() => {});
+    setForm({ name: "", app: "" });
+    load();
+  };
+  const list = Object.entries(data?.shortcuts || {});
+  return (
+    <div className="dk-shortcuts">
+      <small className="dk-label">MEUS ATALHOS ("abre o …")</small>
+      <ul className="dk-list">
+        {list.map(([name, s]) => (
+          <li key={name}><b>"{name}"</b><span className="dk-muted">{[...(s.apps || []), ...(s.urls || [])].join(", ")}</span>
+            <button type="button" className="dk-del" onClick={() => api(`/api/shortcuts/${encodeURIComponent(name)}`, { method: "DELETE" }).then(load).catch(() => {})} aria-label={`Apagar ${name}`}>✕</button></li>
+        ))}
+      </ul>
+      <form className="dk-add is-two" onSubmit={add}>
+        <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder='Nome (ex.: "meu trabalho")' aria-label="Nome do atalho" />
+        <input value={form.app} onChange={(e) => setForm({ ...form, app: e.target.value })} placeholder="Programa (ex.: notepad) ou site (https://…)" aria-label="Programa ou site" />
+        <button type="submit" className="dk-btn is-main">＋</button>
+      </form>
+    </div>
+  );
+}
+
+function Island({ api, cfg, setCfg }) {
+  const ilha = cfg?.ilha || {};
+  const save = async (patch) => setCfg(await api("/api/desk", { method: "PATCH", body: JSON.stringify({ ilha: patch }) }).catch(() => cfg));
+  return (
+    <Card title="Ilha" icon="▭">
+      <p className="dk-muted">A ilha é a barrinha no topo da tela do Windows (no app JARVIS.exe): mostra o JARVIS, a hora, a música tocando e as respostas.</p>
+      <div className="dk-island-preview" data-size={ilha.tamanho || "media"}><RoboAvatar avatar={cfg?.avatar} size={22} /><i className="dk-dot" /><span>Highway to Hell · AC/DC</span></div>
+      <label className="dk-toggle-row"><input type="checkbox" checked={ilha.ligada !== false} onChange={(e) => save({ ligada: e.target.checked })} /> Mostrar a ilha</label>
+      <div className="dk-field"><span>Tamanho</span><div className="dk-row">{[["pequena", "Pequena"], ["media", "Média"], ["grande", "Grande"]].map(([k, l]) => <button type="button" key={k} className={`dk-chip${(ilha.tamanho || "media") === k ? " is-on" : ""}`} onClick={() => save({ tamanho: k })}>{l}</button>)}</div></div>
+      <div className="dk-field"><span>Tecla para falar</span><div className="dk-row">{["PageDown", "F9", "Ctrl+Space"].map((k) => <button type="button" key={k} className={`dk-chip${ilha.atalho === k ? " is-on" : ""}`} onClick={() => save({ atalho: k })}>{k}</button>)}</div></div>
+      <DownloadExe />
+    </Card>
+  );
+}
+
+export function DownloadExe({ compact = false }) {
+  return (
+    <a className={`dk-btn is-main dk-download${compact ? " is-compact" : ""}`} href="/api/desktop/app" onClick={(e) => { e.preventDefault(); window.dispatchEvent(new CustomEvent("jarvis-desktop-download")); }}>
+      ⬇ APP PARA WINDOWS (JARVIS.exe)
+    </a>
+  );
+}
+
+function LinkCard({ title, icon, text, actions }) {
+  return (
+    <Card title={title} icon={icon}>
+      <p className="dk-muted">{text}</p>
+      <div className="dk-row is-wrap">{actions.map(([label, fn]) => <button type="button" key={label} className="dk-btn" onClick={fn}>{label}</button>)}</div>
+    </Card>
+  );
+}
+
+// ------------------------------------------------------------------ app
+export default function DeskApp(props) {
+  const { api, aiName = "JARVIS", userName = "", jarvisState = "idle", listening = false, interim = "", userText, response, responseCards, error,
+    send, onToggleMic, onClassic, onLock, onOpenSettings, onOpenQr, onRename } = props;
+  const [section, setSection] = useState(() => {
+    try {
+      return localStorage.getItem("jarvis.desk.section") || "inicio";
+    } catch {
+      return "inicio";
+    }
+  });
+  const [cfg, setCfg] = useState(null);
+  const [level, setLevel] = useState(null);
+  const [menu, setMenu] = useState(false);
+  const [search, setSearch] = useState("");
+  const log = useConversationLog(userText, response, error, responseCards);
+
+  const loadCfg = useCallback(() => {
+    api("/api/desk").then(setCfg).catch(() => setCfg({ avatar: DEFAULT_AVATAR, cor: "#22d3ee", ilha: {} }));
+    api("/api/desk/xp").then(setLevel).catch(() => {});
+  }, [api]);
+  useEffect(() => { loadCfg(); }, [loadCfg]);
+  useEffect(() => {
+    const goTo = (e) => typeof e.detail === "string" && setSection(e.detail);
+    window.addEventListener("jarvis-desk-go", goTo);
+    return () => window.removeEventListener("jarvis-desk-go", goTo);
+  }, []);
+  useEffect(() => {
+    const t = setInterval(() => api("/api/desk/xp").then(setLevel).catch(() => {}), 30_000);
+    return () => clearInterval(t);
+  }, [api]);
+  useEffect(() => {
+    if (response) api("/api/desk/xp").then(setLevel).catch(() => {});
+  }, [response, api]);
+  useEffect(() => {
+    try {
+      localStorage.setItem("jarvis.desk.section", section);
+    } catch {
+      /* sem armazenamento */
+    }
+  }, [section]);
+
+  const accent = cfg?.cor || "#22d3ee";
+  const style = useMemo(() => ({ "--dk-accent": accent, "--dk-accent-rgb": hexToRgb(accent), "--dk-on-accent": isLight(accent) ? "#06121f" : "#fff" }), [accent]);
+  const orbState = listening ? "listening" : jarvisState;
+  const ctx = { log, send, onToggleMic, listening, interim, userName, aiName, orbState, level };
+  const go = (id) => {
+    setSection(id);
+    setMenu(false);
+  };
+  const allSettings = SETTINGS.flatMap(([, items]) => items);
+  const found = search.trim() ? allSettings.filter(([, , l]) => l.toLowerCase().includes(search.trim().toLowerCase())) : null;
+
+  let body;
+  switch (section) {
+    case "conversa": body = <Card title="Conversa" icon="💬" className="dk-full"><ChatBox log={log} send={send} onMic={onToggleMic} listening={listening} interim={interim} /></Card>; break;
+    case "memoria": body = <Suspense fallback={<Card title="Memória" icon="✳"><p className="dk-muted">Carregando…</p></Card>}><MemoryMap api={api} accent={accent} /></Suspense>; break;
+    case "tarefas": body = <Tasks api={api} />; break;
+    case "lembretes": body = <Reminders api={api} />; break;
+    case "habitos": body = <Habits api={api} onChange={() => api("/api/desk/xp").then(setLevel).catch(() => {})} />; break;
+    case "timers": body = <Timers api={api} send={send} />; break;
+    case "musica": body = <Music api={api} send={send} />; break;
+    case "copiados": body = <Clips api={api} />; break;
+    case "rotinas": body = <Routines api={api} />; break;
+    case "meupc": body = <MyPc avatar={cfg?.avatar} />; break;
+    case "personalizar": body = <Personalize api={api} cfg={cfg} setCfg={setCfg} aiName={aiName} onRename={onRename} />; break;
+    case "cerebro": body = <Brain api={api} />; break;
+    case "funcoes": case "atalhos": body = <Functions api={api} send={send} />; break;
+    case "voz": body = <LinkCard title="Voz" icon="🎙" text="Voz do JARVIS, velocidade, microfone e palavra de ativação." actions={[["⚙ ABRIR CONFIGURAÇÕES DE VOZ", onOpenSettings], ["🎙 TESTAR MICROFONE", () => send("testar microfone")]]} />; break;
+    case "ilha": body = <Island api={api} cfg={cfg} setCfg={setCfg} />; break;
+    case "celular": body = <LinkCard title="Celular e agendas" icon="📱" text="Pareie o celular pelo QR, conecte a agenda do Google e veja os aparelhos." actions={[["📱 QR DO CELULAR", onOpenQr], ["⚙ AGENDA E CONTAS", onOpenSettings]]} />; break;
+    case "rosto": body = <LinkCard title="Proteção com rosto" icon="🙂" text="O bloqueio reconhece o seu rosto (e o PIN como alternativa)." actions={[["🔒 BLOQUEAR AGORA", onLock], ["⚙ SEGURANÇA", onOpenSettings]]} />; break;
+    default: body = <Home api={api} ctx={ctx} avatar={cfg?.avatar} setSection={go} />;
+  }
+
+  return (
+    <div className={`dk-root${menu ? " is-menu" : ""}`} style={style} role="application" aria-label="JARVIS, Modo Desk">
+      <aside className="dk-side">
+        <div className="dk-brand">
+          <RoboAvatar avatar={cfg?.avatar} state={orbState} size={44} />
+          <div>
+            <b>{aiName}</b>
+            <small><i className={`dk-dot is-${orbState}`} />{stateText(orbState)}</small>
+            {level && <div className="dk-mini-level"><span>Nv {level.nivel}</span><i><b style={{ width: `${level.pct}%` }} /></i></div>}
+          </div>
+          <button type="button" className="dk-menu-btn" onClick={() => setMenu((v) => !v)} aria-label="Menu" aria-expanded={menu}>☰</button>
+        </div>
+        <nav className="dk-nav" aria-label="Seções">
+          {NAV.map(([id, ico, label]) => (
+            <button type="button" key={id} className={section === id ? "is-on" : ""} onClick={() => go(id)} aria-current={section === id ? "page" : undefined}>
+              <span>{ico}</span>{label}
+            </button>
+          ))}
+          <input className="dk-search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar configuração" aria-label="Buscar configuração" />
+          {(found ? [["Resultados", found]] : SETTINGS).map(([group, items]) => (
+            <div key={group} className="dk-nav-group">
+              <small>{group.toUpperCase()}</small>
+              {items.map(([id, ico, label]) => (
+                <button type="button" key={id} className={section === id ? "is-on" : ""} onClick={() => go(id)}><span>{ico}</span>{label}</button>
+              ))}
+            </div>
+          ))}
+        </nav>
+        <div className="dk-side-foot">
+          <button type="button" className="dk-btn" onClick={onClassic} title="Voltar para a central clássica">◐ CENTRAL CLÁSSICA</button>
+          <button type="button" className="dk-btn" onClick={onLock}>🔒</button>
+        </div>
+      </aside>
+      <main className="dk-main">{body}</main>
+    </div>
+  );
+}

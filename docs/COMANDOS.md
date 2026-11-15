@@ -1,6 +1,6 @@
 # JARVIS — Comandos do dia a dia
 
-**Versão do projeto:** 7.14.2 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
+**Versão do projeto:** 8.0.0 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
 
 > Montado a partir do código do projeto. Se algum comando não responder como descrito, me avise que eu ajusto o guia.
 > Para a lista técnica de rotas, veja [API.md](API.md); para o `.env`, [CONFIGURACAO.md](CONFIGURACAO.md).
@@ -447,6 +447,17 @@ Pedidos com YouTube, Google, Maps, música ou notícias continuam no caminho de 
 | 🏠 MINHA CIDADE · 📍 ONDE ESTOU · ＋/－ | Volta para a sua cidade, centraliza onde você está (pede permissão de localização) e aproxima/afasta. |
 | Lugares salvos | Os lugares do agente de rotas viram atalhos no painel. |
 | 🧭 IR ATÉ AQUI NO WAZE | Abre a navegação no app do Waze. |
+
+### Modo Desk e JARVIS.exe (V8.0)
+
+| Fale / toque | O que acontece |
+|---|---|
+| 🖥 MODO DESK (central, ⚡ CONTROLES, bloqueio) | Troca para o layout de app de assistente; ◐ CENTRAL CLÁSSICA volta. |
+| "Marquei o treino de hoje" · "como estão meus hábitos?" | Marca o hábito (sequência de dias) e diz quantos faltam hoje. |
+| Modo Desk › Copiados | Histórico do Ctrl+C no PC; toque para copiar de novo (não guarda senha, cartão ou código). |
+| Modo Desk › Memória | Mapa das memórias por assunto; tocar mostra e permite esquecer. |
+| Modo Desk › Personalizar | Cores, expressão e acessório do robô; nome; cor do app. |
+| ⬇ APP PARA WINDOWS · Gerar-App-Windows.bat | Gera e baixa o JARVIS.exe: janela própria, ilha no topo da tela e tecla para falar (PageDown). |
 
 ### Olho de Deus: globo 3D e dados reais (V7.11)
 

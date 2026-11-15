@@ -280,6 +280,8 @@ export function apply(state, op, now = spNow()) {
     }
     case "fin_action": // V7.10: anotação financeira; só o PC aplica (a nuvem guarda só o resumo)
       return { keys: [], result: op.acao };
+    case "habit_toggle": // V8.0: hábito marcado fora de casa (o PC aplica; o resumo da nuvem já mostra marcado)
+      return { keys: [], result: op.item };
     case "holo_save": // V7.14: apresentação salva fora de casa (a lista da nuvem é atualizada à parte)
     case "holo_delete":
       return { keys: [], result: op.item };
@@ -395,6 +397,20 @@ export async function receiveSnapshot(store, { ack = 0, snapshot = {} }, now = s
       orcamento: (Array.isArray(f.orcamento) ? f.orcamento : []).slice(0, 12).map((o) => ({ categoria: clean(o.categoria, 30), pct: Math.round(num(o.pct)) })),
       metas: (Array.isArray(f.metas) ? f.metas : []).slice(0, 10).map((m) => ({ nome: clean(m.nome, 60), pct: Math.round(num(m.pct)) })),
       dividas: names(f.dividas), contas: names(f.contas), cartoes: names(f.cartoes), atualizado: now.stamp,
+    });
+  }
+  if (snapshot.desk && typeof snapshot.desk === "object") { // V8.0: Modo Desk (aparência, nível, hábitos)
+    const dk = snapshot.desk;
+    const hex = (v, d) => (typeof v === "string" && /^#[0-9a-fA-F]{6}$/.test(v) ? v : d);
+    const av = dk.avatar || {};
+    let habitos = (Array.isArray(dk.habitos) ? dk.habitos : []).slice(0, 20).map((h) => ({
+      id: clean(h.id, 12), nome: clean(h.nome, 40), icone: clean(h.icone, 4), lembrete: clean(h.lembrete, 5), hoje: Boolean(h.hoje),
+      sequencia: Math.max(0, Math.round(Number(h.sequencia) || 0)), semana: (Array.isArray(h.semana) ? h.semana : []).slice(0, 7).map(Boolean), total: Math.max(0, Math.round(Number(h.total) || 0)),
+    }));
+    for (const o of log.items.filter((x) => x.op === "habit_toggle")) habitos = habitos.map((h) => (h.id === o.item ? { ...h, hoje: o.feito !== false } : h));
+    await store.set("desk_resumo", {
+      avatar: { corpo: hex(av.corpo, "#e8f4ff"), visor: hex(av.visor, "#0b1220"), olhos: hex(av.olhos, "#22d3ee"), expressao: clean(av.expressao, 12) || "feliz", acessorio: clean(av.acessorio, 10) || "nenhum" },
+      cor: hex(dk.cor, "#22d3ee"), nivel: dk.nivel && typeof dk.nivel === "object" ? dk.nivel : { nivel: 1, xp: 0, no_nivel: 0, para_subir: 100, pct: 0 }, habitos,
     });
   }
   if (Array.isArray(snapshot.holo_salvos)) { // V7.14: apresentações salvas, para rever fora de casa
@@ -1566,6 +1582,20 @@ export async function handle(req, { store, env, fetchFn = fetch, nowDate = new D
       const next = holoSavedApply(list, { op: "holo_delete", item: id });
       await store.set("holo_salvos", next);
       return json({ itens: next.map(({ data: _d, ...rest }) => rest) });
+    }
+    if (path === "/desk" && method === "GET") { // V8.0: Modo Desk fora de casa
+      const d = await store.get("desk_resumo");
+      return json(d || { avatar: null, cor: "#22d3ee", nivel: { nivel: 1, xp: 0, no_nivel: 0, para_subir: 100, pct: 0 }, habitos: [] });
+    }
+    if (path === "/desk/habit" && method === "POST") {
+      const { item, feito } = await body(req);
+      const d = (await store.get("desk_resumo")) || { habitos: [] };
+      if (!(d.habitos || []).some((h) => h.id === item)) throw new HttpError(404, "Não achei esse hábito.");
+      const done = feito !== false;
+      await recordOp(store, { op: "habit_toggle", item: clean(item, 12), feito: done }, now);
+      d.habitos = d.habitos.map((h) => (h.id === item ? { ...h, hoje: done, sequencia: Math.max(0, h.sequencia + (done && !h.hoje ? 1 : !done && h.hoje ? -1 : 0)) } : h));
+      await store.set("desk_resumo", d);
+      return json(d);
     }
     if (path === "/quickcard" && method === "POST") { // V7.14: cartão animado das perguntas rápidas
       const { pergunta, resposta } = await body(req);

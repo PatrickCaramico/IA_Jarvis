@@ -288,6 +288,27 @@ async function route(method, path, query, body) {
     // V6.8.3: Central de Agentes fora de casa (o catálogo é o mesmo do PC: backend/modules/agents.py)
     case "GET /api/agents":
       return ok({ agents: CLOUD_AGENTS, places: (await refresh()).lugares || {}, chat_agents: CLOUD_CHAT_AGENTS });
+    case "GET /api/desk": { // V8.0: Modo Desk fora de casa (aparência e nível vêm do PC; personalizar é no PC)
+      const d = await cloud("/desk");
+      return ok({ avatar: d.avatar || undefined, cor: d.cor, nivel: d.nivel, ilha: { ligada: false, tamanho: "media", atalho: "" }, cloud: true });
+    }
+    case "PATCH /api/desk":
+      return { status: 503, data: { detail: "A aparência do JARVIS é personalizada no PC." } };
+    case "GET /api/desk/xp": {
+      const d = await cloud("/desk");
+      return ok({ ...d.nivel, eventos: [], cloud: true });
+    }
+    case "GET /api/desk/habits": {
+      const d = await cloud("/desk");
+      const itens = d.habitos || [];
+      return ok({ itens, feitos_hoje: itens.filter((h) => h.hoje).length, total: itens.length, cloud: true });
+    }
+    case "GET /api/desk/clips":
+      return ok({ pausado: false, itens: [], cloud: true });
+    case "GET /api/desk/memory-map":
+      return ok({ nos: [{ id: "eu", rotulo: "Você", tipo: "centro" }], ligacoes: [], total: 0, cloud: true });
+    case "POST /api/desk/test-ai":
+      return { status: 503, data: { detail: "O teste da IA é feito no PC." } };
     case "GET /api/world/alerts": // V7.11: os avisos do Olho de Deus saem do PC
       return ok({ ligados: { chuva: true, perto: true, iss: true }, cloud: true });
     case "POST /api/world/alerts":
@@ -374,6 +395,13 @@ async function route(method, path, query, body) {
       return ok({ items: [], profiles: [] });
     default:
       break;
+  }
+  // V8.0: marcar um hábito fora de casa (o PC aplica na sincronização)
+  const habit = path.match(/^\/api\/desk\/habits\/([\w-]{1,20})\/toggle$/);
+  if (habit && method === "POST") {
+    const d = await cloud("/desk/habit", { method: "POST", body: { item: habit[1], feito: body.feito !== false } });
+    const itens = d.habitos || [];
+    return ok({ itens, feitos_hoje: itens.filter((h) => h.hoje).length, total: itens.length, habito: itens.find((h) => h.id === habit[1]), cloud: true });
   }
   // V7.14: uma apresentação salva (rever sem gastar IA) e apagar
   const saved = path.match(/^\/api\/holo\/saved\/([\w-]{1,40})$/);

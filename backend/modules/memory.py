@@ -46,6 +46,9 @@ def remember(text: str, category: str = "facts", source: str = "") -> dict[str, 
         data[category].append(item)
         data[category] = data[category][-100:]
         _save(data)
+        from modules import desk
+
+        desk.xp_quietly("memoria")  # V8.0: XP do Modo Desk
     return item
 
 

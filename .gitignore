@@ -82,3 +82,8 @@ backend/tts_output/
 
 # ─── Site do Netlify (gerado por scripts/netlify/montar_site.sh) ───────────────
 _site/
+
+# V8.0: JARVIS.exe (gerado no PC pelo Gerar-App-Windows.bat)
+desktop/.venv/
+desktop/build/
+desktop/_build_info.py

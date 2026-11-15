@@ -37,6 +37,8 @@ from routes import access as access_routes  # noqa: E402
 from routes import fan, health, info, integrations, mobile, productivity, profile, profiles, search, system, water  # noqa: E402
 from routes import agent_chat as agent_chat_routes  # noqa: E402
 from routes import world as world_routes  # noqa: E402
+from routes import desk as desk_routes  # noqa: E402
+from routes import desktop as desktop_routes  # noqa: E402
 from routes import photo as photo_routes  # noqa: E402
 from routes import security as security_routes  # noqa: E402
 from version import VERSION  # noqa: E402
@@ -58,6 +60,10 @@ async def lifespan(app: FastAPI):
     from modules import world_data
 
     runtime.track_service(world_data.alerts_loop())  # V7.11: chuva forte, queimada/terremoto perto e ISS visível
+    from modules import desk
+
+    runtime.track_service(desk.habits_loop())  # V8.0: lembretes dos hábitos (Modo Desk)
+    runtime.track_service(desk.clipboard_loop())  # V8.0: Copiados (só no Windows)
     runtime.track(tts.preload())  # V4.4: voz carrega depois que o servidor já está no ar
     from modules import tools
 
@@ -165,5 +171,5 @@ app.add_middleware(
 )
 
 
-for _module in (system, access_routes, profile, fan, water, search, productivity, info, integrations, health, mobile, profiles, security_routes, photo_routes, agent_chat_routes, world_routes):
+for _module in (system, access_routes, profile, fan, water, search, productivity, info, integrations, health, mobile, profiles, security_routes, photo_routes, agent_chat_routes, world_routes, desk_routes, desktop_routes):
     app.include_router(_module.router)

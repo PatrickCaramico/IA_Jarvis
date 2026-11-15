@@ -58,6 +58,9 @@ def complete_task(identificador: str) -> Optional[dict]:
                 t["concluida"] = True
                 t["concluida_em"] = datetime.now().strftime("%d/%m/%Y %H:%M")
                 _save_tasks(tasks)
+                from modules import desk
+
+                desk.xp_quietly("tarefa")  # V8.0: XP do Modo Desk
                 return t
     return None
 

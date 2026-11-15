@@ -37,6 +37,8 @@ _WRITABLE = (
     ("fin_control", "_PATH", "financas_controle.json"),  # V7.10
     ("world_data", "_TLE_PATH", "olho_tle.json"),  # V7.11
     ("holo_extra", "_PATH", "holo_salvos.json"),  # V7.14
+    ("desk", "_PATH", "desk.json"),  # V8.0
+    ("desk", "_CLIP_PATH", "copiados.json"),
     ("world_data", "_PREFS_PATH", "olho_avisos.json"),
 )
 

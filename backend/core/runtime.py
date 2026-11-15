@@ -61,7 +61,9 @@ def describe_device(ip: str, user_agent: str, local: bool) -> dict:
         model = m.group(1).strip()
         if model.lower() in ("k", "wv"):  # Chrome novo esconde o modelo ("Android 10; K")
             model = ""
-    if app:
+    if "JarvisDesktop/" in ua:  # V8.0: o JARVIS.exe (não ouve pelo navegador: o ouvido do PC continua atendendo)
+        kind, name = "desktop", "App JARVIS (Windows)"
+    elif app:
         kind, name = "app", f"Celular · {model}" if model else "Celular (app JARVIS)"
     elif local:
         kind, name = "pc", "Este PC"
@@ -124,11 +126,27 @@ class ConnectionManager:
         return sorted(seen.values(), key=lambda d: (order.get(d["kind"], 9), d["since"]))
 
     async def broadcast(self, event: dict) -> None:
+        note_island(event)  # V8.0: a ilha do JARVIS.exe mostra o estado e a última resposta
         for ws in list(self.connections):
             try:
                 await ws.send_json(event)
             except Exception:  # noqa: BLE001 - conexão morta
                 self.disconnect(ws)
+
+
+# V8.0: o que a ilha do JARVIS.exe mostra (estado e última resposta), sem depender de WebSocket
+ISLAND: dict = {"estado": "idle", "resposta": "", "resposta_em": 0.0}
+
+
+def note_island(event: dict) -> None:
+    import time as _time
+
+    kind = event.get("type") if isinstance(event, dict) else None
+    if kind == "state" and isinstance(event.get("state"), str):
+        ISLAND["estado"] = event["state"][:20]
+    elif kind == "response" and isinstance(event.get("text"), str) and event["text"].strip():
+        ISLAND["resposta"] = " ".join(event["text"].split())[:220]
+        ISLAND["resposta_em"] = _time.time()
 
 
 manager = ConnectionManager()

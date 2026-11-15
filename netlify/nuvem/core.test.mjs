@@ -483,3 +483,14 @@ test("V7.14 nuvem: quiz, salvos e cartão rápido", async () => {
   await receiveSnapshot(store, { ack: 0, snapshot: { holo_salvos: [{ id: "p1", titulo: "Marte", tipo: "apresentacao", data: { titulo: "Marte" } }, { id: "p2", titulo: "Lua", tipo: "apresentacao", data: { titulo: "Lua" } }] } });
   assert.deepEqual((await store.get("holo_salvos")).map((i) => i.titulo), ["Marte"]); // a exclusão feita fora de casa continua valendo
 });
+
+test("V8.0 nuvem: Modo Desk (resumo e hábito marcado fora de casa)", async () => {
+  const { receiveSnapshot } = await import("./core.mjs");
+  const m = new Map();
+  const store = { get: async (k) => m.get(k), set: async (k, v) => m.set(k, v) };
+  await receiveSnapshot(store, { ack: 0, snapshot: { desk: { avatar: { corpo: "#ff0000", olhos: "javascript:alert(1)" }, cor: "#a3e635", habitos: [{ id: "h1", nome: "Treinar", hoje: false, sequencia: 2, semana: [true, true] }] } } });
+  const d = await store.get("desk_resumo");
+  assert.equal(d.avatar.corpo, "#ff0000");
+  assert.equal(d.avatar.olhos, "#22d3ee"); // cor inválida não passa
+  assert.equal(d.habitos[0].sequencia, 2);
+});

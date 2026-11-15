@@ -65,6 +65,9 @@ def add_reminder(texto: str, data_hora: datetime, recorrencia: Optional[str] = N
     }
     rems.append(rem)
     _save_reminders(rems)
+    from modules import desk
+
+    desk.xp_quietly("lembrete")  # V8.0: XP do Modo Desk
     return rem
 
 

@@ -71,6 +71,8 @@ const NewProfileScreen = lazyComponent(() => import("./components/NewProfileScre
 const FaceRecheckPanel = lazyComponent(() => import("./components/FaceRecheckPanel.jsx"));
 const GuestScreen = lazyComponent(() => import("./components/GuestScreen.jsx"));
 const GodsEye = lazyComponent(() => import("./godseye/GodsEye.jsx"));
+const DeskApp = lazyComponent(() => import("./components/DeskApp.jsx")); // V8.0: Modo Desk
+const DesktopDownload = lazyComponent(() => import("./components/DesktopDownload.jsx")); // V8.0: JARVIS.exe
 const SettingsPanel = lazyComponent(() => import("./components/SettingsPanel.jsx"));
 const DeviceTestModal = lazyComponent(() => import("./components/DeviceTestModal.jsx"));
 const NetworkQrModal = lazyComponent(() => import("./components/NetworkQrModal.jsx"));
@@ -357,6 +359,48 @@ export default function App() {
   // V7.1: HOLOGRAMA (pesquisa vira tela viva: apresentação narrada ou receita com modo cozinha)
   const [holo, setHolo] = useState(null);
   const [quickCard, setQuickCard] = useState(null); // V7.14: cartão animado das perguntas rápidas
+  // V8.0: MODO DESK (o JARVIS como app de assistente). Lembrado por aparelho; o JARVIS.exe abre com ?desk=1.
+  const [deskMode, setDeskMode] = useState(() => {
+    try {
+      return new URLSearchParams(window.location.search).get("desk") === "1" || localStorage.getItem("jarvis.desk") === "1";
+    } catch {
+      return false;
+    }
+  });
+  useEffect(() => {
+    const onToggle = (e) => setDeskMode((cur) => {
+      const next = typeof e.detail === "boolean" ? e.detail : !cur;
+      try {
+        localStorage.setItem("jarvis.desk", next ? "1" : "0");
+      } catch {
+        /* sem armazenamento */
+      }
+      return next;
+    });
+    window.addEventListener("jarvis-desk-toggle", onToggle);
+    return () => window.removeEventListener("jarvis-desk-toggle", onToggle);
+  }, []);
+  const [desktopDl, setDesktopDl] = useState(false); // V8.0: ⬇ APP PARA WINDOWS
+  // V8.0: tecla de atalho do JARVIS.exe: abre o Modo Desk na conversa, com o campo pronto para escrever
+  useEffect(() => {
+    const talk = () => {
+      setDeskMode(true);
+      try {
+        localStorage.setItem("jarvis.desk.section", "conversa");
+      } catch {
+        /* sem armazenamento */
+      }
+      window.dispatchEvent(new CustomEvent("jarvis-desk-go", { detail: "conversa" }));
+      setTimeout(() => document.querySelector(".dk-input input")?.focus(), 150);
+    };
+    window.addEventListener("jarvis-desktop-talk", talk);
+    return () => window.removeEventListener("jarvis-desktop-talk", talk);
+  }, []);
+  useEffect(() => {
+    const open = () => setDesktopDl(true);
+    window.addEventListener("jarvis-desktop-download", open);
+    return () => window.removeEventListener("jarvis-desktop-download", open);
+  }, []);
   useEffect(() => {
     const open = () => setHolo({ library: true, at: Date.now() });
     window.addEventListener("jarvis-open-holo-saved", open);
@@ -2866,6 +2910,7 @@ export default function App() {
     return (
       <>
         {alarmOverlay}
+        {desktopDl && <DesktopDownload api={api} onClose={() => setDesktopDl(false)} />}
         <LockScreen
           photoUrl={lockPhase === "verified" || (accessInfo && accessInfo.effective === "unlocked" && lockPhase !== "ready" && lockPhase !== "pin") ? photoUrl : null}
           phase={lockPhase}
@@ -3094,7 +3139,30 @@ export default function App() {
           }}
         />
       )}
-      {quickCard && !holo && (
+      {desktopDl && <DesktopDownload api={api} onClose={() => setDesktopDl(false)} />}
+      {deskMode && (
+        <DeskApp
+          api={api}
+          aiName={aiName === "J.A.R.V.I.S." ? "JARVIS" : aiName}
+          userName={name}
+          jarvisState={jarvisState}
+          listening={listening}
+          interim={interim}
+          userText={userText}
+          response={response}
+          responseCards={responseCards}
+          error={error}
+          send={(t) => send(t)}
+          onToggleMic={toggleMic}
+          onClassic={() => window.dispatchEvent(new CustomEvent("jarvis-desk-toggle", { detail: false }))}
+          onLock={returnToWaiting}
+          onOpenSettings={() => setShowSettings(true)}
+          onOpenQr={() => setShowNetworkQr(true)}
+          onRename={(n) => api("/api/prefs", { method: "PATCH", body: JSON.stringify({ ai_name: n.trim() }) })
+            .then((d) => setAiName(d.ai_name ? d.ai_name.toUpperCase() : "J.A.R.V.I.S.")).catch(() => {})}
+        />
+      )}
+            {quickCard && !holo && (
         <QuickCard key={quickCard.at} card={quickCard} onClose={() => setQuickCard(null)}
           onHolo={() => { setQuickCard(null); setHolo({ kind: "apresentacao", query: quickCard.pergunta, at: Date.now() }); }} />
       )}

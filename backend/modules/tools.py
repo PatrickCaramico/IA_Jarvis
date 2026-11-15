@@ -1751,7 +1751,10 @@ async def _h_memory(message: str, norm: str, words: int, name: str) -> Optional[
 
     from modules import memory_learn
 
-    return memory_learn.handle_voice(norm) or memory.handle_voice(norm, message)
+    from modules import desk
+
+    # V8.0: "marquei o treino de hoje", "como estão meus hábitos?" (Modo Desk)
+    return memory_learn.handle_voice(norm) or memory.handle_voice(norm, message) or (desk.handle_voice(norm) if words <= 14 else None)
 
 
 async def _h_whatsapp(message: str, norm: str, words: int, name: str) -> Optional[str]:
