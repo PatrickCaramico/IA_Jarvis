@@ -97,7 +97,7 @@ async def agent_chat_confirm(req: ConfirmRequest) -> dict:
 
     key = _agent(req.agent)
     action = agent_chat.clean_action(key, req.acao)
-    if not action or action["tipo"] in ("rota", "youtube", "web", "holograma"):
+    if not action or action["tipo"] in ("rota", "youtube", "web", "holograma", "plano"):
         raise HTTPException(status_code=400, detail="Ação inválida para este agente.")
     text = await asyncio.to_thread(agent_chat.run_action, action)
     agent_chat.record(key, "agent", text)
@@ -121,3 +121,13 @@ async def agent_chat_clear(agent: str) -> dict:
     key = _agent(agent)
     agent_chat.clear(key)
     return {"agent": key, "messages": []}
+
+
+@router.get("/api/finance/dashboard")
+async def finance_dashboard(extra: float = 0) -> dict:
+    """V7.10: painel de finanças (aba 💰 da Central de Agentes): resumo, vencimentos e plano para quitar."""
+    from modules import fin_control
+
+    r = await asyncio.to_thread(fin_control.resumo)
+    p = await asyncio.to_thread(fin_control.plano, max(0.0, extra))
+    return {**r, "plano": p, "plano_texto": fin_control.plano_texto(p)}

@@ -249,7 +249,7 @@
    - ações grandes pedem **✓ CONFIRMAR**: quitar, apagar, pagamento acima de R$ 1.000 e mudar dados de uma dívida;
    - fora de casa, o celular só **anota** (gasto ou pagamento, que chegam ao PC na sincronização) e vê o **resumo**.
 
-**Status:** desenho aprovado; falta implementar.
+**Status:** ✅ **Implementada na versão 7.10.0.**
 
 ---
 
@@ -333,6 +333,7 @@ Itens que já estavam na lista e continuam **em espera**:
 ## Anotações da conversa
 _Espaço para ir anotando as decisões de cada ideia._
 
+- **15/11:** Ideia 3.1 publicada (7.10.0). Próximas: ideia 4 (Olho de Deus) e 5 (Holograma).
 - **15/11:** Ideia 3.1 (finanças completo) desenhada e decidida: dívidas, contas fixas, cartão, orçamento/metas, plano comparando os dois métodos, avisos D-3 e no dia, nuvem só anota e mostra resumo.
 - **15/11:** Ideia 3 publicada (7.9.0). Próximas: ideia 4 (Olho de Deus) e 5 (Holograma).
 - **15/11:** Ideia 3 (chat com @agente) desenhada e decidida: abas e @ no campo, memória de 30 mensagens por agente, 4 agentes novos (Mercado, Finanças, Secretário, Professor) e voz.

@@ -1283,3 +1283,73 @@
 .cmd-mention button.is-on, .cmd-mention button:hover { background: rgba(103, 232, 249, 0.14); }
 .cmd-mention code { color: #67e8f9; }
 .cmd-mention small { margin-left: auto; color: rgba(224, 251, 255, 0.5); font-size: 0.72rem; }
+
+/* V7.10: painel de finanças (aba 💰) */
+.agh-grid.is-fin { grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); }
+.fp { display: flex; flex-direction: column; gap: 12px; margin-top: 10px; }
+.fp-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.fp-kpis > div { padding: 8px; border-radius: 10px; border: 1px solid rgba(103, 232, 249, 0.25); background: rgba(103, 232, 249, 0.06); }
+.fp-kpis small { display: block; font: 600 0.55rem "Orbitron", sans-serif; letter-spacing: 0.1em; color: rgba(224, 251, 255, 0.6); }
+.fp-kpis b { font: 700 0.95rem "Orbitron", sans-serif; color: #fff; }
+.fp-kpis .is-bad { border-color: rgba(252, 165, 165, 0.6); background: rgba(252, 165, 165, 0.1); }
+.fp-kpis .is-bad b { color: #fecaca; }
+.fp-sec h4 { margin: 0 0 6px; font: 600 0.62rem "Orbitron", sans-serif; letter-spacing: 0.16em; color: #67e8f9; }
+.fp-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.fp-list li { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto auto; gap: 8px; align-items: center; padding: 6px 8px; border-radius: 8px; background: rgba(2, 8, 19, 0.6); border: 1px solid rgba(103, 232, 249, 0.12); font-size: 0.82rem; }
+.fp-list li.is-late { border-color: rgba(252, 165, 165, 0.55); background: rgba(252, 165, 165, 0.07); }
+.fp-list li.is-paid { opacity: 0.6; }
+.fp-list em { margin-left: 6px; font: 600 0.55rem "Orbitron", sans-serif; color: #fca5a5; font-style: normal; }
+.fp-date { color: rgba(224, 251, 255, 0.6); font-size: 0.75rem; }
+.fp-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fp-list button, .fp-debt button { border: 1px solid #86efac; background: rgba(134, 239, 172, 0.14); color: #dcfce7; border-radius: 7px; padding: 4px 8px; font: 700 0.58rem "Orbitron", sans-serif; cursor: pointer; white-space: nowrap; }
+.fp-ok { color: #86efac; font: 600 0.6rem "Orbitron", sans-serif; }
+.fp-debt { padding: 8px; border-radius: 10px; border: 1px solid rgba(103, 232, 249, 0.18); background: rgba(2, 8, 19, 0.55); margin-bottom: 6px; }
+.fp-row { display: flex; justify-content: space-between; gap: 8px; align-items: center; font-size: 0.84rem; }
+.fp-sub { margin-top: 4px; font-size: 0.72rem; color: rgba(224, 251, 255, 0.65); }
+.fp-bar { height: 6px; margin-top: 5px; border-radius: 6px; background: rgba(224, 251, 255, 0.1); overflow: hidden; }
+.fp-bar b { display: block; height: 100%; background: #67e8f9; border-radius: 6px; transition: width 600ms ease; box-shadow: 0 0 8px rgba(103, 232, 249, 0.6); }
+.fp-bar.is-debt b { background: linear-gradient(90deg, #22d3ee, #86efac); }
+.fp-bar.is-warn b { background: #fbbf24; box-shadow: 0 0 8px rgba(251, 191, 36, 0.6); }
+.fp-bar.is-bad b { background: #f87171; box-shadow: 0 0 8px rgba(248, 113, 113, 0.6); }
+.fp-bar.is-goal b { background: linear-gradient(90deg, #a78bfa, #67e8f9); }
+.fp-budget { margin-bottom: 6px; }
+.fp-win { margin: 4px 0 0; color: #86efac; font-size: 0.8rem; }
+.fp-card { padding: 8px; border-radius: 10px; border: 1px solid rgba(103, 232, 249, 0.18); background: rgba(2, 8, 19, 0.55); margin-bottom: 6px; }
+.fp-card small { margin-left: 8px; color: rgba(224, 251, 255, 0.55); font-size: 0.72rem; }
+.fp-invoices { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+.fp-invoices span { display: flex; flex-direction: column; padding: 4px 8px; border-radius: 8px; background: rgba(103, 232, 249, 0.07); font-size: 0.8rem; }
+.fp-invoices span small { margin: 0; font-size: 0.65rem; }
+.fp-invoices .is-paid { opacity: 0.55; }
+.fp-extra { display: flex; flex-direction: column; gap: 4px; font-size: 0.8rem; color: rgba(224, 251, 255, 0.8); }
+.fp-extra input { width: 100%; accent-color: #22d3ee; }
+.fp-compare { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
+.fp-compare > div { position: relative; display: flex; flex-direction: column; gap: 3px; padding: 10px; border-radius: 10px; border: 1px solid rgba(103, 232, 249, 0.25); background: rgba(2, 8, 19, 0.6); font-size: 0.8rem; }
+.fp-compare > div.is-best { border-color: #86efac; background: rgba(134, 239, 172, 0.08); box-shadow: 0 0 16px rgba(134, 239, 172, 0.2); }
+.fp-compare em { position: absolute; top: -8px; right: 8px; padding: 1px 6px; border-radius: 999px; background: #86efac; color: #052e16; font: 700 0.5rem "Orbitron", sans-serif; font-style: normal; }
+.fp-compare small { color: rgba(224, 251, 255, 0.55); }
+.fp-compare strong { color: #fff; }
+.fp-order { color: #67e8f9; }
+.fp-why { margin: 6px 0 0; font-size: 0.8rem; color: rgba(224, 251, 255, 0.8); }
+.fp-empty { display: flex; flex-direction: column; gap: 6px; padding: 10px; border-radius: 10px; border: 1px dashed rgba(103, 232, 249, 0.4); }
+.fp-empty p { margin: 0; font-size: 0.8rem; color: rgba(224, 251, 255, 0.7); }
+.fp-empty button { text-align: left; border: 1px solid rgba(103, 232, 249, 0.3); background: rgba(103, 232, 249, 0.06); color: #cffafe; border-radius: 9px; padding: 6px 9px; font-size: 0.78rem; cursor: pointer; }
+.fp-msg { margin: 0; font-size: 0.8rem; color: #86efac; }
+@media (max-width: 760px) { .fp-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .agh-grid.is-fin { grid-template-columns: 1fr; } }
+/* V7.10: abas não encolhem; no celular nada passa da largura da tela */
+.agh-tabs { flex: none; }
+.agh-head { flex: none; }
+.agh-grid, .agh-grid.is-fin { min-width: 0; }
+.agh-col, .agh-chat, .fp, .fp-sec { min-width: 0; }
+@media (max-width: 760px) {
+  .agh-grid, .agh-grid.is-fin { grid-template-columns: minmax(0, 1fr) !important; }
+  .agh-head small { display: none; }
+  .fp-list li { grid-template-columns: 44px minmax(0, 1fr) auto; }
+  .fp-list li > button, .fp-list li > .fp-ok { grid-column: 2 / -1; justify-self: end; }
+  .fp-compare { grid-template-columns: minmax(0, 1fr); }
+}
+.agh { width: min(980px, calc(100vw - 24px)); max-width: 100%; }
+@media (max-width: 760px) {
+  .agh-grid { overflow-y: auto; }
+  .agh-grid > .agh-col { overflow: visible; }
+  .agh-grid > .agh-chat { min-height: 360px; }
+}

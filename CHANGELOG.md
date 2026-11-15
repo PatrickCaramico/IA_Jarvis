@@ -2,6 +2,26 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 7.10.0 — 15 de novembro de 2026
+
+**💰 Agente de finanças completo: controle de dívidas (ideia 3.1 do documento de atualização)**
+- **Dívidas e parcelamentos**: credor, saldo, parcelas (7 de 12), valor da parcela, juros ao mês e dia do vencimento. "Paguei a parcela do carro", "paguei R$ 500 a mais", "quitei o empréstimo": o saldo cai e o histórico fica guardado.
+- **Contas fixas do mês**: aluguel, luz, internet…, com vencimento, "paga" em cada mês e o que falta pagar.
+- **Cartão de crédito**: fechamento e vencimento; compras à vista ou parceladas caem nas faturas certas ("quanto está minha fatura?").
+- **Orçamento e metas**: limite por categoria, com aviso a 80% e 100%; metas como a reserva de emergência.
+- **Plano para sair das dívidas**: compara "menor dívida primeiro" × "maior juros primeiro" (em quantos meses quita e quanto paga de juros), simula um valor extra por mês e recomenda um, dizendo qual dívida atacar primeiro.
+- **Avisos 3 dias antes e no dia** do vencimento (dívidas, contas e faturas), por voz no PC e notificação no celular. Avisa também de orçamento estourando e de conta atrasada.
+- **Painel na aba 💰 da Central de Agentes**:
+  - total devido, parcelas por mês, a pagar no mês e atrasados;
+  - próximos vencimentos com ✓ PAGO;
+  - cada dívida com barra de progresso e PAGAR PARCELA;
+  - contas do mês, faturas do cartão, orçamento, metas e o plano com controle de "quanto posso pagar a mais".
+- **Segurança**:
+  - tudo fica só no PC;
+  - quitar, apagar, mudar dados de uma dívida e pagamentos acima de R$ 1.000 pedem **✓ CONFIRMAR**;
+  - **fora de casa** o celular vê só o **resumo** e **anota** gastos e pagamentos, que o PC aplica na sincronização.
+- Central de Agentes: abas não encolhem mais e, no celular, tudo cabe na largura da tela.
+
 ## 7.9.0 — 15 de novembro de 2026
 
 **Conversa direta com os agentes (ideia 3 do documento de atualização)**

@@ -169,7 +169,7 @@ const CLOUD_CHAT_AGENTS = [
   { id: "rotas", label: "Agente de rotas", icon: "🧭", desc: "Rotas e lugares salvos (com o PC ligado).", examples: ["quero ir para o trabalho"], aliases: ["rotas", "rota", "mapa"], pc: true },
   { id: "pesquisa", label: "Agente de pesquisa", icon: "🔎", desc: "Pesquisa na internet e no YouTube (com o PC ligado).", examples: ["procura receita de pão no YouTube"], aliases: ["pesquisa", "busca", "youtube"], pc: true },
   { id: "mercado", label: "Agente de mercado", icon: "🛒", desc: "Lista de compras, receitas com o que tem em casa e quantidades.", examples: ["monta a lista para um churrasco de 10 pessoas", "o que falta comprar?"], aliases: ["mercado", "compras", "lista"] },
-  { id: "financas", label: "Agente de finanças", icon: "💰", desc: "Gastos e entradas do mês (com o PC ligado).", examples: ["quanto gastei esse mês?"], aliases: ["financas", "finanças", "dinheiro", "gastos"], pc: true },
+  { id: "financas", label: "Agente de finanças", icon: "💰", desc: "Fora de casa: resumo das dívidas e vencimentos, e anotar gastos e pagamentos (vão para o PC).", examples: ["quanto eu devo no total?", "paguei a parcela do carro", "gastei 54 no mercado"], aliases: ["financas", "finanças", "dinheiro", "gastos", "dividas"] },
   { id: "secretario", label: "Agente secretário", icon: "📅", desc: "Lembretes e tarefas (a agenda do Google com o PC ligado).", examples: ["me lembra de pagar a luz dia 20", "quais são minhas tarefas?"], aliases: ["secretario", "secretário", "agenda"] },
   { id: "professor", label: "Agente professor", icon: "🧠", desc: "Explica matérias (com o Holograma) e faz perguntas tipo prova.", examples: ["me explica frações", "me faz 3 perguntas sobre a Revolução Francesa"], aliases: ["professor", "prof", "estudos"] },
 ];
@@ -288,6 +288,10 @@ async function route(method, path, query, body) {
     // V6.8.3: Central de Agentes fora de casa (o catálogo é o mesmo do PC: backend/modules/agents.py)
     case "GET /api/agents":
       return ok({ agents: CLOUD_AGENTS, places: (await refresh()).lugares || {}, chat_agents: CLOUD_CHAT_AGENTS });
+    case "GET /api/finance/dashboard": { // V7.10: fora de casa, só o resumo
+      const f = await cloud("/finance");
+      return ok({ ...f, cloud: true, atrasados_qtd: f.atrasados || 0, dividas: [], contas: [], cartoes: [], atrasados: [], plano: { tem_dividas: false } });
+    }
     case "POST /api/agents/chat": // V7.9: conversa direta com um agente, fora de casa
       return ok(await cloud("/agent-chat", { method: "POST", body: { agent: body.agent, message: body.message }, timeout: 45000 }));
     case "POST /api/agents/chat/confirm":

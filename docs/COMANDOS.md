@@ -1,6 +1,6 @@
 # JARVIS — Comandos do dia a dia
 
-**Versão do projeto:** 7.9.0 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
+**Versão do projeto:** 7.10.0 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
 
 > Montado a partir do código do projeto. Se algum comando não responder como descrito, me avise que eu ajusto o guia.
 > Para a lista técnica de rotas, veja [API.md](API.md); para o `.env`, [CONFIGURACAO.md](CONFIGURACAO.md).
@@ -365,6 +365,20 @@ Avisos automáticos (gatilhos): chuva amanhã (à noite), jogo começando (com o
 - Digitar `@` no campo de conversa mostra a lista dos agentes.
 - 🤖 AGENTES abre a Central com **uma aba por agente**; cada um lembra as últimas 30 mensagens e tem o botão **LIMPAR**.
 - Ações maiores esperam o **✓ CONFIRMAR**.
+
+### Controle financeiro: 💰 @financas (V7.10)
+
+| Fale / digite | O que acontece |
+|---|---|
+| "@financas tenho uma dívida de R$ 5.000 no banco, parcela de 450 em 12x, já paguei 3, vence dia 10, juros de 2,5% ao mês" | Cadastra a dívida (se faltar algo, ele pergunta). |
+| "paguei a parcela do carro" · "paguei 500 a mais no empréstimo" · "quitei o cartão" | Abate o saldo, conta a parcela (quitar pede ✓ CONFIRMAR). |
+| "minha conta de luz é 180 e vence dia 15" · "paguei a luz" | Conta fixa e "paga" no mês. |
+| "meu cartão Nubank fecha dia 3 e vence dia 10" · "gastei 300 no Nubank em 3x" · "quanto está minha fatura?" | Cartão, compras parceladas e faturas. |
+| "quero gastar no máximo 800 de mercado" · "quero juntar 6 mil de reserva" | Orçamento por categoria e metas. |
+| "monta um plano para quitar minhas dívidas" · "e se eu pagar 300 a mais?" | Compara os dois jeitos de quitar e recomenda. |
+| "quanto eu devo?" · "o que vence essa semana?" | Resumo e vencimentos. |
+
+Painel completo na aba 💰 da Central de Agentes. Avisos 3 dias antes e no dia do vencimento. Fora de casa: resumo e anotações.
 
 ### Foto da galeria (V7.8)
 
