@@ -88,7 +88,7 @@ function loadPreviousChat() {
   }
 }
 
-function useConversationLog(userText, response, error, responseCards = []) {
+export function useConversationLog(userText, response, error, responseCards = []) { // V8.0: também no Modo Desk
   const [log, setLog] = useState(loadPreviousChat);
   useEffect(() => {
     try {
@@ -561,6 +561,7 @@ const CONTROL_SECTIONS = [
     items: [
       { id: "lock", icon: "🔒", label: "BLOQUEAR", sub: "Volta à tela de bloqueio", tone: "amber" },
       { id: "agents", icon: "🤖", label: "AGENTES", sub: "Rotas, pesquisa e chat" },
+      { id: "desk", icon: "🖥", label: "MODO DESK", sub: "O JARVIS como app de assistente (V8)" },
       { id: "branding", icon: "📘", label: "BRANDING BOOK", sub: "Identidade visual do JARVIS" }, // V7.2
       { id: "optimize", icon: "⚡", label: "OTIMIZAR", sub: "Medir e deixar mais rápido" }, // V7.2
       { id: "notes", icon: "📝", label: "NOTAS DA VERSÃO", sub: "O que mudou em cada versão" }, // V7.3
@@ -710,6 +711,10 @@ function HudControlsMenu({
       case "notes":
         setOpen(false);
         window.dispatchEvent(new CustomEvent("jarvis-open-notes"));
+        break;
+      case "desk":
+        setOpen(false);
+        window.dispatchEvent(new CustomEvent("jarvis-desk-toggle", { detail: true }));
         break;
       case "holo_saved":
         setOpen(false);
@@ -1247,6 +1252,9 @@ export default function HudLayout({
                 🤖 AGENTES
               </button>
             )}
+            <button type="button" className="hl-agents-trigger" onClick={() => window.dispatchEvent(new CustomEvent("jarvis-desk-toggle", { detail: true }))} title="Modo Desk: o JARVIS como app de assistente pessoal (V8)">
+              🖥 MODO DESK
+            </button>
             <button type="button" className="hl-agents-trigger" onClick={() => window.dispatchEvent(new CustomEvent("jarvis-open-branding"))} title="Branding Book: identidade visual do JARVIS">
               📘 BRANDING
             </button>

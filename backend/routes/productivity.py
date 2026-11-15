@@ -394,6 +394,9 @@ async def run_protocol(req: ProtocolRunRequest) -> dict:
     result = await protocols.run(req.name, record=False)
     if not result["ok"] and not result["problems"]:
         raise HTTPException(status_code=404, detail=result["reply"])
+    from modules import desk
+
+    desk.xp_quietly("rotina")  # V8.0: XP do Modo Desk
     return {"status": "ok", **result}
 
 

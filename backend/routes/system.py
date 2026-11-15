@@ -199,6 +199,9 @@ async def cancel_operation() -> dict:
 @router.post("/api/chat")
 async def chat(req: ChatRequest) -> dict:
     """Conversa (digitada ou falada)."""
+    from modules import desk
+
+    desk.xp_quietly("conversa")  # V8.0: XP do Modo Desk
     return await turns.handle_turn(req.message, routine=False)
 
 

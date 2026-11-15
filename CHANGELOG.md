@@ -2,6 +2,41 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 8.0.0 — 15 de novembro de 2026
+
+**🖥 JARVIS 8: Modo Desk, o JARVIS como app de assistente pessoal (ideia 6 do documento de atualização)**
+- **Botão 🖥 MODO DESK** (na central, no ⚡ CONTROLES e no bloqueio): um layout novo, inspirado nos vídeos do Patrick. A central clássica continua a um toque (◐ CENTRAL CLÁSSICA). O aparelho lembra a escolha.
+  - Barra lateral com o avatar, o estado (Pronto, Ouvindo, Pensando, Falando) e o nível.
+  - Seções: Início, Conversa, Memória, Tarefas, Lembretes, Hábitos, Timers, Música, Copiados, Rotinas e Meu PC.
+  - Configurações com busca: Personalizar, Cérebro (IA), Funções, Voz, Ilha, Celular e agendas, Proteção com rosto e Atalhos.
+  - **Início:** "Boa noite, Patrick!", falar ou escrever, a conversa, a música e os contadores de lembretes, tarefas e hábitos.
+- **🤖 Avatar robô JARVIS:**
+  - cabeça arredondada, visor escuro e olhos de luz em forma de arco-reator;
+  - reage sozinho: ouvindo, pensando e falando (e pisca);
+  - **Personalizar:** cor do corpo, do visor e dos olhos; expressão (feliz, pensando, falando, ouvindo, dormindo, surpreso, piscando); acessório (fone, óculos, gorro de Natal, coroa); o nome; e a **cor principal do app** (ciano, verde-limão, roxo, laranja… ou qualquer cor).
+- **🧠 Cérebro (IA):** escolher a IA em cartões, ver se ela chegou no limite e **TESTAR ESTA IA** (a resposta e o tempo).
+- **🧩 Funções:** catálogo do que dá para falar, com exemplos que testam com um toque, e os seus atalhos ("abre o meu trabalho").
+- **🖥 Meu PC:** a verificação do PC com o avatar no centro do anel.
+- **Recursos novos:**
+  - **◆ Hábitos:**
+    - marque o dia e veja a sequência (🔥) e os últimos 7 dias;
+    - lembrete no horário;
+    - por voz: "marquei o treino de hoje", "como estão meus hábitos?";
+    - fora de casa, dá para marcar pelo celular.
+  - **⧉ Copiados:**
+    - o que você copia no PC (Ctrl+C) fica num histórico (as últimas 50), para copiar de novo com um toque;
+    - fica só no PC; o que parece senha, cartão, chave ou código não é guardado;
+    - dá para pausar e apagar.
+  - **⭐ Nível e XP:** o JARVIS ganha XP com conversas, tarefas feitas, hábitos, rotinas, lembretes e memórias (com teto por dia) e sobe de nível.
+  - **✳ Memória em mapa:** você no centro, os assuntos em volta (Pessoas, Gostos, Casa, Trabalho, Saúde, Dinheiro…) e cada memória ligada ao seu assunto. Tocar mostra a memória e dá para esquecer; o campo embaixo guarda uma nova.
+- **⬇ JARVIS.exe, o app para Windows** (no bloqueio e em Modo Desk › Ilha):
+  - **Gerar-App-Windows.bat** monta o executável no seu PC, uma vez, e cria o atalho "JARVIS" na Área de Trabalho;
+  - janela própria com o Modo Desk;
+  - **a ilha no topo da tela**, sempre visível: o avatar e a hora, a música tocando e as respostas do JARVIS. Tocar nela abre a janela;
+  - **tecla para falar** de qualquer lugar (PageDown, F9 ou Ctrl+Espaço, em Ilha);
+  - se o JARVIS estiver desligado, o app liga sozinho;
+  - na janela do app, para falar, diga "Jarvis, …" (o ouvido do PC atende) ou escreva.
+
 ## 7.14.2 — 15 de novembro de 2026
 
 **📱 App Android: sem a página de erro "Página da Web não disponível"**

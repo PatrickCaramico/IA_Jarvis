@@ -210,7 +210,7 @@ export default function SettingsPanel({ api, onClose, onPrefsChange, onOpenMicro
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+    <div className="fixed inset-0 z-[62] flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
       <div className="relative w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-lg border border-cyan-500/40 bg-gradient-to-b from-[#082037]/90 to-[#020813]/95 p-6 shadow-[0_0_35px_rgba(31,194,245,0.2)]">
         {/* Cantos Táticos */}
         <div className="absolute top-2 left-2 w-3 h-3 border-t-2 border-l-2 border-cyan-400" />

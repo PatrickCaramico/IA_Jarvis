@@ -252,6 +252,10 @@ export default function LockScreen({
       )}
       {(phase === "ready" || phase === "failed") && (
         <>
+          <button type="button" className="ls-chip" onClick={(e) => { e.stopPropagation(); window.dispatchEvent(new CustomEvent("jarvis-desk-toggle", { detail: true })); }}
+            title="Ao entrar, abrir o Modo Desk (o JARVIS como app de assistente)">🖥 MODO DESK</button>
+          <button type="button" className="ls-chip" onClick={(e) => { e.stopPropagation(); window.dispatchEvent(new CustomEvent("jarvis-desktop-download")); }}
+            title="Baixar o JARVIS.exe (app para Windows com a ilha no topo)">⬇ APP WINDOWS</button>
           <button type="button" className="ls-chip" onClick={(e) => { e.stopPropagation(); window.dispatchEvent(new CustomEvent("jarvis-open-branding")); }}
             title="Identidade visual do JARVIS">📘 BRANDING</button>
           <button type="button" className="ls-chip" onClick={(e) => { e.stopPropagation(); window.dispatchEvent(new CustomEvent("jarvis-open-optimizer")); }}

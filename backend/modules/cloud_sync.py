@@ -61,6 +61,14 @@ def apply_op(op: dict) -> bool:
     if kind == "shopping_add":
         shopping.add([str(t) for t in op.get("itens") or []])
         return True
+    if kind == "habit_toggle":  # V8.0: hábito marcado no celular fora de casa
+        from modules import desk
+
+        try:
+            desk.habit_toggle(str(op.get("item") or ""), bool(op.get("feito", True)))
+        except ValueError:
+            return False
+        return True
     if kind == "holo_save":  # V7.14: apresentação salva no celular fora de casa
         from modules import holo_extra
 
@@ -171,6 +179,15 @@ def apply_op(op: dict) -> bool:
 
 
 # ---------------------------------------------------------------- foto das listas do PC
+def _desk() -> dict:
+    try:
+        from modules import desk
+
+        return desk.cloud_summary()
+    except Exception:  # noqa: BLE001
+        return {}
+
+
 def _holo_saved() -> list:
     try:
         from modules import holo_extra
@@ -227,7 +244,8 @@ def snapshot() -> dict:
             "lugares": _places(),  # V6.8: o agente de rotas também funciona fora de casa
         },
         "financas": _finance(),
-        "holo_salvos": _holo_saved(),  # V7.14: para rever as apresentações salvas fora de casa  # V7.10: só o resumo (os detalhes ficam no PC)
+        "holo_salvos": _holo_saved(),
+        "desk": _desk(),  # V8.0: Modo Desk fora de casa (aparência, nível e hábitos; os Copiados ficam no PC)  # V7.14: para rever as apresentações salvas fora de casa  # V7.10: só o resumo (os detalhes ficam no PC)
     }
 
 

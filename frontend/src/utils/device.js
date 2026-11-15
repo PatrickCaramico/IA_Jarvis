@@ -22,3 +22,7 @@ export function setAppNotifications(on) {
     /* fora do app: nada a fazer */
   }
 }
+
+// V8.0: dentro do JARVIS.exe (app para Windows com a ilha). A janela não tem o reconhecimento de voz do navegador:
+// para falar, "Jarvis, …" (ouvido do PC) ou a tecla de atalho, que leva ao campo de texto.
+export const IS_DESKTOP_APP = typeof navigator !== "undefined" && /JarvisDesktop\//.test(navigator.userAgent || "");

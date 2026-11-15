@@ -423,7 +423,7 @@
 
 **Versão:** como é um salto grande, a proposta é chamar de **JARVIS 8.0** (a versão atual é a 7.14.2).
 
-**Status:** desenho aprovado; falta implementar.
+**Status:** ✅ **Implementada na versão 8.0.0.**
 
 ---
 
@@ -461,6 +461,7 @@ Itens que já estavam na lista e continuam **em espera**:
 ## Anotações da conversa
 _Espaço para ir anotando as decisões de cada ideia._
 
+- **15/11:** Ideia 6 publicada (JARVIS 8.0.0).
 - **15/11:** Ideia 6 (Modo Desk, a partir de 2 vídeos) desenhada e decidida: robô JARVIS, JARVIS.exe com ilha no topo, Hábitos, Copiados, Nível/XP, Memória em mapa e cor escolhida pelo usuário.
 - **15/11:** Ideia 5 concluída (7.14.0). Bloqueio volta ao clássico com a verificação nova do rosto (pedido do Patrick).
 - **15/11:** Ideia 5, parte 1 publicada (7.13.0). Antes: Olho de Deus sem chave de mapa e lançamentos (7.11.1) e bloqueio estilo ORBE (7.12.0), a pedido do Patrick com os vídeos.

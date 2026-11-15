@@ -30,8 +30,11 @@ if (/\.netlify\.app$/i.test(window.location.hostname)) document.documentElement.
 const ScreensPopout = lazyComponent(() => import("./components/ScreensPopout.jsx"));
 
 const isPopout = window.location.pathname.endsWith("/display") || window.location.search.includes("display=secondary");
+// V8.0: a ilha do JARVIS.exe (barrinha no topo da tela) é uma página só dela, leve
+const isIsland = new URLSearchParams(window.location.search).get("ilha") === "1";
+const IslandApp = lazyComponent(() => import("./components/IslandApp.jsx"));
 
-ReactDOM.createRoot(document.getElementById("root")).render(
+ReactDOM.createRoot(document.getElementById("root")).render(isIsland ? <IslandApp /> : (
   <React.StrictMode>
     {/* V6.7.6: um erro na tela vira um aviso com RECARREGAR, nunca mais a tela preta */}
     <PieceBoundary fullscreen>{isPopout ? <ScreensPopout /> : <App />}</PieceBoundary>
@@ -39,4 +42,4 @@ ReactDOM.createRoot(document.getElementById("root")).render(
     {/* V7.6: chave por aparelho e aprovação de aparelho novo, por cima de qualquer tela */}
     {!isPopout && <SecurityLayer />}
   </React.StrictMode>
-);
+));
