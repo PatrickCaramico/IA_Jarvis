@@ -1,56 +1,56 @@
-﻿# V8.0: gera o JARVIS.exe (app para Windows com a ilha no topo) a partir de desktop\jarvis_desktop.py.
-# PyInstaller + pywebview num ambiente separado (desktop\.venv), para não mexer no Python do JARVIS.
-# Resultado: data\desktop\JARVIS.exe (o botão ⬇ APP PARA WINDOWS baixa daqui) e um atalho na Área de Trabalho.
+﻿# V8.1.1: instala o APP DO JARVIS para Windows (janela propria + ilha no topo + tecla para falar).
+# Antes (8.0) era um JARVIS.exe montado pelo PyInstaller em modo "onefile", e antivirus como o McAfee
+# acusavam como virus (falso positivo: exe novo, sem assinatura, que se descompacta na pasta TEMP).
+# Agora NAO existe exe novo: o atalho "JARVIS" abre o app com o pythonw.exe oficial do Python
+# (assinado pela Python Software Foundation, conhecido pelos antivirus). Nada e baixado pelo navegador.
 $ErrorActionPreference = "Stop"
 $Root = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 $Desk = Join-Path $Root "desktop"
 $Venv = Join-Path $Desk ".venv"
 $Out = Join-Path $Root "data\desktop"
-$Work = Join-Path $Desk "build"
 
 function Step($t) { Write-Host ""; Write-Host "  $t" -ForegroundColor Cyan }
 
-Step "[1/5] Procurando o Python do JARVIS..."
+Step "[1/4] Procurando o Python do JARVIS..."
 $Py = Join-Path $Root "backend\venv\Scripts\python.exe"
 if (-not (Test-Path $Py)) { $Py = (Get-Command python -ErrorAction SilentlyContinue).Source }
 if (-not $Py) { throw "Python nao encontrado. Instale o JARVIS primeiro (Instalar/Iniciar-JARVIS.bat)." }
 
-Step "[2/5] Preparando o ambiente do app (so na primeira vez demora)..."
+Step "[2/4] Preparando o ambiente do app (so na primeira vez demora)..."
 if (-not (Test-Path (Join-Path $Venv "Scripts\python.exe"))) { & $Py -m venv $Venv }
 $VPy = Join-Path $Venv "Scripts\python.exe"
+$VPyw = Join-Path $Venv "Scripts\pythonw.exe"
 & $VPy -m pip install --disable-pip-version-check -q --upgrade pip
-& $VPy -m pip install --disable-pip-version-check -q "pywebview==5.3.2" "pyinstaller==6.11.1" "pillow==11.0.0"
-if ($LASTEXITCODE -ne 0) { throw "Nao consegui instalar o pywebview/PyInstaller (precisa de internet)." }
+& $VPy -m pip install --disable-pip-version-check -q "pywebview==5.3.2" "pillow==11.0.0"
+if ($LASTEXITCODE -ne 0) { throw "Nao consegui instalar o pywebview (precisa de internet)." }
 
-Step "[3/5] Gravando a pasta do JARVIS e a versao no app..."
-$Version = (Select-String -Path (Join-Path $Root "backend\version.py") -Pattern 'VERSION *= *"([0-9.]+)"').Matches[0].Groups[1].Value
-$RootEsc = $Root.Replace("\", "\\")
-Set-Content -Path (Join-Path $Desk "_build_info.py") -Encoding UTF8 -Value @"
-# Gerado pelo build (scripts\desktop\build_exe.ps1). Nao edite.
-JARVIS_ROOT = "$RootEsc"
-VERSION = "$Version"
-"@
+Step "[3/4] Criando o icone e removendo o JARVIS.exe antigo..."
+New-Item -ItemType Directory -Force -Path $Out | Out-Null
+$Png = Join-Path $Root "frontend\public\brand\avatar-512.png"
+$Ico = Join-Path $Desk "jarvis.ico"
+& $VPy -c "import sys; from PIL import Image; Image.open(sys.argv[1]).save(sys.argv[2], sizes=[(16,16),(32,32),(48,48),(64,64),(128,128),(256,256)])" $Png $Ico
+foreach ($Old in @((Join-Path $Out "JARVIS.exe"), (Join-Path $Desk "build"), (Join-Path $Desk "_build_info.py"))) {
+  if (Test-Path $Old) { Remove-Item -Recurse -Force $Old -ErrorAction SilentlyContinue }
+}
 
-Step "[4/5] Montando o JARVIS.exe (leva alguns minutos)..."
-New-Item -ItemType Directory -Force -Path $Out, $Work | Out-Null
-$Icon = Join-Path $Root "frontend\public\brand\avatar-512.png"
-& $VPy -m PyInstaller --noconfirm --clean --onefile --windowed --name JARVIS --icon $Icon `
-    --paths $Desk --hidden-import _build_info --distpath $Out --workpath $Work --specpath $Work `
-    (Join-Path $Desk "jarvis_desktop.py")
-if ($LASTEXITCODE -ne 0) { throw "O PyInstaller falhou. Veja a mensagem acima." }
-
-Step "[5/5] Criando o atalho na Area de Trabalho..."
-$Exe = Join-Path $Out "JARVIS.exe"
-try {
-  $Shell = New-Object -ComObject WScript.Shell
-  $Lnk = $Shell.CreateShortcut((Join-Path ([Environment]::GetFolderPath("Desktop")) "JARVIS.lnk"))
-  $Lnk.TargetPath = $Exe
-  $Lnk.WorkingDirectory = $Out
+Step "[4/4] Criando o atalho JARVIS (Area de Trabalho e Menu Iniciar)..."
+$Script = Join-Path $Desk "jarvis_desktop.py"
+$Shell = New-Object -ComObject WScript.Shell
+$Places = @([Environment]::GetFolderPath("Desktop"), (Join-Path ([Environment]::GetFolderPath("Programs")) ""))
+foreach ($Dir in $Places) {
+  $Lnk = $Shell.CreateShortcut((Join-Path $Dir "JARVIS.lnk"))
+  $Lnk.TargetPath = $VPyw
+  $Lnk.Arguments = '"' + $Script + '"'
+  $Lnk.WorkingDirectory = $Desk
+  $Lnk.IconLocation = $Ico
   $Lnk.Description = "JARVIS - assistente pessoal"
   $Lnk.Save()
-} catch { Write-Host "  (nao consegui criar o atalho; abra $Exe)" }
+}
+$Version = (Select-String -Path (Join-Path $Root "backend\version.py") -Pattern 'VERSION *= *"([0-9.]+)"').Matches[0].Groups[1].Value
+$Info = @{ versao = $Version; instalado_em = (Get-Date -Format "dd/MM/yyyy HH:mm"); atalho = (Join-Path $Places[0] "JARVIS.lnk") } | ConvertTo-Json
+Set-Content -Path (Join-Path $Out "app.json") -Encoding UTF8 -Value $Info
 
-$Mb = [math]::Round((Get-Item $Exe).Length / 1MB, 1)
 Write-Host ""
-Write-Host "  [OK] JARVIS.exe pronto ($Mb MB): $Exe" -ForegroundColor Green
-Write-Host "       Atalho 'JARVIS' na Area de Trabalho. Na central: botao APP PARA WINDOWS para baixar."
+Write-Host "  [OK] App do JARVIS instalado." -ForegroundColor Green
+Write-Host "       Abra pelo atalho 'JARVIS' na Area de Trabalho ou no Menu Iniciar."
+Write-Host "       (Sem exe novo: o antivirus nao tem o que bloquear.)"

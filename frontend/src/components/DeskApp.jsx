@@ -633,7 +633,7 @@ function Island({ api, cfg, setCfg }) {
   const save = async (patch) => setCfg(await api("/api/desk", { method: "PATCH", body: JSON.stringify({ ilha: patch }) }).catch(() => cfg));
   return (
     <Card title="Ilha" icon="▭">
-      <p className="dk-muted">A ilha é a barrinha no topo da tela do Windows (no app JARVIS.exe): mostra o JARVIS, a hora, a música tocando e as respostas.</p>
+      <p className="dk-muted">A ilha é a barrinha no topo da tela do Windows (no app do JARVIS para Windows): mostra o JARVIS, a hora, a música tocando e as respostas.</p>
       <div className="dk-island-preview" data-size={ilha.tamanho || "media"}><RoboAvatar avatar={cfg?.avatar} size={22} /><i className="dk-dot" /><span>Highway to Hell · AC/DC</span></div>
       <label className="dk-toggle-row"><input type="checkbox" checked={ilha.ligada !== false} onChange={(e) => save({ ligada: e.target.checked })} /> Mostrar a ilha</label>
       <div className="dk-field"><span>Tamanho</span><div className="dk-row">{[["pequena", "Pequena"], ["media", "Média"], ["grande", "Grande"]].map(([k, l]) => <button type="button" key={k} className={`dk-chip${(ilha.tamanho || "media") === k ? " is-on" : ""}`} onClick={() => save({ tamanho: k })}>{l}</button>)}</div></div>
@@ -646,7 +646,7 @@ function Island({ api, cfg, setCfg }) {
 export function DownloadExe({ compact = false }) {
   return (
     <a className={`dk-btn is-main dk-download${compact ? " is-compact" : ""}`} href="/api/desktop/app" onClick={(e) => { e.preventDefault(); window.dispatchEvent(new CustomEvent("jarvis-desktop-download")); }}>
-      ⬇ APP PARA WINDOWS (JARVIS.exe)
+      ⬇ APP PARA WINDOWS
     </a>
   );
 }
@@ -792,7 +792,7 @@ export default function DeskApp(props) {
         </nav>
         <div className="dk-side-foot">
           <button type="button" className="dk-btn" onClick={onClassic} title="Voltar para a central clássica">◐ CENTRAL CLÁSSICA</button>
-          <button type="button" className="dk-btn" onClick={() => window.dispatchEvent(new CustomEvent("jarvis-desktop-download"))} title="Baixar o JARVIS.exe (app para Windows)">⬇</button>
+          <button type="button" className="dk-btn" onClick={() => window.dispatchEvent(new CustomEvent("jarvis-desktop-download"))} title="App do JARVIS para Windows">⬇</button>
           <button type="button" className="dk-btn" onClick={onLock}>🔒</button>
         </div>
       </aside>

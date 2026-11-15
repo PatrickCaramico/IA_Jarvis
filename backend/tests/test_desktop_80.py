@@ -50,11 +50,21 @@ def test_island_state_and_routes(tmp_path, monkeypatch):
     assert il["estado"] == "speaking" and il["resposta"] == "Claro, senhor." and il["hora"]
     from routes import desktop
 
-    monkeypatch.setattr(desktop, "EXE", tmp_path / "JARVIS.exe")
+    monkeypatch.setattr(desktop, "MARK", tmp_path / "app.json")
+    monkeypatch.setattr(desktop, "OLD_EXE", tmp_path / "JARVIS.exe")
     info = c.get("/api/desktop/info").json()
-    assert info["gerado"] is False and info["local"] is True and "Gerar-App-Windows.bat" in info["como_gerar"]
-    assert c.get("/api/desktop/app").status_code == 404
-    (tmp_path / "JARVIS.exe").write_bytes(b"MZ" + b"0" * 2048)
-    assert c.get("/api/desktop/info").json()["disponivel"] is True
-    r = c.get("/api/desktop/app")
-    assert r.status_code == 200 and r.content.startswith(b"MZ")
+    assert info["instalado"] is False and info["local"] is True and "Gerar-App-Windows.bat" in info["como_instalar"]
+    assert c.get("/api/desktop/app").status_code == 410  # V8.1.1: sem exe para baixar (antivírus)
+    assert c.post("/api/desktop/open").status_code == 404
+    (tmp_path / "app.json").write_text('\ufeff{"versao": "8.1.1", "instalado_em": "15/11/2026 20:00", "atalho": ""}', encoding="utf-8")
+    info = c.get("/api/desktop/info").json()
+    assert info["instalado"] is True and info["versao"] == "8.1.1"
+
+
+def test_installer_has_no_pyinstaller_exe():
+    """V8.1.1: o McAfee acusava o exe "onefile" do PyInstaller; o instalador agora só cria o atalho com o pythonw.exe."""
+    ps = (ROOT / "scripts" / "desktop" / "build_exe.ps1").read_text(encoding="utf-8-sig")
+    assert "PyInstaller" not in ps.split("\n", 6)[-1].split("$ErrorActionPreference", 1)[-1]
+    assert "pythonw.exe" in ps and "CreateShortcut" in ps and "app.json" in ps
+    src = (ROOT / "desktop" / "jarvis_desktop.py").read_text(encoding="utf-8")
+    assert "CREATE_NO_WINDOW" not in src

@@ -2,6 +2,18 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 8.1.1 — 15 de novembro de 2026
+
+**🛡 App para Windows sem alerta de vírus (McAfee)**
+- **Corrigido:** o McAfee acusava o JARVIS.exe como vírus. Era um falso positivo. O exe era montado pelo PyInstaller no modo "arquivo único", e esse tipo de exe novo e sem assinatura, que se descompacta na pasta TEMP e liga programas com a janela escondida, é exatamente o que os antivírus vigiam.
+- **Agora não existe mais JARVIS.exe.** O **Gerar-App-Windows.bat** instala o atalho **JARVIS** na Área de Trabalho e no Menu Iniciar, com o ícone do robô.
+  - O atalho abre o app com o **pythonw.exe oficial do Python**, assinado pela Python Software Foundation e conhecido pelos antivírus.
+  - Continuam iguais: a janela própria, a ilha no topo e a tecla para falar.
+  - Não é preciso desativar o antivírus.
+- Quando o app liga o JARVIS sozinho, a janela do Iniciar-JARVIS aparece minimizada em vez de escondida.
+- **⬇ APP PARA WINDOWS** agora mostra se o app está instalado e tem o botão **▶ ABRIR O APP DO JARVIS**, que funciona no próprio PC.
+- O instalador apaga o JARVIS.exe antigo.
+
 ## 8.1.0 — 15 de novembro de 2026
 
 **🎯 Missões, 🔥 Ofensiva e guarda-roupa do robô (ideia 7 do documento de atualização)**

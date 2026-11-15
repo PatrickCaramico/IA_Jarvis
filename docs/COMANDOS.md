@@ -1,6 +1,6 @@
 # JARVIS — Comandos do dia a dia
 
-**Versão do projeto:** 8.1.0 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
+**Versão do projeto:** 8.1.1 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
 
 > Montado a partir do código do projeto. Se algum comando não responder como descrito, me avise que eu ajusto o guia.
 > Para a lista técnica de rotas, veja [API.md](API.md); para o `.env`, [CONFIGURACAO.md](CONFIGURACAO.md).
@@ -448,7 +448,7 @@ Pedidos com YouTube, Google, Maps, música ou notícias continuam no caminho de 
 | Lugares salvos | Os lugares do agente de rotas viram atalhos no painel. |
 | 🧭 IR ATÉ AQUI NO WAZE | Abre a navegação no app do Waze. |
 
-### Modo Desk e JARVIS.exe (V8.0)
+### Modo Desk e app para Windows (V8.0)
 
 | Fale / toque | O que acontece |
 |---|---|
@@ -459,7 +459,7 @@ Pedidos com YouTube, Google, Maps, música ou notícias continuam no caminho de 
 | Modo Desk › Personalizar | Cores e expressão do robô; guarda-roupa (chapéus, rosto, roupas, olhos, efeitos); temas das datas; nome; cor do app. |
 | "Quais são minhas missões?" · "como está minha ofensiva?" | As 3 missões do dia (V8.1) e a ofensiva com recorde e protetores. |
 | Modo Desk › Missões | Missões do dia, desafio da semana e 🔥 ofensiva; responda as perguntas "sobre você" ali mesmo. |
-| ⬇ APP PARA WINDOWS · Gerar-App-Windows.bat | Gera e baixa o JARVIS.exe: janela própria, ilha no topo da tela e tecla para falar (PageDown). |
+| ⬇ APP PARA WINDOWS · Gerar-App-Windows.bat | Instala o atalho **JARVIS** (Área de Trabalho e Menu Iniciar): janela própria, ilha no topo da tela e tecla para falar (PageDown). Sem .exe novo, o antivírus não bloqueia (V8.1.1). |
 
 ### Olho de Deus: globo 3D e dados reais (V7.11)
 
