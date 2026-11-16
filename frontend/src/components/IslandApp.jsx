@@ -65,11 +65,25 @@ export default function IslandApp() {
   const [busy, setBusy] = useState(false);
   const [listening, setListening] = useState(false);
   const [hint, setHint] = useState("");
+  const [locked, setLocked] = useState(false);
   const modeRef = useRef("");
   const closeTimer = useRef(null);
   const recRef = useRef(null);
 
   useEffect(() => installIslandPress(), []);
+  useEffect(() => { // V8.3.2: JARVIS bloqueado: os menus avisam em vez de mostrar "Erro 403"
+    let t;
+    const onDenied = () => {
+      setLocked(true);
+      clearTimeout(t);
+      t = setTimeout(() => setLocked(false), 30000);
+    };
+    window.addEventListener("jarvis_access_denied", onDenied);
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener("jarvis_access_denied", onDenied);
+    };
+  }, []);
   const openRef = useRef(false);
   useEffect(() => { openRef.current = open; }, [open]);
   useEffect(() => watchNewBuild(() => !openRef.current, 30000), []); // V8.3.1: interface nova -> recarrega fechada
@@ -226,6 +240,7 @@ export default function IslandApp() {
         </div>
         <IslandPanel tab={tab} setTab={(t) => { setTab(t); armClose(); }} st={st} track={hasTrack ? track : null} onControl={control}
           chat={chat} busy={busy} onSend={send} onTalk={talk} listening={listening} />
+        {locked && <button type="button" className="ilp-locked" onClick={openMain}>🔒 O JARVIS está bloqueado. Toque aqui para desbloquear (rosto ou PIN).</button>}
         {hint && <p className="ilp-hint">{hint}</p>}
         <div className="il-actions">
           <button type="button" className="is-main" onClick={talk}>🎙 FALAR</button>

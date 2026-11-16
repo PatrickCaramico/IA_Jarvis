@@ -68,7 +68,9 @@ def _get_curl(url: str) -> bytes:
     curl = shutil.which("curl.exe") or shutil.which("curl")
     if not curl:
         raise OSError("curl indisponível")
-    r = subprocess.run([curl, "-fsSL", "--max-time", str(TIMEOUT * 2), "-H", "Cache-Control: no-cache", url],  # noqa: S603
+    # --ssl-no-revoke: no Windows, com antivírus olhando a conexão, a checagem de revogação falha (erro 35)
+    extra = ["--ssl-no-revoke"] if os.name == "nt" else []
+    r = subprocess.run([curl, "-fsSL", *extra, "--max-time", str(TIMEOUT * 2), "-H", "Cache-Control: no-cache", url],  # noqa: S603
                        capture_output=True, check=False, timeout=TIMEOUT * 3, stdin=subprocess.DEVNULL,
                        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
     if r.returncode != 0:
@@ -149,16 +151,52 @@ def fetch(frontend: Path, base_url: str = BASE_URL, get=_get, log=print, wait_s:
         shutil.rmtree(tmp, ignore_errors=True)
         log(f"  Não consegui baixar a interface pronta ({exc}): montando aqui mesmo.")
         return False
-    old = frontend / "dist.antigo"
-    shutil.rmtree(old, ignore_errors=True)
-    if dist.exists():
-        dist.rename(old)
-    tmp.rename(dist)
-    shutil.rmtree(old, ignore_errors=True)
+    # V8.3.2: instala ARQUIVO POR ARQUIVO dentro da dist (antes renomeava a pasta inteira, e numa pasta do OneDrive
+    # isso dava "Acesso negado" no último passo). Os arquivos de /assets/ têm nomes novos a cada versão; o
+    # index.html (que aponta para eles) é trocado POR ÚLTIMO, então a página nunca fica pela metade.
+    try:
+        _install(tmp, dist, [str(i["p"]) for i in files])
+    except Exception as exc:  # noqa: BLE001
+        log(f"  Não consegui instalar a interface pronta ({exc}): montando aqui mesmo.")
+        return False
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
     now = time.time()
     os.utime(dist / "index.html", (now, now))  # mais nova que o código: o --stale vê que está em dia
     log(f"  Interface pronta baixada ({len(files)} arquivos, versão {manifest.get('versao', '?')}).")
     return True
+
+
+def _replace(src: Path, dst: Path, tries: int = 8, sleep=time.sleep) -> None:
+    """Troca um arquivo resistindo ao OneDrive/antivírus segurando o antigo por um instante."""
+    for attempt in range(tries):
+        try:
+            os.replace(src, dst)
+            return
+        except PermissionError:
+            if attempt == tries - 1:
+                shutil.copyfile(src, dst)  # último recurso: escreve por cima
+                return
+            sleep(0.2 * (attempt + 1))
+
+
+def _install(new: Path, dist: Path, rels: list[str]) -> None:
+    """Põe os arquivos de `new` dentro de `dist`: primeiro tudo menos o index.html, depois o index.html; no fim
+    apaga (se der) os arquivos de /assets/ que a versão nova não usa mais."""
+    dist.mkdir(parents=True, exist_ok=True)
+    for rel in sorted(rels, key=lambda r: r == "index.html"):
+        dst = dist / rel
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        _replace(new / rel, dst)
+    keep = {(dist / r).resolve() for r in rels}
+    assets = dist / "assets"
+    if assets.is_dir():
+        for f in assets.rglob("*"):
+            if f.is_file() and f.resolve() not in keep:
+                try:
+                    f.unlink()
+                except OSError:
+                    pass  # preso: fica de sobra, não atrapalha
 
 
 def _log_to_file(root: Path):

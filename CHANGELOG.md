@@ -2,6 +2,20 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 8.3.2 — 16 de novembro de 2026
+
+**🔍 Revisão de erros antes do teste (ilha e interface nova) e os avisos do log**
+- **Interface pronta no OneDrive:** a instalação renomeava a pasta `dist` inteira. Numa pasta do OneDrive isso dá "Acesso negado" no último passo, e o download falhava mesmo com tudo baixado. Agora:
+  - troca **arquivo por arquivo**, com o `index.html` por último, e tenta de novo se o arquivo estiver preso;
+  - apaga os arquivos antigos que sobraram;
+  - o `curl.exe` do Windows não checa revogação do certificado (`--ssl-no-revoke`), que o antivírus costuma quebrar.
+- **Dois cliques na pílula voltaram a abrir o JARVIS.** O 1º clique já abria os menus e o 2º caía dentro deles.
+- **Foco da ilha sem apertar o Alt de mentira:** o jeito antigo podia abrir o menu do programa que estava na frente. Agora usa `AttachThreadInput`.
+- **JARVIS bloqueado:** os menus da ilha mostram "🔒 O JARVIS está bloqueado. Toque aqui para desbloquear", em vez de "Erro 403".
+- **Copiar pela ilha:** o JARVIS confere se o Windows separou a memória antes de copiar.
+- **"Falha ao salvar cache de partidas: Acesso negado" (fan_cache.json):** nova gravação que resiste ao OneDrive (`core/safe_io.py`). Ela tenta de novo por um instante e, se o arquivo continuar preso, escreve por cima. Vale também para missões, rosto, PIN e perfis.
+- **"Modo nuvem: não consegui sincronizar (SSL EOF)":** a sincronização usa uma conexão reaproveitada e tenta até 3 vezes (com pausas de 1,5 s e 4 s) antes de desistir da rodada.
+
 ## 8.3.1 — 16 de novembro de 2026
 
 **📦 A interface nova chega no PC (a ilha nova não aparecia)**

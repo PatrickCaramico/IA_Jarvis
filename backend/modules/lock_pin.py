@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 from config import settings
+from core.safe_io import replace_file
 
 log = logging.getLogger("jarvis.lock_pin")
 
@@ -52,7 +53,7 @@ def _save(data: dict[str, Any]) -> None:
     PIN_PATH.parent.mkdir(parents=True, exist_ok=True)
     tmp = PIN_PATH.with_suffix(".tmp")
     tmp.write_text(json.dumps(data, indent=2), encoding="utf-8")
-    tmp.replace(PIN_PATH)
+    replace_file(tmp, PIN_PATH)  # V8.3.2: resiste ao OneDrive
 
 
 def _hash(pin: str, salt: bytes, params: dict[str, int]) -> bytes:

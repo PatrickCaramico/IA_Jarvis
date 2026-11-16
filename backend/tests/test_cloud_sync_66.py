@@ -44,16 +44,15 @@ def test_sync_once_pulls_and_pushes(monkeypatch):
     monkeypatch.setenv("JARVIS_NUVEM_CHAVE", "chave")
     sent = {}
 
-    def fake_get(url, headers, timeout):
-        assert url.endswith("/api/cloud/sync") and headers["X-Jarvis-Nuvem"] == "chave"
-        return FakeResp({"ops": [{"id": 4, "op": "shopping_add", "itens": ["ovos"]}], "last_id": 4})
+    class FakeSession:
+        def request(self, method, url, headers, timeout, json=None):
+            assert url.endswith("/api/cloud/sync") and headers["X-Jarvis-Nuvem"] == "chave"
+            if method == "GET":
+                return FakeResp({"ops": [{"id": 4, "op": "shopping_add", "itens": ["ovos"]}], "last_id": 4})
+            sent.update(json)
+            return FakeResp({"pending": 0})
 
-    def fake_post(url, headers, json, timeout):
-        sent.update(json)
-        return FakeResp({"pending": 0})
-
-    monkeypatch.setattr(cloud_sync.requests, "get", fake_get)
-    monkeypatch.setattr(cloud_sync.requests, "post", fake_post)
+    monkeypatch.setattr(cloud_sync, "_http", lambda: FakeSession())
     assert cloud_sync.sync_once() == {"applied": 1, "ops": 1}
     assert sent["ack"] == 4
     assert [i["texto"] for i in sent["snapshot"]["compras"]] == ["Ovos"]
@@ -99,3 +98,33 @@ def test_snapshot_sends_agenda_without_google_keys(monkeypatch):
     assert agenda == [{"titulo": "Dentista", "inicio": "2099-01-02T15:00:00", "local": "Centro"}]
     cloud_sync.snapshot()
     assert calls == [7]  # guarda por 10 min (não consulta a agenda a cada minuto)
+
+
+def test_v832_retries_when_ssl_is_cut(monkeypatch):
+    """V8.3.2: "SSL EOF" no meio da conexão: tenta de novo (com conexão nova) antes de desistir."""
+    import requests
+
+    monkeypatch.setenv("JARVIS_NUVEM_CHAVE", "chave")
+    calls, waits = [], []
+
+    class Flaky:
+        def request(self, method, url, **kw):
+            calls.append(method)
+            if len(calls) < 3:
+                raise requests.exceptions.SSLError("EOF occurred in violation of protocol")
+            return FakeResp({"ok": True})
+
+    monkeypatch.setattr(cloud_sync, "_http", lambda: Flaky())
+    assert cloud_sync._request("GET", sleep=waits.append, headers={}).json() == {"ok": True}
+    assert calls == ["GET"] * 3 and waits == list(cloud_sync.RETRY_DELAYS_S)
+
+    class Dead:
+        def request(self, method, url, **kw):
+            raise requests.exceptions.ConnectionError("sem internet")
+
+    monkeypatch.setattr(cloud_sync, "_http", lambda: Dead())
+    try:
+        cloud_sync._request("GET", sleep=lambda s: None, headers={})
+        raise AssertionError("devia desistir")
+    except requests.exceptions.ConnectionError:
+        pass

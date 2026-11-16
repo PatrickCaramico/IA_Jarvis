@@ -168,3 +168,31 @@ def test_v831_same_commit_counts_and_curl_fallback(tmp_path, monkeypatch):
     assert not pb.fetch(fe, base_url="https://site/pc/", get=get, log=lambda m: None, commit="0000000")
     mjs = (ROOT / "scripts" / "netlify" / "manifest.mjs").read_text(encoding="utf-8")
     assert "COMMIT_REF" in mjs
+
+
+def test_v832_installs_file_by_file_without_renaming_dist(tmp_path, monkeypatch):
+    """No OneDrive, renomear a pasta dist dava "Acesso negado": agora troca arquivo por arquivo, index por último."""
+    dist, new = tmp_path / "dist", tmp_path / "novo"
+    (dist / "assets").mkdir(parents=True)
+    (dist / "index.html").write_text("velho")
+    (dist / "assets" / "index-OLD.js").write_text("old")
+    (new / "assets").mkdir(parents=True)
+    (new / "index.html").write_text("novo")
+    (new / "assets" / "index-NEW.js").write_text("new")
+    order = []
+    real = prebuilt.os.replace
+    monkeypatch.setattr(prebuilt.os, "replace", lambda a, b: (order.append(Path(b).name), real(a, b)))
+    monkeypatch.setattr(Path, "rename", lambda *a: (_ for _ in ()).throw(AssertionError("não pode renomear a pasta")))
+    prebuilt._install(new, dist, ["assets/index-NEW.js", "index.html"])
+    assert order == ["index-NEW.js", "index.html"]
+    assert (dist / "index.html").read_text() == "novo" and (dist / "assets" / "index-NEW.js").exists()
+    assert not (dist / "assets" / "index-OLD.js").exists()
+
+
+def test_v832_replace_survives_locked_file(tmp_path, monkeypatch):
+    src, dst = tmp_path / "a", tmp_path / "b"
+    src.write_text("novo")
+    dst.write_text("velho")
+    monkeypatch.setattr(prebuilt.os, "replace", lambda a, b: (_ for _ in ()).throw(PermissionError(5, "Acesso negado")))
+    prebuilt._replace(src, dst, tries=3, sleep=lambda s: None)
+    assert dst.read_text() == "novo"

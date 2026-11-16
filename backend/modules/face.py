@@ -16,6 +16,7 @@ import numpy as np
 import requests
 
 from config import settings
+from core.safe_io import replace_file
 from modules.vision import open_camera
 
 log = logging.getLogger("jarvis.face")
@@ -77,7 +78,7 @@ def _download(filename: str, urls: list[str]) -> Path:
                         f.write(chunk)
             if tmp.stat().st_size < 100_000:
                 raise RuntimeError("arquivo baixado é pequeno demais")
-            tmp.replace(path)
+            replace_file(tmp, path)  # V8.3.2: resiste ao OneDrive
             return path
         except Exception as exc:  # noqa: BLE001
             last_error = exc
