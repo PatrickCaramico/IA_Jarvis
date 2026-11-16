@@ -6,6 +6,7 @@ import { DESK_COLORS, FUNCTIONS, greeting, hexToRgb, isLight, stateText } from "
 import { IS_DESKTOP_APP } from "../utils/device.js";
 import { checkForUpdate, saveUpdateResult } from "../utils/updateCheck.js";
 import { APP_VERSION } from "../utils/version.js";
+import { watchNewBuild } from "../utils/newBuild.js";
 import "../desk.css";
 
 // V8.0: MODO DESK (ideia 6): o JARVIS como app de assistente pessoal. Barra lateral com o avatar robô, Início,
@@ -813,6 +814,8 @@ export default function DeskApp(props) {
     }
   });
   const [cfg, setCfg] = useState(null);
+  // V8.3.1: no app do Windows, a janela escondida pega a interface nova sozinha (sem fechar e abrir o app)
+  useEffect(() => (IS_DESKTOP_APP ? watchNewBuild(() => document.hidden) : undefined), []);
   const [level, setLevel] = useState(null);
   const [missions, setMissions] = useState(null);
   const [toast, setToast] = useState("");

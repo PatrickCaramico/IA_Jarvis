@@ -3,6 +3,7 @@ import RoboAvatar from "./RoboAvatar.jsx";
 import { api } from "../utils/api.js";
 import { hexToRgb } from "../utils/desk.js";
 import IslandPanel from "./IslandPanel.jsx";
+import { watchNewBuild } from "../utils/newBuild.js";
 import "../island.css";
 
 // V8.0: a ILHA do app para Windows: pílula preta no topo da tela, sempre visível (como a "ilha" dos celulares).
@@ -69,6 +70,9 @@ export default function IslandApp() {
   const recRef = useRef(null);
 
   useEffect(() => installIslandPress(), []);
+  const openRef = useRef(false);
+  useEffect(() => { openRef.current = open; }, [open]);
+  useEffect(() => watchNewBuild(() => !openRef.current, 30000), []); // V8.3.1: interface nova -> recarrega fechada
   useEffect(() => {
     const report = (e) => pyApi().log?.(`${e.message || e.reason || e}`);
     window.addEventListener("error", report);

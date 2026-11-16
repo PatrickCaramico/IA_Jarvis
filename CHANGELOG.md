@@ -2,6 +2,19 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 8.3.1 — 16 de novembro de 2026
+
+**📦 A interface nova chega no PC (a ilha nova não aparecia)**
+- **O problema:** depois de atualizar, a interface nova não chegava no PC do Patrick, e a ilha continuava a antiga:
+  - o download da interface pronta do site falhava;
+  - a montagem no próprio PC leva mais de 10 minutos.
+- **Corrigido:**
+  - Quando o Python não consegue baixar do site (o antivírus corta a conexão segura dele: "SSL EOF" no log), o JARVIS baixa pelo **curl.exe do próprio Windows**, que usa a mesma conexão do navegador.
+  - A interface pronta vale quando o PC está no **mesmo commit** que o site montou, mesmo que algum arquivo tenha mudado no PC (por exemplo, o `npm install` mexe no `package-lock.json`).
+  - A montagem em segundo plano agora **espera a interface pronta do site por até 10 minutos** (o site leva 1 a 3 minutos para ficar pronto depois de uma versão nova) e só monta no PC se ela não vier.
+  - A **ilha e a janela do app se recarregam sozinhas** quando a interface nova chega. A ilha recarrega fechada, e a janela recarrega escondida. Não precisa mais fechar e abrir o app.
+  - Registro do download em `logs/prebuilt.log`.
+
 ## 8.3.0 — 16 de novembro de 2026
 
 **🏝️ Menus direto na ilha, sem abrir o app (ideia 9)**

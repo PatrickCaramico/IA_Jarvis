@@ -121,3 +121,9 @@ test("V8.2: olhos seguem o mouse e acessórios novos", async () => {
   assert.ok(!ANTENNA_HATS.includes("aureola") && ANTENNA_HATS.includes("nenhum"));
   assert.equal(DEFAULT_AVATAR.olhos_seguem, true);
 });
+
+test("V8.3.1: interface nova: acha o bundle no index.html", async () => {
+  const { bundleName } = await import("../src/utils/newBuild.js");
+  assert.equal(bundleName('<script type="module" crossorigin src="/assets/index-AbC_12-x.js"></script>'), "/assets/index-AbC_12-x.js");
+  assert.equal(bundleName("<html></html>"), "");
+});
