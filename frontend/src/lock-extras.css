@@ -1011,3 +1011,37 @@
 .ph-drop small { display: block; margin-top: 8px; font: 0.8rem system-ui, sans-serif; letter-spacing: 0; color: rgba(224, 251, 255, 0.7); }
 .ph-clip { flex: none; width: 40px; height: 40px; display: grid; place-items: center; border-radius: 999px; border: 1px solid rgba(103, 232, 249, 0.45); color: #bdf6ff; background: transparent; cursor: pointer; font-size: 1.05rem; }
 .ph-clip:hover { background: rgba(34, 211, 238, 0.14); }
+
+/* V8.6.1: a tela de bloqueio se adapta a qualquer tamanho de tela (antes, em telas mais baixas ou estreitas, o
+   relógio cortava em cima, o "MIC" caía em cima dos botões e os cartões ficavam embaixo do rodapé).
+   - o conteúdo nunca passa por baixo dos botões do rodapé (reserva o espaço deles) e, se não couber, rola;
+   - o relógio, o orbe e os espaços encolhem com a ALTURA da tela, não só com a largura;
+   - a faixa do microfone e o "alterar foto" entram na fila, logo abaixo dos botões (não flutuam mais por cima). */
+.ls-container { overflow-x: hidden; overflow-y: auto; justify-content: safe center; padding-bottom: 112px; scrollbar-width: thin; }
+.ls-container > * { flex-shrink: 0; }
+.ls-container.ls-sentinel { gap: clamp(6px, 1.5vh, 14px); }
+.ls-container.ls-sentinel .snt-footer { position: static; margin: 0; }
+.ls-container.ls-sentinel .snt-photo-link { position: static; margin-top: -4px; }
+.snt-clock { font-size: clamp(2rem, min(7vw, 8.5vh), 4.2rem); line-height: 1.05; }
+.snt-orb .arc-hud.snt-hud { width: clamp(150px, min(36vh, 30vw), 340px); }
+.ls-container .ls-actions { max-width: min(1180px, 100%); }
+@media (max-height: 720px) {
+  .snt-date { font-size: 0.85rem; }
+  .ls-container .ls-hint { font-size: 0.85rem; }
+}
+/* Telas estreitas ou baixas: o rodapé (Áudio, Fundo, Modo Torcedor, Celular e o carimbo) entra no fim da página,
+   em vez de flutuar por cima dos cartões. */
+@media (max-width: 1199px), (max-height: 740px) {
+  .ls-container { padding-bottom: 24px; }
+  .ls-container .bp-corner { position: static; flex-wrap: wrap; justify-content: center; align-items: center; margin-top: 6px; }
+  [data-bg="blueprint"] .ls-container .bp-stamp { position: static; }
+  .ls-container .mqr-wrap { position: static; align-items: center; }
+  .ls-container .ls-footer { position: static; transform: none; margin-top: 4px; }
+}
+/* Telas largas com os cartões nas laterais: os botões do meio ficam no espaço entre as duas colunas
+   (antes, numa tela de 1280 px, "NOVA PESSOA" ficava embaixo do cartão do Spotify) */
+@media (min-width: 1200px) {
+  .ls-container .ls-actions, .ls-container .ls-secondary, .ls-container .snt-caption {
+    max-width: calc(100vw - 2 * (clamp(230px, 16vw, 280px) + clamp(40px, 4vw, 84px) + 16px));
+  }
+}

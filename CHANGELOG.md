@@ -2,6 +2,20 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 8.6.1 — 16 de novembro de 2026
+
+**📐 Telas que se adaptam a qualquer tamanho (bloqueio e central)**
+- **Tela de bloqueio (Sentinela e Clássica):**
+  - em telas mais baixas (ex.: 1920×860, 1366×768), a faixa "MIC SILENCIADO · ESPAÇO = LIBERAR" ficava em cima dos botões. Agora ela vem **logo abaixo dos botões**, junto com o "alterar foto";
+  - o relógio, o orbe e os espaços encolhem conforme a **altura** da tela, não só conforme a largura;
+  - o conteúdo nunca passa por baixo dos botões do rodapé (Áudio, Fundo, Modo Torcedor, Celular) e, se não couber, **rola**;
+  - em telas estreitas ou baixas, o rodapé e o carimbo entram no fim da página, em vez de flutuar por cima dos cartões;
+  - com os cartões nas laterais, os botões do meio ficam no espaço entre as duas colunas (em 1280 px, "NOVA PESSOA" ficava embaixo do cartão do Spotify).
+- **Central desbloqueada:**
+  - em telas até 1100 px, os painéis ficavam uns por cima dos outros no rodapé. Agora vira uma coluna só, que rola, com cada painel na altura dele;
+  - em telas até 1000 px, o cabeçalho quebra em duas linhas, em vez de cortar o perfil e o BLOQUEAR.
+- Conferido em 1920×1080, 1917×862, 1600×900, 1366×768, 1280×720, 1100×700 e 900×700.
+
 ## 8.6.0 — 16 de novembro de 2026
 
 **😈 Modo Pac-Man, avatar "vivo" e avatar maior na pílula**
