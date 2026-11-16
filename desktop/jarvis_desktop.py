@@ -35,6 +35,8 @@ log = logging.getLogger("jarvis.app")
 API = "http://127.0.0.1:8000"
 FRONT = "http://127.0.0.1:5173"
 ISLAND_SIZES = {"pequena": (340, 52), "media": (420, 60), "grande": (500, 70)}  # V8.6.2: maior (avatar bem visível)
+HIDE_DELAY_S = 1.4  # V8.7.0: ilha escondida: some esse tempo depois que o mouse sai dela
+REVEAL_SIDE_PX = 160  # quanto além das pontas da ilha o mouse no topo da tela ainda a chama
 POKE_ZONE_PX = 64  # V8.6.2: o avatar na ponta esquerda da pílula: cliques ali são cutucadas (não abrem a janela grande)
 ISLAND_OPEN_H = 120  # altura quando mostra uma resposta
 # V8.1.2: modos da ilha (como a "ilha dinâmica"): mini (pílula), resposta (cresce com o texto) e cartão (ao clicar)
@@ -119,6 +121,17 @@ def island_position(screen_w: int, size: str, mode: str = "mini", pos: float = 0
     pos = min(1.0, max(0.0, float(pos if pos is not None else 0.5)))
     x = round(pos * screen_w - w / 2)
     return (max(0, min(x, screen_w - w)), 6, w, h)
+
+
+def hidden_y(h: int) -> int:
+    """V8.7.0: posição (y) da ilha escondida: inteira acima da tela."""
+    return -(int(h) + 6)
+
+
+def should_reveal(cursor: tuple[int, int], island_cx: float, island_w: float, scale: float = 1.0) -> bool:
+    """O mouse encostou no topo da tela, na altura da ilha (com uma folga para os lados)?"""
+    x, y = cursor
+    return y <= 2 and abs(x - island_cx) <= island_w / 2 + REVEAL_SIDE_PX * scale
 
 
 def drag_x(start_win_x: int, start_cursor_x: int, cursor_x: int, win_w: int, screen_w: int) -> int:
@@ -314,6 +327,9 @@ class Bridge:
         self._pos = 0.5  # V8.4.1: onde fica a ilha (0..1 na largura da tela)
         self._panel = "medio"  # V8.5.0: tamanho do painel aberto
         self._chaser = None  # V8.6.0: janela do modo Pac-Man
+        self._main_shown = False  # V8.7.0
+        self._autohide = True  # V8.7.0: a ilha fica escondida no topo e desce quando o mouse chega lá
+        self._hidden = False
         self._pac_running = False
         self._quitting = False
 
@@ -322,10 +338,22 @@ class Bridge:
         if self._main:
             self._main.show()
             self._main.restore()
+            self._main_shown = True
+            self._main_hidden_mark(False)
 
     def hide_main(self) -> None:
         if self._main:
             self._main.hide()
+            self._main_shown = False
+            self._main_hidden_mark(True)
+
+    def _main_hidden_mark(self, hidden: bool) -> None:
+        """V8.7.0: a janela grande escondida congela as animações (antes desenhava tudo, invisível)."""
+        try:
+            op = "add" if hidden else "remove"
+            self._main.evaluate_js(f"document.documentElement.classList.{op}('is-app-hidden')")
+        except Exception as exc:  # noqa: BLE001
+            log.info("não consegui marcar a janela (%s): %s", "escondida" if hidden else "visível", exc)
 
     def on_main_closing(self):
         """X da janela: com a ilha ligada, só esconde (a ilha continua no topo). Devolver False cancela o fechamento."""
@@ -358,6 +386,10 @@ class Bridge:
         self._mode = mode
         log.info("ilha: modo %s", mode)
         x, y, w, h = island_position(self._screen_w, self._size, mode, self._pos, self._panel)
+        if mode != "mini":
+            self._hidden = False  # respondendo ou com o painel aberto: aparece
+        elif self._autohide and self._hidden:
+            y = hidden_y(h)
         self._island.resize(w, h)
         self._island.move(x, y)
         shape_window(self._island, island_radius(mode, h))
@@ -411,6 +443,37 @@ class Bridge:
         self._pos = p
         self.island_mode(self._mode)
 
+    def island_autohide(self, on: bool) -> None:
+        """V8.7.0: Configurações › Ilha › "Esconder a ilha no topo"."""
+        self._autohide = bool(on)
+        if not self._autohide and self._hidden:
+            self.island_reveal()
+
+    def island_reveal(self) -> None:
+        """Desce a ilha (o mouse chegou no topo da tela)."""
+        if not self._island or not self._hidden:
+            return
+        self._hidden = False
+        self._slide(True)
+
+    def island_conceal(self) -> None:
+        """Sobe a ilha para fora da tela (só a pílula fechada; aberta ou respondendo ela fica)."""
+        if not self._island or self._hidden or not self._autohide or self._mode != "mini":
+            return
+        self._hidden = True
+        self._slide(False)
+
+    def _slide(self, down: bool) -> None:
+        x, y, _w, h = island_position(self._screen_w, self._size, self._mode, self._pos, self._panel)
+        start, end = (hidden_y(h), y) if down else (y, hidden_y(h))
+        for i in range(1, 7):
+            try:
+                self._island.move(x, round(start + (end - start) * i / 6))
+            except Exception as exc:  # noqa: BLE001
+                log.info("ilha: não consegui mover: %s", exc)
+                return
+            time.sleep(0.016)
+
     def island_center(self) -> None:
         """Dois cliques no espaço vazio da barra: a ilha volta para o meio da tela."""
         self._set_pos(0.5)
@@ -449,6 +512,40 @@ def island_hit(pt: tuple[int, int], rect: tuple[int, int, int, int], scale: floa
     return int((x - left) / scale), int((y - top) / scale)
 
 
+def autohide_tick(bridge: Bridge, user32, hide_at: float) -> float:
+    """V8.7.0: ilha escondida no topo. Mouse no topo da tela, na altura dela: desce. Mouse longe dela por
+    HIDE_DELAY_S: sobe de novo. Devolve o novo horário de esconder."""
+    import ctypes
+    from ctypes import wintypes
+
+    try:
+        pt = wintypes.POINT()
+        user32.GetCursorPos(ctypes.byref(pt))
+        screen_w = user32.GetSystemMetrics(0) or 1920
+        hwnd = island_hwnd(bridge._island)
+        if not hwnd:
+            return hide_at
+        r = wintypes.RECT()
+        user32.GetWindowRect(hwnd, ctypes.byref(r))
+        w = r.right - r.left
+        scale = (user32.GetDpiForWindow(hwnd) or 96) / 96
+        now = time.time()
+        if bridge._hidden:
+            if should_reveal((pt.x, pt.y), bridge._pos * screen_w, w, scale):
+                bridge.island_reveal()
+                return now + HIDE_DELAY_S
+            return hide_at
+        near = r.left - 30 <= pt.x <= r.right + 30 and pt.y <= r.bottom + 30
+        if near:
+            return now + HIDE_DELAY_S
+        if now >= hide_at:
+            bridge.island_conceal()
+        return hide_at
+    except Exception as exc:  # noqa: BLE001
+        log.info("ilha: esconder falhou: %s", exc)
+        return hide_at
+
+
 def watch_island_clicks(bridge: Bridge) -> None:
     """V8.1.3/8.1.4: garante o clique na ilha, sem depender do WebView2 receber o mouse.
 
@@ -472,6 +569,7 @@ def watch_island_clicks(bridge: Bridge) -> None:
     was_down, last_click, shaped = False, 0.0, False
     last_mode = "mini"  # V8.3.2: o modo da ilha no PRIMEIRO clique (o 1º clique já abre o painel)
     press = None  # {"hit", "cursor_x", "win_x", "win_w", "y", "dragging", "mode"} enquanto o botão está apertado
+    hide_at = time.time() + 4  # V8.7.0: esconde logo depois de abrir (dá tempo de ver que ela está lá)
     started = time.time()
 
     def js(code: str) -> None:
@@ -485,6 +583,8 @@ def watch_island_clicks(bridge: Bridge) -> None:
         if not shaped and time.time() - started > 1.5:  # o recorte de novo, depois que a janela existe de verdade
             shaped = shape_window(bridge._island, 9999 if bridge._mode == "mini" else 44) or time.time() - started > 20
         down = bool(user32.GetAsyncKeyState(0x01) & 0x8000)  # VK_LBUTTON
+        if bridge._autohide and bridge._mode == "mini" and not press and bridge._island:
+            hide_at = autohide_tick(bridge, user32, hide_at)
         try:
             if down and not was_down and bridge._island:  # o botão DESCEU
                 hwnd = island_hwnd(bridge._island)
@@ -816,11 +916,14 @@ def main() -> None:
         bridge._pos = 0.5
     if cfg.get("painel") in PANEL_SIZES:
         bridge._panel = cfg["painel"]
+    bridge._autohide = cfg.get("ocultar", True) is not False
     island_on = cfg.get("ligada", True)
     # V8.1.3: com a ilha ligada, a janela do JARVIS começa escondida e só aparece quando você clica na ilha
     bridge._main = webview.create_window("JARVIS", f"{FRONT}/?desk=1&app=windows", width=1280, height=820, min_size=(900, 600),
                                         background_color="#0b0d12", js_api=bridge, text_select=True, hidden=island_on)
     bridge._main.events.closing += bridge.on_main_closing
+    if island_on:  # começa escondida: congela as animações assim que a página carrega
+        bridge._main.events.loaded += lambda: bridge._main_hidden_mark(not bridge._main_shown)
     if island_on:
         screens = webview.screens
         bridge._screen_w = screens[0].width if screens else 1920

@@ -143,6 +143,8 @@ export default function IslandApp() {
   // V8.5.0: tamanho do painel e posição escolhidos em Configurações › Ilha vão para a janela do Windows
   const panel = st?.ilha?.painel;
   useEffect(() => { if (panel) pyApi().island_layout?.(panel); }, [panel]);
+  const autohide = st?.ilha?.ocultar; // V8.7.0: escondida no topo (desce quando o mouse chega lá)
+  useEffect(() => { if (typeof autohide === "boolean") pyApi().island_autohide?.(autohide); }, [autohide]);
   const posRef = useRef(null);
   const pos = st?.ilha?.posicao;
   useEffect(() => {
@@ -242,7 +244,7 @@ export default function IslandApp() {
           <button type="button" className="il-x" onClick={() => pyApi().quit?.()} aria-label="Sair do app" title="Sair do app (o JARVIS continua rodando no PC)">⏻</button>
           <button type="button" className="il-x" onClick={close} aria-label="Fechar a ilha" title="Fechar (Esc)">✕</button>
         </div>
-        <div className="il-desk" style={{ zoom: shownZoom }}>
+        <div className="il-desk" style={{ "--z": shownZoom }}>
           <DeskApp api={api} aiName={names.ai === "J.A.R.V.I.S." ? "JARVIS" : names.ai} userName={names.user} jarvisState={estado}
             listening={false} interim="" userText={turn.userText} response={turn.response} responseCards={[]} error={turn.error}
             send={send} onToggleMic={() => {}} onClassic={openMain} onLock={lock} onOpenSettings={openMain} onOpenQr={openMain}

@@ -49,7 +49,8 @@ DEFAULT = {
                "piscar": True, "brincadeiras": True},  # V8.4.0 (ideia 10)
     "cor": "#22d3ee",
     # V8.5.0: painel (tamanho da ilha aberta) e zoom (do conteúdo dela)
-    "ilha": {"ligada": True, "tamanho": "media", "atalho": "PageDown", "posicao": 0.5, "painel": "medio", "zoom": 0.9},
+    "ilha": {"ligada": True, "tamanho": "media", "atalho": "PageDown", "posicao": 0.5, "painel": "medio", "zoom": 0.9,
+             "ocultar": True},  # V8.7.0: escondida no topo, desce quando o mouse chega lá
     "atualizacao": {"automatica": True},  # V8.5.0: atualiza sozinho quando o JARVIS está parado
     # V8.4.0 (ideia 10): modo leve: "auto" (liga sozinho no notebook na bateria), "sim" ou "nao"
     "desempenho": {"leve": "auto"},
@@ -227,6 +228,8 @@ def update_config(patch: dict) -> dict:
         pos = ilha.get("posicao")  # V8.4.1: onde a ilha fica no topo (0..1 da largura da tela; arrastada no app)
         if isinstance(pos, (int, float)) and not isinstance(pos, bool):
             d["ilha"]["posicao"] = round(min(1.0, max(0.0, float(pos))), 4)
+        if isinstance(ilha.get("ocultar"), bool):
+            d["ilha"]["ocultar"] = ilha["ocultar"]
         if ilha.get("painel") in PANEL_SIZES:
             d["ilha"]["painel"] = ilha["painel"]
         z = ilha.get("zoom")
@@ -510,6 +513,23 @@ def read_clipboard() -> str:
         user32.CloseClipboard()
 
 
+def clipboard_sequence() -> int | None:
+    """V8.7.0: número que o Windows muda a cada cópia (barato; não abre a área de transferência).
+
+    Antes o JARVIS ABRIA a área de transferência a cada 1,5 s, o que podia atrapalhar o copiar/colar dos outros
+    programas. None fora do Windows (aí lê sempre)."""
+    import sys
+
+    if sys.platform != "win32":
+        return None
+    try:
+        import ctypes
+
+        return int(ctypes.windll.user32.GetClipboardSequenceNumber())
+    except Exception:  # noqa: BLE001
+        return None
+
+
 async def clipboard_loop(interval: float = 1.5) -> None:
     """Vigia a área de transferência do PC (só Windows) e guarda o que for copiado."""
     import asyncio
@@ -520,12 +540,17 @@ async def clipboard_loop(interval: float = 1.5) -> None:
         return
     log = logging.getLogger("jarvis.desk")
     last = None
+    seq = clipboard_sequence  # V8.7.0: só abre a área de transferência quando algo NOVO foi copiado
+    last_seq = None
     while True:
         try:
-            text = await asyncio.to_thread(read_clipboard)
-            if text and text != last:
-                last = text
-                clip_add(text)
+            now_seq = seq()
+            if now_seq is None or now_seq != last_seq:
+                last_seq = now_seq
+                text = await asyncio.to_thread(read_clipboard)
+                if text and text != last:
+                    last = text
+                    clip_add(text)
         except Exception:  # noqa: BLE001 - a área de transferência ocupada por outro programa não para o JARVIS
             log.debug("Copiados: leitura falhou", exc_info=True)
         await asyncio.sleep(interval)
