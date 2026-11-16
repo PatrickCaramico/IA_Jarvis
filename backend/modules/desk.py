@@ -24,13 +24,17 @@ _CLIP_PATH = settings.DATA_DIR / "copiados.json"
 _lock = threading.RLock()
 
 HEX = re.compile(r"^#[0-9a-fA-F]{6}$")
-EXPRESSIONS = ("feliz", "pensando", "falando", "ouvindo", "dormindo", "surpreso", "piscando")
+EXPRESSIONS = ("feliz", "pensando", "falando", "ouvindo", "dormindo", "surpreso", "piscando",
+               # V8.2 (ideia 8): mais expressões
+               "repouso", "rindo", "carinho", "descolado", "bravo", "chorando", "conseguiu")
 ACCESSORIES = ("nenhum", "fone", "oculos", "gorro", "coroa")
 ISLAND_SIZES = ("pequena", "media", "grande")
 # V8.1: GUARDA-ROUPA do robô (ideia 7). Cada item: (id, None = liberado | {"nivel": n} | {"ofensiva": dias}).
 WARDROBE: dict[str, list[tuple[str, dict | None]]] = {
     "chapeu": [("nenhum", None), ("gorro", None), ("bone", None), ("fone", None), ("cartola", {"nivel": 3}),
-               ("gatinho", {"nivel": 5}), ("bruxa", {"ofensiva": 7}), ("headset", {"nivel": 8}), ("coroa", {"nivel": 10})],
+               ("gatinho", {"nivel": 5}), ("bruxa", {"ofensiva": 7}), ("headset", {"nivel": 8}), ("coroa", {"nivel": 10}),
+               # V8.2 (ideia 8)
+               ("aureola", None), ("chifrinhos", None), ("festa", None), ("flor", None), ("bone_time", None)],
     "rosto": [("nenhum", None), ("oculos", None), ("laco", None), ("bigode", {"nivel": 2}), ("oculos_escuros", {"nivel": 4})],
     "roupa": [("nenhuma", None), ("cachecol", None), ("gravata", {"nivel": 2}), ("camisa", {"nivel": 3}),
               ("capa", {"ofensiva": 30}), ("armadura", {"nivel": 15})],
@@ -41,7 +45,7 @@ WARDROBE_DEFAULT = {"chapeu": "nenhum", "rosto": "nenhum", "roupa": "nenhuma", "
 OLD_ACCESSORY = {"fone": ("chapeu", "fone"), "gorro": ("chapeu", "gorro"), "coroa": ("chapeu", "coroa"), "oculos": ("rosto", "oculos")}
 DEFAULT = {
     "avatar": {"corpo": "#e8f4ff", "visor": "#0b1220", "olhos": "#22d3ee", "expressao": "feliz", "acessorio": "nenhum",
-               **WARDROBE_DEFAULT, "temas": True},
+               **WARDROBE_DEFAULT, "temas": True, "antena": True, "olhos_seguem": True, "olhos_vel": 1.0},
     "cor": "#22d3ee",
     "ilha": {"ligada": True, "tamanho": "media", "atalho": "PageDown"},
     "xp": {"total": 0, "hoje": {}, "eventos": []},
@@ -195,6 +199,11 @@ def update_config(patch: dict) -> dict:
             d["avatar"][slot] = want
         if isinstance(av.get("temas"), bool):
             d["avatar"]["temas"] = av["temas"]
+        for k in ("antena", "olhos_seguem"):  # V8.2
+            if isinstance(av.get(k), bool):
+                d["avatar"][k] = av[k]
+        if isinstance(av.get("olhos_vel"), (int, float)) and not isinstance(av.get("olhos_vel"), bool):
+            d["avatar"]["olhos_vel"] = round(min(2.0, max(0.25, float(av["olhos_vel"]))), 2)
         if isinstance(patch.get("cor"), str) and HEX.match(patch["cor"]):
             d["cor"] = patch["cor"].lower()
         ilha = patch.get("ilha") if isinstance(patch.get("ilha"), dict) else {}

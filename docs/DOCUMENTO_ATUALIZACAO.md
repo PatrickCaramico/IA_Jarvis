@@ -495,7 +495,7 @@
 
 **Fica para depois (não escolhido agora):** modo desempenho, voz entendida pela Groq, brincadeiras quando parado, piscar e animações liga/desliga.
 
-**Status:** desenho aprovado; falta implementar.
+**Status:** implementado na versão 8.2.0.
 
 ## Ideias extras do Claude (para avaliar)
 

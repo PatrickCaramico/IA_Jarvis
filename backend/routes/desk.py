@@ -5,7 +5,7 @@ import asyncio
 import logging
 import time
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
 from modules import desk, desk_missions
@@ -134,20 +134,78 @@ async def memory_forget(req: ForgetRequest) -> dict:
     return {"apagadas": n, **desk.memory_map()}
 
 
+class TestAi(BaseModel):
+    provedor: str | None = None
+
+
 @router.post("/api/desk/test-ai")
-async def test_ai() -> dict:
-    """Cérebro (IA) › Testar esta IA: a resposta e quanto tempo levou."""
+async def test_ai(req: TestAi | None = None) -> dict:
+    """Cérebro (IA) › Testar esta IA: a resposta e quanto tempo levou (V8.2: dá para escolher qual IA)."""
     from config import settings
     from services import llm_orchestrator
 
+    prov = (req.provedor if req else None) or ""
+    if prov and prov not in ("auto", "groq", "gemini", "openai", "anthropic"):
+        raise HTTPException(status_code=400, detail="IA desconhecida.")
     start = time.perf_counter()
     try:
-        text = await asyncio.to_thread(llm_orchestrator.ask_text, "Diga em uma frase curta uma curiosidade rápida, em português do Brasil.")
+        pergunta = "Diga em uma frase curta uma curiosidade rápida, em português do Brasil."
+        if prov:
+            text = await asyncio.to_thread(llm_orchestrator.ask_with_provider, pergunta, prov)
+        else:
+            text = await asyncio.to_thread(llm_orchestrator.ask_text, pergunta)
     except Exception as exc:  # noqa: BLE001
         log.info("Teste da IA falhou: %s", exc)
         raise HTTPException(status_code=502, detail=f"A IA não respondeu: {exc}"[:200]) from exc
     return {"resposta": (text or "").strip()[:400], "segundos": round(time.perf_counter() - start, 1),
-            "provedor": getattr(settings, "LLM_PROVIDER", "")}
+            "provedor": llm_orchestrator.last_provider() or getattr(settings, "LLM_PROVIDER", "")}
+
+
+# --------------------------------------------------------------------------- V8.2: Cérebro (IA)
+class BrainKey(BaseModel):
+    provedor: str
+    chave: str
+
+
+@router.get("/api/brain")
+async def brain_status() -> dict:
+    from modules import brain_keys
+
+    return brain_keys.status()
+
+
+@router.post("/api/brain/key")
+async def brain_key(req: BrainKey, request: Request) -> dict:
+    """Cola a chave da Groq/Gemini: salva só no .env deste PC (pedido feito no próprio PC, central liberada)."""
+    from core import runtime
+    from modules import access, brain_keys, prefs
+
+    if not runtime.is_local_conn(request) or access.is_restricted():
+        raise HTTPException(status_code=403, detail="A chave só pode ser colada no próprio PC, com a central liberada.")
+    try:
+        out = await asyncio.to_thread(brain_keys.save_key, req.provedor, req.chave)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="IA desconhecida.") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if req.provedor == "groq" and str(prefs._load().get("llm_provider") or "") != "auto":
+        prefs.update({"llm_provider": "auto"})  # conectou a Groq: liga o Automático grátis
+        out = brain_keys.status()
+    log.info("Cérebro: chave da %s conectada.", req.provedor)
+    return out
+
+
+@router.delete("/api/brain/key/{provedor}")
+async def brain_key_remove(provedor: str, request: Request) -> dict:
+    from core import runtime
+    from modules import access, brain_keys
+
+    if not runtime.is_local_conn(request) or access.is_restricted():
+        raise HTTPException(status_code=403, detail="Só no próprio PC, com a central liberada.")
+    try:
+        return await asyncio.to_thread(brain_keys.remove_key, provedor)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="IA desconhecida.") from exc
 
 
 async def _broadcast() -> None:

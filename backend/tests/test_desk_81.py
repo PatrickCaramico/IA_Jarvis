@@ -101,3 +101,14 @@ def test_mission_routes():
     assert c.post("/api/desk/missions/track/olho").status_code == 200
     assert c.post("/api/desk/missions/track/xyz").status_code == 400
     assert c.patch("/api/desk", json={"avatar": {"chapeu": "coroa"}}).status_code == 403
+
+
+def test_v82_expressions_accessories_and_eyes():
+    out = desk.update_config({"avatar": {"expressao": "conseguiu", "chapeu": "aureola", "antena": False,
+                                         "olhos_seguem": False, "olhos_vel": 9}})
+    av = out["avatar"]
+    assert av["expressao"] == "conseguiu" and av["chapeu"] == "aureola" and av["antena"] is False
+    assert av["olhos_seguem"] is False and av["olhos_vel"] == 2.0
+    assert desk.update_config({"avatar": {"olhos_vel": "x"}})["avatar"]["olhos_vel"] == 2.0
+    ids = [i["id"] for i in out["guarda_roupa"]["chapeu"]]
+    assert {"aureola", "chifrinhos", "festa", "flor", "bone_time"} <= set(ids)

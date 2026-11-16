@@ -537,7 +537,7 @@ function Personalize({ api, cfg, setCfg, aiName, onRename }) {
     <Card title={`Personalizar o ${aiName}`} icon="🎨">
       <div className="dk-perso">
         <div className="dk-perso-preview">
-          <RoboAvatar avatar={av} tema={cfg?.tema} size={170} />
+          <RoboAvatar avatar={av} tema={cfg?.tema} size={240} />
           {cfg?.tema && <p className="dk-muted dk-center">🎉 Tema de {cfg.tema.nome} por cima do seu visual (volta sozinho depois da data).</p>}
           <div className="dk-row is-wrap is-center">
             {EXPRESSIONS.map(([k, label]) => <button type="button" key={k} className={`dk-chip${av.expressao === k ? " is-on" : ""}`} onClick={() => save({ avatar: { expressao: k } })}>{label}</button>)}
@@ -572,6 +572,18 @@ function Personalize({ api, cfg, setCfg, aiName, onRename }) {
           </div>
           <label className="dk-field dk-toggle-row"><input type="checkbox" checked={av.temas !== false} onChange={(e) => save({ avatar: { temas: e.target.checked } })} />
             <span>Temas das datas (Natal, Halloween, Carnaval e dia de jogo do Palmeiras)</span></label>
+          <label className="dk-field dk-toggle-row"><input type="checkbox" checked={av.antena !== false} onChange={(e) => save({ avatar: { antena: e.target.checked } })} />
+            <span>Antena</span></label>
+          <div className="dk-field dk-jeito"><span>Jeito de ser</span>
+            <label className="dk-toggle-row"><input type="checkbox" checked={av.olhos_seguem !== false} onChange={(e) => save({ avatar: { olhos_seguem: e.target.checked } })} />
+              <span>Olhos seguem o mouse</span></label>
+            {av.olhos_seguem !== false && (
+              <label className="dk-slider"><span>Velocidade</span>
+                <input type="range" min="0.25" max="2" step="0.25" value={Number(av.olhos_vel) || 1}
+                  onChange={(e) => save({ avatar: { olhos_vel: Number(e.target.value) } })} aria-label="Velocidade dos olhos" />
+                <b>{(Number(av.olhos_vel) || 1).toFixed(2)}x</b></label>
+            )}
+          </div>
           <div className="dk-field"><span>Cor do app</span><Swatches value={cfg?.cor || "#22d3ee"} colors={DESK_COLORS} onPick={(c) => save({ cor: c })} /></div>
           {msg && <p className="dk-err" role="alert">{msg}</p>}
         </div>
@@ -580,15 +592,75 @@ function Personalize({ api, cfg, setCfg, aiName, onRename }) {
   );
 }
 
-const PROVIDERS = [["gemini", "Gemini", "Google · tem uso grátis"], ["openai", "ChatGPT", "OpenAI"], ["anthropic", "Claude", "Anthropic"]];
+const PROVIDERS = [["groq", "Groq", "Muito rápida · grátis"], ["gemini", "Gemini", "Google · grátis"], ["openai", "ChatGPT", "OpenAI"], ["anthropic", "Claude", "Anthropic"]];
+const PROVIDER_NAME = Object.fromEntries(PROVIDERS.map(([k, n]) => [k, n]));
+
+// V8.2 (ideia 8): Cérebro (IA): "Automático grátis" (Groq principal, Gemini reserva, troca sozinho no limite) e
+// conectar as IAs grátis colando a chave aqui (ela vai só para o .env deste PC e não aparece de novo).
+function KeyCard({ api, p, onChange }) {
+  const [key, setKey] = useState("");
+  const [msg, setMsg] = useState("");
+  const [busy, setBusy] = useState(false);
+  const connect = async (e) => {
+    e.preventDefault();
+    if (!key.trim()) return;
+    setBusy(true);
+    try {
+      onChange(await api("/api/brain/key", { method: "POST", body: JSON.stringify({ provedor: p.id, chave: key.trim() }) }));
+      setKey("");
+      setMsg("");
+    } catch (err) {
+      setMsg(err.message);
+    }
+    setBusy(false);
+  };
+  const remove = async () => {
+    if (!window.confirm(`Desconectar a ${p.nome}? A chave é apagada do PC.`)) return;
+    try {
+      onChange(await api(`/api/brain/key/${p.id}`, { method: "DELETE" }));
+    } catch (err) {
+      setMsg(err.message);
+    }
+  };
+  if (p.conectada) {
+    return (
+      <div className="dk-keycard is-ok">
+        <span className="dk-keyok">✓</span>
+        <div><b>{p.nome} conectada</b><small>{p.papel}{p.descansando ? ` · no limite agora (volta em ${Math.ceil(p.descansando / 60)} min)` : ""}</small></div>
+        <button type="button" className="dk-btn" onClick={remove}>Desconectar</button>
+        {msg && <p className="dk-err" role="alert">{msg}</p>}
+      </div>
+    );
+  }
+  return (
+    <div className="dk-keycard">
+      <div className="dk-keyhead"><b>{p.nome}</b><span className="dk-pill is-free">Grátis</span></div>
+      <small>{p.papel}</small>
+      <ol className="dk-keysteps">
+        <li>Entre com a sua conta em <a href={p.link} target="_blank" rel="noreferrer">{p.link.replace("https://", "")}</a> e clique em <b>Create API key</b> (Criar chave).</li>
+        <li>Copie a chave e cole aqui (conecta sozinho):</li>
+      </ol>
+      <form className="dk-add" onSubmit={connect}>
+        <input type="password" value={key} onChange={(e) => setKey(e.target.value)} placeholder="Cole a chave aqui" aria-label={`Chave da ${p.nome}`} autoComplete="off" spellCheck="false" />
+        <button type="submit" className="dk-btn is-main" disabled={!key.trim() || busy}>{busy ? "…" : "CONECTAR"}</button>
+      </form>
+      <small className="dk-muted">🔒 A chave fica só no arquivo .env deste PC. Não vai para a nuvem e não aparece de novo aqui.</small>
+      {msg && <p className="dk-err" role="alert">{msg}</p>}
+    </div>
+  );
+}
 
 function Brain({ api }) {
+  const [st, load, setSt] = useLoad(api, "/api/brain");
   const [prefs, , setPrefs] = useLoad(api, "/api/prefs");
   const [test, setTest] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [pick, setPick] = useState(false);
+  const cur = prefs?.llm_provider || st?.modo || "auto";
   const choose = async (p) => {
     try {
       setPrefs(await api("/api/prefs", { method: "PATCH", body: JSON.stringify({ llm_provider: p }) }));
+      load();
     } catch (err) {
       setTest({ erro: err.message });
     }
@@ -597,31 +669,53 @@ function Brain({ api }) {
     setBusy(true);
     setTest(null);
     try {
-      setTest(await api("/api/desk/test-ai", { method: "POST", timeout: 60_000 }));
+      setTest(await api("/api/desk/test-ai", { method: "POST", body: JSON.stringify({ provedor: cur }), timeout: 60_000 }));
+      load();
     } catch (err) {
       setTest({ erro: err.message });
     }
     setBusy(false);
   };
-  const cur = prefs?.llm_provider || "gemini";
+  const provs = st?.provedores || [];
+  const anyFree = provs.some((p) => p.conectada);
   const cd = prefs?.ai_cooldown;
+  const banner = cur === "auto"
+    ? (anyFree ? ["ok", "Funcionando no automático grátis", `${provs.filter((p) => p.conectada).map((p) => p.nome).join(" + ")}: quando uma chega no limite, a outra responde sozinha.`]
+      : ["warn", "Conecte uma IA grátis", "Cole a chave da Groq (e a do Gemini, de reserva) logo abaixo."])
+    : ["ok", `Funcionando com ${PROVIDER_NAME[cur] || cur}`, "Você escolheu a IA. O automático grátis troca sozinho no limite."];
   return (
     <Card title="Cérebro (IA)" icon="🧠">
-      <div className={`dk-banner${cd?.active ? " is-warn" : ""}`}>
-        {cd?.active ? `⏳ A IA chegou no limite: volta em ${Math.ceil((cd.remaining || 0) / 60)} min.` : `✓ Funcionando com ${PROVIDERS.find((p) => p[0] === cur)?.[1] || cur}`}
+      <div className={`dk-brainbanner is-${cd?.active ? "warn" : banner[0]}`}>
+        <span className="dk-keyok">{cd?.active ? "⏳" : banner[0] === "ok" ? "✓" : "!"}</span>
+        <div><b>{cd?.active ? "As IAs chegaram no limite" : banner[1]}</b><small>{cd?.active ? `Volta em ${Math.ceil((cd.remaining || 0) / 60)} min. Música, timers e abrir apps continuam funcionando.` : banner[2]}</small></div>
       </div>
-      <small className="dk-label">COMO O JARVIS PENSA</small>
-      <div className="dk-grid3">
-        {PROVIDERS.map(([k, label, sub]) => (
-          <button type="button" key={k} className={`dk-tile${cur === k ? " is-on" : ""}`} onClick={() => choose(k)} aria-pressed={cur === k}>
-            <b>{label}</b><small>{sub}</small>{cur === k && <i className="dk-tick">✓</i>}
-          </button>
-        ))}
+      <small className="dk-label">1 · COMO O JARVIS PENSA</small>
+      <div className="dk-grid2">
+        <button type="button" className={`dk-tile${cur === "auto" ? " is-on" : ""}`} onClick={() => { choose("auto"); setPick(false); }} aria-pressed={cur === "auto"}>
+          <b>⚡ Automático grátis <span className="dk-pill is-free">Recomendado</span></b>
+          <small>Usa a Groq e o Gemini de graça e troca sozinho quando uma chega no limite.</small>{cur === "auto" && <i className="dk-tick">✓</i>}
+        </button>
+        <button type="button" className={`dk-tile${cur !== "auto" ? " is-on" : ""}`} onClick={() => setPick((v) => !v)} aria-expanded={pick}>
+          <b>🎯 Eu escolho a IA</b><small>Groq, Gemini, ChatGPT ou Claude: fixa a que você quiser.</small>{cur !== "auto" && <i className="dk-tick">✓</i>}
+        </button>
       </div>
-      <p className="dk-muted">As chaves ficam no arquivo .env do PC (nunca aparecem aqui). Se a IA escolhida chegar no limite, o JARVIS avisa e as funções simples (música, volume, timers, abrir apps) continuam funcionando.</p>
+      {(pick || cur !== "auto") && (
+        <div className="dk-row is-wrap">
+          {PROVIDERS.map(([k, label, sub]) => (
+            <button type="button" key={k} className={`dk-chip${cur === k ? " is-on" : ""}`} onClick={() => choose(k)} title={sub}>{label}</button>
+          ))}
+        </div>
+      )}
+      <small className="dk-label">2 · CONECTAR AS IAS GRÁTIS</small>
+      <div className="dk-keys">
+        {provs.map((p) => <KeyCard key={p.id} api={api} p={p} onChange={setSt} />)}
+        {!st && <p className="dk-muted">Carregando…</p>}
+      </div>
       <small className="dk-label">TESTAR</small>
+      <p className="dk-muted">Manda uma mensagem e mostra a resposta e o tempo.</p>
       <div className="dk-row"><button type="button" className="dk-btn is-main" onClick={run} disabled={busy}>{busy ? "Testando…" : "▶ TESTAR ESTA IA"}</button></div>
-      {test && (test.erro ? <p className="dk-err" role="alert">{test.erro}</p> : <p className="dk-test"><b>{test.segundos}s</b> · {test.resposta}</p>)}
+      {test && (test.erro ? <p className="dk-err" role="alert">{test.erro}</p>
+        : <p className="dk-test"><b>{test.segundos}s</b> · {PROVIDER_NAME[test.provedor] || test.provedor} · {test.resposta}</p>)}
     </Card>
   );
 }

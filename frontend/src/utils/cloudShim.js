@@ -315,6 +315,10 @@ async function route(method, path, query, body) {
       return { status: 503, data: { detail: "As perguntas sobre você são respondidas no PC (vão para a memória)." } };
     case "GET /api/desk/memory-map":
       return ok({ nos: [{ id: "eu", rotulo: "Você", tipo: "centro" }], ligacoes: [], total: 0, cloud: true });
+    case "GET /api/brain": // V8.2: as chaves das IAs ficam só no PC
+      return ok({ modo: "auto", automatico: true, ativa: "", provedores: [], cloud: true });
+    case "POST /api/brain/key":
+      return { status: 503, data: { detail: "A chave da IA é colada no próprio PC (ela fica só no .env de lá)." } };
     case "POST /api/desk/test-ai":
       return { status: 503, data: { detail: "O teste da IA é feito no PC." } };
     case "GET /api/world/alerts": // V7.11: os avisos do Olho de Deus saem do PC

@@ -67,8 +67,8 @@ async def _announce() -> None:
             log.debug("Não consegui avisar as telas da contagem: %s", exc)
 
 
-def add(title: str, target: datetime, all_day: bool) -> dict:
-    items = [c for c in list_countdowns() if _norm(c["title"]) != _norm(title)]
+def add(title: str, target: datetime, all_day: bool, now: Optional[datetime] = None) -> dict:
+    items = [c for c in list_countdowns(now) if _norm(c["title"]) != _norm(title)]
     new = {"id": int(datetime.now().timestamp() * 1000) % 10**10, "title": title[:60],
            "target": target.replace(second=0, microsecond=0).isoformat(), "all_day": all_day}
     items.append(new)
@@ -220,7 +220,7 @@ async def handle_voice(message: str, now: Optional[datetime] = None) -> Optional
     when_label = _target_label(target, all_day, now)
     reply = f"{falta[0].upper()}{falta[1:]} para {title} ({when_label})."
     if wants_widget:
-        add(title, target, all_day)
+        add(title, target, all_day, now)
         await _announce()
         reply += " Coloquei a contagem regressiva na tela."
     return reply

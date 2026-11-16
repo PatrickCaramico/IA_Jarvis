@@ -1,14 +1,17 @@
-import { useId } from "react";
-import { DEFAULT_AVATAR, WARDROBE, withTheme } from "../utils/desk.js";
+import { useEffect, useId, useRef, useState } from "react";
+import { ANTENNA_HATS, DEFAULT_AVATAR, lookAt, WARDROBE, withTheme } from "../utils/desk.js";
 
 // V8.0: o avatar do MODO DESK: robô JARVIS (cabeça arredondada, visor escuro e olhos de luz em forma de arco-reator).
 // Cores, expressão e acessório vêm de Personalizar. O estado do JARVIS manda na expressão quando ele está
 // ouvindo, pensando ou falando; parado, fica a expressão escolhida (e ele pisca sozinho).
 // V8.1 (ideia 7): guarda-roupa (chapéu, rosto, roupa, forma dos olhos, efeito) e temas das datas por cima.
+// V8.2 (ideia 8): visual mais fofo (bochechas, olhos maiores com brilho, reflexo no visor e sombra), 7 expressões
+// novas, acessórios novos, antena liga/desliga e os olhos que seguem o mouse.
 
 export const EXPRESSIONS = [
-  ["feliz", "Feliz"], ["pensando", "Pensando"], ["falando", "Falando"], ["ouvindo", "Ouvindo"],
-  ["dormindo", "Dormindo"], ["surpreso", "Surpreso"], ["piscando", "Piscando"],
+  ["repouso", "Repouso"], ["ouvindo", "Ouvindo"], ["pensando", "Pensando"], ["falando", "Falando"], ["feliz", "Feliz"],
+  ["rindo", "Rindo"], ["carinho", "Carinho"], ["descolado", "Descolado"], ["surpreso", "Surpreso"], ["bravo", "Bravo"],
+  ["chorando", "Chorando"], ["dormindo", "Dormindo"], ["conseguiu", "Conseguiu"], ["piscando", "Piscando"],
 ];
 export { DEFAULT_AVATAR, WARDROBE, withTheme };
 
@@ -98,6 +101,60 @@ function Face({ face, color, shape }) {
           <text className="ra-z is-2" x="100" y="20" fill={color} fontSize="10" fontWeight="700">z</text>
         </g>
       );
+    case "repouso":
+      return <g className="ra-glow">{[44, 76].map((x) => <path key={x} d={`M${x - 8} 61 Q${x} 69 ${x + 8} 61`} fill="none" stroke={color} strokeWidth="4.5" strokeLinecap="round" />)}</g>;
+    case "rindo":
+      return (
+        <g className="ra-glow">
+          {arc(44)}{arc(76)}
+          <path className="ra-laugh" d="M48 72 Q60 90 72 72 Z" fill={color} />
+          <path d="M53 76 Q60 84 67 76" fill="#fb7185" opacity="0.7" />
+        </g>
+      );
+    case "carinho":
+      return (
+        <g className="ra-glow">
+          {arc(44)}{arc(76)}
+          <path d="M54 76 Q60 81 66 76" fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" />
+          <path className="ra-heart" d="M98 24 C92 18 88 26 98 32 C108 26 104 18 98 24 Z" fill="#fb7185" />
+        </g>
+      );
+    case "descolado":
+      return (
+        <g className="ra-glow">
+          <rect x="35" y="60" width="18" height="6" rx="3" fill={color} /><rect x="67" y="60" width="18" height="6" rx="3" fill={color} />
+          <path d="M52 78 Q63 82 71 73" fill="none" stroke={color} strokeWidth="3.5" strokeLinecap="round" />
+        </g>
+      );
+    case "bravo":
+      return (
+        <g className="ra-glow">
+          <path d="M34 52 L52 58 M86 52 L68 58" stroke={color} strokeWidth="4" strokeLinecap="round" />
+          <Eye cx={45} cy={65} r={5.5} color={color} shape={shape} /><Eye cx={75} cy={65} r={5.5} color={color} shape={shape} />
+          <path d="M52 81 Q60 76 68 81" fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" />
+        </g>
+      );
+    case "chorando":
+      return (
+        <g className="ra-glow">
+          <path d="M35 55 L50 51 M85 55 L70 51" stroke={color} strokeWidth="3.5" strokeLinecap="round" />
+          <Eye cx={44} cy={63} r={6} color={color} shape={shape} /><Eye cx={76} cy={63} r={6} color={color} shape={shape} />
+          <path d="M52 82 Q60 75 68 82" fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" />
+          <g className="ra-tears" fill="#7dd3fc">
+            <path d="M40 72 Q38 77 40 79 Q42 77 40 72 Z" /><path d="M80 72 Q78 77 80 79 Q82 77 80 72 Z" style={{ animationDelay: "0.6s" }} />
+          </g>
+        </g>
+      );
+    case "conseguiu":
+      return (
+        <g className="ra-glow">
+          <Eye cx={44} cy={60} r={7.5} color={color} shape="estrela" /><Eye cx={76} cy={60} r={7.5} color={color} shape="estrela" />
+          <path d="M47 74 Q60 87 73 74" fill="none" stroke={color} strokeWidth="4" strokeLinecap="round" />
+          <g className="ra-fx-spark" fill="#facc15">
+            {[[18, 30], [104, 40], [100, 12]].map(([x, y], i) => <path key={i} d={`M${x} ${y - 5} L${x + 1.4} ${y - 1.4} L${x + 5} ${y} L${x + 1.4} ${y + 1.4} L${x} ${y + 5} L${x - 1.4} ${y + 1.4} L${x - 5} ${y} L${x - 1.4} ${y - 1.4} Z`} style={{ animationDelay: `${i * 0.3}s` }} />)}
+          </g>
+        </g>
+      );
     case "surpreso":
       return (
         <g className="ra-glow">
@@ -106,7 +163,7 @@ function Face({ face, color, shape }) {
         </g>
       );
     default:
-      return <g className="ra-glow ra-blink"><Eye cx={44} cy={62} r={7} color={color} shape={shape} /><Eye cx={76} cy={62} r={7} color={color} shape={shape} /></g>;
+      return <g className="ra-glow ra-blink"><Eye cx={44} cy={62} r={8} color={color} shape={shape} /><Eye cx={76} cy={62} r={8} color={color} shape={shape} /></g>;
   }
 }
 
@@ -181,6 +238,44 @@ function Hat({ kind, accent }) {
           <path d="M44 3 Q40 14 44 27 M60 0 V28 M76 3 Q80 14 76 27" fill="none" stroke="#c2410c" strokeWidth="2" />
           <path d="M60 0 Q62 -8 68 -9" fill="none" stroke="#15803d" strokeWidth="4" strokeLinecap="round" />
           <path d="M50 12 L54 8 L56 13 Z M70 12 L66 8 L64 13 Z" fill="#1c1917" />
+        </g>
+      );
+    case "aureola":
+      return (
+        <g className="ra-halo">
+          <ellipse cx="60" cy="4" rx="26" ry="6" fill="none" stroke="#fde047" strokeWidth="4" />
+          <ellipse cx="60" cy="4" rx="26" ry="6" fill="none" stroke="#fff" strokeWidth="1" opacity="0.7" />
+          <circle cx="86" cy="5" r="3" fill="#bef264" />
+        </g>
+      );
+    case "chifrinhos":
+      return (
+        <g fill="#ef4444" stroke="#991b1b" strokeWidth="1.2">
+          <path d="M30 30 Q24 12 36 6 Q34 18 42 26 Z" /><path d="M90 30 Q96 12 84 6 Q86 18 78 26 Z" />
+        </g>
+      );
+    case "festa":
+      return (
+        <g>
+          <path d="M44 28 L62 -10 L80 28 Z" fill="#a855f7" />
+          <path d="M50 16 L72 16 M47 23 L77 23 M55 6 L68 6" stroke="#fde047" strokeWidth="3" />
+          <circle cx="62" cy="-11" r="5" fill="#f472b6" />
+        </g>
+      );
+    case "flor":
+      return (
+        <g>
+          {[0, 72, 144, 216, 288].map((r) => <ellipse key={r} cx="92" cy="18" rx="5" ry="8" fill="#f9a8d4" transform={`rotate(${r} 92 26)`} />)}
+          <circle cx="92" cy="26" r="5" fill="#facc15" />
+        </g>
+      );
+    case "bone_time":
+      return (
+        <g>
+          <path d="M22 32 C24 8 96 8 98 32 Z" fill="#15803d" />
+          <path d="M22 30 C24 24 96 24 98 30" fill="none" stroke="#f8fafc" strokeWidth="3" />
+          <circle cx="60" cy="18" r="5" fill="#f8fafc" /><circle cx="60" cy="18" r="2.5" fill="#15803d" />
+          <path d="M70 30 C86 28 108 30 114 36 C104 38 84 37 70 34 Z" fill="#14532d" />
         </g>
       );
     default:
@@ -286,23 +381,66 @@ function Effect({ kind, color }) {
   return null;
 }
 
+/** V8.2: olhos seguindo o mouse (suave; a velocidade vem de Personalizar). Só nos avatares grandes. */
+function useLook(enabled, speed) {
+  const ref = useRef(null);
+  const [look, setLook] = useState({ x: 0, y: 0 });
+  useEffect(() => {
+    if (!enabled || typeof window === "undefined" || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return undefined;
+    let target = { x: 0, y: 0 };
+    let cur = { x: 0, y: 0 };
+    let raf = 0;
+    const k = Math.min(1, 0.12 * (speed || 1));
+    const tick = () => {
+      cur = { x: cur.x + (target.x - cur.x) * k, y: cur.y + (target.y - cur.y) * k };
+      setLook(cur);
+      raf = Math.abs(target.x - cur.x) + Math.abs(target.y - cur.y) > 0.002 ? requestAnimationFrame(tick) : 0;
+    };
+    const move = (e) => {
+      target = lookAt(e.clientX, e.clientY, ref.current?.getBoundingClientRect());
+      if (!raf) raf = requestAnimationFrame(tick);
+    };
+    const leave = () => {
+      target = { x: 0, y: 0 };
+      if (!raf) raf = requestAnimationFrame(tick);
+    };
+    window.addEventListener("mousemove", move, { passive: true });
+    document.addEventListener("mouseleave", leave);
+    return () => {
+      window.removeEventListener("mousemove", move);
+      document.removeEventListener("mouseleave", leave);
+      cancelAnimationFrame(raf);
+    };
+  }, [enabled, speed]);
+  return [ref, enabled ? look : { x: 0, y: 0 }];
+}
+
 export default function RoboAvatar({ avatar = DEFAULT_AVATAR, tema = null, state = "idle", size = 64, className = "" }) {
   const a = withTheme(avatar, tema);
   const face = faceFor(state, a.expressao);
   const gid = useId().replace(/:/g, "");
   const shade = `ra-shade-${gid}`;
+  const gloss = `ra-gloss-${gid}`;
+  const [ref, look] = useLook(size >= 60 && a.olhos_seguem !== false, Number(a.olhos_vel) || 1);
+  const eyes = `translate(${(look.x * 6).toFixed(2)} ${(look.y * 4).toFixed(2)})`;
+  const showAntenna = a.antena !== false && ANTENNA_HATS.includes(a.chapeu);
   return (
-    <svg className={`ra ra-${face} ${className}`} width={size} height={size} viewBox="0 -10 120 132" overflow="visible" role="img" aria-label={`Avatar do JARVIS: ${face}`}>
+    <svg ref={ref} className={`ra ra-${face} ${className}`} width={size} height={size} viewBox="0 -10 120 132" overflow="visible" role="img" aria-label={`Avatar do JARVIS: ${face}`}>
       <defs>
         <linearGradient id={shade} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor="#fff" stopOpacity="0.55" />
           <stop offset="0.6" stopColor="#fff" stopOpacity="0" />
           <stop offset="1" stopColor="#000" stopOpacity="0.18" />
         </linearGradient>
+        <linearGradient id={gloss} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#fff" stopOpacity="0.22" />
+          <stop offset="0.5" stopColor="#fff" stopOpacity="0" />
+        </linearGradient>
       </defs>
+      <ellipse className="ra-shadow" cx="60" cy="116" rx="34" ry="5" fill="#000" opacity="0.22" />
       {a.efeito === "brilho" && <Effect kind="brilho" color={a.olhos} />}
       <OutfitBack kind={a.roupa} accent={a.olhos} />
-      {["nenhum", "fone", "headset"].includes(a.chapeu) && (
+      {showAntenna && (
         <g className="ra-antenna">
           <path d="M60 22 V10" stroke={a.corpo} strokeWidth="4" strokeLinecap="round" />
           <circle cx="60" cy="8" r="5" fill={a.olhos} className="ra-bulb" />
@@ -316,8 +454,13 @@ export default function RoboAvatar({ avatar = DEFAULT_AVATAR, tema = null, state
       <rect x="12" y="22" width="96" height="84" rx="36" fill={a.corpo} />
       <rect x="12" y="22" width="96" height="84" rx="36" fill={`url(#${shade})`} />
       <rect x="22" y="38" width="76" height="52" rx="24" fill={a.visor} />
+      <path d="M30 44 Q34 40 52 40 L40 62 Q30 60 30 52 Z" fill={`url(#${gloss})`} />
       <rect x="26" y="41" width="40" height="7" rx="3.5" fill="#fff" opacity="0.08" />
-      <Face face={face} color={a.olhos} shape={a.olhos_forma} />
+      <g transform={eyes}>
+        <ellipse className="ra-cheek" cx="32" cy="77" rx="6" ry="3.5" fill="#fb7185" opacity="0.5" />
+        <ellipse className="ra-cheek" cx="88" cy="77" rx="6" ry="3.5" fill="#fb7185" opacity="0.5" />
+        <Face face={face} color={a.olhos} shape={a.olhos_forma} />
+      </g>
       <FaceItem kind={a.rosto} />
       <OutfitFront kind={a.roupa} />
       <Hat kind={a.chapeu} accent={a.olhos} />

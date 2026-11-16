@@ -86,7 +86,7 @@ export default function SettingsPanel({ api, onClose, onPrefsChange, onOpenMicro
     setAiName(data.ai_name ?? "JARVIS");
     setTheme(data.color_theme ?? "blue");
     setSelectedCamera(data.camera_index ?? 0);
-    setProvider(data.llm_provider ?? "gemini");
+    setProvider(data.llm_provider ?? "auto");
     setPersonality(data.personality_mode ?? "direto");
     setSearchMode(data.search_mode ?? "auto");
     setDeepSearchAllowed(Boolean(data.deep_search_allowed));
@@ -357,6 +357,8 @@ export default function SettingsPanel({ api, onClose, onPrefsChange, onOpenMicro
                   onChange={(e) => setProvider(e.target.value)}
                   className="w-full rounded border border-cyan-500/30 bg-black/50 p-2 text-xs text-cyan-100"
                 >
+                  <option value="auto">Automático grátis (Groq + Gemini)</option>
+                  <option value="groq">Groq (muito rápida)</option>
                   <option value="gemini">Google Gemini 2.5</option>
                   <option value="openai">OpenAI GPT-4o</option>
                   <option value="anthropic">Anthropic Claude</option>

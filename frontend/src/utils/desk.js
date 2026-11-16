@@ -69,7 +69,8 @@ export const FUNCTIONS = [
 // V8.1 (ideia 7): guarda-roupa do robô e temas das datas (desenhados em components/RoboAvatar.jsx)
 export const WARDROBE = [
   ["chapeu", "🎩 Chapéus", [["nenhum", "Nenhum"], ["gorro", "Gorro de Natal"], ["bone", "Boné"], ["fone", "Fone"], ["cartola", "Cartola"],
-    ["gatinho", "Tiara de gatinho"], ["bruxa", "Chapéu de bruxa"], ["headset", "Headset"], ["coroa", "Coroa"]]],
+    ["gatinho", "Tiara de gatinho"], ["bruxa", "Chapéu de bruxa"], ["headset", "Headset"], ["coroa", "Coroa"],
+    ["aureola", "Auréola"], ["chifrinhos", "Chifrinhos"], ["festa", "Chapéu de festa"], ["flor", "Flor"], ["bone_time", "Boné do time"]]],
   ["rosto", "🕶 Rosto", [["nenhum", "Nenhum"], ["oculos", "Óculos"], ["laco", "Laço"], ["bigode", "Bigode"], ["oculos_escuros", "Óculos escuros"]]],
   ["roupa", "👕 Roupas", [["nenhuma", "Nenhuma"], ["cachecol", "Cachecol"], ["gravata", "Gravata-borboleta"], ["camisa", "Camisa do time"],
     ["capa", "Capa de herói"], ["armadura", "Colete de armadura"]]],
@@ -79,7 +80,21 @@ export const WARDROBE = [
 export const DEFAULT_AVATAR = {
   corpo: "#e8f4ff", visor: "#0b1220", olhos: "#22d3ee", expressao: "feliz", acessorio: "nenhum",
   chapeu: "nenhum", rosto: "nenhum", roupa: "nenhuma", olhos_forma: "reator", efeito: "nenhum", temas: true,
+  antena: true, olhos_seguem: true, olhos_vel: 1, // V8.2 (ideia 8)
 };
+
+/** V8.2: chapéus que deixam a antena aparecer (os outros cobrem o topo da cabeça). */
+export const ANTENNA_HATS = ["nenhum", "fone", "headset", "chifrinhos", "flor"];
+
+/** V8.2: para onde os olhos olham (-1..1 em x e y), a partir do mouse e do centro do avatar. */
+export function lookAt(mouseX, mouseY, rect) {
+  if (!rect || !rect.width) return { x: 0, y: 0 };
+  const cx = rect.left + rect.width / 2;
+  const cy = rect.top + rect.height / 2;
+  const reach = Math.max(rect.width, 160) * 3;
+  const clamp = (v) => Math.max(-1, Math.min(1, v));
+  return { x: clamp((mouseX - cx) / reach), y: clamp((mouseY - cy) / reach) };
+}
 const OLD = { fone: ["chapeu", "fone"], gorro: ["chapeu", "gorro"], coroa: ["chapeu", "coroa"], oculos: ["rosto", "oculos"] };
 
 /** O visual que aparece: o escolhido + o tema da data por cima (Natal, Halloween, Carnaval, dia de jogo). */

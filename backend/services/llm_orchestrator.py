@@ -341,20 +341,115 @@ def _call_anthropic(prompt: str, frame_b64: Optional[str], history: list[dict]) 
     return "".join(block.text for block in response.content if block.type == "text").strip()
 
 
+def _call_groq(prompt: str, frame_b64: Optional[str], history: list[dict]) -> str:
+    """V8.2: Groq (API no formato da OpenAI). Só texto: com imagem da câmera, o automático usa o Gemini."""
+    from openai import OpenAI
+
+    key = getattr(settings, "GROQ_API_KEY", "")
+    if not key:
+        raise RuntimeError("GROQ_API_KEY não configurada.")
+    if frame_b64:
+        raise RuntimeError("A Groq não vê imagens: usando outra IA.")
+    client = _client("groq", key, lambda: OpenAI(api_key=key, base_url="https://api.groq.com/openai/v1", timeout=30))
+    response = client.chat.completions.create(
+        model=settings.GROQ_MODEL,
+        max_tokens=_max_tokens(),
+        messages=[{"role": "system", "content": SYSTEM_PROMPT}, *history, {"role": "user", "content": prompt}],
+    )
+    return (response.choices[0].message.content or "").strip()
+
+
+# ------------------------------------------------------------------ V8.2: Automático grátis
+# Groq (rápida) é a principal e o Gemini a reserva (o Gemini também é o primeiro quando precisa pesquisar no
+# Google). Quando uma chega no limite, fica de lado por um tempo e a outra responde sozinha.
+_provider_rest: dict[str, float] = {}
+_last_provider = ""
+AUTO_ORDER = ("groq", "gemini", "openai", "anthropic")
+DAILY_REST = 60 * 60  # limite do dia: deixa a IA de lado por 1 h (depois tenta de novo)
+SHORT_REST = 60
+
+
+def provider_keys() -> dict[str, bool]:
+    return {"groq": bool(getattr(settings, "GROQ_API_KEY", "")), "gemini": bool(settings.GEMINI_API_KEY),
+            "openai": bool(settings.OPENAI_API_KEY), "anthropic": bool(settings.ANTHROPIC_API_KEY)}
+
+
+def provider_rest(name: str) -> int:
+    """Segundos que esta IA ainda fica de lado por ter chegado no limite (0 = disponível)."""
+    return max(0, int(_provider_rest.get(name, 0) - time.time()))
+
+
+def last_provider() -> str:
+    return _last_provider
+
+
+def _auto_order(deep: bool, frame: bool) -> list[str]:
+    keys = provider_keys()
+    order = list(AUTO_ORDER)
+    if deep or frame:  # pesquisa no Google e imagens: o Gemini sabe fazer
+        order.remove("gemini")
+        order.insert(0, "gemini")
+    usable = [p for p in order if keys[p]]
+    ready = [p for p in usable if not provider_rest(p)]
+    return ready or usable  # todas de lado? tenta mesmo assim, na ordem
+
+
+def _call_one(provider: str, prompt: str, frame_b64: Optional[str], history: list[dict], deep: bool) -> str:
+    global _last_provider
+    if provider == "groq":
+        out = _call_groq(prompt, frame_b64, history)
+    elif provider == "anthropic":
+        out = _call_anthropic(prompt, frame_b64, history)
+    elif provider == "openai":
+        out = _call_openai(prompt, frame_b64, history)
+    elif provider == "gemini":
+        out = _call_gemini(prompt, frame_b64, history, deep=deep)
+    else:
+        raise RuntimeError(f'LLM_PROVIDER inválido: "{provider}". Use "auto", "groq", "openai", "anthropic" ou "gemini".')
+    _last_provider = provider
+    return out
+
+
+def _call_auto(prompt: str, frame_b64: Optional[str], history: list[dict], deep: bool) -> str:
+    last_exc: Exception | None = None
+    for provider in _auto_order(deep, bool(frame_b64)):
+        try:
+            return _call_one(provider, prompt, frame_b64, history, deep)
+        except Exception as exc:  # noqa: BLE001 - tenta a próxima
+            last_exc = exc
+            if is_quota_error(exc):
+                daily = "day" in str(exc).lower() or "dia" in str(exc).lower() or "perday" in str(exc).lower()
+                _provider_rest[provider] = time.time() + (DAILY_REST if daily else SHORT_REST)
+                log.warning("Automático grátis: %s chegou no limite; usando a próxima IA.", provider)
+            else:
+                log.warning("Automático grátis: %s falhou (%s); usando a próxima IA.", provider, str(exc)[:120])
+    if last_exc is None:
+        raise RuntimeError("Nenhuma IA conectada. Conecte a Groq ou o Gemini em Cérebro (IA).")
+    raise last_exc
+
+
 def _call_llm(prompt: str, frame_b64: Optional[str], history: list[dict], deep: bool = False) -> str:
     provider, personality = prefs.get_llm_config()
     prompt = f"{PERSONALITY_PROMPTS.get(personality, PERSONALITY_PROMPTS['direto'])}\n{prompt}"
+    if provider == "auto":
+        return _call_auto(prompt, frame_b64, history, deep)
+    if provider == "groq":
+        if frame_b64 or (deep and settings.GEMINI_API_KEY):
+            return _call_one("gemini", prompt, frame_b64, history, deep) if settings.GEMINI_API_KEY else _call_groq(prompt, None, history)
+        return _call_one("groq", prompt, frame_b64, history, deep)
     # Pesquisa na internet (modo automático ou profunda): a busca do Google está ligada só no Gemini.
     # Com outro provedor escolhido, a pergunta que precisa de pesquisa vai para o Gemini, se houver chave.
     if deep and provider != "gemini" and settings.GEMINI_API_KEY:
-        return _call_gemini(prompt, frame_b64, history, deep=True)
-    if provider == "anthropic":
-        return _call_anthropic(prompt, frame_b64, history)
-    if provider == "openai":
-        return _call_openai(prompt, frame_b64, history)
-    if provider == "gemini":
-        return _call_gemini(prompt, frame_b64, history, deep=deep)
-    raise RuntimeError(f'LLM_PROVIDER inválido: "{provider}". Use "openai", "anthropic" ou "gemini".')
+        return _call_one("gemini", prompt, frame_b64, history, True)
+    return _call_one(provider, prompt, frame_b64, history, deep)
+
+
+def ask_with_provider(prompt: str, provider: str) -> str:
+    """V8.2: TESTAR ESTA IA com uma IA específica (ou "auto")."""
+    full = f"{PERSONALITY_PROMPTS['direto']}\n{prompt}"
+    if provider == "auto":
+        return _call_auto(full, None, [], False)
+    return _call_one(provider, full, None, [], False)
 
 
 def ask_with_image(prompt: str, image_b64: str) -> str:

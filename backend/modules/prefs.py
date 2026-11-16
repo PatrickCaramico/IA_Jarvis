@@ -20,7 +20,7 @@ _DEFAULTS: dict[str, Any] = {
     "widget_layout": {},             # posição e tamanho persistidos no painel
     "custom_shortcuts": {},       # atalhos personalizados: {"nome": {"apps": [...], "urls": [...]}}
     "camera_index": 0,            # índice da webcam (0 = padrão)
-    "llm_provider": "openai",     # provedor usado nas próximas conversas
+    "llm_provider": "auto",       # V8.2: "auto" = Automático grátis (Groq + Gemini) | groq | gemini | openai | anthropic
     "personality_mode": "direto", # direto | descontraido | formal | alexa (V6.5.14)
     "search_mode": "auto",        # "auto" (como a Alexa: IA + busca no Google) | "browser" | "ask" | "api"
     "default_search_mode": "browser", # modo padrão caso expire timeout (10s)
@@ -280,9 +280,11 @@ def get_llm_config() -> tuple[str, str]:
         "openai": bool(settings.OPENAI_API_KEY),
         "anthropic": bool(settings.ANTHROPIC_API_KEY),
         "gemini": bool(settings.GEMINI_API_KEY),
+        "groq": bool(getattr(settings, "GROQ_API_KEY", "")),
     }
+    configured["auto"] = configured["groq"] or configured["gemini"]
     if not configured.get(provider, False):
-        provider = next((name for name in ("gemini", "openai", "anthropic") if configured[name]), provider)
+        provider = next((name for name in ("auto", "gemini", "openai", "anthropic") if configured[name]), provider)
     mode = str(prefs.get("personality_mode") or "direto").lower()
     return provider, mode
 

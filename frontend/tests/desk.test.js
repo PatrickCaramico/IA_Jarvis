@@ -79,3 +79,17 @@ test("V8.1.7: tela de atualização: etapas na ordem certa", async () => {
   assert.deepEqual([0, 1, 2, 3].map((i) => st(i, "reiniciando")), ["done", "done", "now", "next"]);
   assert.deepEqual([0, 1, 2, 3].map((i) => st(i, "pronto")), ["done", "done", "done", "done"]);
 });
+
+test("V8.2: olhos seguem o mouse e acessórios novos", async () => {
+  const { lookAt, WARDROBE, ANTENNA_HATS, DEFAULT_AVATAR } = await import("../src/utils/desk.js");
+  const rect = { left: 0, top: 0, width: 100, height: 100 };
+  assert.deepEqual(lookAt(50, 50, rect), { x: 0, y: 0 });
+  const right = lookAt(5000, 50, rect);
+  assert.equal(right.x, 1);
+  assert.ok(lookAt(200, 50, rect).x > 0 && lookAt(200, 50, rect).x < 1);
+  assert.deepEqual(lookAt(10, 10, null), { x: 0, y: 0 });
+  const hats = WARDROBE.find(([s]) => s === "chapeu")[2].map(([id]) => id);
+  for (const h of ["aureola", "chifrinhos", "festa", "flor", "bone_time"]) assert.ok(hats.includes(h), h);
+  assert.ok(!ANTENNA_HATS.includes("aureola") && ANTENNA_HATS.includes("nenhum"));
+  assert.equal(DEFAULT_AVATAR.olhos_seguem, true);
+});

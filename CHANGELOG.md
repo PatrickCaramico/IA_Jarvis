@@ -2,6 +2,27 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 8.2.0 — 16 de novembro de 2026
+
+**🧠 Cérebro automático grátis e 🤖 avatar mais estiloso (ideia 8 do documento de atualização, vídeo 5)**
+- **⚡ Automático grátis** (Modo Desk › Cérebro (IA)): a **Groq**, que é grátis e muito rápida, responde como principal e o **Gemini** grátis fica de reserva.
+  - Quando uma chega no limite do dia, ela fica de lado e a outra responde sozinha. Antes, com o Gemini grátis no limite de 20 pedidos por dia, o JARVIS ficava sem IA.
+  - Pesquisa no Google e imagens da câmera vão primeiro para o Gemini, que sabe fazer isso.
+  - No topo aparece "✓ Funcionando no automático grátis".
+  - "Eu escolho a IA" continua disponível, agora também com a Groq.
+- **🔑 Conectar as IAs grátis:** um cartão para a Groq e outro para o Gemini, com o passo a passo, o link e o campo **Cole a chave aqui**.
+  - A chave é salva **só no `.env` deste PC**: não vai para a nuvem, não aparece de novo na tela e não entra no log.
+  - Só dá para colar no próprio PC, com a central liberada.
+  - Ao conectar a Groq, o Automático grátis já liga.
+  - **TESTAR ESTA IA** mostra qual IA respondeu e em quanto tempo.
+- **🤖 Avatar mais estiloso:**
+  - **Visual:** bochechas rosadas, olhos maiores, reflexo no visor e sombra suave.
+  - **7 expressões novas:** Repouso, Rindo, Carinho (com coraçãozinho), Descolado, Bravo, Chorando (com lágrimas) e Conseguiu (olhos de estrela).
+  - **Acessórios novos:** Auréola, Chifrinhos, Chapéu de festa, Flor e Boné do time, mais o liga/desliga da **Antena**.
+  - **Personalizar:** a prévia ficou bem maior, com todas as expressões em botões.
+- **👀 Jeito de ser › Olhos seguem o mouse**, com a velocidade ajustável (0,25x a 2x). Dá para desligar.
+- **Corrigido:** um teste de contagem regressiva quebrava conforme a data do dia.
+
 ## 8.1.7 — 16 de novembro de 2026
 
 **⬆ Atualização mais rápida e tela nova de ATUALIZANDO**

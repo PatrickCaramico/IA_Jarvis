@@ -312,3 +312,39 @@
 .dk-update-banner { width: 100%; margin-bottom: 14px; padding: 12px 16px; border: 1px solid rgba(var(--dk-accent-rgb), 0.6); border-radius: 14px; background: rgba(var(--dk-accent-rgb), 0.14); color: #fff; font: inherit; font-weight: 600; text-align: left; cursor: pointer; }
 .dk-update { display: grid; gap: 10px; margin-bottom: 12px; }
 .dk-update ul { margin: 0; padding-left: 18px; color: var(--dk-muted); font-size: 13px; }
+
+/* V8.2 (ideia 8): avatar mais estiloso */
+.ra { filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.28)); }
+.ra-halo { transform-box: fill-box; transform-origin: center; animation: ra-float 3s ease-in-out infinite; filter: drop-shadow(0 0 4px #fde047); }
+.ra-heart { transform-box: fill-box; transform-origin: center; animation: ra-heart 1.6s ease-in-out infinite; }
+.ra-tears > * { animation: ra-tear 1.4s ease-in infinite; }
+.ra-laugh { transform-box: fill-box; transform-origin: top; animation: ra-laugh 0.35s ease-in-out infinite alternate; }
+.ra-carinho .ra-cheek, .ra-rindo .ra-cheek { opacity: 0.85; }
+@keyframes ra-float { 50% { transform: translateY(-2px); } }
+@keyframes ra-heart { 0% { transform: translateY(4px) scale(0.6); opacity: 0; } 40% { opacity: 1; } 100% { transform: translateY(-8px) scale(1); opacity: 0; } }
+@keyframes ra-tear { from { transform: translateY(0); opacity: 1; } to { transform: translateY(14px); opacity: 0; } }
+@keyframes ra-laugh { to { transform: scaleY(0.75); } }
+@media (prefers-reduced-motion: reduce) { .ra-halo, .ra-heart, .ra-tears > *, .ra-laugh { animation: none; } }
+
+/* V8.2 (ideia 8): Cérebro (IA) e Jeito de ser */
+.dk-brainbanner { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; padding: 12px 14px; border-radius: 14px; border: 1px solid rgba(74, 222, 128, 0.45); background: rgba(74, 222, 128, 0.1); }
+.dk-brainbanner.is-warn { border-color: rgba(250, 204, 21, 0.5); background: rgba(250, 204, 21, 0.1); }
+.dk-brainbanner b { display: block; }
+.dk-brainbanner small, .dk-keycard small { color: var(--dk-muted); }
+.dk-keyok { flex: none; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: #22c55e; color: #052e16; font-weight: 800; }
+.dk-brainbanner.is-warn .dk-keyok { background: #facc15; color: #422006; }
+.dk-keys { display: grid; gap: 10px; margin-bottom: 14px; }
+.dk-keycard { display: grid; gap: 8px; padding: 14px; border: 1px solid var(--dk-line); border-radius: 14px; background: var(--dk-card-2); }
+.dk-keycard.is-ok { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; border-color: rgba(74, 222, 128, 0.4); }
+.dk-keycard.is-ok > div { flex: 1; min-width: 160px; display: grid; }
+.dk-keyhead { display: flex; align-items: center; gap: 8px; }
+.dk-keysteps { margin: 0; padding-left: 20px; display: grid; gap: 4px; font-size: 13px; }
+.dk-keysteps a { color: var(--dk-accent); }
+.dk-pill.is-free { background: rgba(74, 222, 128, 0.2); color: #bbf7d0; font-size: 11px; padding: 2px 8px; }
+.dk-jeito { display: grid; gap: 8px; }
+.dk-slider { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+.dk-slider input { flex: 1; accent-color: var(--dk-accent); }
+.dk-slider b { min-width: 46px; text-align: right; font-variant-numeric: tabular-nums; }
+.dk-perso-preview { align-content: start; }
+.dk-perso-preview > svg { margin-top: 10px; }
+.dk-keycard .dk-add, .dk-mission .dk-add { grid-template-columns: minmax(0, 1fr) auto; margin: 2px 0; }

@@ -194,13 +194,15 @@ async def update_prefs(req: PrefsRequest) -> dict:
     if "background_style" in patch and patch["background_style"] not in {"blueprint", "classic", "space"}:
         raise HTTPException(status_code=400, detail="background_style inválido. Use 'blueprint', 'space' ou 'classic'.")
     if "llm_provider" in patch and patch["llm_provider"] not in {
+        "auto",
+        "groq",
         "openai",
         "gemini",
         "anthropic",
     }:
         raise HTTPException(
             status_code=400,
-            detail="Provedor inválido. Use openai, gemini ou anthropic.",
+            detail="Provedor inválido. Use auto, groq, gemini, openai ou anthropic.",
         )
     if "personality_mode" in patch and patch["personality_mode"] not in {
         "direto",
