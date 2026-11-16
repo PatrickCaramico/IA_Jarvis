@@ -588,12 +588,44 @@ def create_chaser_window():
     try:
         import webview
 
+        # V8.6.3: sem "transparent" (no Windows o pywebview não faz janela transparente: ficava um quadrado branco);
+        # a janela é RECORTADA no formato da cabeça do robô (shape_chaser), então só o robô aparece.
         return webview.create_window(PACMAN_TITLE, f"{FRONT}/?pacman=1", width=PACMAN_SIZE, height=PACMAN_SIZE,
-                                     frameless=True, on_top=True, transparent=True, hidden=True,
+                                     frameless=True, on_top=True, hidden=True, background_color="#000000",
                                      resizable=False, easy_drag=False, focus=False, min_size=(60, 60))
     except Exception as exc:  # noqa: BLE001 - sem o Pac-Man o resto continua
         log.info("pac-man indisponível: %s", exc)
         return None
+
+
+# V8.6.3: a cabeça do robô dentro da janelinha do Pac-Man (px da página, janela de PACMAN_SIZE): o rosto arredondado
+# e as duas "orelhas". Bate com o RoboAvatar "tight" (viewBox 2 16 116 96) ocupando a janela toda.
+PACMAN_HEAD = (11, 17, 109, 103, 70)  # x1, y1, x2, y2, diâmetro do canto
+PACMAN_EARS = ((2, 45, 18, 75, 10), (102, 45, 118, 75, 10))
+
+
+def chaser_shape(scale: float = 1.0) -> list[tuple[int, int, int, int, int]]:
+    """Os pedaços (retângulos arredondados) que formam a cabeça, já na escala da tela."""
+    return [tuple(round(v * scale) for v in part) for part in (PACMAN_HEAD, *PACMAN_EARS)]
+
+
+def shape_chaser(hwnd: int, scale: float) -> bool:
+    """Recorta a janelinha no formato da cabeça (fora dela, nada aparece: nem fundo branco nem preto)."""
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        gdi32 = ctypes.WinDLL("gdi32")
+        gdi32.CreateRoundRectRgn.restype = wintypes.HANDLE
+        gdi32.CombineRgn.argtypes = [wintypes.HANDLE, wintypes.HANDLE, wintypes.HANDLE, ctypes.c_int]
+        parts = [gdi32.CreateRoundRectRgn(x1, y1, x2, y2, r, r) for x1, y1, x2, y2, r in chaser_shape(scale)]
+        rgn = parts[0]
+        for extra in parts[1:]:
+            gdi32.CombineRgn(rgn, rgn, extra, 2)  # RGN_OR
+        return bool(_user32().SetWindowRgn(hwnd, rgn, True))
+    except Exception as exc:  # noqa: BLE001
+        log.info("pac-man: recorte falhou: %s", exc)
+        return False
 
 
 def run_pacman(bridge: Bridge) -> None:
@@ -626,6 +658,7 @@ def run_pacman(bridge: Bridge) -> None:
         u.GetWindowRect(hwnd, ctypes.byref(r))
         w, h = r.right - r.left, r.bottom - r.top
         scale = (u.GetDpiForWindow(hwnd) or 96) / 96
+        shape_chaser(hwnd, w / PACMAN_SIZE if w else scale)
         home = (u.GetSystemMetrics(0) / 2, 40 * scale)
         ih = island_hwnd(bridge._island)
         if ih:
@@ -755,6 +788,9 @@ def listen_hotkey(bridge: Bridge, name: str) -> None:
 
 
 def main() -> None:
+    # V8.6.3: o fundo padrão do navegador embutido (WebView2) é BRANCO e aparecia nas pontas da pílula e em volta do
+    # Pac-Man. Preto combina com tudo do app (e é o que fica por baixo das partes recortadas).
+    os.environ.setdefault("WEBVIEW2_DEFAULT_BACKGROUND_COLOR", "FF000000")
     import webview  # pywebview
 
     try:
