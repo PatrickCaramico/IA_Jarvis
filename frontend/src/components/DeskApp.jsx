@@ -475,7 +475,7 @@ function MyPc({ avatar }) {
 
 // ------------------------------------------------------------------ configurações
 // V8.1.5: ATUALIZAR no Modo Desk (antes só existia na central clássica e no bloqueio)
-function Updates({ api, info, onUpdate }) {
+function Updates({ api, info, onUpdate, cfg, setCfg }) {
   const [state, setState] = useState(info ? { updateAvailable: true, count: info.count, latestVersion: info.latest, notes: (info.notes || []).join("\n") } : null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
@@ -505,10 +505,17 @@ function Updates({ api, info, onUpdate }) {
           {notes.length > 0 && <ul>{notes.map((n) => <li key={n}>{n}</li>)}</ul>}
           {onUpdate ? <button type="button" className="dk-btn is-main" onClick={onUpdate}>⬆ ATUALIZAR AGORA</button>
             : <p className="dk-muted">A atualização é feita no próprio PC do JARVIS.</p>}
-          <small className="dk-muted">O JARVIS baixa a versão nova, avisa por voz e reinicia sozinho (leva uns segundos). No app para Windows, depois feche pelo ⏻ e abra de novo pelo atalho.</small>
+          <small className="dk-muted">O JARVIS baixa a versão nova, avisa por voz e reinicia sozinho (leva uns segundos). O app para Windows e a ilha se atualizam sozinhos logo depois.</small>
         </div>
       ) : state ? <p className="dk-muted">✓ Você está na versão mais nova.</p> : <p className="dk-muted">Toque em VERIFICAR para conferir se tem versão nova.</p>}
       <div className="dk-row"><button type="button" className="dk-btn" onClick={check} disabled={busy}>{busy ? "Conferindo…" : "🔄 VERIFICAR AGORA"}</button></div>
+      {cfg && (
+        <label className="dk-toggle-row">
+          <input type="checkbox" checked={cfg.atualizacao?.automatica !== false}
+            onChange={async (e) => setCfg(await api("/api/desk", { method: "PATCH", body: JSON.stringify({ atualizacao: { automatica: e.target.checked } }) }).catch(() => cfg))} />
+          <span>Atualizar sozinho: quando sair versão nova, o JARVIS atualiza num momento em que estiver parado (sem pasta nem CMD) e avisa na ilha.</span>
+        </label>
+      )}
       {msg && <p className="dk-err" role="alert">{msg}</p>}
     </Card>
   );
@@ -794,6 +801,13 @@ function Island({ api, cfg, setCfg }) {
       <div className="dk-island-preview" data-size={ilha.tamanho || "media"}><RoboAvatar avatar={cfg?.avatar} size={22} /><i className="dk-dot" /><span>Highway to Hell · AC/DC</span></div>
       <label className="dk-toggle-row"><input type="checkbox" checked={ilha.ligada !== false} onChange={(e) => save({ ligada: e.target.checked })} /> Mostrar a ilha</label>
       <div className="dk-field"><span>Tamanho</span><div className="dk-row">{[["pequena", "Pequena"], ["media", "Média"], ["grande", "Grande"]].map(([k, l]) => <button type="button" key={k} className={`dk-chip${(ilha.tamanho || "media") === k ? " is-on" : ""}`} onClick={() => save({ tamanho: k })}>{l}</button>)}</div></div>
+      <div className="dk-field"><span>Tamanho do painel aberto</span><div className="dk-row">{[["compacto", "Compacto"], ["medio", "Médio"], ["grande", "Grande"]].map(([k, l]) => <button type="button" key={k} className={`dk-chip${(ilha.painel || "medio") === k ? " is-on" : ""}`} onClick={() => save({ painel: k })}>{l}</button>)}</div></div>
+      <label className="dk-slider"><span>Zoom do painel</span>
+        <input type="range" min="0.7" max="1.4" step="0.05" value={Number(ilha.zoom) || 0.9} onChange={(e) => save({ zoom: Number(e.target.value) })} aria-label="Zoom do painel da ilha" />
+        <b>{Math.round((Number(ilha.zoom) || 0.9) * 100)}%</b></label>
+      <div className="dk-field"><span>Posição</span><div className="dk-row">
+        <button type="button" className="dk-btn" onClick={() => save({ posicao: 0.5 })}>⟲ CENTRALIZAR</button>
+        <small className="dk-muted">Ou arraste a ilha pelo topo para onde quiser.</small></div></div>
       <div className="dk-field"><span>Tecla para falar</span><div className="dk-row">{["PageDown", "F9", "Ctrl+Space"].map((k) => <button type="button" key={k} className={`dk-chip${ilha.atalho === k ? " is-on" : ""}`} onClick={() => save({ atalho: k })}>{k}</button>)}</div></div>
       <DownloadExe />
     </Card>
@@ -928,7 +942,7 @@ export default function DeskApp(props) {
     case "funcoes": case "atalhos": body = <Functions api={api} send={send} />; break;
     case "voz": body = <LinkCard title="Voz" icon="🎙" text="Voz do JARVIS, velocidade, microfone e palavra de ativação." actions={[["⚙ ABRIR CONFIGURAÇÕES DE VOZ", onOpenSettings], ["🎙 TESTAR MICROFONE", () => send("testar microfone")]]} />; break;
     case "ilha": body = <Island api={api} cfg={cfg} setCfg={setCfg} />; break;
-    case "atualizar": body = <Updates api={api} info={updateInfo} onUpdate={onUpdate} />; break;
+    case "atualizar": body = <Updates api={api} info={updateInfo} onUpdate={onUpdate} cfg={cfg} setCfg={setCfg} />; break;
     case "celular": body = <LinkCard title="Celular e agendas" icon="📱" text="Pareie o celular pelo QR, conecte a agenda do Google e veja os aparelhos." actions={[["📱 QR DO CELULAR", onOpenQr], ["⚙ AGENDA E CONTAS", onOpenSettings]]} />; break;
     case "rosto": body = <LinkCard title="Proteção com rosto" icon="🙂" text="O bloqueio reconhece o seu rosto (e o PIN como alternativa)." actions={[["🔒 BLOQUEAR AGORA", onLock], ["⚙ SEGURANÇA", onOpenSettings]]} />; break;
     default: body = <Home api={api} ctx={ctx} avatar={cfg?.avatar} tema={cfg?.tema} setSection={go} />;

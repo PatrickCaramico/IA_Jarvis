@@ -48,7 +48,9 @@ DEFAULT = {
                **WARDROBE_DEFAULT, "temas": True, "antena": True, "olhos_seguem": True, "olhos_vel": 1.0,
                "piscar": True, "brincadeiras": True},  # V8.4.0 (ideia 10)
     "cor": "#22d3ee",
-    "ilha": {"ligada": True, "tamanho": "media", "atalho": "PageDown", "posicao": 0.5},
+    # V8.5.0: painel (tamanho da ilha aberta) e zoom (do conteúdo dela)
+    "ilha": {"ligada": True, "tamanho": "media", "atalho": "PageDown", "posicao": 0.5, "painel": "medio", "zoom": 0.9},
+    "atualizacao": {"automatica": True},  # V8.5.0: atualiza sozinho quando o JARVIS está parado
     # V8.4.0 (ideia 10): modo leve: "auto" (liga sozinho no notebook na bateria), "sim" ou "nao"
     "desempenho": {"leve": "auto"},
     "xp": {"total": 0, "hoje": {}, "eventos": []},
@@ -57,6 +59,8 @@ DEFAULT = {
 # quanto XP vale cada coisa (por dia, cada tipo tem um teto para não virar "farm")
 XP = {"conversa": (2, 40), "tarefa": (10, 100), "habito": (15, 150), "rotina": (8, 40), "lembrete": (3, 30), "memoria": (5, 25)}
 LITE_MODES = ("auto", "sim", "nao")  # V8.4.0
+PANEL_SIZES = ("compacto", "medio", "grande")  # V8.5.0
+ZOOM_RANGE = (0.7, 1.4)
 LEVEL_BASE = 100  # nível n precisa de 100 × n XP a mais que o anterior
 MAX_HABITS = 20
 MAX_CLIPS = 50
@@ -172,7 +176,7 @@ def config() -> dict:
     d = _load()
     lv = level_info(d["xp"]["total"])
     record = _streak_record()
-    return {"avatar": d["avatar"], "cor": d["cor"], "ilha": d["ilha"], "desempenho": d["desempenho"], "nivel": lv,
+    return {"avatar": d["avatar"], "cor": d["cor"], "ilha": d["ilha"], "desempenho": d["desempenho"], "atualizacao": d["atualizacao"], "nivel": lv,
             "tema": season_theme() if d["avatar"].get("temas", True) else None,
             "guarda_roupa": unlock_status(lv["nivel"], record), "ofensiva_recorde": record}
 
@@ -223,6 +227,14 @@ def update_config(patch: dict) -> dict:
         pos = ilha.get("posicao")  # V8.4.1: onde a ilha fica no topo (0..1 da largura da tela; arrastada no app)
         if isinstance(pos, (int, float)) and not isinstance(pos, bool):
             d["ilha"]["posicao"] = round(min(1.0, max(0.0, float(pos))), 4)
+        if ilha.get("painel") in PANEL_SIZES:
+            d["ilha"]["painel"] = ilha["painel"]
+        z = ilha.get("zoom")
+        if isinstance(z, (int, float)) and not isinstance(z, bool):
+            d["ilha"]["zoom"] = round(min(ZOOM_RANGE[1], max(ZOOM_RANGE[0], float(z))), 2)
+        upd = patch.get("atualizacao") if isinstance(patch.get("atualizacao"), dict) else {}
+        if isinstance(upd.get("automatica"), bool):
+            d["atualizacao"]["automatica"] = upd["automatica"]
         _save(d)
     return config()
 

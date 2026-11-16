@@ -63,3 +63,25 @@ html.is-island, html.is-island body, html.is-island #root { margin: 0; height: 1
 .il-locked { all: unset; box-sizing: border-box; cursor: pointer; padding: 4px 10px; border-radius: 999px; background: rgba(250, 204, 21, 0.18); color: #fde68a; font-size: 12px; }
 .il-locked:hover { background: rgba(250, 204, 21, 0.3); }
 @media (prefers-reduced-motion: reduce) { .il-app { animation: none; } }
+
+/* V8.5.0: pílula mais bonita: avatar, estado no meio, hora à direita; "pensando" com pontinhos e "falando" com ondas */
+.il { padding: 4px 16px 4px 8px; background: linear-gradient(180deg, #0b0d12, #000); box-shadow: inset 0 0 0 1px rgba(var(--il-rgb, 34, 211, 238), 0.22), 0 6px 20px rgba(0, 0, 0, 0.55); }
+.il-row { gap: 10px; }
+.il-face { display: grid; place-items: center; flex: none; width: 32px; height: 32px; border-radius: 50%; background: radial-gradient(circle, rgba(var(--il-rgb, 34, 211, 238), 0.25), transparent 70%); }
+.il-txt { display: flex; align-items: center; gap: 7px; letter-spacing: 0.04em; }
+.il-music span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.il-time { flex: none; margin-left: auto; font-size: 14px; font-variant-numeric: tabular-nums; color: rgba(248, 250, 252, 0.85); }
+.il-think { display: inline-flex; gap: 3px; }
+.il-think i { width: 4px; height: 4px; border-radius: 50%; background: #facc15; animation: il-think 1s infinite ease-in-out; }
+.il-think i:nth-child(2) { animation-delay: 0.15s; } .il-think i:nth-child(3) { animation-delay: 0.3s; }
+.il-eq i:nth-child(4) { animation-delay: 0.6s; }
+.il-speaking .il-eq i { background: var(--il-accent); }
+.il-processing { box-shadow: inset 0 0 0 1px rgba(250, 204, 21, 0.45), 0 0 18px rgba(250, 204, 21, 0.15); }
+.il-speaking { box-shadow: inset 0 0 0 1px rgba(var(--il-rgb, 34, 211, 238), 0.6), 0 0 20px rgba(var(--il-rgb, 34, 211, 238), 0.25); }
+@keyframes il-think { 0%, 80%, 100% { transform: translateY(0); opacity: 0.4; } 40% { transform: translateY(-3px); opacity: 1; } }
+/* V8.5.0: zoom do painel */
+.il-zoom { display: inline-flex; align-items: center; gap: 2px; padding: 2px; border-radius: 999px; background: rgba(255, 255, 255, 0.07); }
+.il-zoom button { all: unset; cursor: pointer; padding: 2px 8px; border-radius: 999px; font-size: 12px; }
+.il-zoom button:hover { background: rgba(255, 255, 255, 0.16); }
+.il-zoom b { min-width: 38px; text-align: center; font-size: 12px; font-variant-numeric: tabular-nums; }
+@media (prefers-reduced-motion: reduce) { .il-think i { animation: none; } }

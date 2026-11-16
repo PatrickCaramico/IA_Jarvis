@@ -129,6 +129,24 @@ export default function IslandApp() {
     if (st?.resposta) setTurn((t) => (t.response === st.resposta ? t : { ...t, response: st.resposta, error: "" }));
   }, [st?.resposta]);
 
+  // V8.5.0: tamanho do painel e posição escolhidos em Configurações › Ilha vão para a janela do Windows
+  const panel = st?.ilha?.painel;
+  useEffect(() => { if (panel) pyApi().island_layout?.(panel); }, [panel]);
+  const posRef = useRef(null);
+  const pos = st?.ilha?.posicao;
+  useEffect(() => {
+    if (typeof pos !== "number") return;
+    if (posRef.current !== null && posRef.current !== pos) pyApi().island_set_pos?.(pos);
+    posRef.current = pos;
+  }, [pos]);
+  const [zoom, setZoom] = useState(null);
+  const shownZoom = zoom ?? st?.ilha?.zoom ?? 0.9;
+  const changeZoom = (delta) => {
+    const z = Math.round(Math.min(1.4, Math.max(0.7, shownZoom + delta)) * 100) / 100;
+    setZoom(z);
+    api("/api/desk", { method: "PATCH", body: JSON.stringify({ ilha: { zoom: z } }) }).then(() => setZoom(null)).catch(() => {});
+  };
+
   const reply = Boolean(st?.resposta);
   const mode = islandMode(open, reply);
   useEffect(() => { // a janela do Windows muda de tamanho junto (recortada no formato da ilha)
@@ -201,12 +219,17 @@ export default function IslandApp() {
           <i className="il-dot" />
           <span className="il-bar-txt">{playing ? `♫ ${track.title}${track.artist ? ` · ${track.artist}` : ""}` : stateLabel}</span>
           {locked && <button type="button" className="il-locked" onClick={openMain}>🔒 Bloqueado: toque para desbloquear</button>}
+          <span className="il-zoom" role="group" aria-label="Zoom do painel">
+            <button type="button" onClick={() => changeZoom(-0.1)} aria-label="Diminuir o zoom" title="Diminuir">A−</button>
+            <b>{Math.round(shownZoom * 100)}%</b>
+            <button type="button" onClick={() => changeZoom(0.1)} aria-label="Aumentar o zoom" title="Aumentar">A+</button>
+          </span>
           <span className="il-clock">{st?.hora || ""}</span>
           <button type="button" className="il-x" onClick={openMain} aria-label="Abrir a janela do JARVIS" title="Abrir a janela grande">🖥</button>
           <button type="button" className="il-x" onClick={() => pyApi().quit?.()} aria-label="Sair do app" title="Sair do app (o JARVIS continua rodando no PC)">⏻</button>
           <button type="button" className="il-x" onClick={close} aria-label="Fechar a ilha" title="Fechar (Esc)">✕</button>
         </div>
-        <div className="il-desk">
+        <div className="il-desk" style={{ zoom: shownZoom }}>
           <DeskApp api={api} aiName={names.ai === "J.A.R.V.I.S." ? "JARVIS" : names.ai} userName={names.user} jarvisState={estado}
             listening={false} interim="" userText={turn.userText} response={turn.response} responseCards={[]} error={turn.error}
             send={send} onToggleMic={() => {}} onClassic={openMain} onLock={lock} onOpenSettings={openMain} onOpenQr={openMain}
@@ -216,15 +239,23 @@ export default function IslandApp() {
     );
   }
 
+  const pillText = estado === "offline" ? "JARVIS desligado"
+    : estado === "speaking" ? "Falando…" : estado === "processing" ? "Pensando" : estado === "listening" ? "Ouvindo…" : names.ai;
   return (
     <button type="button" className={`il il-${estado}${mode === "resposta" ? " is-open" : ""}`} style={style}
       onClick={() => setOpen(true)} title="Clique: abre o JARVIS aqui · arraste: move · dois cliques: janela grande">
       <span className="il-row">
-        <RoboAvatar avatar={st?.avatar} tema={st?.tema} state={face} size={mode === "resposta" ? 30 : 24} />
-        <i className="il-dot" />
-        {estado === "offline" ? <span className="il-txt">JARVIS desligado</span>
-          : playing ? <span className="il-txt il-music"><b className="il-eq"><i /><i /><i /></b>{track.title}{track.artist ? ` · ${track.artist}` : ""}</span>
-            : <span className="il-txt">{estado === "speaking" ? "Falando…" : estado === "processing" ? "Pensando…" : st?.hora || ""}</span>}
+        <span className="il-face"><RoboAvatar avatar={st?.avatar} tema={st?.tema} state={face} size={mode === "resposta" ? 30 : 26} /></span>
+        {playing ? (
+          <span className="il-txt il-music"><b className="il-eq"><i /><i /><i /><i /></b><span>{track.title}{track.artist ? ` · ${track.artist}` : ""}</span></span>
+        ) : (
+          <span className="il-txt">
+            <i className="il-dot" />{pillText}
+            {estado === "processing" && <b className="il-think" aria-hidden="true"><i /><i /><i /></b>}
+            {estado === "speaking" && <b className="il-eq" aria-hidden="true"><i /><i /><i /><i /></b>}
+          </span>
+        )}
+        <span className="il-time">{st?.hora || ""}</span>
       </span>
       {mode === "resposta" && <span className="il-reply">{st.resposta}</span>}
     </button>

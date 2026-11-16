@@ -40,6 +40,8 @@ ISLAND_OPEN_H = 120  # altura quando mostra uma resposta
 ISLAND_MODES = {"mini": (0, 0), "resposta": (80, ISLAND_OPEN_H), "cartao": (180, 210), "painel": (0, 0)}
 # V8.3.0 (ideia 9): "painel" = os menus abertos na própria ilha (tamanho fixo, cresce para baixo)
 ISLAND_PANEL = (980, 600)  # V8.4.1: o app inteiro (Modo Desk) dentro da ilha, como no vídeo
+# V8.5.0: tamanhos do painel aberto (Configurações › Ilha)
+PANEL_SIZES = {"compacto": (860, 540), "medio": ISLAND_PANEL, "grande": (1200, 740)}
 DRAG_PX = 6  # arrastar: depois de mover o mouse isso com o botão apertado (senão é um clique)
 BAR_H = 40  # altura (px da página) da barra de cima do painel aberto, por onde se arrasta
 # teclas para o RegisterHotKey (códigos virtuais do Windows)
@@ -102,12 +104,14 @@ def start_jarvis(root: str = JARVIS_ROOT) -> bool:
     return False
 
 
-def island_position(screen_w: int, size: str, mode: str = "mini", pos: float = 0.5) -> tuple[int, int, int, int]:
+def island_position(screen_w: int, size: str, mode: str = "mini", pos: float = 0.5,
+                    panel: str = "medio") -> tuple[int, int, int, int]:
     """(x, y, largura, altura) da ilha no topo da tela. `pos` (0..1): onde fica o MEIO da ilha na largura da tela
     (0,5 = centro; V8.4.1: você arrasta para os lados e ela lembra). Nunca sai da tela."""
     w, h = ISLAND_SIZES.get(size, ISLAND_SIZES["media"])
     if mode == "painel":
-        w, h = min(max(w, ISLAND_PANEL[0]), max(screen_w - 12, 300)), ISLAND_PANEL[1]
+        pw, ph = PANEL_SIZES.get(panel, ISLAND_PANEL)
+        w, h = min(max(w, pw), max(screen_w - 12, 300)), ph
     else:
         extra_w, open_h = ISLAND_MODES.get(mode, ISLAND_MODES["mini"])
         w, h = w + extra_w, max(h, open_h)
@@ -301,6 +305,7 @@ class Bridge:
         self._mode = "mini"
         self._screen_w = 1920
         self._pos = 0.5  # V8.4.1: onde fica a ilha (0..1 na largura da tela)
+        self._panel = "medio"  # V8.5.0: tamanho do painel aberto
         self._quitting = False
 
     def show_main(self) -> None:
@@ -343,12 +348,41 @@ class Bridge:
             return
         self._mode = mode
         log.info("ilha: modo %s", mode)
-        x, y, w, h = island_position(self._screen_w, self._size, mode, self._pos)
+        x, y, w, h = island_position(self._screen_w, self._size, mode, self._pos, self._panel)
         self._island.resize(w, h)
         self._island.move(x, y)
         shape_window(self._island, island_radius(mode, h))
+        # V8.5.0: o Windows muda o tamanho um instante DEPOIS; o recorte feito antes ficava com o tamanho antigo
+        # (a pílula voltava com cantos "quadrados"). Refaz o recorte quando o tamanho novo já valeu.
+        threading.Thread(target=self._reshape_later, args=(mode, h), daemon=True).start()
         if mode == "painel":  # os menus abertos: a ilha pega o foco do teclado (para digitar)
             focus_window(island_hwnd(self._island))
+
+    def _reshape_later(self, mode: str, h: int) -> None:
+        for wait in (0.15, 0.5, 1.2):
+            time.sleep(wait)
+            if self._mode != mode:
+                return
+            shape_window(self._island, island_radius(mode, h))
+
+    def island_layout(self, panel: str) -> None:
+        """V8.5.0: tamanho do painel aberto (compacto | medio | grande), escolhido em Configurações › Ilha."""
+        if panel not in PANEL_SIZES or panel == self._panel:
+            return
+        self._panel = panel
+        if self._mode == "painel":
+            self.island_mode("painel")
+
+    def island_set_pos(self, pos: float) -> None:
+        """A posição mudou em Configurações › Ilha (ex.: "Centralizar"): move a ilha (sem salvar de novo)."""
+        try:
+            p = min(1.0, max(0.0, float(pos)))
+        except (TypeError, ValueError):
+            return
+        if abs(p - self._pos) < 0.001:
+            return
+        self._pos = p
+        self.island_mode(self._mode)
 
     def island_center(self) -> None:
         """Dois cliques no espaço vazio da barra: a ilha volta para o meio da tela."""
@@ -486,6 +520,56 @@ def watch_island_clicks(bridge: Bridge) -> None:
         was_down = down
 
 
+def source_fingerprint(path: Path | None = None) -> str:
+    """Impressão digital do código deste app (muda quando uma atualização troca o arquivo)."""
+    import hashlib
+
+    return hashlib.sha256(Path(path or __file__).read_bytes()).hexdigest()
+
+
+def should_relaunch(changed_at: float | None, now: float, mode: str, up: bool, settle_s: float = 45) -> bool:
+    """Reabre o app quando: o código mudou há um tempinho (a atualização terminou), o JARVIS já está de pé de
+    novo e a ilha não está aberta (não interrompe você)."""
+    return changed_at is not None and now - changed_at >= settle_s and up and mode != "painel"
+
+
+def relaunch() -> bool:
+    """Abre uma cópia nova deste app (o pythonw do atalho) e deixa esta fechar."""
+    try:
+        flags = getattr(subprocess, "DETACHED_PROCESS", 0) | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+        subprocess.Popen([sys.executable, str(Path(__file__).resolve())], cwd=str(Path(__file__).resolve().parent),  # noqa: S603
+                         creationflags=flags, close_fds=True, stdin=subprocess.DEVNULL,
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        return True
+    except Exception as exc:  # noqa: BLE001
+        log.info("não consegui reabrir o app: %s", exc)
+        return False
+
+
+def watch_self_update(bridge: Bridge, every: float = 30) -> None:
+    """V8.5.0: depois de uma atualização que mexeu neste app, ele se reabre sozinho (sem atalho nem CMD)."""
+    if getattr(sys, "frozen", False):
+        return
+    try:
+        start = source_fingerprint()
+    except OSError:
+        return
+    changed_at = None
+    while not bridge._quitting:
+        time.sleep(every)
+        try:
+            if changed_at is None and source_fingerprint() != start:
+                changed_at = time.time()
+                log.info("o código do app mudou (atualização): vou reabrir quando o JARVIS voltar")
+        except OSError:
+            continue
+        if should_relaunch(changed_at, time.time(), bridge._mode, jarvis_up()):
+            log.info("reabrindo o app com a versão nova")
+            if relaunch():
+                bridge.quit()
+            return
+
+
 def listen_hotkey(bridge: Bridge, name: str) -> None:
     """Tecla de atalho global (Windows): manda a janela do JARVIS começar a ouvir."""
     if sys.platform != "win32":
@@ -527,6 +611,8 @@ def main() -> None:
         bridge._pos = min(1.0, max(0.0, float(cfg.get("posicao", 0.5))))
     except (TypeError, ValueError):
         bridge._pos = 0.5
+    if cfg.get("painel") in PANEL_SIZES:
+        bridge._panel = cfg["painel"]
     island_on = cfg.get("ligada", True)
     # V8.1.3: com a ilha ligada, a janela do JARVIS começa escondida e só aparece quando você clica na ilha
     bridge._main = webview.create_window("JARVIS", f"{FRONT}/?desk=1&app=windows", width=1280, height=820, min_size=(900, 600),
@@ -543,6 +629,7 @@ def main() -> None:
         bridge._island.events.shown += lambda: shape_window(bridge._island, island_radius("mini", 9999))
         threading.Thread(target=watch_island_clicks, args=(bridge,), daemon=True).start()
     threading.Thread(target=listen_hotkey, args=(bridge, cfg.get("atalho", "PageDown")), daemon=True).start()
+    threading.Thread(target=watch_self_update, args=(bridge,), daemon=True).start()  # V8.5.0
     os.environ.setdefault("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS", "--autoplay-policy=no-user-gesture-required")
     webview.start(private_mode=False, user_agent=USER_AGENT, storage_path=str(Path(os.getenv("APPDATA", ".")) / "JARVIS" / "webview"))
 
