@@ -41,13 +41,41 @@ test("V8.1: guarda-roupa: tema da data por cima e avatar do 8.0 migrado", async 
   assert.equal(withTheme({ chapeu: "cartola", temas: false }, natal).chapeu, "cartola");
 });
 
-test("V8.1.2: ilha: clicar abre o cartão (vence a resposta); sem nada fica a pílula", async () => {
+test("V8.3.0: ilha: clicar abre o painel de menus (vence a resposta); sem nada fica a pílula", async () => {
   const src = await import("node:fs").then((fs) => fs.readFileSync(new URL("../src/components/IslandApp.jsx", import.meta.url), "utf8"));
-  const fn = src.match(/export function islandMode\(card, reply\) \{([\s\S]*?)\n\}/);
-  const islandMode = new Function("card", "reply", fn[1]);
-  assert.equal(islandMode(true, true), "cartao");
+  const fn = src.match(/export function islandMode\(open, reply\) \{([\s\S]*?)\n\}/);
+  const islandMode = new Function("open", "reply", fn[1]);
+  assert.equal(islandMode(true, true), "painel");
   assert.equal(islandMode(false, true), "resposta");
   assert.equal(islandMode(false, false), "mini");
+});
+
+test("V8.3.0: ilha: o toque do app num campo de texto só dá o foco (não clica)", async () => {
+  const src = await import("node:fs").then((fs) => fs.readFileSync(new URL("../src/components/IslandApp.jsx", import.meta.url), "utf8"));
+  const body = src.match(/export function installIslandPress\(win = window, doc = document\) \{([\s\S]*?)\n\}/)[1];
+  const install = new Function("win", "doc", "DEDUPE_MS", body);
+  let focused = 0;
+  let clicked = 0;
+  const input = { tagName: "INPUT", focus: () => focused++, click: () => clicked++, closest: () => null };
+  const win = {};
+  install(win, { elementFromPoint: () => input, addEventListener() {}, removeEventListener() {} }, 800);
+  win.__jarvisIslandPress(10, 10);
+  assert.equal(focused, 1);
+  assert.equal(clicked, 0);
+});
+
+test("V8.3.0: ilha: abas do painel e formatos de hora", async () => {
+  const src = await import("node:fs").then((fs) => fs.readFileSync(new URL("../src/components/IslandPanel.jsx", import.meta.url), "utf8"));
+  for (const id of ["resumo", "conversa", "tarefas", "lembretes", "musica", "timers", "missoes", "habitos", "copiados"]) {
+    assert.ok(src.includes(`["${id}",`), id);
+    assert.ok(src.includes(`${id}: <`), `aba ${id} sem tela`);
+  }
+  const shortWhen = new Function("s", src.match(/export function shortWhen\(s\) \{([\s\S]*?)\n\}/)[1]);
+  assert.equal(shortWhen("2026-11-16 09:05:00"), "16/11 09:05");
+  assert.equal(shortWhen("2026-11-16T21:30"), "16/11 21:30");
+  const fmtSecs = new Function("s", src.match(/export function fmtSecs\(s\) \{([\s\S]*?)\n\}/)[1]);
+  assert.equal(fmtSecs(65), "1:05");
+  assert.equal(fmtSecs(3720), "1h02");
 });
 
 test("V8.1.3: ilha: o toque avisado pelo app clica no botão e o clique real logo depois é ignorado", async () => {

@@ -49,3 +49,72 @@ html.is-island, html.is-island body, html.is-island #root { margin: 0; height: 1
 .il button:focus-visible, .il-x:focus-visible { outline: 2px solid var(--il-accent); outline-offset: 2px; }
 @keyframes il-open { from { transform: scale(0.92); opacity: 0.4; } }
 @media (prefers-reduced-motion: reduce) { .il.is-card { animation: none; } }
+
+/* V8.3.0 (ideia 9): os menus abrem na própria ilha (painel que cresce para baixo) */
+.il.is-panel { gap: 8px; padding: 12px 14px 12px; border-radius: 28px; overflow: hidden; }
+.ilp-tabs { display: flex; gap: 2px; padding: 3px; border-radius: 14px; background: rgba(255, 255, 255, 0.05); }
+.ilp-tabs button { all: unset; box-sizing: border-box; flex: 1; display: grid; place-items: center; height: 32px; border-radius: 11px; cursor: pointer; font-size: 15px; color: rgba(248, 250, 252, 0.7); }
+.ilp-tabs button:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
+.ilp-tabs button.is-on { background: rgba(var(--il-rgb, 34, 211, 238), 0.25); color: #fff; box-shadow: inset 0 0 0 1px rgba(var(--il-rgb, 34, 211, 238), 0.6); }
+.ilp-title { margin: 0; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--il-accent); }
+.ilp-body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding-right: 2px; scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.2) transparent; animation: il-in 200ms ease-out; }
+.ilp-stack { display: flex; flex-direction: column; gap: 8px; }
+.ilp-row, .ilp-tile, .ilp-chips button, .ilp-add button, .ilp-check, .ilp-del, .ilp-btn, .ilp-clip { all: unset; box-sizing: border-box; cursor: pointer; }
+.ilp-row { display: flex; align-items: center; gap: 10px; padding: 9px 11px; border-radius: 14px; background: rgba(255, 255, 255, 0.06); }
+.ilp-row.is-link:hover, .ilp-tile:hover, .ilp-clip:hover { background: rgba(255, 255, 255, 0.11); }
+.ilp-ico { flex: none; width: 22px; text-align: center; font-size: 15px; }
+.ilp-grow { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.ilp-grow b, .ilp-grow small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ilp-grow small, .ilp-tile small { color: rgba(248, 250, 252, 0.6); font-weight: 500; font-size: 12px; }
+.ilp-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.ilp-tile { display: grid; gap: 2px; padding: 10px 12px; border-radius: 14px; background: rgba(255, 255, 255, 0.06); }
+.ilp-tile b { font-size: 20px; font-variant-numeric: tabular-nums; }
+.il-player.is-big { flex-wrap: wrap; justify-content: center; text-align: center; padding: 10px; border-radius: 16px; background: rgba(255, 255, 255, 0.05); }
+.il-player.is-big .il-cover { width: 120px; height: 120px; border-radius: 16px; }
+.il-player.is-big .il-track { flex-basis: 100%; }
+.ilp-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.ilp-chips button { padding: 7px 12px; border-radius: 999px; background: rgba(255, 255, 255, 0.08); font-size: 13px; }
+.ilp-chips button:hover, .ilp-btn:hover, .ilp-add button:hover:not(:disabled) { background: rgba(255, 255, 255, 0.18); }
+.ilp-add { display: flex; gap: 6px; }
+.ilp-add.is-two { flex-wrap: wrap; }
+.ilp-add.is-two input:first-child { flex-basis: 100%; }
+.ilp-add input { flex: 1; min-width: 0; height: 34px; padding: 0 12px; border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 12px; background: rgba(255, 255, 255, 0.06); color: #f8fafc; font: 500 13px "Rajdhani", system-ui, sans-serif; color-scheme: dark; }
+.ilp-add input:focus { outline: none; border-color: var(--il-accent); }
+.ilp-add button { flex: none; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 12px; background: rgba(255, 255, 255, 0.1); }
+.ilp-add button:disabled { opacity: 0.4; cursor: default; }
+.ilp-add button.is-on { background: #ef4444; animation: il-p 0.8s infinite; }
+.ilp-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.ilp-list li { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 12px; background: rgba(255, 255, 255, 0.05); }
+.ilp-list li.is-done { opacity: 0.6; }
+.ilp-list.is-missions li { align-items: flex-start; }
+.ilp-list.is-missions .ilp-grow b { white-space: normal; }
+.ilp-check { flex: none; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; border: 2px solid rgba(var(--il-rgb, 34, 211, 238), 0.8); font-size: 12px; }
+.ilp-check:hover, .ilp-check.is-on { background: var(--il-accent); color: #000; }
+.ilp-del { flex: none; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; color: rgba(248, 250, 252, 0.55); font-size: 11px; }
+.ilp-del:hover { background: rgba(239, 68, 68, 0.3); color: #fff; }
+.ilp-btn { flex: none; padding: 6px 10px; border-radius: 999px; background: rgba(255, 255, 255, 0.1); font-size: 12px; }
+.ilp-pill { flex: none; padding: 2px 8px; border-radius: 999px; background: rgba(var(--il-rgb, 34, 211, 238), 0.2); font-size: 12px; font-variant-numeric: tabular-nums; }
+.ilp-clip { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.ilp-clip span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-weight: 500; }
+.ilp-clip small { color: rgba(248, 250, 252, 0.55); font-size: 11px; }
+.ilp-timers { display: flex; flex-direction: column; gap: 6px; }
+.ilp-timer { position: relative; overflow: hidden; display: flex; align-items: baseline; gap: 10px; padding: 10px 12px; border-radius: 14px; background: rgba(255, 255, 255, 0.06); }
+.ilp-timer b { font-size: 22px; font-variant-numeric: tabular-nums; }
+.ilp-timer small { color: rgba(248, 250, 252, 0.65); }
+.ilp-timer i { position: absolute; left: 0; bottom: 0; height: 3px; background: var(--il-accent); transition: width 1s linear; }
+.ilp-streak { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 14px; background: rgba(251, 146, 60, 0.12); }
+.ilp-streak span { font-size: 20px; filter: grayscale(1); }
+.ilp-streak span.is-lit { filter: none; }
+.ilp-streak small { margin-left: auto; color: rgba(248, 250, 252, 0.65); }
+.ilp-chat { display: flex; flex-direction: column; gap: 8px; height: 100%; min-height: 260px; }
+.ilp-msgs { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.ilp-msg { margin: 0; max-width: 88%; padding: 7px 11px; border-radius: 14px; font-size: 13px; font-weight: 500; line-height: 1.35; white-space: pre-wrap; }
+.ilp-msg.is-user { align-self: flex-end; background: var(--il-accent); color: #000; border-bottom-right-radius: 4px; }
+.ilp-msg.is-jarvis { align-self: flex-start; background: rgba(255, 255, 255, 0.08); border-bottom-left-radius: 4px; }
+.ilp-msg.is-error { align-self: flex-start; background: rgba(239, 68, 68, 0.2); }
+.ilp-msg.is-live { opacity: 0.7; animation: il-p 1s infinite; }
+.ilp-empty { margin: 4px 0; color: rgba(248, 250, 252, 0.6); font-size: 13px; font-weight: 500; }
+.ilp-err { margin: 2px 0 0; color: #fca5a5; font-size: 12px; font-weight: 500; }
+.ilp-hint { margin: 0; color: rgba(248, 250, 252, 0.75); font-size: 12px; font-weight: 500; }
+.il.is-panel .il-actions { margin-top: 0; }
+@media (prefers-reduced-motion: reduce) { .ilp-body, .ilp-msg.is-live, .ilp-add button.is-on { animation: none; } }

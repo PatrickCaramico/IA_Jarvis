@@ -37,7 +37,9 @@ FRONT = "http://127.0.0.1:5173"
 ISLAND_SIZES = {"pequena": (300, 38), "media": (380, 46), "grande": (460, 56)}
 ISLAND_OPEN_H = 120  # altura quando mostra uma resposta
 # V8.1.2: modos da ilha (como a "ilha dinâmica"): mini (pílula), resposta (cresce com o texto) e cartão (ao clicar)
-ISLAND_MODES = {"mini": (0, 0), "resposta": (80, ISLAND_OPEN_H), "cartao": (180, 210)}
+ISLAND_MODES = {"mini": (0, 0), "resposta": (80, ISLAND_OPEN_H), "cartao": (180, 210), "painel": (0, 0)}
+# V8.3.0 (ideia 9): "painel" = os menus abertos na própria ilha (tamanho fixo, cresce para baixo)
+ISLAND_PANEL = (440, 560)
 # teclas para o RegisterHotKey (códigos virtuais do Windows)
 VK = {"PageDown": 0x22, "F9": 0x78, "Ctrl+Space": 0x20}
 MOD_CONTROL, MOD_NOREPEAT = 0x0002, 0x4000
@@ -89,6 +91,9 @@ def start_jarvis(root: str = JARVIS_ROOT) -> bool:
 def island_position(screen_w: int, size: str, mode: str = "mini") -> tuple[int, int, int, int]:
     """(x, y, largura, altura) da ilha: sempre centralizada no topo da tela (cresce para os dois lados)."""
     w, h = ISLAND_SIZES.get(size, ISLAND_SIZES["media"])
+    if mode == "painel":
+        w, h = max(w, ISLAND_PANEL[0]), ISLAND_PANEL[1]
+        return (max(0, (screen_w - w) // 2), 6, w, h)
     extra_w, open_h = ISLAND_MODES.get(mode, ISLAND_MODES["mini"])
     w, h = w + extra_w, max(h, open_h)
     return (max(0, (screen_w - w) // 2), 6, w, h)
@@ -96,7 +101,9 @@ def island_position(screen_w: int, size: str, mode: str = "mini") -> tuple[int, 
 
 def island_radius(mode: str, height: int) -> int:
     """Raio do recorte: pílula inteira no modo mini; cantos arredondados quando abre."""
-    return height if mode == "mini" else 44
+    if mode == "mini":
+        return height
+    return 56 if mode == "painel" else 44
 
 
 ISLAND_TITLE = "Ilha do JARVIS"
@@ -118,7 +125,59 @@ def _user32():
     u.SetWindowRgn.argtypes = [wintypes.HWND, wintypes.HANDLE, wintypes.BOOL]
     u.GetDpiForWindow.argtypes = [wintypes.HWND]
     u.GetDpiForWindow.restype = wintypes.UINT
+    u.SetForegroundWindow.argtypes = [wintypes.HWND]
+    u.GetForegroundWindow.restype = wintypes.HWND
     return u
+
+
+def focus_window(hwnd: int) -> bool:
+    """V8.3.0: traz a ilha para a frente com o foco do teclado (para digitar nos menus).
+
+    O Windows só deixa um programa pegar o foco se ele "acabou de receber uma tecla": apertar e soltar o Alt
+    (sem efeito visível) libera o SetForegroundWindow."""
+    if sys.platform != "win32" or not hwnd:
+        return False
+    try:
+        u = _user32()
+        if int(u.GetForegroundWindow() or 0) == hwnd:
+            return True
+        u.keybd_event(0x12, 0, 0, 0)  # VK_MENU (Alt) desce
+        u.keybd_event(0x12, 0, 2, 0)  # ... e sobe (KEYEVENTF_KEYUP)
+        return bool(u.SetForegroundWindow(hwnd))
+    except Exception as exc:  # noqa: BLE001
+        log.info("foco na ilha falhou: %s", exc)
+        return False
+
+
+def copy_to_clipboard(text: str) -> bool:
+    """V8.3.0: copia um texto pela área de transferência do Windows (a ilha sem foco não consegue pelo navegador)."""
+    if sys.platform != "win32":
+        return False
+    import ctypes
+    from ctypes import wintypes
+
+    data = (str(text) + "\0").encode("utf-16-le")
+    k32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    u = ctypes.WinDLL("user32", use_last_error=True)
+    k32.GlobalAlloc.argtypes = [wintypes.UINT, ctypes.c_size_t]
+    k32.GlobalAlloc.restype = wintypes.HGLOBAL
+    k32.GlobalLock.argtypes = [wintypes.HGLOBAL]
+    k32.GlobalLock.restype = ctypes.c_void_p
+    k32.GlobalUnlock.argtypes = [wintypes.HGLOBAL]
+    u.OpenClipboard.argtypes = [wintypes.HWND]
+    u.SetClipboardData.argtypes = [wintypes.UINT, wintypes.HANDLE]
+    u.SetClipboardData.restype = wintypes.HANDLE
+    if not u.OpenClipboard(None):
+        return False
+    try:
+        u.EmptyClipboard()
+        h = k32.GlobalAlloc(0x0002, len(data))  # GMEM_MOVEABLE
+        ptr = k32.GlobalLock(h)
+        ctypes.memmove(ptr, data, len(data))
+        k32.GlobalUnlock(h)
+        return bool(u.SetClipboardData(13, h))  # CF_UNICODETEXT
+    finally:
+        u.CloseClipboard()
 
 
 def island_hwnd(window=None) -> int:
@@ -236,6 +295,16 @@ class Bridge:
         self._island.resize(w, h)
         self._island.move(x, y)
         shape_window(self._island, island_radius(mode, h))
+        if mode == "painel":  # os menus abertos: a ilha pega o foco do teclado (para digitar)
+            focus_window(island_hwnd(self._island))
+
+    def copy_text(self, text: str) -> bool:
+        """⧉ Copiados na ilha: copia de novo pelo Windows."""
+        try:
+            return copy_to_clipboard(str(text)[:100000])
+        except Exception as exc:  # noqa: BLE001
+            log.info("copiar pela ilha falhou: %s", exc)
+            return False
 
     def talk(self) -> None:
         """Botão 🎙 da ilha: abre a janela do JARVIS já ouvindo."""
@@ -296,7 +365,8 @@ def watch_island_clicks(bridge: Bridge) -> None:
                     hit = None
                 if hit and (int(under) == hwnd or not under):
                     now = time.time()
-                    if now - last_click < 0.45:
+                    # V8.3.0: com os menus abertos, cliques rápidos são cliques nos menus (não abrem o JARVIS)
+                    if bridge._mode != "painel" and now - last_click < 0.45:
                         log.info("dois cliques na ilha: abrindo o JARVIS")
                         bridge.show_main()
                         last_click = 0.0
@@ -306,6 +376,8 @@ def watch_island_clicks(bridge: Bridge) -> None:
                         bridge._island.evaluate_js(f"window.__jarvisIslandPress && window.__jarvisIslandPress({hit[0]}, {hit[1]})")
                 elif hit:
                     log.info("clique sobre a ilha, mas outra janela está por cima (%s)", under)
+                elif hwnd and bridge._mode == "painel":  # clicou fora: fecha os menus
+                    bridge._island.evaluate_js("window.__jarvisIslandOutside && window.__jarvisIslandOutside()")
             except Exception as exc:  # noqa: BLE001
                 log.info("clique na ilha falhou: %s", exc)
         was_down = down

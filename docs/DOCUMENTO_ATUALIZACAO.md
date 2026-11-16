@@ -516,7 +516,7 @@
 4. **Continua igual:** dois cliques na pílula ou o botão **🖥 ABRIR JARVIS** abrem a janela completa; em repouso, a pílula mostra o avatar e a hora (ou a música).
 5. Usa os mesmos dados do JARVIS: o que você faz na ilha aparece no app, na central e no celular.
 
-**Status:** desenhada, esperando aprovação para implementar.
+**Status:** implementada na versão 8.3.0.
 
 ## Ideias extras do Claude (para avaliar)
 
