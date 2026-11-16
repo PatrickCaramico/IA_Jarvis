@@ -2,6 +2,17 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 8.1.4 — 16 de novembro de 2026
+
+**🏝 Ilha do app para Windows: clique e recorte que não dependem do .NET**
+- **Corrigido:** a ilha continuava sem responder ao clique e sem o formato de pílula, com cantos de retângulo.
+  - O app procurava a janela da ilha por um caminho do .NET que podia falhar fora da linha principal, e o erro era engolido em silêncio.
+  - Agora ela é achada pelo título, direto no Windows, com tipos de 64 bits corretos.
+  - O recorte em pílula é refeito depois que a janela existe de verdade.
+- **Dois cliques na ilha** abrem a janela do JARVIS pelo próprio app, mesmo que a página da ilha não responda.
+- **⏻ Sair do app** também na barra lateral do Modo Desk, no app para Windows.
+- O registro `%APPDATA%\JARVIS\app.log` agora anota cada passo: recorte, cliques, modo da ilha e abertura da janela.
+
 ## 8.1.3 — 16 de novembro de 2026
 
 **🏝 App para Windows: abre só pela ilha, e o clique na ilha é garantido**

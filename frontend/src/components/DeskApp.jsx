@@ -794,6 +794,7 @@ export default function DeskApp(props) {
           <button type="button" className="dk-btn" onClick={onClassic} title="Voltar para a central clássica">◐ CENTRAL CLÁSSICA</button>
           <button type="button" className="dk-btn" onClick={() => window.dispatchEvent(new CustomEvent("jarvis-desktop-download"))} title="App do JARVIS para Windows">⬇</button>
           <button type="button" className="dk-btn" onClick={onLock}>🔒</button>
+          {IS_DESKTOP_APP && <button type="button" className="dk-btn" onClick={() => window.pywebview?.api?.quit?.()} title="Sair do app (fecha a janela e a ilha; o JARVIS continua rodando no PC)">⏻</button>}
         </div>
       </aside>
       <main className="dk-main">{body}</main>

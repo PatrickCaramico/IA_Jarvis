@@ -102,3 +102,6 @@ def test_island_click_fallback_and_hidden_main():
     assert b.on_main_closing() is True
     src = (ROOT / "desktop" / "jarvis_desktop.py").read_text(encoding="utf-8")
     assert "hidden=island_on" in src and "min_size=(120, 30)" in src
+    # V8.1.4: a ilha é achada pelo título (Win32); fora do Windows não quebra
+    assert d.island_hwnd(None) == 0 and d.shape_window(None, 10) is False
+    assert "FindWindowW" in src and "dois cliques na ilha" in src
