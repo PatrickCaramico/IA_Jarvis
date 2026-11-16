@@ -7,6 +7,8 @@ import { IS_DESKTOP_APP } from "../utils/device.js";
 import { checkForUpdate, saveUpdateResult } from "../utils/updateCheck.js";
 import { APP_VERSION } from "../utils/version.js";
 import { watchNewBuild } from "../utils/newBuild.js";
+import { useLiteMode } from "../utils/lite.js";
+import { useGroqVoice } from "../utils/voiceRecord.js";
 import "../desk.css";
 
 // V8.0: MODO DESK (ideia 6): o JARVIS como app de assistente pessoal. Barra lateral com o avatar robô, Início,
@@ -66,7 +68,7 @@ function ChatBox({ log, send, busy, onMic, listening, interim, compact = false }
         {listening && <p className="dk-msg is-user is-live">{interim || "Ouvindo…"}</p>}
         <div ref={endRef} />
       </div>
-      {IS_DESKTOP_APP && <p className="dk-muted dk-hint">🎙 No app, fale "Jarvis, …" (o ouvido do PC atende) ou escreva aqui.</p>}
+      {IS_DESKTOP_APP && <p className="dk-muted dk-hint">🎙 Toque no microfone e fale (a Groq entende), diga "Jarvis, …" ou escreva aqui.</p>}
       <form className="dk-input" onSubmit={submit}>
         <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Escreva ou fale com o JARVIS…" aria-label="Mensagem para o JARVIS" disabled={busy && false} />
         <button type="submit" className="dk-icon-btn" disabled={!text.trim()} aria-label="Enviar">➤</button>
@@ -563,7 +565,7 @@ function Personalize({ api, cfg, setCfg, aiName, onRename }) {
                 return (
                   <button type="button" key={k} className={`dk-ward${av[tab] === k ? " is-on" : ""}${locked ? " is-locked" : ""}`} disabled={locked}
                     onClick={() => save({ avatar: { [tab]: k } })} title={locked ? `Libera com ${st.precisa}` : label}>
-                    <RoboAvatar avatar={{ ...av, [tab]: k, ...(tab === "olhos_forma" ? { expressao: "feliz" } : {}) }} size={54} />
+                    <RoboAvatar avatar={{ ...av, [tab]: k, ...(tab === "olhos_forma" ? { expressao: "feliz" } : {}) }} size={54} still />
                     <span>{label}</span>
                     {locked && <small>🔒 {st.precisa}</small>}
                   </button>
@@ -584,6 +586,19 @@ function Personalize({ api, cfg, setCfg, aiName, onRename }) {
                   onChange={(e) => save({ avatar: { olhos_vel: Number(e.target.value) } })} aria-label="Velocidade dos olhos" />
                 <b>{(Number(av.olhos_vel) || 1).toFixed(2)}x</b></label>
             )}
+          </div>
+          <div className="dk-field dk-jeito"><span>Animações e desempenho</span>
+            <label className="dk-toggle-row"><input type="checkbox" checked={av.piscar !== false} onChange={(e) => save({ avatar: { piscar: e.target.checked } })} />
+              <span>Piscar sozinho</span></label>
+            <label className="dk-toggle-row"><input type="checkbox" checked={av.brincadeiras !== false} onChange={(e) => save({ avatar: { brincadeiras: e.target.checked } })} />
+              <span>Brincadeiras quando parado (olha em volta, boceja, cochila)</span></label>
+            <label className="dk-slider"><span>Modo leve</span>
+              <select value={cfg?.desempenho?.leve || "auto"} onChange={(e) => save({ desempenho: { leve: e.target.value } })} aria-label="Modo leve">
+                <option value="auto">Automático (liga no notebook na bateria)</option>
+                <option value="sim">Sempre ligado</option>
+                <option value="nao">Desligado</option>
+              </select></label>
+            <small className="dk-muted">Modo leve: menos animações, avatar parado quando não fala e a ilha atualizando mais devagar.</small>
           </div>
           <div className="dk-field"><span>Cor do app</span><Swatches value={cfg?.cor || "#22d3ee"} colors={DESK_COLORS} onPick={(c) => save({ cor: c })} /></div>
           {msg && <p className="dk-err" role="alert">{msg}</p>}
@@ -822,6 +837,24 @@ export default function DeskApp(props) {
   const [menu, setMenu] = useState(false);
   const [search, setSearch] = useState("");
   const log = useConversationLog(userText, response, error, responseCards);
+  // V8.4.0 (ideia 10): modo leve e, no app do Windows, o 🎙 pela Groq (o reconhecimento do navegador falha ali)
+  useLiteMode(cfg?.desempenho?.leve || "auto");
+  const [voiceMsg, setVoiceMsg] = useState("");
+  const groqVoice = useGroqVoice({ onText: (t) => { setVoiceMsg(""); send(t); }, onError: setVoiceMsg });
+  const mic = IS_DESKTOP_APP ? groqVoice.toggle : onToggleMic;
+  const hearing = IS_DESKTOP_APP ? groqVoice.listening || listening : listening;
+  const heard = IS_DESKTOP_APP && groqVoice.busy ? "Entendendo…" : interim;
+  useEffect(() => {
+    if (!voiceMsg) return undefined;
+    const t = setTimeout(() => setVoiceMsg(""), 7000);
+    return () => clearTimeout(t);
+  }, [voiceMsg]);
+  const voiceToggle = groqVoice.toggle;
+  useEffect(() => { // tecla de atalho do app: já começa a gravar
+    if (!IS_DESKTOP_APP) return undefined;
+    window.addEventListener("jarvis-desktop-talk", voiceToggle);
+    return () => window.removeEventListener("jarvis-desktop-talk", voiceToggle);
+  }, [voiceToggle]);
 
   const loadCfg = useCallback(() => {
     api("/api/desk").then(setCfg).catch(() => setCfg({ avatar: DEFAULT_AVATAR, cor: "#22d3ee", ilha: {} }));
@@ -868,8 +901,8 @@ export default function DeskApp(props) {
 
   const accent = cfg?.cor || "#22d3ee";
   const style = useMemo(() => ({ "--dk-accent": accent, "--dk-accent-rgb": hexToRgb(accent), "--dk-on-accent": isLight(accent) ? "#06121f" : "#fff" }), [accent]);
-  const orbState = listening ? "listening" : jarvisState;
-  const ctx = { log, send, onToggleMic, listening, interim, userName, aiName, orbState, level, missions, setMissions: onMissions, updateInfo };
+  const orbState = hearing ? "listening" : groqVoice.busy ? "processing" : jarvisState;
+  const ctx = { log, send, onToggleMic: mic, listening: hearing, interim: heard, userName, aiName, orbState, level, missions, setMissions: onMissions, updateInfo };
   const go = (id) => {
     setSection(id);
     setMenu(false);
@@ -879,7 +912,7 @@ export default function DeskApp(props) {
 
   let body;
   switch (section) {
-    case "conversa": body = <Card title="Conversa" icon="💬" className="dk-full"><ChatBox log={log} send={send} onMic={onToggleMic} listening={listening} interim={interim} /></Card>; break;
+    case "conversa": body = <Card title="Conversa" icon="💬" className="dk-full"><ChatBox log={log} send={send} onMic={mic} listening={hearing} interim={heard} /></Card>; break;
     case "memoria": body = <Suspense fallback={<Card title="Memória" icon="✳"><p className="dk-muted">Carregando…</p></Card>}><MemoryMap api={api} accent={accent} /></Suspense>; break;
     case "tarefas": body = <Tasks api={api} />; break;
     case "lembretes": body = <Reminders api={api} />; break;
@@ -949,6 +982,7 @@ export default function DeskApp(props) {
       </aside>
       <main className="dk-main">{body}</main>
       {toast && <div className="dk-toast" role="status">🎁 {toast}</div>}
+      {voiceMsg && <div className="dk-toast is-voice" role="alert">🎙 {voiceMsg}</div>}
     </div>
   );
 }

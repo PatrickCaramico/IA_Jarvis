@@ -4,6 +4,8 @@ import { api } from "../utils/api.js";
 import { hexToRgb } from "../utils/desk.js";
 import IslandPanel from "./IslandPanel.jsx";
 import { watchNewBuild } from "../utils/newBuild.js";
+import { useLiteMode } from "../utils/lite.js";
+import { useGroqVoice } from "../utils/voiceRecord.js";
 import "../island.css";
 
 // V8.0: a ILHA do app para Windows: pílula preta no topo da tela, sempre visível (como a "ilha" dos celulares).
@@ -19,7 +21,6 @@ import "../island.css";
 // Esta página é aberta só pelo app (?ilha=1); as funções do Windows vêm do window.pywebview.api.
 const IDLE_CLOSE_MS = 60000;
 const DEDUPE_MS = 800;
-const SR = typeof window !== "undefined" ? window.SpeechRecognition || window.webkitSpeechRecognition : null;
 
 /** Toque avisado pelo app: clica no que está naquele ponto; o clique real que vier logo depois é ignorado. */
 export function installIslandPress(win = window, doc = document) {
@@ -63,12 +64,10 @@ export default function IslandApp() {
   const [tab, setTab] = useState("resumo");
   const [chat, setChat] = useState([]);
   const [busy, setBusy] = useState(false);
-  const [listening, setListening] = useState(false);
   const [hint, setHint] = useState("");
   const [locked, setLocked] = useState(false);
   const modeRef = useRef("");
   const closeTimer = useRef(null);
-  const recRef = useRef(null);
 
   useEffect(() => installIslandPress(), []);
   useEffect(() => { // V8.3.2: JARVIS bloqueado: os menus avisam em vez de mostrar "Erro 403"
@@ -96,6 +95,7 @@ export default function IslandApp() {
       window.removeEventListener("unhandledrejection", report);
     };
   }, []);
+  const lite = useLiteMode(st?.desempenho?.leve || "auto"); // V8.4.0: modo leve -> atualiza mais devagar
   useEffect(() => {
     document.documentElement.classList.add("is-island");
     let alive = true;
@@ -103,14 +103,14 @@ export default function IslandApp() {
     const music = () => api("/api/integrations/spotify/track").then((d) => alive && setTrack(d || null)).catch(() => {});
     tick();
     music();
-    const a = setInterval(tick, 1200);
-    const b = setInterval(music, 5000);
+    const a = setInterval(tick, lite ? 3500 : 1200);
+    const b = setInterval(music, lite ? 12000 : 5000);
     return () => {
       alive = false;
       clearInterval(a);
       clearInterval(b);
     };
-  }, []);
+  }, [lite]);
 
   const reply = Boolean(st?.resposta);
   const mode = islandMode(open, reply);
@@ -125,11 +125,6 @@ export default function IslandApp() {
   const close = useCallback(() => {
     setOpen(false);
     setHint("");
-    try {
-      recRef.current?.abort?.();
-    } catch {
-      /* já parou */
-    }
   }, []);
   const armClose = useCallback(() => {
     clearTimeout(closeTimer.current);
@@ -188,33 +183,14 @@ export default function IslandApp() {
   }, [armClose]);
   const sendQuiet = (text) => send(text).catch(() => {});
 
-  // 🎙 FALAR na própria ilha: usa o reconhecimento de voz da janela; se o Windows não deixar, explica o "Jarvis, …"
+  // 🎙 FALAR na própria ilha. V8.4.0: grava e a Groq entende (o reconhecimento do navegador falha dentro do app).
+  const voice = useGroqVoice({ onText: (t) => { setHint(""); sendQuiet(t); }, onError: setHint });
+  const listening = voice.listening;
   const talk = () => {
     setTab("conversa");
     armClose();
-    if (!SR) {
-      setHint('🎙 Diga "Jarvis, …" (o ouvido do PC atende) ou escreva aqui.');
-      return;
-    }
-    try {
-      const rec = new SR();
-      rec.lang = "pt-BR";
-      rec.interimResults = false;
-      rec.maxAlternatives = 1;
-      rec.onresult = (e) => {
-        const t = e.results?.[0]?.[0]?.transcript?.trim();
-        if (t) sendQuiet(t);
-      };
-      rec.onerror = () => setHint('🎙 O microfone da ilha não respondeu. Diga "Jarvis, …" ou escreva aqui.');
-      rec.onend = () => setListening(false);
-      recRef.current = rec;
-      setHint("");
-      setListening(true);
-      rec.start();
-    } catch {
-      setListening(false);
-      setHint('🎙 Diga "Jarvis, …" (o ouvido do PC atende) ou escreva aqui.');
-    }
+    setHint("");
+    voice.toggle();
   };
   const openMain = () => {
     close();
@@ -239,7 +215,7 @@ export default function IslandApp() {
           <button type="button" className="il-x" onClick={close} aria-label="Fechar a ilha" title="Fechar (Esc)">✕</button>
         </div>
         <IslandPanel tab={tab} setTab={(t) => { setTab(t); armClose(); }} st={st} track={hasTrack ? track : null} onControl={control}
-          chat={chat} busy={busy} onSend={send} onTalk={talk} listening={listening} />
+          chat={chat} busy={busy || voice.busy} onSend={send} onTalk={talk} listening={listening} />
         {locked && <button type="button" className="ilp-locked" onClick={openMain}>🔒 O JARVIS está bloqueado. Toque aqui para desbloquear (rosto ou PIN).</button>}
         {hint && <p className="ilp-hint">{hint}</p>}
         <div className="il-actions">

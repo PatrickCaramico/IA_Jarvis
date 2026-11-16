@@ -518,6 +518,21 @@
 
 **Status:** implementada na versão 8.3.0.
 
+### Ideia 10: Modo leve, voz pela Groq, brincadeiras do avatar e piscar liga/desliga
+
+**O que o Patrick pediu:** seguir com as ideias que tinham ficado para depois na ideia 8.
+
+**Decidido (16/11):**
+1. **⚡ Modo leve automático:** uma opção em Personalizar (Automático / Sempre ligado / Desligado). Quando está ligado:
+   - menos animações e o avatar parado quando não fala;
+   - a ilha atualiza mais devagar;
+   - no Automático, liga sozinho no notebook na bateria.
+2. **🎙 Voz entendida pela Groq, na ilha e no app do Windows:** o 🎙 grava o pedido e para sozinho quando você para de falar. A Groq (Whisper, grátis com a mesma chave do Cérebro) transcreve. O áudio não é guardado. A central no navegador continua como está.
+3. **😴 Brincadeiras quando parado (só visual, sem som):** depois de 1 minuto e meio sem mexer no PC, o avatar olha em volta, dá uma piscadinha ou boceja. Depois de 6 minutos, cochila com "zzz" e acorda quando você mexe. Dá para desligar.
+4. **👁 Piscar liga/desliga** em Personalizar.
+
+**Status:** implementada na versão 8.4.0.
+
 ## Ideias extras do Claude (para avaliar)
 
 | # | Ideia | Por que vale |
@@ -550,6 +565,7 @@ Itens que já estavam na lista e continuam **em espera**:
 ---
 
 ## Anotações da conversa
+- **16/11:** Ideia 10 desenhada e implementada (8.4.0): modo leve automático, voz pela Groq na ilha e no app, brincadeiras do avatar e piscar liga/desliga. Antes, a 8.3.2 (revisão de erros, OneDrive e nuvem).
 - **16/11:** Ideia 9 (menus direto na ilha) desenhada: a ilha cresce para baixo, abre no Resumo do dia e tem Conversa, Tarefas, Lembretes, Música, Timers, Missões, Hábitos e Copiados. Também saiu a 8.2.4 (Iniciar-JARVIS.bat voltou a ligar o JARVIS).
 - **16/11:** Ideia 8 (vídeo 5) desenhada: automático grátis Groq + Gemini, chave colada no app e salva só no PC, avatar mais estiloso e olhos que seguem o mouse. Também saiu a 8.1.7 (atualização mais rápida, com tela nova).
 _Espaço para ir anotando as decisões de cada ideia._

@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { ANTENNA_HATS, DEFAULT_AVATAR, lookAt, WARDROBE, withTheme } from "../utils/desk.js";
+import { isLite } from "../utils/lite.js";
 
 // V8.0: o avatar do MODO DESK: robô JARVIS (cabeça arredondada, visor escuro e olhos de luz em forma de arco-reator).
 // Cores, expressão e acessório vêm de Personalizar. O estado do JARVIS manda na expressão quando ele está
@@ -7,6 +8,9 @@ import { ANTENNA_HATS, DEFAULT_AVATAR, lookAt, WARDROBE, withTheme } from "../ut
 // V8.1 (ideia 7): guarda-roupa (chapéu, rosto, roupa, forma dos olhos, efeito) e temas das datas por cima.
 // V8.2 (ideia 8): visual mais fofo (bochechas, olhos maiores com brilho, reflexo no visor e sombra), 7 expressões
 // novas, acessórios novos, antena liga/desliga e os olhos que seguem o mouse.
+// V8.4.0 (ideia 10): BRINCADEIRAS quando parado (depois de um tempo sem mexer no PC ele olha em volta, dá uma
+// piscadinha, boceja e, bem depois, cochila com "zzz"; acorda quando você mexe) e o PISCAR liga/desliga.
+// No modo leve não tem brincadeira.
 
 export const EXPRESSIONS = [
   ["repouso", "Repouso"], ["ouvindo", "Ouvindo"], ["pensando", "Pensando"], ["falando", "Falando"], ["feliz", "Feliz"],
@@ -99,6 +103,13 @@ function Face({ face, color, shape }) {
           <path d="M36 64 H52 M68 64 H84" stroke={color} strokeWidth="4" strokeLinecap="round" />
           <text className="ra-z" x="92" y="30" fill={color} fontSize="14" fontWeight="700">z</text>
           <text className="ra-z is-2" x="100" y="20" fill={color} fontSize="10" fontWeight="700">z</text>
+        </g>
+      );
+    case "bocejo": // V8.4.0: brincadeira quando parado
+      return (
+        <g className="ra-glow">
+          {[44, 76].map((x) => <path key={x} d={`M${x - 8} 62 Q${x} 57 ${x + 8} 62`} fill="none" stroke={color} strokeWidth="4" strokeLinecap="round" />)}
+          <ellipse className="ra-yawn" cx="60" cy="77" rx="5" ry="6" fill={color} />
         </g>
       );
     case "repouso":
@@ -382,6 +393,53 @@ function Effect({ kind, color }) {
 }
 
 /** V8.2: olhos seguindo o mouse (suave; a velocidade vem de Personalizar). Só nos avatares grandes. */
+// V8.4.0: brincadeiras quando parado (só visual, sem som)
+export const FUN_AFTER_MS = 90_000; // parado 1 min e meio: começam as brincadeiras
+export const SLEEP_AFTER_MS = 6 * 60_000; // parado 6 min: cochila
+export const ANTICS = ["olhar", "piscando", "bocejo"];
+
+/** A brincadeira da vez: "dormindo" depois de muito tempo; antes disso, uma das ANTICS (sorteada) ou nada. */
+export function pickAntic(idleMs, rnd = Math.random()) {
+  if (idleMs >= SLEEP_AFTER_MS) return "dormindo";
+  if (idleMs < FUN_AFTER_MS || rnd < 0.4) return null;
+  return ANTICS[Math.floor(((rnd - 0.4) / 0.6) * ANTICS.length) % ANTICS.length];
+}
+
+function useIdleFun(enabled) {
+  const [antic, setAntic] = useState(null);
+  useEffect(() => {
+    if (!enabled || typeof window === "undefined") {
+      setAntic(null);
+      return undefined;
+    }
+    let last = Date.now();
+    let next = 0;
+    let undo = 0;
+    const wake = () => {
+      last = Date.now();
+      setAntic((a) => (a ? null : a));
+    };
+    const tick = () => {
+      const a = isLite() ? null : pickAntic(Date.now() - last);
+      if (a) {
+        setAntic(a);
+        clearTimeout(undo);
+        if (a !== "dormindo") undo = setTimeout(() => setAntic((c) => (c === a ? null : c)), 2600);
+      }
+      next = setTimeout(tick, 12_000 + Math.random() * 18_000);
+    };
+    next = setTimeout(tick, 15_000);
+    const evs = ["mousemove", "keydown", "pointerdown", "wheel"];
+    evs.forEach((e) => window.addEventListener(e, wake, { passive: true }));
+    return () => {
+      clearTimeout(next);
+      clearTimeout(undo);
+      evs.forEach((e) => window.removeEventListener(e, wake));
+    };
+  }, [enabled]);
+  return enabled ? antic : null;
+}
+
 function useLook(enabled, speed) {
   const ref = useRef(null);
   const [look, setLook] = useState({ x: 0, y: 0 });
@@ -415,9 +473,10 @@ function useLook(enabled, speed) {
   return [ref, enabled ? look : { x: 0, y: 0 }];
 }
 
-export default function RoboAvatar({ avatar = DEFAULT_AVATAR, tema = null, state = "idle", size = 64, className = "" }) {
+export default function RoboAvatar({ avatar = DEFAULT_AVATAR, tema = null, state = "idle", size = 64, className = "", still = false }) {
   const a = withTheme(avatar, tema);
-  const face = faceFor(state, a.expressao);
+  const antic = useIdleFun(!still && a.brincadeiras !== false && state === "idle"); // `still`: miniaturas (guarda-roupa)
+  const face = state === "idle" && antic && antic !== "olhar" ? antic : faceFor(state, a.expressao);
   const gid = useId().replace(/:/g, "");
   const shade = `ra-shade-${gid}`;
   const gloss = `ra-gloss-${gid}`;
@@ -425,7 +484,7 @@ export default function RoboAvatar({ avatar = DEFAULT_AVATAR, tema = null, state
   const eyes = `translate(${(look.x * 6).toFixed(2)} ${(look.y * 4).toFixed(2)})`;
   const showAntenna = a.antena !== false && ANTENNA_HATS.includes(a.chapeu);
   return (
-    <svg ref={ref} className={`ra ra-${face} ${className}`} width={size} height={size} viewBox="0 -10 120 132" overflow="visible" role="img" aria-label={`Avatar do JARVIS: ${face}`}>
+    <svg ref={ref} className={`ra ra-${face}${a.piscar === false ? " ra-noblink" : ""}${antic === "olhar" ? " ra-antic-olhar" : ""} ${className}`} width={size} height={size} viewBox="0 -10 120 132" overflow="visible" role="img" aria-label={`Avatar do JARVIS: ${face}`}>
       <defs>
         <linearGradient id={shade} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor="#fff" stopOpacity="0.55" />
@@ -456,7 +515,7 @@ export default function RoboAvatar({ avatar = DEFAULT_AVATAR, tema = null, state
       <rect x="22" y="38" width="76" height="52" rx="24" fill={a.visor} />
       <path d="M30 44 Q34 40 52 40 L40 62 Q30 60 30 52 Z" fill={`url(#${gloss})`} />
       <rect x="26" y="41" width="40" height="7" rx="3.5" fill="#fff" opacity="0.08" />
-      <g transform={eyes}>
+      <g transform={eyes} className="ra-eyes">
         <ellipse className="ra-cheek" cx="32" cy="77" rx="6" ry="3.5" fill="#fb7185" opacity="0.5" />
         <ellipse className="ra-cheek" cx="88" cy="77" rx="6" ry="3.5" fill="#fb7185" opacity="0.5" />
         <Face face={face} color={a.olhos} shape={a.olhos_forma} />
