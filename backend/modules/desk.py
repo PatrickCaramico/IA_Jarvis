@@ -45,14 +45,18 @@ WARDROBE_DEFAULT = {"chapeu": "nenhum", "rosto": "nenhum", "roupa": "nenhuma", "
 OLD_ACCESSORY = {"fone": ("chapeu", "fone"), "gorro": ("chapeu", "gorro"), "coroa": ("chapeu", "coroa"), "oculos": ("rosto", "oculos")}
 DEFAULT = {
     "avatar": {"corpo": "#e8f4ff", "visor": "#0b1220", "olhos": "#22d3ee", "expressao": "feliz", "acessorio": "nenhum",
-               **WARDROBE_DEFAULT, "temas": True, "antena": True, "olhos_seguem": True, "olhos_vel": 1.0},
+               **WARDROBE_DEFAULT, "temas": True, "antena": True, "olhos_seguem": True, "olhos_vel": 1.0,
+               "piscar": True, "brincadeiras": True},  # V8.4.0 (ideia 10)
     "cor": "#22d3ee",
     "ilha": {"ligada": True, "tamanho": "media", "atalho": "PageDown"},
+    # V8.4.0 (ideia 10): modo leve: "auto" (liga sozinho no notebook na bateria), "sim" ou "nao"
+    "desempenho": {"leve": "auto"},
     "xp": {"total": 0, "hoje": {}, "eventos": []},
     "habitos": [],
 }
 # quanto XP vale cada coisa (por dia, cada tipo tem um teto para não virar "farm")
 XP = {"conversa": (2, 40), "tarefa": (10, 100), "habito": (15, 150), "rotina": (8, 40), "lembrete": (3, 30), "memoria": (5, 25)}
+LITE_MODES = ("auto", "sim", "nao")  # V8.4.0
 LEVEL_BASE = 100  # nível n precisa de 100 × n XP a mais que o anterior
 MAX_HABITS = 20
 MAX_CLIPS = 50
@@ -168,7 +172,7 @@ def config() -> dict:
     d = _load()
     lv = level_info(d["xp"]["total"])
     record = _streak_record()
-    return {"avatar": d["avatar"], "cor": d["cor"], "ilha": d["ilha"], "nivel": lv,
+    return {"avatar": d["avatar"], "cor": d["cor"], "ilha": d["ilha"], "desempenho": d["desempenho"], "nivel": lv,
             "tema": season_theme() if d["avatar"].get("temas", True) else None,
             "guarda_roupa": unlock_status(lv["nivel"], record), "ofensiva_recorde": record}
 
@@ -199,11 +203,14 @@ def update_config(patch: dict) -> dict:
             d["avatar"][slot] = want
         if isinstance(av.get("temas"), bool):
             d["avatar"]["temas"] = av["temas"]
-        for k in ("antena", "olhos_seguem"):  # V8.2
+        for k in ("antena", "olhos_seguem", "piscar", "brincadeiras"):  # V8.2 / V8.4.0
             if isinstance(av.get(k), bool):
                 d["avatar"][k] = av[k]
         if isinstance(av.get("olhos_vel"), (int, float)) and not isinstance(av.get("olhos_vel"), bool):
             d["avatar"]["olhos_vel"] = round(min(2.0, max(0.25, float(av["olhos_vel"]))), 2)
+        des = patch.get("desempenho") if isinstance(patch.get("desempenho"), dict) else {}
+        if des.get("leve") in LITE_MODES:
+            d["desempenho"]["leve"] = des["leve"]
         if isinstance(patch.get("cor"), str) and HEX.match(patch["cor"]):
             d["cor"] = patch["cor"].lower()
         ilha = patch.get("ilha") if isinstance(patch.get("ilha"), dict) else {}

@@ -2,6 +2,21 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 8.4.0 — 16 de novembro de 2026
+
+**⚡ Modo leve, 🎙 voz pela Groq, 😴 brincadeiras do avatar e 👁 piscar liga/desliga (ideia 10)**
+- **Modo leve** (Personalizar › Animações e desempenho): Automático, Sempre ligado ou Desligado.
+  - Ligado: sem animações nem transições, o avatar só mexe a boca quando fala e a ilha atualiza mais devagar (a cada 3,5 s em vez de 1,2 s).
+  - No Automático, liga sozinho quando o notebook está na bateria.
+- **Voz pela Groq na ilha e no app do Windows:**
+  - O 🎙 grava o pedido e para sozinho quando você para de falar. O limite do que conta como fala se ajusta ao ruído do ambiente, para pegar microfones baixinhos.
+  - O PC manda o áudio para a Groq (Whisper, grátis com a mesma chave do Cérebro) e envia o texto ao JARVIS.
+  - O áudio não é guardado, e a rota `/api/voice/transcribe` só atende este PC.
+  - Sem a chave da Groq, aparece "conecte a Groq em Cérebro (IA)".
+  - A tecla de atalho do app já começa a gravar.
+- **Brincadeiras quando parado** (só visual, sem som): depois de 1 min 30 s sem mexer no PC, o avatar às vezes olha em volta, dá uma piscadinha ou boceja. Depois de 6 min, cochila com "zzz" e acorda quando você mexe. Dá para desligar, e o modo leve também desliga.
+- **Piscar sozinho:** agora dá para desligar.
+
 ## 8.3.2 — 16 de novembro de 2026
 
 **🔍 Revisão de erros antes do teste (ilha e interface nova) e os avisos do log**

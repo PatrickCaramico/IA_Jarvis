@@ -127,3 +127,48 @@ test("V8.3.1: interface nova: acha o bundle no index.html", async () => {
   assert.equal(bundleName('<script type="module" crossorigin src="/assets/index-AbC_12-x.js"></script>'), "/assets/index-AbC_12-x.js");
   assert.equal(bundleName("<html></html>"), "");
 });
+
+test("V8.4.0: modo leve: automático só liga no notebook na bateria", async () => {
+  const src = await import("node:fs").then((fs) => fs.readFileSync(new URL("../src/utils/lite.js", import.meta.url), "utf8"));
+  const liteFrom = new Function("setting", "battery", src.match(/export function liteFrom\(setting, battery\) \{([\s\S]*?)\n\}/)[1]);
+  assert.equal(liteFrom("sim", null), true);
+  assert.equal(liteFrom("nao", { charging: false }), false);
+  assert.equal(liteFrom("auto", null), false); // PC de mesa
+  assert.equal(liteFrom("auto", { charging: true }), false);
+  assert.equal(liteFrom("auto", { charging: false }), true);
+});
+
+test("V8.4.0: voz pela Groq: volume e quando parar de gravar", async () => {
+  const src = await import("node:fs").then((fs) => fs.readFileSync(new URL("../src/utils/voiceRecord.js", import.meta.url), "utf8"));
+  const rmsLevel = new Function("bytes", src.match(/export function rmsLevel\(bytes\) \{([\s\S]*?)\n\}/)[1]);
+  assert.equal(rmsLevel(new Uint8Array([128, 128, 128])), 0);
+  assert.ok(rmsLevel(new Uint8Array([0, 255, 0, 255])) > 0.9);
+  const body = src.match(/export function recordStep\(\{ now, start, lastLoud, spoke, maxMs = 15000, silenceMs = 1300, waitMs = 6000 \}\) \{([\s\S]*?)\n\}/)[1];
+  const step = (o) => new Function("o", `const { now, start, lastLoud, spoke, maxMs = 15000, silenceMs = 1300, waitMs = 6000 } = o;${body}`)(o);
+  assert.equal(step({ now: 1000, start: 0, lastLoud: 0, spoke: false }), "seguir");
+  assert.equal(step({ now: 7000, start: 0, lastLoud: 0, spoke: false }), "nada"); // não falou nada
+  assert.equal(step({ now: 3000, start: 0, lastLoud: 2500, spoke: true }), "seguir"); // pausa curta
+  assert.equal(step({ now: 4000, start: 0, lastLoud: 2500, spoke: true }), "fim"); // falou e calou
+  assert.equal(step({ now: 15000, start: 0, lastLoud: 14900, spoke: true }), "fim"); // tempo máximo
+});
+
+test("V8.4.0: brincadeiras: nada antes de 1min30, sorteio depois e cochilo com muito tempo parado", async () => {
+  const src = await import("node:fs").then((fs) => fs.readFileSync(new URL("../src/components/RoboAvatar.jsx", import.meta.url), "utf8"));
+  const consts = src.match(/export const FUN_AFTER_MS[\s\S]*?export const ANTICS = \[[^\]]*\];/)[0].replace(/export /g, "");
+  const body = src.match(/export function pickAntic\(idleMs, rnd = Math.random\(\)\) \{([\s\S]*?)\n\}/)[1];
+  const pick = new Function("idleMs", "rnd", `${consts}${body}`);
+  assert.equal(pick(30_000, 0.9), null);
+  assert.equal(pick(120_000, 0.1), null); // às vezes não faz nada
+  for (const r of [0.4, 0.6, 0.8, 0.999]) assert.ok(["olhar", "piscando", "bocejo"].includes(pick(120_000, r)));
+  assert.equal(pick(7 * 60_000, 0.1), "dormindo");
+  assert.ok(src.includes('case "bocejo"') && src.includes("ra-noblink"));
+});
+
+test("V8.4.0: voz: o limite de fala se ajusta ao ruído do ambiente", async () => {
+  const src = await import("node:fs").then((fs) => fs.readFileSync(new URL("../src/utils/voiceRecord.js", import.meta.url), "utf8"));
+  const min = Number(src.match(/const MIN_SPEECH_LEVEL = ([\d.]+);/)[1]);
+  const th = new Function("floor", "MIN_SPEECH_LEVEL", src.match(/export function speechThreshold\(floor\) \{([\s\S]*?)\n\}/)[1]);
+  assert.equal(th(0, min), min); // sala silenciosa: um microfone baixinho (0,02) já conta
+  assert.ok(0.02 > th(0, min));
+  assert.ok(Math.abs(th(0.03, min) - 0.09) < 1e-9); // sala barulhenta: precisa falar mais alto que o ruído
+});

@@ -81,6 +81,7 @@ export const DEFAULT_AVATAR = {
   corpo: "#e8f4ff", visor: "#0b1220", olhos: "#22d3ee", expressao: "feliz", acessorio: "nenhum",
   chapeu: "nenhum", rosto: "nenhum", roupa: "nenhuma", olhos_forma: "reator", efeito: "nenhum", temas: true,
   antena: true, olhos_seguem: true, olhos_vel: 1, // V8.2 (ideia 8)
+  piscar: true, brincadeiras: true, // V8.4.0 (ideia 10)
 };
 
 /** V8.2: chapéus que deixam a antena aparecer (os outros cobrem o topo da cabeça). */

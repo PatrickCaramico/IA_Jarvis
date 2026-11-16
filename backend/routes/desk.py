@@ -228,7 +228,8 @@ async def island() -> dict:
     fresh = time.time() - float(st.get("resposta_em") or 0) < 25
     cfg = desk.config()
     return {"estado": st.get("estado", "idle"), "resposta": st.get("resposta", "") if fresh else "",
-            "hora": datetime.now().strftime("%H:%M"), "avatar": cfg["avatar"], "cor": cfg["cor"], "ilha": cfg["ilha"], "tema": cfg.get("tema")}
+            "hora": datetime.now().strftime("%H:%M"), "avatar": cfg["avatar"], "cor": cfg["cor"], "ilha": cfg["ilha"], "tema": cfg.get("tema"),
+            "desempenho": cfg["desempenho"]}
 
 
 # --------------------------------------------------------------------------- V8.1: missões e ofensiva
@@ -290,3 +291,35 @@ async def _broadcast_missions() -> None:
         await runtime.manager.broadcast({"type": "desk_missions", "data": desk_missions.view()})
     except Exception:  # noqa: BLE001
         pass
+
+
+# --------------------------------------------------------------------------- V8.4.0: voz pela Groq (ilha e app)
+@router.post("/api/voice/transcribe")
+async def voice_transcribe(request: Request) -> dict:
+    """O 🎙 da ilha e do app do Windows manda o áudio gravado (corpo cru, audio/webm); volta o texto.
+
+    Só para este PC (o app e a ilha rodam aqui); o áudio não é guardado."""
+    from core import runtime
+    from modules import voice_groq
+
+    if not runtime.is_local_conn(request):
+        raise HTTPException(status_code=403, detail="A voz pela Groq é só para o app deste PC.")
+    try:  # recusa antes de ler um corpo grande demais
+        size = int(request.headers.get("content-length") or 0)
+    except ValueError:
+        size = 0
+    if size > voice_groq.MAX_BYTES:
+        raise HTTPException(status_code=413, detail="Áudio grande demais. Fale um pedido mais curto.")
+    data = await request.body()
+    try:
+        texto = await asyncio.to_thread(voice_groq.transcribe, data, request.headers.get("content-type", "audio/webm"))
+    except voice_groq.VoiceError as exc:
+        raise HTTPException(status_code=exc.status, detail=str(exc)) from exc
+    return {"texto": texto}
+
+
+@router.get("/api/voice/groq")
+async def voice_groq_status() -> dict:
+    from modules import voice_groq
+
+    return {"disponivel": voice_groq.available()}

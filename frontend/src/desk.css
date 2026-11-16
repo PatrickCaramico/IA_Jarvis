@@ -348,3 +348,17 @@
 .dk-perso-preview { align-content: start; }
 .dk-perso-preview > svg { margin-top: 10px; }
 .dk-keycard .dk-add, .dk-mission .dk-add { grid-template-columns: minmax(0, 1fr) auto; margin: 2px 0; }
+
+/* V8.4.0 (ideia 10): piscar liga/desliga, brincadeiras quando parado e MODO LEVE */
+.ra-noblink .ra-blink { animation: none !important; }
+.ra-antic-olhar .ra-eyes { animation: ra-lookaround 2.6s ease-in-out; }
+.ra-yawn { transform-box: fill-box; transform-origin: center; animation: ra-yawn 2.4s ease-in-out; }
+@keyframes ra-lookaround { 0%, 100% { transform: translate(0, 0); } 25%, 40% { transform: translate(-6px, -1px); } 60%, 80% { transform: translate(6px, -1px); } }
+@keyframes ra-yawn { 0% { transform: scale(0.3); } 40%, 70% { transform: scale(1.15, 1.3); } 100% { transform: scale(0.5); } }
+/* modo leve: sem animações nem transições (o avatar só mexe a boca quando fala) */
+html.is-lite :is(.dk-root, .il, .ra) *:not(.ra-talk *),
+html.is-lite :is(.dk-root, .il) { animation: none !important; transition: none !important; }
+html.is-lite .dk-root { backdrop-filter: none !important; }
+.dk-toast.is-voice { bottom: 84px; border-color: #facc15; }
+.dk-root select { flex: 1; min-width: 0; height: 34px; padding: 0 10px; border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 10px; background: rgba(255, 255, 255, 0.06); color: inherit; font: inherit; color-scheme: dark; }
+.dk-root select:focus-visible { outline: 2px solid var(--dk-accent); outline-offset: 1px; }
