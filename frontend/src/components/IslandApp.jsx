@@ -20,7 +20,7 @@ import "../island.css";
 // Esta página é aberta só pelo app (?ilha=1); as funções do Windows vêm do window.pywebview.api.
 const IDLE_CLOSE_MS = 120000;
 // V8.6.0: o avatar da pílula bem maior, em close no rosto (dava para ver a expressão)
-const PILL_AVATAR = { pequena: 40, media: 50, grande: 60 };
+const PILL_AVATAR = { pequena: 40, media: 46, grande: 54 }; // V8.6.2: dentro de um círculo escuro, sem encostar na borda
 const DEDUPE_MS = 800;
 
 /** Toque avisado pelo app. O app avisa quando o botão DESCE (aí o clique real que vier é ignorado) e, se não foi
@@ -110,7 +110,14 @@ export default function IslandApp() {
     api("/api/profile").then((d) => setNames((n) => ({ ...n, user: d?.name || "" }))).catch(() => {});
   }, []);
 
-  const { mood, poke } = usePoke(() => { setOpen(false); startPacman(); }); // V8.6.0: irritou -> corre atrás do mouse
+  const [pacHint, setPacHint] = useState("");
+  const { mood, poke } = usePoke(() => { // V8.6.0: irritou -> corre atrás do mouse
+    setOpen(false);
+    if (!startPacman()) { // V8.6.2: o app do Windows aberto é de antes do Pac-Man
+      setPacHint("😤 Para ele correr atrás do mouse, feche o app pelo ⏻ e abra de novo (versão nova).");
+      setTimeout(() => setPacHint(""), 9000);
+    }
+  });
   const lite = useLiteMode(st?.desempenho?.leve || "auto"); // V8.4.0: modo leve -> atualiza mais devagar
   useEffect(() => {
     document.documentElement.classList.add("is-island");
@@ -151,7 +158,7 @@ export default function IslandApp() {
     api("/api/desk", { method: "PATCH", body: JSON.stringify({ ilha: { zoom: z } }) }).then(() => setZoom(null)).catch(() => {});
   };
 
-  const reply = Boolean(st?.resposta);
+  const reply = Boolean(st?.resposta) || Boolean(pacHint);
   const mode = islandMode(open, reply);
   useEffect(() => { // a janela do Windows muda de tamanho junto (recortada no formato da ilha)
     if (mode === modeRef.current) return;
@@ -251,7 +258,11 @@ export default function IslandApp() {
     <button type="button" className={`il il-${estado}${mode === "resposta" ? " is-open" : ""}`} style={style}
       onClick={() => setOpen(true)} title="Clique: abre o JARVIS aqui · arraste: move · dois cliques: janela grande">
       <span className="il-row">
-        <span className="il-face"><RoboAvatar avatar={st?.avatar} tema={st?.tema} state={face} size={PILL_AVATAR[st?.ilha?.tamanho] || PILL_AVATAR.media} tight /></span>
+        <span className={`il-face${mood ? " is-poked" : ""}`} data-il-click title="Não cutuque o JARVIS… 😈"
+          onClick={(e) => { e.stopPropagation(); poke(); }}>
+          <RoboAvatar avatar={mood ? { ...st?.avatar, expressao: mood } : st?.avatar} tema={st?.tema} state={mood ? "idle" : face}
+            size={PILL_AVATAR[st?.ilha?.tamanho] || PILL_AVATAR.media} tight still={Boolean(mood)} />
+        </span>
         {playing ? (
           <span className="il-txt il-music"><b className="il-eq"><i /><i /><i /><i /></b><span>{track.title}{track.artist ? ` · ${track.artist}` : ""}</span></span>
         ) : (
@@ -263,7 +274,8 @@ export default function IslandApp() {
         )}
         <span className="il-time">{st?.hora || ""}</span>
       </span>
-      {mode === "resposta" && <span className="il-reply">{st.resposta}</span>}
+      {mode === "resposta" && st?.resposta && <span className="il-reply">{st.resposta}</span>}
+      {pacHint && <span className="il-reply">{pacHint}</span>}
     </button>
   );
 }
