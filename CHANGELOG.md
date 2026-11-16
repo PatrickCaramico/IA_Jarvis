@@ -2,6 +2,24 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 8.3.0 — 16 de novembro de 2026
+
+**🏝️ Menus direto na ilha, sem abrir o app (ideia 9)**
+- **Clique na ilha:** ela **cresce para baixo** e vira um painel arredondado no topo da tela (440×560), como no vídeo. Em cima ficam os ícones dos menus e embaixo o conteúdo.
+- **Primeira tela (Resumo do dia):** próximo lembrete, tarefas pendentes, missões e ofensiva 🔥, hábitos de hoje, a música tocando e o botão **🎙 FALAR**.
+- **Menus na própria ilha:**
+  - 💬 **Conversa:** escrever ou falar e ler a resposta ali mesmo;
+  - ☰ **Tarefas:** ver, concluir e adicionar;
+  - 🔔 **Lembretes:** ver, apagar e criar (com data, ou escrevendo "amanhã 9h dentista");
+  - ♫ **Música:** capa grande, ⏮ ⏯ ⏭ e volume;
+  - ⏱ **Timers:** os timers rodando e atalhos de 5, 10 e 25 minutos;
+  - 🎯 **Missões:** missões do dia, ofensiva, FEITO e responder;
+  - ◆ **Hábitos:** marcar os de hoje;
+  - ⧉ **Copiados:** tocar copia de novo (pelo Windows, mesmo sem foco).
+- **Fecha** ao clicar fora, no ✕, com Esc ou depois de 1 minuto parada. Dois cliques na pílula ou **🖥 ABRIR JARVIS** ainda abrem a janela completa. Com os menus abertos, cliques rápidos não abrem o JARVIS por engano.
+- **Digitar na ilha:** ao abrir os menus, a ilha pega o foco do teclado. Tocar num campo só dá o foco, sem clicar.
+- Tudo usa as mesmas rotas do Modo Desk: o que você faz na ilha aparece no app, na central e no celular.
+
 ## 8.2.4 — 16 de novembro de 2026
 
 **🛠️ O Iniciar-JARVIS.bat volta a ligar o JARVIS (parava com "... foi inesperado neste momento")**

@@ -118,3 +118,27 @@ def test_bridge_exposes_only_methods():
     public = {n: getattr(b, n) for n in dir(b) if not n.startswith("_")}
     assert public and all(inspect.ismethod(v) for v in public.values()), [n for n, v in public.items() if not inspect.ismethod(v)]
     assert {"show_main", "island_mode", "talk", "quit", "log"} <= set(public)
+
+
+def test_island_panel_v830():
+    """V8.3.0 (ideia 9): os menus abrem na própria ilha: painel de tamanho fixo, centralizado, que cresce para baixo."""
+    d = _desktop()
+    for size in d.ISLAND_SIZES:
+        x, y, w, h = d.island_position(1920, size, "painel")
+        assert (w, h) == (max(d.ISLAND_SIZES[size][0], d.ISLAND_PANEL[0]), d.ISLAND_PANEL[1])
+        assert x == (1920 - w) // 2 and y < 20
+    assert d.island_radius("painel", 560) < 560
+    b = d.Bridge()
+    assert inspect_public(b) >= {"copy_text", "island_mode"}
+    b.island_mode("painel")  # sem janela não quebra
+    assert d.focus_window(0) is False
+    if __import__("sys").platform != "win32":
+        assert d.copy_to_clipboard("oi") is False and b.copy_text("oi") is False
+    src = (Path(d.__file__)).read_text(encoding="utf-8")
+    # com os menus abertos, cliques rápidos não abrem o JARVIS e clicar fora fecha
+    assert 'bridge._mode != "painel" and now - last_click' in src
+    assert "__jarvisIslandOutside" in src
+
+
+def inspect_public(b) -> set:
+    return {n for n in dir(b) if not n.startswith("_")}

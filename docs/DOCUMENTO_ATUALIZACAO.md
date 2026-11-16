@@ -497,6 +497,27 @@
 
 **Status:** implementado na versão 8.2.0.
 
+### Ideia 9: Menus direto na ilha (sem abrir o app)
+
+**O que o Patrick pediu:** abrir os menus direto pela ilha, como no vídeo, sem precisar abrir a janela do JARVIS.
+
+**Decidido (16/11):**
+1. **Como abre:** a pílula **cresce para baixo**, virando um painel arredondado no topo da tela (uns 420×520). Em cima fica uma fileira de ícones dos menus, e o conteúdo aparece embaixo. Fecha ao clicar fora, no ✕ ou com Esc.
+2. **Tela inicial (Resumo do dia):** avatar e estado, hora, próximo lembrete, tarefas pendentes, a música tocando e o botão **🎙 FALAR**.
+3. **Menus dentro da ilha:**
+   - **💬 Conversa:** digitar ou falar com o JARVIS e ler a resposta ali mesmo, com as últimas mensagens;
+   - **☰ Tarefas:** ver as pendentes, marcar como feita e adicionar rápido;
+   - **🔔 Lembretes:** os próximos lembretes e um campo para criar um novo ("amanhã 9h dentista");
+   - **♫ Música:** capa, nome, ⏮ ⏯ ⏭ e volume;
+   - **⏱ Timers:** timers rodando, com atalhos de 5, 10 e 25 minutos;
+   - **🎯 Missões:** as missões do dia e a ofensiva 🔥, com o botão de concluir;
+   - **◆ Hábitos:** os hábitos de hoje, para marcar;
+   - **⧉ Copiados:** o histórico do que você copiou; tocar copia de novo.
+4. **Continua igual:** dois cliques na pílula ou o botão **🖥 ABRIR JARVIS** abrem a janela completa; em repouso, a pílula mostra o avatar e a hora (ou a música).
+5. Usa os mesmos dados do JARVIS: o que você faz na ilha aparece no app, na central e no celular.
+
+**Status:** implementada na versão 8.3.0.
+
 ## Ideias extras do Claude (para avaliar)
 
 | # | Ideia | Por que vale |
@@ -529,6 +550,7 @@ Itens que já estavam na lista e continuam **em espera**:
 ---
 
 ## Anotações da conversa
+- **16/11:** Ideia 9 (menus direto na ilha) desenhada: a ilha cresce para baixo, abre no Resumo do dia e tem Conversa, Tarefas, Lembretes, Música, Timers, Missões, Hábitos e Copiados. Também saiu a 8.2.4 (Iniciar-JARVIS.bat voltou a ligar o JARVIS).
 - **16/11:** Ideia 8 (vídeo 5) desenhada: automático grátis Groq + Gemini, chave colada no app e salva só no PC, avatar mais estiloso e olhos que seguem o mouse. Também saiu a 8.1.7 (atualização mais rápida, com tela nova).
 _Espaço para ir anotando as decisões de cada ideia._
 
