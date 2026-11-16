@@ -472,6 +472,31 @@
 
 ---
 
+### Ideia 8: Cérebro automático grátis e avatar mais estiloso (vídeo 5)
+
+**O que o Patrick pediu:** as funções do vídeo 5 e o avatar ainda mais estiloso.
+
+**Decidido (16/11):**
+1. **🧠 Cérebro › Automático grátis (recomendado):**
+   - o JARVIS usa a **Groq** (muito rápida, grátis) como principal e o **Gemini** grátis como reserva;
+   - troca sozinho quando uma chega no limite do dia (no log do PC, o Gemini grátis estourou o limite de 20 pedidos);
+   - no topo aparece "✅ Funcionando no automático grátis";
+   - a opção "Eu escolho a IA" continua, para quem quiser fixar uma.
+2. **🔑 Conectar as IAs grátis:**
+   - um cartão para cada IA, com o passo a passo ("entre com sua conta e clique em Criar chave de API") e o campo **Cole a chave aqui**;
+   - a chave é salva **só no PC** (no `.env`), nunca vai para a nuvem e não aparece de novo na tela, só "conectada ✓";
+   - o botão **Testar esta IA** mostra a resposta e o tempo.
+3. **🤖 Avatar mais estiloso:**
+   - **Visual:** bochechas rosadas, olhos maiores com brilho, reflexo no visor e sombra suave.
+   - **Expressões novas:** Repouso, Rindo, Carinho, Descolado, Bravo, Chorando e Conseguiu, além das atuais.
+   - **Acessórios novos:** Auréola, Chifrinhos, Chapéu de festa, Flor e Boné do time, mais o liga/desliga da antena.
+   - **Personalizar:** a prévia do avatar fica bem maior, com todas as expressões em botões, como no vídeo.
+4. **👀 Jeito de ser › Olhos seguem o mouse:** os olhos acompanham o cursor, com velocidade ajustável; dá para desligar.
+
+**Fica para depois (não escolhido agora):** modo desempenho, voz entendida pela Groq, brincadeiras quando parado, piscar e animações liga/desliga.
+
+**Status:** desenho aprovado; falta implementar.
+
 ## Ideias extras do Claude (para avaliar)
 
 | # | Ideia | Por que vale |
@@ -504,6 +529,7 @@ Itens que já estavam na lista e continuam **em espera**:
 ---
 
 ## Anotações da conversa
+- **16/11:** Ideia 8 (vídeo 5) desenhada: automático grátis Groq + Gemini, chave colada no app e salva só no PC, avatar mais estiloso e olhos que seguem o mouse. Também saiu a 8.1.7 (atualização mais rápida, com tela nova).
 _Espaço para ir anotando as decisões de cada ideia._
 
 - **15/11:** Ideia 7 (guarda-roupa do robô, Missões e Ofensiva) desenhada e decidida.
