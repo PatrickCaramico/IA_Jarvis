@@ -136,10 +136,37 @@ def test_island_panel_v830():
         assert d.copy_to_clipboard("oi") is False and b.copy_text("oi") is False
     src = (Path(d.__file__)).read_text(encoding="utf-8")
     # com os menus abertos, cliques rápidos não abrem o JARVIS e clicar fora fecha
-    assert 'last_mode != "painel" and now - last_click' in src and "last_click, last_mode = now, bridge._mode" in src
+    assert 'last_mode != "painel" and now - last_click' in src and 'last_click, last_mode = now, press["mode"]' in src
     assert "keybd_event" not in src and "AttachThreadInput" in src  # V8.3.2: foco sem apertar o Alt de mentira
     assert "__jarvisIslandOutside" in src
 
 
 def inspect_public(b) -> set:
     return {n for n in dir(b) if not n.startswith("_")}
+
+
+
+def test_island_drag_and_position_v841():
+    """V8.4.1: arrastar a ilha para os lados (lembra onde ficou) e o app inteiro no painel, como no vídeo."""
+    from modules import desk
+
+    d = _desktop()
+    x, _, w, _ = d.island_position(1920, "media", "mini", 0.5)
+    assert x == (1920 - w) // 2 or abs(x - (1920 - w) / 2) <= 1
+    x0, _, w0, _ = d.island_position(1920, "media", "mini", 0.0)
+    assert x0 == 0  # encostada na esquerda, sem sair da tela
+    x1, _, w1, _ = d.island_position(1920, "media", "painel", 1.0)
+    assert x1 + w1 == 1920 and w1 >= 900  # painel largo, sem passar da direita
+    _, _, wsmall, _ = d.island_position(800, "media", "painel", 0.5)
+    assert wsmall <= 800
+    assert d.drag_x(100, 500, 650, 380, 1920) == 250
+    assert d.drag_x(100, 500, -400, 380, 1920) == 0 and d.drag_x(100, 500, 9000, 380, 1920) == 1920 - 380
+    assert d.center_fraction(770, 380, 1920) == 0.5 and d.center_fraction(0, 0, 0) == 0.5
+    b = d.Bridge()
+    assert "island_center" in {n for n in dir(b) if not n.startswith("_")}
+    cfg = desk.update_config({"ilha": {"posicao": 0.2}})
+    assert cfg["ilha"]["posicao"] == 0.2
+    assert desk.update_config({"ilha": {"posicao": 7}})["ilha"]["posicao"] == 1.0
+    assert desk.update_config({"ilha": {"posicao": "x"}})["ilha"]["posicao"] == 1.0
+    src = Path(d.__file__).read_text(encoding="utf-8")
+    assert "DRAG_PX" in src and "SetWindowPos" in src and "__jarvisIslandDragged" in src

@@ -48,7 +48,7 @@ DEFAULT = {
                **WARDROBE_DEFAULT, "temas": True, "antena": True, "olhos_seguem": True, "olhos_vel": 1.0,
                "piscar": True, "brincadeiras": True},  # V8.4.0 (ideia 10)
     "cor": "#22d3ee",
-    "ilha": {"ligada": True, "tamanho": "media", "atalho": "PageDown"},
+    "ilha": {"ligada": True, "tamanho": "media", "atalho": "PageDown", "posicao": 0.5},
     # V8.4.0 (ideia 10): modo leve: "auto" (liga sozinho no notebook na bateria), "sim" ou "nao"
     "desempenho": {"leve": "auto"},
     "xp": {"total": 0, "hoje": {}, "eventos": []},
@@ -220,6 +220,9 @@ def update_config(patch: dict) -> dict:
             d["ilha"]["tamanho"] = ilha["tamanho"]
         if isinstance(ilha.get("atalho"), str) and re.fullmatch(r"[A-Za-z0-9+]{1,24}", ilha["atalho"]):
             d["ilha"]["atalho"] = ilha["atalho"]
+        pos = ilha.get("posicao")  # V8.4.1: onde a ilha fica no topo (0..1 da largura da tela; arrastada no app)
+        if isinstance(pos, (int, float)) and not isinstance(pos, bool):
+            d["ilha"]["posicao"] = round(min(1.0, max(0.0, float(pos))), 4)
         _save(d)
     return config()
 

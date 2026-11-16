@@ -2,6 +2,20 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 8.4.1 — 16 de novembro de 2026
+
+**🏝️ A ilha abre o app inteiro, igual ao vídeo, e dá para arrastar para os lados**
+- **Clique na pílula:** desce do topo um painel largo (980×600) com o **Modo Desk inteiro**, como no vídeo:
+  - à esquerda, a barra lateral com avatar, nível, ofensiva e os menus (Início, Conversa, Memória, Tarefas, Lembretes, Missões, Hábitos, Timers, Música, Copiados, Rotinas, Meu PC);
+  - as **Configurações** (Personalizar, Cérebro, Funções, Voz, Ilha, Atualizações...);
+  - à direita, as mesmas telas do app.
+  - Substitui o painel simplificado da 8.3.0, que não tinha Personalizar.
+- **Arrastar:** segure a pílula, ou a barra de cima do painel aberto, e arraste para a esquerda ou a direita. A ilha lembra onde ficou (`ilha.posicao`). Dois cliques num espaço vazio da barra levam de volta ao centro.
+- **Barra de cima do painel:** estado (ou a música tocando), hora, 🖥 janela grande, ⏻ sair e ✕ fechar.
+- **Fecha** no ✕, com Esc, clicando fora ou depois de 2 minutos parada. Não fecha mais ao perder o foco, porque escolher uma cor abre uma janelinha do Windows.
+- **Cliques:** o clique na pílula agora vale ao **soltar** o botão, para dar para arrastar. Com o painel aberto, o mouse vai direto para o app (seletores, cores e controles deslizantes funcionam). Dois cliques na pílula continuam abrindo a janela grande.
+- As respostas que o JARVIS dá por outro caminho (voz "Jarvis, …", celular) também aparecem na conversa da ilha.
+
 ## 8.4.0 — 16 de novembro de 2026
 
 **⚡ Modo leve, 🎙 voz pela Groq, 😴 brincadeiras do avatar e 👁 piscar liga/desliga (ideia 10)**
