@@ -31,7 +31,7 @@ import { askWorld, worldIntent } from "./godseye/world.js";
 import { API_URL, BACKEND_ON_THIS_PC, api, clientId, getJarvisToken, hasMemoryToken, publicUrl, setJarvisToken, voiceHere } from "./utils/api.js";
 import { enqueueHere, stopSpeech } from "./utils/speakHere.js";
 import { applyAccessibility, applyBackground, applyFanMode, applyTheme } from "./utils/theme.js";
-import { IS_JARVIS_APP } from "./utils/device.js";
+import { IS_DESKTOP_APP, IS_JARVIS_APP } from "./utils/device.js";
 import { CLOUD_AVAILABLE, cloudRequested, isPhone, setCloudToken } from "./utils/cloudApi.js";
 import { installCloudShim } from "./utils/cloudShim.js";
 import { holoCommand, holoIntent, holoQuestion, quickQuestion, quizLetter, savedHoloIntent } from "./utils/holoIntent.js";
@@ -2364,7 +2364,11 @@ export default function App() {
     }
   };
 
-  const clapOn = Boolean(appPrefs.clap_wake_enabled);
+  // V8.7.1: no app do Windows, nada de escuta pelo navegador (palmas e "Jarvis, …"): o ouvido do PC já atende e o 🎙
+  // usa a Groq. Antes, a janela escondida do app abria e fechava o microfone sem parar; a cada vez o Windows
+  // abaixava os outros sons ("comunicação") e depois devolvia: o som ficava aumentando e diminuindo.
+  const BROWSER_EARS = !IS_JARVIS_APP && !IS_DESKTOP_APP;
+  const clapOn = Boolean(appPrefs.clap_wake_enabled) && !IS_DESKTOP_APP;
   const lockClap = clapOn && screen === "lock" && (lockPhase === "ready" || lockPhase === "failed") && !showMicrophoneSelect
     && !sentinelMuted; // V4.2.2: palmas também esperam o microfone ser ligado (P)
   const mainClap = clapOn && appPrefs.clap_scope !== "lock" && screen === "main"
@@ -2435,7 +2439,7 @@ export default function App() {
   // Como a Alexa: com a central aberta, "Jarvis, ..." funciona sem tocar no microfone.
   // Pausa enquanto o JARVIS pensa ou fala (não escuta a própria voz) e enquanto o microfone manual está ligado.
   const central = useSentinelListener({
-    enabled: !IS_JARVIS_APP && screen === "main" && appPrefs.hands_free_enabled !== false,
+    enabled: BROWSER_EARS && screen === "main" && appPrefs.hands_free_enabled !== false,
     paused: jarvisState !== "idle" || listening,
     wakeWords,
     onWake: () => soundManager.playListening(),
@@ -2462,7 +2466,7 @@ export default function App() {
   }, [jarvisState, screen, appPrefs.follow_up_enabled, appPrefs.hands_free_enabled, central]);
 
   const sentinel = useSentinelListener({
-    enabled: !IS_JARVIS_APP && sentinelOn && (lockPhase === "ready" || lockPhase === "failed") && !sentinelMuted && !sentinelCooldown,
+    enabled: BROWSER_EARS && sentinelOn && (lockPhase === "ready" || lockPhase === "failed") && !sentinelMuted && !sentinelCooldown,
     paused: jarvisState !== "idle" || faceScan.status === "scanning",
     wakeWords,
     onCommand: askSentinel,

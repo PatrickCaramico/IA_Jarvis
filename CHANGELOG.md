@@ -2,6 +2,13 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 8.7.1 — 16 de novembro de 2026
+
+**🔊 O som parou de ficar aumentando e diminuindo**
+- **Causa:** quando um programa abre o microfone como "comunicação", o Windows **abaixa os outros sons** (em até 80%) e devolve quando ele fecha. A escuta pelo navegador ("Jarvis, …" e palmas) abre e fecha o microfone o tempo todo, porque o Chrome encerra a escuta sozinho de tempos em tempos e o JARVIS religa. A cada vez o som caía e voltava.
+- **No app do Windows, essa escuta rodava escondida** na janela grande, somando com a central aberta no navegador e com o ouvido do PC. Agora o app **não escuta pelo navegador**: o "Jarvis, …" é atendido pelo ouvido do PC, e o 🎙 usa a Groq.
+- **Dica para acabar de vez:** em Configurações de som do Windows › Mais configurações de som › aba **Comunicações**, marque **"Não fazer nada"**.
+
 ## 8.7.0 — 16 de novembro de 2026
 
 **🩺 Diagnóstico de travamento (JARVIS mais leve) e ilha escondida no topo**

@@ -199,3 +199,11 @@ test("V8.6.2: pílula: cutucar o avatar não abre o painel e avisa quando o app 
   assert.ok(src.includes("e.stopPropagation(); poke();"));
   assert.ok(src.includes("if (!startPacman())") && src.includes("feche o app pelo ⏻"));
 });
+
+test("V8.7.1: no app do Windows não há escuta pelo navegador (o som subia e descia com o microfone abrindo e fechando)", async () => {
+  const src = await import("node:fs").then((fs) => fs.readFileSync(new URL("../src/App.jsx", import.meta.url), "utf8"));
+  assert.ok(src.includes("const BROWSER_EARS = !IS_JARVIS_APP && !IS_DESKTOP_APP;"));
+  assert.ok(src.includes("enabled: BROWSER_EARS && screen === \"main\""));
+  assert.ok(src.includes("enabled: BROWSER_EARS && sentinelOn"));
+  assert.ok(src.includes("Boolean(appPrefs.clap_wake_enabled) && !IS_DESKTOP_APP"));
+});
