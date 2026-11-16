@@ -98,6 +98,12 @@ if "%JARVIS_DEV%"=="1" set "USE_VITE=1"
 if not defined USE_VITE (
   "%PY%" "%SERVE%" --stale
   if errorlevel 1 (
+    rem V8.2.2: primeiro tenta baixar a interface pronta do site (segundos); se nao der, monta aqui (minutos)
+    echo  [4/5] Interface mudou: baixando a versao pronta...
+    "%PY%" "%ROOT%scripts\prebuilt.py" "%FRONTEND%"
+  )
+  "%PY%" "%SERVE%" --stale
+  if errorlevel 1 (
     echo  [4/5] Interface mudou: gerando build novo ^(so desta vez^)...
     pushd "%FRONTEND%"
     call npm run build >nul

@@ -97,6 +97,20 @@ def frontend_stale() -> bool:
     return False
 
 
+def fetch_prebuilt() -> bool:
+    """V8.2.2: baixa a interface pronta do site (scripts/prebuilt.py); False se não deu (aí monta no PC)."""
+    try:
+        import importlib.util
+
+        spec = importlib.util.spec_from_file_location("jarvis_prebuilt", ROOT / "scripts" / "prebuilt.py")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return bool(mod.fetch(FRONTEND, log=lambda m: log.info(m.strip()), wait_s=150))
+    except Exception as exc:  # noqa: BLE001
+        log.warning("Interface pronta indisponível: %s", exc)
+        return False
+
+
 def build_frontend() -> bool:
     """Compila a interface nova antes de reiniciar (o .bat vê que está em dia e pula essa parte).
 

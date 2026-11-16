@@ -86,6 +86,7 @@ def test_v817_build_antes_de_reiniciar_e_voz_nao_segura(monkeypatch):
 
     monkeypatch.setattr(speech, "say_quietly", slow_say)
     monkeypatch.setattr(self_update, "frontend_stale", lambda: True)
+    monkeypatch.setattr(self_update, "fetch_prebuilt", lambda: order.append("fetch") and False)
     monkeypatch.setattr(self_update, "build_frontend", lambda: order.append("build") or True)
 
     def fake_restart():
@@ -101,7 +102,7 @@ def test_v817_build_antes_de_reiniciar_e_voz_nao_segura(monkeypatch):
         assert time.monotonic() - t0 < 7  # não esperou os 30 s da fala
         p = client.get("/api/system/update/progress").json()
         assert p["etapa"] == "reiniciando" and p["depois"] == "b2" and p["notas"] == ["JARVIS 9.9.9: teste"]
-    assert order == ["build", "restart"]
+    assert order == ["fetch", "build", "restart"]
 
 
 def test_v817_frontend_stale(monkeypatch, tmp_path):

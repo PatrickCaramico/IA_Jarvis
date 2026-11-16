@@ -2,6 +2,16 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 8.2.2 — 16 de novembro de 2026
+
+**⚡ Atualização em segundos: o PC baixa a interface pronta (não monta mais)**
+- **Por que era lento:** a cada versão nova, o PC montava a interface (`npm run build`). Isso lê milhares de arquivos do `node_modules` e, numa pasta do OneDrive com o antivírus olhando cada arquivo, levava minutos. Isso valia tanto pelo botão ATUALIZAR quanto pelo Iniciar-JARVIS.bat.
+- **Agora:** o site do JARVIS (Netlify) já monta a interface a cada versão. O PC **baixa ela pronta**: no teste, 65 arquivos em menos de 1 segundo.
+  - Antes de baixar, confere que é a mesma versão do código que está no PC, pela "impressão digital" do código da interface.
+  - Confere também o sha256 de cada arquivo e troca a pasta de uma vez. Se algo não bater, nada é trocado.
+  - Logo depois de uma versão nova, o site leva 1 a 3 minutos para ficar pronto. O atualizador espera um pouco e, se mesmo assim não der, monta no PC como antes.
+- Vale para o botão ATUALIZAR e para o Iniciar-JARVIS.bat.
+
 ## 8.2.1 — 16 de novembro de 2026
 
 **⬆ Corrigido: atualização presa em "Montar a interface nova"**
