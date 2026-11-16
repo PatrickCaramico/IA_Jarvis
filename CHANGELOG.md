@@ -2,6 +2,14 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 8.2.1 — 16 de novembro de 2026
+
+**⬆ Corrigido: atualização presa em "Montar a interface nova"**
+- Na 8.1.7, a interface nova passou a ser montada com o JARVIS ainda ligado. No Windows, porém, o JARVIS esperava fechar a saída do processo de montagem, e um processo auxiliar dele mantinha essa saída aberta. Resultado: a atualização podia ficar parada até 10 minutos.
+- Agora o JARVIS espera só a montagem terminar, e a saída dela vai para `logs/build.log`.
+- Se a montagem passar de 4 minutos, ela é encerrada e o Iniciar-JARVIS.bat faz a montagem do jeito antigo.
+- Depois de 2min30, a tela de atualização avisa o que fazer se demorar demais.
+
 ## 8.2.0 — 16 de novembro de 2026
 
 **🧠 Cérebro automático grátis e 🤖 avatar mais estiloso (ideia 8 do documento de atualização, vídeo 5)**
