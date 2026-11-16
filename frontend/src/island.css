@@ -91,18 +91,19 @@ html.is-island, html.is-island body, html.is-island #root { margin: 0; height: 1
 @media (prefers-reduced-motion: reduce) { .il-think i { animation: none; } }
 
 /* V8.6.0: modo Pac-Man (janela transparente: só o avatar) */
-html.is-pacman, html.is-pacman body, html.is-pacman #root { margin: 0; height: 100%; overflow: hidden; background: transparent !important; }
+html.is-pacman, html.is-pacman body, html.is-pacman #root { margin: 0; height: 100%; overflow: hidden; background: #000 !important; }
+.pac .ra-shadow { display: none; }
 .pac { position: fixed; inset: 0; display: grid; place-items: center; }
 .pac .ra { transition: transform 120ms; }
 .pac.is-left .ra { transform: scaleX(-1); }
-.pac-corre .ra { animation: pac-run 0.3s ease-in-out infinite alternate; }
+.pac-corre .ra { animation: pac-chew 0.3s ease-in-out infinite alternate; }
 .pac-mastiga .ra { animation: pac-chew 0.18s ease-in-out infinite alternate; }
-.pac-feliz .ra { animation: pac-run 0.5s ease-out 2; }
+.pac-feliz .ra { animation: pac-chew 0.5s ease-out 2; }
 .pac-nhac { position: absolute; top: 4px; left: 50%; transform: translateX(-50%); padding: 2px 8px; border-radius: 999px; background: #000; color: #fde047; font: 700 12px "Rajdhani", system-ui, sans-serif; white-space: nowrap; }
 .pac-crumbs i { position: absolute; bottom: 18px; left: 50%; width: 5px; height: 5px; border-radius: 2px; background: #fde047; animation: pac-crumb 0.6s ease-out infinite; }
 .pac-crumbs i:nth-child(2) { animation-delay: 0.2s; margin-left: 10px; } .pac-crumbs i:nth-child(3) { animation-delay: 0.4s; margin-left: -12px; }
 @keyframes pac-run { from { translate: 0 0; } to { translate: 0 -5px; } }
-@keyframes pac-chew { from { scale: 1 1; } to { scale: 1.06 0.94; } }
+@keyframes pac-chew { from { scale: 1 1; } to { scale: 0.97 0.94; } } /* só encolhe: nada sai do recorte da cabeça */
 @keyframes pac-crumb { from { transform: translate(0, 0); opacity: 1; } to { transform: translate(8px, 22px); opacity: 0; } }
 .il-poke { all: unset; cursor: pointer; display: grid; place-items: center; margin: -4px 0; border-radius: 50%; }
 .il-poke:hover .ra { transform: rotate(-6deg); }

@@ -2,6 +2,14 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 8.6.3 — 16 de novembro de 2026
+
+**⬛ Sem fundo branco na pílula e no Pac-Man**
+- **Pílula:** as pontas mostravam o fundo **branco** padrão do navegador embutido do Windows (WebView2). Agora:
+  - o app pede esse fundo em **preto** (`WEBVIEW2_DEFAULT_BACKGROUND_COLOR`);
+  - a página da ilha pinta o fundo preto **no primeiro instante**, antes de carregar o resto.
+- **Pac-Man:** no Windows o pywebview não faz janela transparente, e por isso ficava um quadrado branco em volta do robô. Agora a janelinha é **recortada no formato da cabeça** (rosto e orelhas), e só o robô aparece correndo pela tela, em close, sem chapéu nem efeitos que sairiam do recorte.
+
 ## 8.6.2 — 16 de novembro de 2026
 
 **🏝️ Pílula mais bonita e Pac-Man mais fácil de ativar**

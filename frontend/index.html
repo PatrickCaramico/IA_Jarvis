@@ -12,6 +12,18 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&family=Orbitron:wght@500;700&family=Rajdhani:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
+    <script>
+      // V8.6.3: no app do Windows, a ilha (fundo preto) e o Pac-Man (sem fundo) pintam o fundo certo já no primeiro
+      // instante; antes aparecia o fundo branco padrão do navegador embutido nas pontas da pílula e em volta do robô.
+      (function () {
+        var q = window.location.search, bg = /[?&]ilha=1/.test(q) ? "#000" : /[?&]pacman=1/.test(q) ? "#000" : "";
+        if (!bg) return;
+        var st = document.createElement("style");
+        st.textContent = "html,body,#root{background:" + bg + " !important;background-image:none !important}";
+        document.head.appendChild(st);
+        document.documentElement.style.background = bg;
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

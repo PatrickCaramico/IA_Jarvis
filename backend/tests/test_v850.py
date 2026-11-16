@@ -143,3 +143,19 @@ def test_v860_pacman_and_idle():
     assert callable(d.create_chaser_window)
     src = Path(d.__file__).read_text(encoding="utf-8")
     assert "SetCursorPos" in src and "0x1B" in src  # devolve o mouse e o Esc para tudo
+
+
+def test_v863_no_white_background():
+    """V8.6.3: sem fundo branco: o WebView2 começa preto, a página pinta o fundo no primeiro instante e o Pac-Man é
+    recortado no formato da cabeça (no Windows o pywebview não faz janela transparente)."""
+    d = _desktop()
+    src = Path(d.__file__).read_text(encoding="utf-8")
+    assert 'WEBVIEW2_DEFAULT_BACKGROUND_COLOR", "FF000000"' in src
+    start = src.index("def create_chaser_window")
+    assert "transparent=True" not in src[start:start + 1200]
+    parts = d.chaser_shape(1.0)
+    assert len(parts) == 3 and all(x1 < x2 and y1 < y2 for x1, y1, x2, y2, _ in parts)
+    assert all(0 <= v <= d.PACMAN_SIZE for p in parts for v in p[:4])
+    assert d.chaser_shape(2.0)[0][2] == parts[0][2] * 2
+    html = (ROOT / "frontend" / "index.html").read_text(encoding="utf-8")
+    assert "ilha=1" in html and "pacman=1" in html and "background-image:none" in html
