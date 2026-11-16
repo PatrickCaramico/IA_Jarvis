@@ -2,6 +2,13 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 8.2.4 — 16 de novembro de 2026
+
+**🛠️ O Iniciar-JARVIS.bat volta a ligar o JARVIS (parava com "... foi inesperado neste momento")**
+- **Corrigido:** desde a 8.1.5, uma frase de aviso do Iniciar-JARVIS.bat tinha um parêntese sem proteção: "(edge-tts)". O Windows lia esse `)` como o fim de um bloco e parava o arquivo logo depois do título, **antes de ligar o JARVIS**. Por isso as atualizações ficavam paradas em "Reiniciando" (90%) e o JARVIS não voltava nem abrindo o .bat na mão. O parêntese agora está protegido: `^(edge-tts^)`.
+- **Novo teste** (`backend/tests/test_bat_syntax_824.py`): verifica todos os .bat do projeto e falha se aparecer um parêntese sem proteção dentro de um bloco, ou um .bat sem final de linha do Windows (CRLF).
+- Os arquivos `Empacotar-Projeto.bat`, `Gerar-App-Android.bat` e `Iniciar-JARVIS-Rede.bat` passaram para o final de linha do Windows.
+
 ## 8.2.3 — 16 de novembro de 2026
 
 **⚡ O JARVIS liga na hora depois de atualizar (não espera mais montar a interface)**
