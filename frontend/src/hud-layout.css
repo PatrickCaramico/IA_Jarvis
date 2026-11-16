@@ -1372,3 +1372,7 @@
   .hl-root > .hl-top { grid-template-columns: minmax(0, 1fr) auto; row-gap: 8px; }
   .hl-root > .hl-top > :last-child { grid-column: 1 / -1; justify-self: center; flex-wrap: wrap; justify-content: center; }
 }
+
+/* V8.7.0 (diagnóstico de travamento): com o Modo Desk aberto, a central por baixo dele parava de aparecer mas
+   continuava desenhando (19 anéis do orbe girando e 8 painéis com desfoque, a cada quadro). Agora ela sai de cena. */
+body:has(.dk-root:not(.is-embedded)) .hl-root { display: none !important; }

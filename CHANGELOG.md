@@ -2,6 +2,28 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 8.7.0 — 16 de novembro de 2026
+
+**🩺 Diagnóstico de travamento (JARVIS mais leve) e ilha escondida no topo**
+- **Diagnóstico:** medido em cada tela (tempo ocupado, recálculos de layout e animações sem parar), antes e depois:
+
+  | Tela | Antes | Depois |
+  |---|---|---|
+  | Ilha aberta | 10,1% ocupado, layout refeito 60×/s | **1,1%**, 0×/s |
+  | Modo Desk | 2,4%, 8×/s, 30 animações | **0,9%**, 0×/s, 8 animações |
+  | Ilha fechada | 1,0%, 9×/s | **0,6%**, 0×/s |
+
+- **Causas corrigidas:**
+  1. **Zoom do painel da ilha** (CSS `zoom`): com qualquer animação, refazia o layout da página a cada quadro. Agora é por `transform: scale`.
+  2. **"Respirar" e estrelinhas do avatar:** animavam partes **de dentro** do SVG, o que também refazia o layout a cada quadro. Agora animam o desenho inteiro, e as estrelinhas só piscam.
+  3. **Modo Desk:** a central continuava sendo desenhada por baixo, invisível (19 anéis do orbe girando e 8 painéis com desfoque). Agora ela sai de cena enquanto o Desk está aberto.
+  4. **App do Windows:** a janela grande escondida continuava desenhando tudo. Agora as animações dela **congelam** enquanto está escondida.
+  5. **Copiados:** o JARVIS abria a área de transferência do Windows a cada 1,5 s (podia atrapalhar o copiar e colar de outros programas). Agora só abre quando o Windows avisa que algo novo foi copiado (`GetClipboardSequenceNumber`).
+- **Ilha escondida no topo** (vem ligado; Configurações › Ilha › "Esconder no topo"):
+  - a ilha fica escondida acima da tela e **desce quando você leva o mouse até a borda de cima**, na altura dela;
+  - sobe de novo 1,4 s depois que o mouse sai;
+  - aparece sozinha quando o JARVIS responde ou quando o painel está aberto.
+
 ## 8.6.3 — 16 de novembro de 2026
 
 **⬛ Sem fundo branco na pílula e no Pac-Man**

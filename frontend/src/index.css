@@ -1788,3 +1788,7 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .ge-home-pin i, .ge-iss-pin i { animation: none; }
 }
+
+/* V8.7.0: no app do Windows, a janela grande escondida (a ilha está no topo) congela as animações: antes ela
+   continuava desenhando tudo, invisível, gastando processador e placa de vídeo */
+html.is-app-hidden *, html.is-app-hidden *::before, html.is-app-hidden *::after { animation-play-state: paused !important; }

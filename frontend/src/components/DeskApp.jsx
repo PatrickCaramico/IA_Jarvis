@@ -801,6 +801,8 @@ function Island({ api, cfg, setCfg }) {
       <p className="dk-muted">A ilha é a barrinha no topo da tela do Windows (no app do JARVIS para Windows): mostra o JARVIS, a hora, a música tocando e as respostas.</p>
       <div className="dk-island-preview" data-size={ilha.tamanho || "media"}><RoboAvatar avatar={cfg?.avatar} size={22} /><i className="dk-dot" /><span>Highway to Hell · AC/DC</span></div>
       <label className="dk-toggle-row"><input type="checkbox" checked={ilha.ligada !== false} onChange={(e) => save({ ligada: e.target.checked })} /> Mostrar a ilha</label>
+      <label className="dk-toggle-row"><input type="checkbox" checked={ilha.ocultar !== false} onChange={(e) => save({ ocultar: e.target.checked })} />
+        <span>Esconder no topo: a ilha fica escondida e desce quando você leva o mouse até a borda de cima da tela (aparece sozinha quando o JARVIS responde)</span></label>
       <div className="dk-field"><span>Tamanho</span><div className="dk-row">{[["pequena", "Pequena"], ["media", "Média"], ["grande", "Grande"]].map(([k, l]) => <button type="button" key={k} className={`dk-chip${(ilha.tamanho || "media") === k ? " is-on" : ""}`} onClick={() => save({ tamanho: k })}>{l}</button>)}</div></div>
       <div className="dk-field"><span>Tamanho do painel aberto</span><div className="dk-row">{[["compacto", "Compacto"], ["medio", "Médio"], ["grande", "Grande"]].map(([k, l]) => <button type="button" key={k} className={`dk-chip${(ilha.painel || "medio") === k ? " is-on" : ""}`} onClick={() => save({ painel: k })}>{l}</button>)}</div></div>
       <label className="dk-slider"><span>Zoom do painel</span>

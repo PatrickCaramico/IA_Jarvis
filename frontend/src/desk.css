@@ -262,7 +262,8 @@
 .ra-fx-spark > * { transform-box: fill-box; transform-origin: center; animation: ra-spark 1.8s ease-in-out infinite; }
 @keyframes ra-glow { 0%, 100% { opacity: 0.1; transform: scale(0.94); } 50% { opacity: 0.26; transform: scale(1.04); } }
 @keyframes ra-fall { from { transform: translateY(-6px); opacity: 0; } 15% { opacity: 1; } to { transform: translateY(124px); opacity: 0; } }
-@keyframes ra-spark { 0%, 100% { transform: scale(0.2); opacity: 0; } 50% { transform: scale(1); opacity: 1; } }
+/* V8.7.0: só a opacidade (animar o tamanho de partes do SVG refazia o layout a cada quadro) */
+@keyframes ra-spark { 0%, 100% { opacity: 0.1; } 50% { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .ra-fx-glow, .ra-fx-snow > *, .ra-fx-spark > * { animation: none; } }
 
 /* V8.1: guarda-roupa, missões e ofensiva */
@@ -364,9 +365,11 @@ html.is-lite .dk-root { backdrop-filter: none !important; }
 .dk-root select:focus-visible { outline: 2px solid var(--dk-accent); outline-offset: 1px; }
 
 /* V8.6.0: o avatar "vivo" quando parado (respira de leve), pulinho, e a boca do modo Pac-Man */
-.ra-alive .ra-body { transform-box: view-box; transform-origin: 60px 110px; animation: ra-breathe 3.8s ease-in-out infinite; }
-.ra-alive.ra-antic-pulinho .ra-body, .ra-antic-pulinho .ra-body { animation: ra-hop 0.9s ease-out 2; }
-.ra-alive.ra-dormindo .ra-body { animation-duration: 6s; }
+/* V8.7.0: o "respirar" e o pulinho animam o <svg> inteiro (fica na placa de vídeo); antes animavam um grupo DENTRO
+   do SVG, o que obrigava o navegador a refazer o layout da página a cada quadro */
+svg.ra.ra-alive { transform-origin: 50% 92%; animation: ra-breathe 3.8s ease-in-out infinite; }
+svg.ra.ra-antic-pulinho { transform-origin: 50% 92%; animation: ra-hop 0.9s ease-out 2; }
+svg.ra.ra-alive.ra-dormindo { animation-duration: 6s; }
 .ra-chomp { transform-box: fill-box; transform-origin: 50% 0%; animation: ra-chomp 0.28s ease-in-out infinite alternate; }
 .is-chewing .ra-chomp { animation-duration: 0.16s; }
 @keyframes ra-breathe { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-1.5px) scale(1.012, 0.99); } }

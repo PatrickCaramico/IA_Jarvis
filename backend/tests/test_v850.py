@@ -159,3 +159,37 @@ def test_v863_no_white_background():
     assert d.chaser_shape(2.0)[0][2] == parts[0][2] * 2
     html = (ROOT / "frontend" / "index.html").read_text(encoding="utf-8")
     assert "ilha=1" in html and "pacman=1" in html and "background-image:none" in html
+
+
+def test_v870_autohide_and_performance_fixes():
+    """V8.7.0: ilha escondida no topo e as correções do diagnóstico de travamento."""
+    from modules import desk
+
+    d = _desktop()
+    assert d.hidden_y(60) < -60
+    assert d.should_reveal((960, 0), 960, 420)  # mouse no topo, em cima da ilha
+    assert d.should_reveal((960 + 210 + 100, 1), 960, 420)  # com folga para os lados
+    assert not d.should_reveal((960, 40), 960, 420)  # não está no topo
+    assert not d.should_reveal((100, 0), 960, 420)  # topo, mas longe da ilha
+    b = d.Bridge()
+    assert {"island_autohide", "island_reveal", "island_conceal"} <= {n for n in dir(b) if not n.startswith("_")}
+    b.island_autohide(False)
+    assert b._autohide is False
+    cfg = desk.config()
+    assert cfg["ilha"]["ocultar"] is True
+    assert desk.update_config({"ilha": {"ocultar": False}})["ilha"]["ocultar"] is False
+    assert desk.update_config({"ilha": {"ocultar": "x"}})["ilha"]["ocultar"] is False
+    desk.update_config({"ilha": {"ocultar": True}})
+    # Copiados: só abre a área de transferência quando o Windows diz que mudou
+    assert desk.clipboard_sequence() is None or isinstance(desk.clipboard_sequence(), int)
+    src = (ROOT / "backend" / "modules" / "desk.py").read_text(encoding="utf-8")
+    assert "GetClipboardSequenceNumber" in src
+    ds = Path(d.__file__).read_text(encoding="utf-8")
+    assert "is-app-hidden" in ds  # janela grande escondida congela as animações
+    fe = ROOT / "frontend" / "src"
+    assert "zoom: shownZoom" not in (fe / "components" / "IslandApp.jsx").read_text(encoding="utf-8")
+    assert "transform: scale(var(--z, 1))" in (fe / "island.css").read_text(encoding="utf-8")
+    assert "body:has(.dk-root:not(.is-embedded)) .hl-root" in (fe / "hud-layout.css").read_text(encoding="utf-8")
+    assert "html.is-app-hidden" in (fe / "index.css").read_text(encoding="utf-8")
+    css = (fe / "desk.css").read_text(encoding="utf-8")
+    assert "@keyframes ra-spark { 0%, 100% { opacity" in css and "svg.ra.ra-alive" in css

@@ -58,7 +58,9 @@ html.is-island, html.is-island body, html.is-island #root { margin: 0; height: 1
 .il-bar .ra, .il-bar .il-dot, .il-bar .il-clock { pointer-events: none; }
 .il-bar .il-clock { font-size: 15px; }
 .il-desk { position: relative; flex: 1; min-height: 0; }
-.il-desk .dk-root { position: absolute; inset: 0; z-index: 1; grid-template-columns: 210px minmax(0, 1fr); font-size: 14px; animation: none; }
+.il-desk .dk-root { position: absolute; inset: auto; top: 0; left: 0; z-index: 1; grid-template-columns: 210px minmax(0, 1fr); font-size: 14px; animation: none;
+  /* V8.7.0: zoom por transform (o "zoom" do CSS refazia o layout da página 60x por segundo com qualquer animação) */
+  width: calc(100% / var(--z, 1)); height: calc(100% / var(--z, 1)); transform: scale(var(--z, 1)); transform-origin: 0 0; }
 .il-desk .dk-root .dk-side { padding-top: 10px; }
 .il-locked { all: unset; box-sizing: border-box; cursor: pointer; padding: 4px 10px; border-radius: 999px; background: rgba(250, 204, 21, 0.18); color: #fde68a; font-size: 12px; }
 .il-locked:hover { background: rgba(250, 204, 21, 0.3); }
