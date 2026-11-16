@@ -3159,6 +3159,8 @@ export default function App() {
           onLock={returnToWaiting}
           onOpenSettings={() => setShowSettings(true)}
           onOpenQr={() => setShowNetworkQr(true)}
+          updateInfo={updateInfo?.available ? updateInfo : null}
+          onUpdate={canSelfUpdate ? updateJarvis : null}
           onRename={(n) => api("/api/prefs", { method: "PATCH", body: JSON.stringify({ ai_name: n.trim() }) })
             .then((d) => setAiName(d.ai_name ? d.ai_name.toUpperCase() : "J.A.R.V.I.S.")).catch(() => {})}
         />
