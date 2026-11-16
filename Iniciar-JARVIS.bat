@@ -61,7 +61,7 @@ if not exist "%BACKEND%\venv\Lib\site-packages\cryptography" set "NEED_PIP=1"
 rem V8.1.5: edge-tts antigo nao fala mais (a Microsoft mudou o servico de voz): atualiza sozinho
 "%BACKEND%\venv\Scripts\python.exe" -c "import importlib.metadata as m,sys; v=m.version('edge-tts').split('.'); sys.exit(0 if (int(v[0]),int(v[1]))>=(7,3) else 1)" >nul 2>nul
 if errorlevel 1 (
-  echo  [2/5] Atualizando a voz do JARVIS (edge-tts)...
+  echo  [2/5] Atualizando a voz do JARVIS ^(edge-tts^)...
   "%BACKEND%\venv\Scripts\python.exe" -m pip install --disable-pip-version-check -q -U "edge-tts>=7.3.0"
 )
 if defined NEED_PIP (
