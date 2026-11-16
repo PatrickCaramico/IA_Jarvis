@@ -30,6 +30,8 @@ API = "http://127.0.0.1:8000"
 FRONT = "http://127.0.0.1:5173"
 ISLAND_SIZES = {"pequena": (300, 38), "media": (380, 46), "grande": (460, 56)}
 ISLAND_OPEN_H = 120  # altura quando mostra uma resposta
+# V8.1.2: modos da ilha (como a "ilha dinâmica"): mini (pílula), resposta (cresce com o texto) e cartão (ao clicar)
+ISLAND_MODES = {"mini": (0, 0), "resposta": (80, ISLAND_OPEN_H), "cartao": (180, 210)}
 # teclas para o RegisterHotKey (códigos virtuais do Windows)
 VK = {"PageDown": 0x22, "F9": 0x78, "Ctrl+Space": 0x20}
 MOD_CONTROL, MOD_NOREPEAT = 0x0002, 0x4000
@@ -78,10 +80,45 @@ def start_jarvis(root: str = JARVIS_ROOT) -> bool:
     return False
 
 
-def island_position(screen_w: int, size: str) -> tuple[int, int, int, int]:
-    """(x, y, largura, altura) da ilha: centralizada no topo da tela."""
+def island_position(screen_w: int, size: str, mode: str = "mini") -> tuple[int, int, int, int]:
+    """(x, y, largura, altura) da ilha: sempre centralizada no topo da tela (cresce para os dois lados)."""
     w, h = ISLAND_SIZES.get(size, ISLAND_SIZES["media"])
+    extra_w, open_h = ISLAND_MODES.get(mode, ISLAND_MODES["mini"])
+    w, h = w + extra_w, max(h, open_h)
     return (max(0, (screen_w - w) // 2), 6, w, h)
+
+
+def island_radius(mode: str, height: int) -> int:
+    """Raio do recorte: pílula inteira no modo mini; cantos arredondados quando abre."""
+    return height if mode == "mini" else 44
+
+
+def shape_window(window, radius: int) -> None:
+    """V8.1.2: recorta a janela da ilha em formato de pílula (SetWindowRgn).
+
+    Antes a ilha usava janela "transparente" (cor-chave do Windows): com o WebView2, o clique atravessava a ilha
+    e ia para o que estava atrás. Agora a janela é normal (100% clicável) e só o formato é recortado.
+    """
+    if sys.platform != "win32" or window is None:
+        return
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        hwnd = int(window.native.Handle.ToInt32())
+        user32, gdi32 = ctypes.windll.user32, ctypes.windll.gdi32
+        rect = wintypes.RECT()
+        user32.GetWindowRect(hwnd, ctypes.byref(rect))
+        w, h = rect.right - rect.left, rect.bottom - rect.top
+        try:
+            scale = user32.GetDpiForWindow(hwnd) / 96
+        except Exception:  # noqa: BLE001 - Windows antigo
+            scale = 1
+        r = min(int(radius * scale), h) if radius < 999 else h
+        rgn = gdi32.CreateRoundRectRgn(0, 0, w + 1, h + 1, r, r)
+        user32.SetWindowRgn(hwnd, rgn, True)
+    except Exception:  # noqa: BLE001 - sem recorte a ilha continua funcionando (só fica retangular)
+        pass
 
 
 def hotkey_spec(name: str) -> tuple[int, int]:
@@ -98,17 +135,32 @@ class Bridge:
         self.main = None
         self.island = None
         self.size = "media"
+        self.mode = "mini"
+        self.screen_w = 1920
 
     def show_main(self) -> None:
         if self.main:
             self.main.show()
             self.main.restore()
 
-    def island_expand(self, open_: bool) -> None:
-        if not self.island:
+    def island_expand(self, open_: bool) -> None:  # 8.0 (ainda usado por versões antigas da página)
+        self.island_mode("resposta" if open_ else "mini")
+
+    def island_mode(self, mode: str) -> None:
+        """mini | resposta | cartao: muda o tamanho mantendo a ilha centralizada e recorta o formato."""
+        if not self.island or mode not in ISLAND_MODES:
             return
-        w, h = ISLAND_SIZES.get(self.size, ISLAND_SIZES["media"])
-        self.island.resize(w + (80 if open_ else 0), ISLAND_OPEN_H if open_ else h)
+        self.mode = mode
+        x, y, w, h = island_position(self.screen_w, self.size, mode)
+        self.island.resize(w, h)
+        self.island.move(x, y)
+        shape_window(self.island, island_radius(mode, h))
+
+    def talk(self) -> None:
+        """Botão 🎙 da ilha: abre a janela do JARVIS já ouvindo."""
+        self.show_main()
+        if self.main:
+            self.main.evaluate_js("window.dispatchEvent(new CustomEvent('jarvis-desktop-talk'))")
 
     def version(self) -> str:
         return VERSION
@@ -128,8 +180,7 @@ def listen_hotkey(bridge: Bridge, name: str) -> None:
     msg = wintypes.MSG()
     while user32.GetMessageW(ctypes.byref(msg), None, 0, 0) != 0:
         if msg.message == 0x0312 and bridge.main:  # WM_HOTKEY
-            bridge.show_main()
-            bridge.main.evaluate_js("window.dispatchEvent(new CustomEvent('jarvis-desktop-talk'))")
+            bridge.talk()
 
 
 def main() -> None:
@@ -149,11 +200,13 @@ def main() -> None:
                                         background_color="#0b0d12", js_api=bridge, text_select=True)
     if cfg.get("ligada", True):
         screens = webview.screens
-        sw = screens[0].width if screens else 1920
-        x, y, w, h = island_position(sw, bridge.size)
+        bridge.screen_w = screens[0].width if screens else 1920
+        x, y, w, h = island_position(bridge.screen_w, bridge.size)
+        # V8.1.2: sem transparent (o clique atravessava); a pílula é recortada no shown (SetWindowRgn)
         bridge.island = webview.create_window("Ilha do JARVIS", f"{FRONT}/?ilha=1", x=x, y=y, width=w, height=h, frameless=True,
-                                              on_top=True, resizable=False, easy_drag=False, transparent=True,
-                                              background_color="#000000", js_api=bridge, focus=False)
+                                              on_top=True, resizable=False, easy_drag=False, background_color="#000000",
+                                              js_api=bridge, focus=True)
+        bridge.island.events.shown += lambda: shape_window(bridge.island, island_radius("mini", h))
     threading.Thread(target=listen_hotkey, args=(bridge, cfg.get("atalho", "PageDown")), daemon=True).start()
     os.environ.setdefault("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS", "--autoplay-policy=no-user-gesture-required")
     webview.start(private_mode=False, user_agent=USER_AGENT, storage_path=str(Path(os.getenv("APPDATA", ".")) / "JARVIS" / "webview"))

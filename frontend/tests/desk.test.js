@@ -40,3 +40,12 @@ test("V8.1: guarda-roupa: tema da data por cima e avatar do 8.0 migrado", async 
   assert.equal(a.roupa, "capa");
   assert.equal(withTheme({ chapeu: "cartola", temas: false }, natal).chapeu, "cartola");
 });
+
+test("V8.1.2: ilha: clicar abre o cartão (vence a resposta); sem nada fica a pílula", async () => {
+  const src = await import("node:fs").then((fs) => fs.readFileSync(new URL("../src/components/IslandApp.jsx", import.meta.url), "utf8"));
+  const fn = src.match(/export function islandMode\(card, reply\) \{([\s\S]*?)\n\}/);
+  const islandMode = new Function("card", "reply", fn[1]);
+  assert.equal(islandMode(true, true), "cartao");
+  assert.equal(islandMode(false, true), "resposta");
+  assert.equal(islandMode(false, false), "mini");
+});
