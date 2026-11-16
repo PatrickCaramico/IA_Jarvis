@@ -2,6 +2,24 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 8.5.0 — 16 de novembro de 2026
+
+**🔄 Atualização automática, pílula nova da ilha, zoom e tamanho do painel**
+- **Atualiza sozinho (sem pasta nem CMD):**
+  - a cada 30 minutos o JARVIS confere se tem versão nova;
+  - se tiver, espera um momento em que ele está parado (nada rodando e ninguém falou com ele nos últimos 5 minutos) e atualiza igual ao botão ATUALIZAR, mas sem falar: só avisa na ilha ("⬆ Atualizando o JARVIS para a versão …");
+  - a interface nova vem pronta do site, a ilha e a janela se recarregam sozinhas, e o **app do Windows se reabre sozinho** quando o código dele mudou (espera o JARVIS voltar e a ilha estar fechada);
+  - liga/desliga em Configurações › Atualizações (vem ligado).
+- **Pílula da ilha mais bonita:**
+  - avatar à esquerda, estado no meio (ou a música, com equalizador) e a hora à direita;
+  - "Pensando" com pontinhos e contorno amarelo, "Falando" com ondas na cor do app.
+- **Corrigido:**
+  - **"Pensando…" preso:** se o aviso de "parado" se perde (por exemplo, numa falha da voz), depois de 45 s sem nada rodando a ilha volta ao normal.
+  - **Pílula com cantos cortados:** o recorte era feito antes de o Windows terminar de mudar o tamanho da janela. Agora é refeito logo depois.
+- **Zoom do painel:** A− e A+ na barra de cima da ilha aberta, e um controle em Configurações › Ilha (70% a 140%; começa em 90%, para a Personalização não ficar tão "perto").
+- **Tamanho do painel aberto:** Compacto (860×540), Médio (980×600) ou Grande (1200×740), em Configurações › Ilha, mais um botão **⟲ Centralizar**.
+- O fluxo de atualização virou uma função só (`perform_update`), usada pelo botão e pelo automático.
+
 ## 8.4.1 — 16 de novembro de 2026
 
 **🏝️ A ilha abre o app inteiro, igual ao vídeo, e dá para arrastar para os lados**

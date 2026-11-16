@@ -87,6 +87,13 @@ async def system_update(req: UpdateRequest, request: Request) -> dict:
     if "application/json" not in request.headers.get("content-type", "") or not req.confirm:
         raise HTTPException(status_code=400, detail="Confirme a atualização.")
 
+    return await perform_update(announce=True)
+
+
+async def perform_update(announce: bool = True) -> dict:
+    """Baixa a versão nova e reinicia (o botão ATUALIZAR e, V8.5.0, a atualização automática).
+
+    announce: fala o aviso (o botão). A automática não fala: só mostra na ilha."""
     self_update.set_progress("baixando", "Baixando a versão nova…")
     result = await asyncio.to_thread(self_update.pull)
     if not result["ok"]:
@@ -101,14 +108,15 @@ async def system_update(req: UpdateRequest, request: Request) -> dict:
 
     async def speak_and_restart() -> None:
         # V8.1.7: a voz começa, mas não segura o reinício (no máximo 4 s de espera)
-        talk = asyncio.create_task(speech.say_quietly(UPDATE_SPEECH if result["changed"] else UPDATE_SPEECH_SAME))
+        talk = asyncio.create_task(speech.say_quietly(UPDATE_SPEECH if result["changed"] else UPDATE_SPEECH_SAME)) if announce else None
         try:
             if await asyncio.to_thread(self_update.frontend_stale):
                 # V8.2.3: só tenta a interface pronta (segundos). Montar no PC não segura mais o reinício:
                 # o Iniciar-JARVIS.bat liga o JARVIS na hora e monta em segundo plano, se precisar.
                 self_update.set_progress("interface", "Baixando a interface pronta…")
                 await asyncio.to_thread(self_update.fetch_prebuilt)
-            await asyncio.wait_for(asyncio.shield(talk), timeout=4)
+            if talk:
+                await asyncio.wait_for(asyncio.shield(talk), timeout=4)
         except asyncio.TimeoutError:
             pass
         except Exception:  # noqa: BLE001 - sem voz ou sem build, reinicia do mesmo jeito

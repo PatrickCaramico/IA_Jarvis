@@ -64,6 +64,9 @@ async def lifespan(app: FastAPI):
 
     runtime.track_service(desk.habits_loop())  # V8.0: lembretes dos hábitos (Modo Desk)
     runtime.track_service(desk.clipboard_loop())  # V8.0: Copiados (só no Windows)
+    from modules import auto_update
+
+    runtime.track_service(auto_update.auto_update_loop())  # V8.5.0: atualiza sozinho com o JARVIS parado
     runtime.track(tts.preload())  # V4.4: voz carrega depois que o servidor já está no ar
     from modules import tools
 

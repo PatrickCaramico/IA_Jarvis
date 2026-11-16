@@ -135,7 +135,24 @@ class ConnectionManager:
 
 
 # V8.0: o que a ilha do JARVIS.exe mostra (estado e última resposta), sem depender de WebSocket
-ISLAND: dict = {"estado": "idle", "resposta": "", "resposta_em": 0.0}
+ISLAND: dict = {"estado": "idle", "estado_em": 0.0, "resposta": "", "resposta_em": 0.0}
+STUCK_STATE_S = 45  # V8.5.0: "Pensando…"/"Falando…" sem novidade por mais que isso (e nada rodando) = parado
+
+
+def island_state(now: float | None = None) -> str:
+    """O estado da ilha, sem ficar preso: se o aviso de "parado" se perdeu (ex.: a voz falhou no meio), depois
+    de STUCK_STATE_S sem nada rodando volta para "idle"."""
+    import time as _time
+
+    from core import session
+
+    estado = ISLAND.get("estado", "idle")
+    if estado == "idle":
+        return estado
+    now = _time.time() if now is None else now
+    if now - float(ISLAND.get("estado_em") or 0) > STUCK_STATE_S and not session.busy:
+        return "idle"
+    return estado
 
 
 def note_island(event: dict) -> None:
@@ -144,6 +161,7 @@ def note_island(event: dict) -> None:
     kind = event.get("type") if isinstance(event, dict) else None
     if kind == "state" and isinstance(event.get("state"), str):
         ISLAND["estado"] = event["state"][:20]
+        ISLAND["estado_em"] = _time.time()
     elif kind == "response" and isinstance(event.get("text"), str) and event["text"].strip():
         ISLAND["resposta"] = " ".join(event["text"].split())[:220]
         ISLAND["resposta_em"] = _time.time()

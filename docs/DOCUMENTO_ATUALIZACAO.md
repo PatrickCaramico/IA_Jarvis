@@ -565,6 +565,7 @@ Itens que já estavam na lista e continuam **em espera**:
 ---
 
 ## Anotações da conversa
+- **16/11:** 8.5.0 (pedidos do Patrick): atualização automática (sem CMD), pílula da ilha nova, "Pensando…" que não fica mais preso, zoom e tamanho do painel da ilha.
 - **16/11:** Ideia 10 desenhada e implementada (8.4.0): modo leve automático, voz pela Groq na ilha e no app, brincadeiras do avatar e piscar liga/desliga. Antes, a 8.3.2 (revisão de erros, OneDrive e nuvem).
 - **16/11:** Ideia 9 (menus direto na ilha) desenhada: a ilha cresce para baixo, abre no Resumo do dia e tem Conversa, Tarefas, Lembretes, Música, Timers, Missões, Hábitos e Copiados. Também saiu a 8.2.4 (Iniciar-JARVIS.bat voltou a ligar o JARVIS).
 - **16/11:** Ideia 8 (vídeo 5) desenhada: automático grátis Groq + Gemini, chave colada no app e salva só no PC, avatar mais estiloso e olhos que seguem o mouse. Também saiu a 8.1.7 (atualização mais rápida, com tela nova).

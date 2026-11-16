@@ -227,7 +227,7 @@ async def island() -> dict:
     st = runtime.ISLAND
     fresh = time.time() - float(st.get("resposta_em") or 0) < 25
     cfg = desk.config()
-    return {"estado": st.get("estado", "idle"), "resposta": st.get("resposta", "") if fresh else "",
+    return {"estado": runtime.island_state(), "resposta": st.get("resposta", "") if fresh else "",
             "hora": datetime.now().strftime("%H:%M"), "avatar": cfg["avatar"], "cor": cfg["cor"], "ilha": cfg["ilha"], "tema": cfg.get("tema"),
             "desempenho": cfg["desempenho"]}
 
