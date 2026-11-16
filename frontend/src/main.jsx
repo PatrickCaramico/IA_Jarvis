@@ -33,8 +33,11 @@ const isPopout = window.location.pathname.endsWith("/display") || window.locatio
 // V8.0: a ilha do JARVIS.exe (barrinha no topo da tela) é uma página só dela, leve
 const isIsland = new URLSearchParams(window.location.search).get("ilha") === "1";
 const IslandApp = lazyComponent(() => import("./components/IslandApp.jsx"));
+// V8.6.0: o avatar que corre atrás do mouse (modo Pac-Man do app do Windows)
+const isPacman = new URLSearchParams(window.location.search).get("pacman") === "1";
+const PacmanApp = lazyComponent(() => import("./components/PacmanApp.jsx"));
 
-ReactDOM.createRoot(document.getElementById("root")).render(isIsland ? <IslandApp /> : (
+ReactDOM.createRoot(document.getElementById("root")).render(isPacman ? <PacmanApp /> : isIsland ? <IslandApp /> : (
   <React.StrictMode>
     {/* V6.7.6: um erro na tela vira um aviso com RECARREGAR, nunca mais a tela preta */}
     <PieceBoundary fullscreen>{isPopout ? <ScreensPopout /> : <App />}</PieceBoundary>

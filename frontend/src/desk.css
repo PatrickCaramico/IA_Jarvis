@@ -362,3 +362,17 @@ html.is-lite .dk-root { backdrop-filter: none !important; }
 .dk-toast.is-voice { bottom: 84px; border-color: #facc15; }
 .dk-root select { flex: 1; min-width: 0; height: 34px; padding: 0 10px; border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 10px; background: rgba(255, 255, 255, 0.06); color: inherit; font: inherit; color-scheme: dark; }
 .dk-root select:focus-visible { outline: 2px solid var(--dk-accent); outline-offset: 1px; }
+
+/* V8.6.0: o avatar "vivo" quando parado (respira de leve), pulinho, e a boca do modo Pac-Man */
+.ra-alive .ra-body { transform-box: view-box; transform-origin: 60px 110px; animation: ra-breathe 3.8s ease-in-out infinite; }
+.ra-alive.ra-antic-pulinho .ra-body, .ra-antic-pulinho .ra-body { animation: ra-hop 0.9s ease-out 2; }
+.ra-alive.ra-dormindo .ra-body { animation-duration: 6s; }
+.ra-chomp { transform-box: fill-box; transform-origin: 50% 0%; animation: ra-chomp 0.28s ease-in-out infinite alternate; }
+.is-chewing .ra-chomp { animation-duration: 0.16s; }
+@keyframes ra-breathe { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-1.5px) scale(1.012, 0.99); } }
+@keyframes ra-hop { 0%, 100% { transform: translateY(0); } 30% { transform: translateY(-9px) scale(0.98, 1.03); } 55% { transform: translateY(0) scale(1.04, 0.95); } }
+@keyframes ra-chomp { from { transform: scaleY(0.15); } to { transform: scaleY(1); } }
+.dk-poke { all: unset; cursor: pointer; display: grid; place-items: center; border-radius: 50%; }
+.dk-poke:hover .ra { transform: rotate(-6deg); }
+.dk-poke:active .ra { transform: scale(0.9); }
+.dk-poke:focus-visible { outline: 2px solid var(--dk-accent); outline-offset: 2px; }

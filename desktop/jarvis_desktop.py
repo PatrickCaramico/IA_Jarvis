@@ -34,7 +34,7 @@ log = logging.getLogger("jarvis.app")
 
 API = "http://127.0.0.1:8000"
 FRONT = "http://127.0.0.1:5173"
-ISLAND_SIZES = {"pequena": (300, 38), "media": (380, 46), "grande": (460, 56)}
+ISLAND_SIZES = {"pequena": (320, 46), "media": (400, 56), "grande": (480, 66)}  # V8.6.0: mais alta (avatar maior)
 ISLAND_OPEN_H = 120  # altura quando mostra uma resposta
 # V8.1.2: modos da ilha (como a "ilha dinâmica"): mini (pílula), resposta (cresce com o texto) e cartão (ao clicar)
 ISLAND_MODES = {"mini": (0, 0), "resposta": (80, ISLAND_OPEN_H), "cartao": (180, 210), "painel": (0, 0)}
@@ -140,6 +140,11 @@ def island_radius(mode: str, height: int) -> int:
 
 
 ISLAND_TITLE = "Ilha do JARVIS"
+PACMAN_TITLE = "Pac-Man do JARVIS"  # V8.6.0: a janelinha do avatar que corre atrás do mouse
+PACMAN_SIZE = 120
+PACMAN_MAX_CHASE_S = 12  # corre no máximo isso (depois "alcança" de qualquer jeito)
+PACMAN_CHEW_S = 2.6  # mastigando o mouse
+PACMAN_FRAME_S = 0.015
 
 
 def _user32():
@@ -306,6 +311,8 @@ class Bridge:
         self._screen_w = 1920
         self._pos = 0.5  # V8.4.1: onde fica a ilha (0..1 na largura da tela)
         self._panel = "medio"  # V8.5.0: tamanho do painel aberto
+        self._chaser = None  # V8.6.0: janela do modo Pac-Man
+        self._pac_running = False
         self._quitting = False
 
     def show_main(self) -> None:
@@ -372,6 +379,18 @@ class Bridge:
         self._panel = panel
         if self._mode == "painel":
             self.island_mode("painel")
+
+    def idle_seconds(self) -> float:
+        """V8.6.0: há quanto tempo ninguém mexe no PC (mouse/teclado), para as brincadeiras do avatar. -1 se não sabe."""
+        return system_idle_seconds()
+
+    def pacman_start(self) -> bool:
+        """V8.6.0: cutucaram demais o avatar: ele sai da ilha e corre atrás do mouse (Pac-Man)."""
+        if self._pac_running or not self._chaser or sys.platform != "win32":
+            return False
+        self._pac_running = True
+        threading.Thread(target=run_pacman, args=(self,), daemon=True).start()
+        return True
 
     def island_set_pos(self, pos: float) -> None:
         """A posição mudou em Configurações › Ilha (ex.: "Centralizar"): move a ilha (sem salvar de novo)."""
@@ -520,6 +539,132 @@ def watch_island_clicks(bridge: Bridge) -> None:
         was_down = down
 
 
+def system_idle_seconds() -> float:
+    """Segundos desde a última vez que mexeram no mouse/teclado (Windows: GetLastInputInfo). -1 fora do Windows."""
+    if sys.platform != "win32":
+        return -1.0
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        class LASTINPUTINFO(ctypes.Structure):
+            _fields_ = [("cbSize", wintypes.UINT), ("dwTime", wintypes.DWORD)]
+
+        info = LASTINPUTINFO()
+        info.cbSize = ctypes.sizeof(LASTINPUTINFO)
+        if not ctypes.windll.user32.GetLastInputInfo(ctypes.byref(info)):
+            return -1.0
+        ticks = ctypes.windll.kernel32.GetTickCount() & 0xFFFFFFFF
+        return max(0.0, ((ticks - info.dwTime) & 0xFFFFFFFF) / 1000.0)
+    except Exception:  # noqa: BLE001
+        return -1.0
+
+
+def chase_step(pos: tuple[float, float], target: tuple[float, float], speed: float) -> tuple[tuple[float, float], float]:
+    """Um passo do Pac-Man na direção do mouse. Devolve (nova posição, distância que faltava)."""
+    dx, dy = target[0] - pos[0], target[1] - pos[1]
+    dist = (dx * dx + dy * dy) ** 0.5
+    if dist <= speed or dist == 0:
+        return (float(target[0]), float(target[1])), dist
+    return (pos[0] + dx / dist * speed, pos[1] + dy / dist * speed), dist
+
+
+def chase_speed(elapsed: float, scale: float = 1.0) -> float:
+    """Pixels por quadro: começa devagar (dá para fugir um pouco) e vai acelerando."""
+    return scale * min(26.0, 7.0 + elapsed * 2.2)
+
+
+def run_pacman(bridge: Bridge) -> None:
+    """V8.6.0: o avatar sai da ilha, corre atrás do mouse com a boca abrindo e fechando; quando alcança, "come" o
+    mouse (segura o cursor na boca enquanto mastiga) e depois devolve, feliz, e volta para a ilha.
+    Esc a qualquer momento: para tudo e devolve o mouse na hora."""
+    import ctypes
+    from ctypes import wintypes
+
+    def js(phase: str, direction: str = "") -> None:
+        try:
+            bridge._chaser.evaluate_js(f"window.__pac && window.__pac({json.dumps(phase)}, {json.dumps(direction)})")
+        except Exception:  # noqa: BLE001
+            log.info("pac-man: página não respondeu")
+
+    u = _user32()
+    u.SetWindowPos.argtypes = [wintypes.HWND, wintypes.HWND, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int, wintypes.UINT]
+    u.GetAsyncKeyState.restype = ctypes.c_short
+    flags = 0x0001 | 0x0010 | 0x0040  # SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW
+    topmost = wintypes.HWND(-1)
+    esc = lambda: bool(u.GetAsyncKeyState(0x1B) & 0x8000)  # noqa: E731
+    try:
+        bridge._chaser.show()
+        time.sleep(0.3)
+        hwnd = u.FindWindowW(None, PACMAN_TITLE)
+        if not hwnd:
+            log.info("pac-man: janela não encontrada")
+            return
+        r = wintypes.RECT()
+        u.GetWindowRect(hwnd, ctypes.byref(r))
+        w, h = r.right - r.left, r.bottom - r.top
+        scale = (u.GetDpiForWindow(hwnd) or 96) / 96
+        home = (u.GetSystemMetrics(0) / 2, 40 * scale)
+        ih = island_hwnd(bridge._island)
+        if ih:
+            ir = wintypes.RECT()
+            u.GetWindowRect(ih, ctypes.byref(ir))
+            home = ((ir.left + ir.right) / 2, ir.bottom + h / 2)
+        mouth_dy = h * 0.12  # a boca fica um pouco abaixo do meio
+        pos = home
+        last_dir = ""
+        place = lambda p: u.SetWindowPos(hwnd, topmost, int(p[0] - w / 2), int(p[1] - h / 2), 0, 0, flags)  # noqa: E731
+        place(pos)
+        log.info("pac-man: correndo atrás do mouse")
+        js("corre", "right")
+        started = time.time()
+        while not bridge._quitting:
+            if esc():
+                log.info("pac-man: Esc, parando")
+                return
+            pt = wintypes.POINT()
+            u.GetCursorPos(ctypes.byref(pt))
+            target = (pt.x, pt.y - mouth_dy)
+            elapsed = time.time() - started
+            pos, dist = chase_step(pos, target, chase_speed(elapsed, scale))
+            direction = "left" if target[0] < pos[0] - 2 else "right" if target[0] > pos[0] + 2 else last_dir
+            if direction and direction != last_dir:
+                last_dir = direction
+                js("corre", direction)
+            place(pos)
+            if dist < 16 * scale or elapsed > PACMAN_MAX_CHASE_S:
+                break
+            time.sleep(PACMAN_FRAME_S)
+        # pegou: mastiga segurando o mouse na boca
+        log.info("pac-man: pegou o mouse, mastigando")
+        js("mastiga", last_dir)
+        mouth = (int(pos[0]), int(pos[1] + mouth_dy))
+        end = time.time() + PACMAN_CHEW_S
+        while time.time() < end and not bridge._quitting and not esc():
+            u.SetCursorPos(*mouth)
+            time.sleep(0.012)
+        # devolve o mouse (cospe um pouco para o lado) e volta feliz para a ilha
+        side = -1 if last_dir == "left" else 1
+        u.SetCursorPos(mouth[0] + int(70 * scale) * side, mouth[1] + int(20 * scale))
+        js("feliz", last_dir)
+        time.sleep(0.9)
+        for _ in range(80):
+            pos, dist = chase_step(pos, home, 30 * scale)
+            place(pos)
+            if dist < 4:
+                break
+            time.sleep(PACMAN_FRAME_S)
+    except Exception as exc:  # noqa: BLE001
+        log.info("pac-man falhou: %s", exc)
+    finally:
+        js("parado")
+        try:
+            bridge._chaser.hide()
+        except Exception:  # noqa: BLE001
+            log.info("pac-man: não consegui esconder a janela")
+        bridge._pac_running = False
+
+
 def source_fingerprint(path: Path | None = None) -> str:
     """Impressão digital do código deste app (muda quando uma atualização troca o arquivo)."""
     import hashlib
@@ -627,6 +772,13 @@ def main() -> None:
                                               on_top=True, resizable=False, easy_drag=False, background_color="#000000",
                                               js_api=bridge, focus=True, min_size=(120, 30))  # o padrão (200x100) esticava a ilha
         bridge._island.events.shown += lambda: shape_window(bridge._island, island_radius("mini", 9999))
+        # V8.6.0: a janelinha do modo Pac-Man (transparente e "atravessável": só o avatar aparece; começa escondida)
+        try:
+            bridge._chaser = webview.create_window(PACMAN_TITLE, f"{FRONT}/?pacman=1", width=PACMAN_SIZE, height=PACMAN_SIZE,
+                                                   frameless=True, on_top=True, transparent=True, hidden=True,
+                                                   resizable=False, easy_drag=False, focus=False, min_size=(60, 60))
+        except Exception as exc:  # noqa: BLE001 - sem o Pac-Man o resto continua
+            log.info("pac-man indisponível: %s", exc)
         threading.Thread(target=watch_island_clicks, args=(bridge,), daemon=True).start()
     threading.Thread(target=listen_hotkey, args=(bridge, cfg.get("atalho", "PageDown")), daemon=True).start()
     threading.Thread(target=watch_self_update, args=(bridge,), daemon=True).start()  # V8.5.0

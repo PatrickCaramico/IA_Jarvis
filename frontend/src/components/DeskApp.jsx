@@ -9,6 +9,7 @@ import { APP_VERSION } from "../utils/version.js";
 import { watchNewBuild } from "../utils/newBuild.js";
 import { useLiteMode } from "../utils/lite.js";
 import { useGroqVoice } from "../utils/voiceRecord.js";
+import { startPacman, usePoke } from "../utils/poke.js";
 import "../desk.css";
 
 // V8.0: MODO DESK (ideia 6): o JARVIS como app de assistente pessoal. Barra lateral com o avatar robô, Início,
@@ -863,6 +864,10 @@ export default function DeskApp(props) {
     const t = setTimeout(() => setVoiceMsg(""), 7000);
     return () => clearTimeout(t);
   }, [voiceMsg]);
+  // V8.6.0: cutucou demais o avatar? No app do Windows ele sai correndo atrás do mouse (Pac-Man)
+  const { mood, poke } = usePoke(() => {
+    if (!startPacman()) setVoiceMsg("😤 Ele ficou bravo! No app do JARVIS para Windows, ele corre atrás do seu mouse.");
+  });
   const voiceToggle = groqVoice.toggle;
   useEffect(() => { // tecla de atalho do app: já começa a gravar
     if (!IS_DESKTOP_APP) return undefined;
@@ -952,7 +957,9 @@ export default function DeskApp(props) {
     <div className={`dk-root${menu ? " is-menu" : ""}${embedded ? " is-embedded" : ""}`} style={style} role="application" aria-label="JARVIS, Modo Desk">
       <aside className="dk-side">
         <div className="dk-brand">
-          <RoboAvatar avatar={cfg?.avatar} tema={cfg?.tema} state={orbState} size={44} />
+          <button type="button" className="dk-poke" onClick={poke} title="Não cutuque o JARVIS… 😈" aria-label="Cutucar o JARVIS">
+            <RoboAvatar avatar={mood ? { ...(cfg?.avatar || {}), expressao: mood } : cfg?.avatar} tema={cfg?.tema} state={mood ? "idle" : orbState} size={44} still={Boolean(mood)} />
+          </button>
           <div>
             <b>{aiName}</b>
             <small><i className={`dk-dot is-${orbState}`} />{stateText(orbState)}</small>

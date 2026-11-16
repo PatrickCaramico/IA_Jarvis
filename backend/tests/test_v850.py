@@ -114,3 +114,30 @@ def test_desktop_panel_sizes_relaunch_and_reshape():
     assert b._pos == 0.25
     src = Path(d.__file__).read_text(encoding="utf-8")
     assert "_reshape_later" in src and "watch_self_update" in src
+
+
+def test_v860_pacman_and_idle():
+    """V8.6.0: o avatar corre atrás do mouse (acelera, sempre alcança), o tempo parado do PC e a pílula maior."""
+    d = _desktop()
+    (x, y), dist = d.chase_step((0, 0), (300, 400), 10)
+    assert dist == 500 and abs(x - 6) < 1e-9 and abs(y - 8) < 1e-9
+    (x, y), dist = d.chase_step((0, 0), (3, 4), 10)
+    assert (x, y) == (3.0, 4.0) and dist == 5  # chegou
+    assert d.chase_speed(0) < d.chase_speed(3) <= d.chase_speed(60) == 26.0
+    assert d.chase_speed(0, 2.0) == 2 * d.chase_speed(0)
+    # sempre alcança antes do tempo máximo, mesmo com o mouse longe
+    pos, t = (0.0, 0.0), 0.0
+    while True:
+        pos, dist = d.chase_step(pos, (2500.0, 1400.0), d.chase_speed(t))
+        t += d.PACMAN_FRAME_S
+        if dist < 16:
+            break
+    assert t < d.PACMAN_MAX_CHASE_S
+    b = d.Bridge()
+    assert b.pacman_start() is False  # sem a janela (ou fora do Windows) não faz nada
+    if __import__("sys").platform != "win32":
+        assert b.idle_seconds() == -1.0
+    assert {"pacman_start", "idle_seconds"} <= {n for n in dir(b) if not n.startswith("_")}
+    assert d.ISLAND_SIZES["media"][1] >= 56  # pílula mais alta: o avatar cabe maior
+    src = Path(d.__file__).read_text(encoding="utf-8")
+    assert "SetCursorPos" in src and "0x1B" in src  # devolve o mouse e o Esc para tudo
