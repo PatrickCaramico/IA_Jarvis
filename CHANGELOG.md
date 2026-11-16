@@ -2,6 +2,18 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 8.2.3 — 16 de novembro de 2026
+
+**⚡ O JARVIS liga na hora depois de atualizar (não espera mais montar a interface)**
+- **Corrigido:** depois de atualizar, o Iniciar-JARVIS.bat só ligava o JARVIS **depois** de montar a interface nova. No PC do Patrick isso levava de 7 a 12 minutos, e a tela ficava parada em "Reiniciando" (90%).
+- **Agora:**
+  - o JARVIS **liga em segundos** com a interface que já estava no PC;
+  - a interface nova é montada em **segundo plano** (`scripts/build_background.py`, com registro em `logs/build.log`), sem rodar duas montagens ao mesmo tempo;
+  - a central aberta pelo site não depende dessa montagem.
+- Antes de tudo, continua tentando baixar a interface pronta do site, esperando no máximo 20 s no Iniciar e 45 s no botão ATUALIZAR.
+- O botão ATUALIZAR não monta mais a interface antes de reiniciar.
+- Só na primeira instalação, quando ainda não existe nenhuma interface montada, ela é montada antes de ligar.
+
 ## 8.2.2 — 16 de novembro de 2026
 
 **⚡ Atualização em segundos: o PC baixa a interface pronta (não monta mais)**

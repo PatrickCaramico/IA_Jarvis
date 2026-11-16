@@ -105,7 +105,7 @@ def fetch_prebuilt() -> bool:
         spec = importlib.util.spec_from_file_location("jarvis_prebuilt", ROOT / "scripts" / "prebuilt.py")
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
-        return bool(mod.fetch(FRONTEND, log=lambda m: log.info(m.strip()), wait_s=150))
+        return bool(mod.fetch(FRONTEND, log=lambda m: log.info(m.strip()), wait_s=45))
     except Exception as exc:  # noqa: BLE001
         log.warning("Interface pronta indisponível: %s", exc)
         return False

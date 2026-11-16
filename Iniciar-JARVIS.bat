@@ -100,18 +100,26 @@ if not defined USE_VITE (
   if errorlevel 1 (
     rem V8.2.2: primeiro tenta baixar a interface pronta do site (segundos); se nao der, monta aqui (minutos)
     echo  [4/5] Interface mudou: baixando a versao pronta...
+    set "JARVIS_PREBUILT_WAIT=20"
     "%PY%" "%ROOT%scripts\prebuilt.py" "%FRONTEND%"
   )
   "%PY%" "%SERVE%" --stale
   if errorlevel 1 (
-    echo  [4/5] Interface mudou: gerando build novo ^(so desta vez^)...
-    pushd "%FRONTEND%"
-    call npm run build >nul
-    if errorlevel 1 (
-      echo  [AVISO] Build falhou. Usando o modo de desenvolvimento ^(mais lento^).
-      set "USE_VITE=1"
+    rem V8.2.3: com uma interface ja montada, o JARVIS LIGA NA HORA com ela e a nova e montada em segundo
+    rem plano (antes o JARVIS ficava desligado os minutos todos da montagem e a atualizacao parecia travada)
+    if exist "%FRONTEND%\dist\index.html" (
+      echo  [4/5] Interface nova sera montada em segundo plano ^(o JARVIS ja liga com a atual^)...
+      set "BUILD_LATER=1"
+    ) else (
+      echo  [4/5] Primeira vez: montando a interface ^(alguns minutos^)...
+      pushd "%FRONTEND%"
+      call npm run build >nul
+      if errorlevel 1 (
+        echo  [AVISO] Build falhou. Usando o modo de desenvolvimento ^(mais lento^).
+        set "USE_VITE=1"
+      )
+      popd
     )
-    popd
   )
 )
 
@@ -145,6 +153,11 @@ if defined USE_VITE (
   powershell -NoProfile -Command "Start-Process -FilePath 'cmd.exe' -ArgumentList '/c npm run dev -- --host %HOST%' -WorkingDirectory '%FRONTEND%' -WindowStyle Hidden"
 ) else (
   powershell -NoProfile -Command "Start-Process -FilePath '%PY%' -ArgumentList 'serve_frontend.py --host %HOST% --port 5173' -WorkingDirectory '%ROOT%scripts' -WindowStyle Hidden"
+)
+
+rem V8.2.3: a interface nova e montada em segundo plano, com o JARVIS ja ligado (registro em logs\build.log)
+if defined BUILD_LATER (
+  powershell -NoProfile -Command "Start-Process -FilePath '%PY%' -ArgumentList 'build_background.py' -WorkingDirectory '%ROOT%scripts' -WindowStyle Hidden"
 )
 
 rem V6.3: ouvido offline ("Jarvis, ..." com o navegador fechado). So liga se o modelo Vosk estiver
