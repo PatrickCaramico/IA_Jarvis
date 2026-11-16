@@ -91,17 +91,30 @@ def test_island_click_fallback_and_hidden_main():
             self.destroyed = True
 
     b = d.Bridge()
-    b.main, b.island = W(), W()
+    b._main, b._island = W(), W()
     assert b.on_main_closing() is False  # cancela o fechamento e esconde
     import time as _t
 
     _t.sleep(0.05)
-    assert b.main.hidden is True
+    assert b._main.hidden is True
     b.quit()
-    assert b.quitting and b.main.destroyed and b.island.destroyed
+    assert b._quitting and b._main.destroyed and b._island.destroyed
     assert b.on_main_closing() is True
     src = (ROOT / "desktop" / "jarvis_desktop.py").read_text(encoding="utf-8")
     assert "hidden=island_on" in src and "min_size=(120, 30)" in src
     # V8.1.4: a ilha é achada pelo título (Win32); fora do Windows não quebra
     assert d.island_hwnd(None) == 0 and d.shape_window(None, 10) is False
     assert "FindWindowW" in src and "dois cliques na ilha" in src
+
+
+def test_bridge_exposes_only_methods():
+    """V8.1.6: o pywebview publica (recursivamente) tudo o que é público no js_api. Se o Bridge guardar as
+    janelas em atributos públicos, ele varre os objetos .NET, trava e a página fica sem as funções."""
+    import inspect
+
+    d = _desktop()
+    b = d.Bridge()
+    b._main = b._island = object()
+    public = {n: getattr(b, n) for n in dir(b) if not n.startswith("_")}
+    assert public and all(inspect.ismethod(v) for v in public.values()), [n for n, v in public.items() if not inspect.ismethod(v)]
+    assert {"show_main", "island_mode", "talk", "quit", "log"} <= set(public)

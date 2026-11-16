@@ -176,37 +176,43 @@ def hotkey_spec(name: str) -> tuple[int, int]:
 
 
 class Bridge:
-    """Funções que as páginas chamam pelo window.pywebview.api."""
+    """Funções que as páginas chamam pelo window.pywebview.api.
+
+    V8.1.6: TODO o estado fica em atributos com "_" na frente. O pywebview publica para a página tudo o que é
+    público aqui, entrando nos objetos (de forma recursiva): com as janelas guardadas em "main"/"island" ele
+    varria os objetos .NET das janelas, travava ("Python não está respondendo") e a página ficava sem as funções
+    (por isso a ilha não respondia ao clique). Só os métodos abaixo podem ser públicos.
+    """
 
     def __init__(self) -> None:
-        self.main = None
-        self.island = None
-        self.size = "media"
-        self.mode = "mini"
-        self.screen_w = 1920
-        self.quitting = False
+        self._main = None
+        self._island = None
+        self._size = "media"
+        self._mode = "mini"
+        self._screen_w = 1920
+        self._quitting = False
 
     def show_main(self) -> None:
         log.info("mostrando a janela do JARVIS")
-        if self.main:
-            self.main.show()
-            self.main.restore()
+        if self._main:
+            self._main.show()
+            self._main.restore()
 
     def hide_main(self) -> None:
-        if self.main:
-            self.main.hide()
+        if self._main:
+            self._main.hide()
 
     def on_main_closing(self):
         """X da janela: com a ilha ligada, só esconde (a ilha continua no topo). Devolver False cancela o fechamento."""
-        if self.quitting or not self.island:
+        if self._quitting or not self._island:
             return True
         threading.Thread(target=self.hide_main, daemon=True).start()
         return False
 
     def quit(self) -> None:
         """⏻ SAIR na ilha: fecha o app de vez (o JARVIS continua rodando no PC)."""
-        self.quitting = True
-        for w in (self.island, self.main):
+        self._quitting = True
+        for w in (self._island, self._main):
             try:
                 if w:
                     w.destroy()
@@ -222,20 +228,20 @@ class Bridge:
 
     def island_mode(self, mode: str) -> None:
         """mini | resposta | cartao: muda o tamanho mantendo a ilha centralizada e recorta o formato."""
-        if not self.island or mode not in ISLAND_MODES:
+        if not self._island or mode not in ISLAND_MODES:
             return
-        self.mode = mode
+        self._mode = mode
         log.info("ilha: modo %s", mode)
-        x, y, w, h = island_position(self.screen_w, self.size, mode)
-        self.island.resize(w, h)
-        self.island.move(x, y)
-        shape_window(self.island, island_radius(mode, h))
+        x, y, w, h = island_position(self._screen_w, self._size, mode)
+        self._island.resize(w, h)
+        self._island.move(x, y)
+        shape_window(self._island, island_radius(mode, h))
 
     def talk(self) -> None:
         """Botão 🎙 da ilha: abre a janela do JARVIS já ouvindo."""
         self.show_main()
-        if self.main:
-            self.main.evaluate_js("window.dispatchEvent(new CustomEvent('jarvis-desktop-talk'))")
+        if self._main:
+            self._main.evaluate_js("window.dispatchEvent(new CustomEvent('jarvis-desktop-talk'))")
 
     def version(self) -> str:
         return VERSION
@@ -267,14 +273,14 @@ def watch_island_clicks(bridge: Bridge) -> None:
     user32.GetAsyncKeyState.restype = ctypes.c_short
     was_down, last_click, shaped = False, 0.0, False
     started = time.time()
-    while not bridge.quitting:
+    while not bridge._quitting:
         time.sleep(0.03)
         if not shaped and time.time() - started > 1.5:  # o recorte de novo, depois que a janela existe de verdade
-            shaped = shape_window(bridge.island, 9999 if bridge.mode == "mini" else 44) or time.time() - started > 20
+            shaped = shape_window(bridge._island, 9999 if bridge._mode == "mini" else 44) or time.time() - started > 20
         down = bool(user32.GetAsyncKeyState(0x01) & 0x8000)  # VK_LBUTTON
-        if down and not was_down and bridge.island:
+        if down and not was_down and bridge._island:
             try:
-                hwnd = island_hwnd(bridge.island)
+                hwnd = island_hwnd(bridge._island)
                 pt = wintypes.POINT()
                 user32.GetCursorPos(ctypes.byref(pt))
                 under = user32.GetAncestor(user32.WindowFromPoint(pt), 2) or 0  # GA_ROOT
@@ -297,7 +303,7 @@ def watch_island_clicks(bridge: Bridge) -> None:
                     else:
                         last_click = now
                         log.info("clique na ilha em %s", hit)
-                        bridge.island.evaluate_js(f"window.__jarvisIslandPress && window.__jarvisIslandPress({hit[0]}, {hit[1]})")
+                        bridge._island.evaluate_js(f"window.__jarvisIslandPress && window.__jarvisIslandPress({hit[0]}, {hit[1]})")
                 elif hit:
                     log.info("clique sobre a ilha, mas outra janela está por cima (%s)", under)
             except Exception as exc:  # noqa: BLE001
@@ -318,7 +324,7 @@ def listen_hotkey(bridge: Bridge, name: str) -> None:
         return
     msg = wintypes.MSG()
     while user32.GetMessageW(ctypes.byref(msg), None, 0, 0) != 0:
-        if msg.message == 0x0312 and bridge.main:  # WM_HOTKEY
+        if msg.message == 0x0312 and bridge._main:  # WM_HOTKEY
             bridge.talk()
 
 
@@ -341,21 +347,21 @@ def main() -> None:
         return
     cfg = (get_json(f"{API}/api/desk") or {}).get("ilha") or {}
     bridge = Bridge()
-    bridge.size = cfg.get("tamanho", "media")
+    bridge._size = cfg.get("tamanho", "media")
     island_on = cfg.get("ligada", True)
     # V8.1.3: com a ilha ligada, a janela do JARVIS começa escondida e só aparece quando você clica na ilha
-    bridge.main = webview.create_window("JARVIS", f"{FRONT}/?desk=1&app=windows", width=1280, height=820, min_size=(900, 600),
+    bridge._main = webview.create_window("JARVIS", f"{FRONT}/?desk=1&app=windows", width=1280, height=820, min_size=(900, 600),
                                         background_color="#0b0d12", js_api=bridge, text_select=True, hidden=island_on)
-    bridge.main.events.closing += bridge.on_main_closing
+    bridge._main.events.closing += bridge.on_main_closing
     if island_on:
         screens = webview.screens
-        bridge.screen_w = screens[0].width if screens else 1920
-        x, y, w, h = island_position(bridge.screen_w, bridge.size)
+        bridge._screen_w = screens[0].width if screens else 1920
+        x, y, w, h = island_position(bridge._screen_w, bridge._size)
         # V8.1.2: sem transparent (o clique atravessava); a pílula é recortada no shown (SetWindowRgn)
-        bridge.island = webview.create_window(ISLAND_TITLE, f"{FRONT}/?ilha=1", x=x, y=y, width=w, height=h, frameless=True,
+        bridge._island = webview.create_window(ISLAND_TITLE, f"{FRONT}/?ilha=1", x=x, y=y, width=w, height=h, frameless=True,
                                               on_top=True, resizable=False, easy_drag=False, background_color="#000000",
                                               js_api=bridge, focus=True, min_size=(120, 30))  # o padrão (200x100) esticava a ilha
-        bridge.island.events.shown += lambda: shape_window(bridge.island, island_radius("mini", 9999))
+        bridge._island.events.shown += lambda: shape_window(bridge._island, island_radius("mini", 9999))
         threading.Thread(target=watch_island_clicks, args=(bridge,), daemon=True).start()
     threading.Thread(target=listen_hotkey, args=(bridge, cfg.get("atalho", "PageDown")), daemon=True).start()
     os.environ.setdefault("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS", "--autoplay-policy=no-user-gesture-required")
