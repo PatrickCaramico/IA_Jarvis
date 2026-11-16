@@ -138,6 +138,8 @@ def test_v860_pacman_and_idle():
     if __import__("sys").platform != "win32":
         assert b.idle_seconds() == -1.0
     assert {"pacman_start", "idle_seconds"} <= {n for n in dir(b) if not n.startswith("_")}
-    assert d.ISLAND_SIZES["media"][1] >= 56  # pílula mais alta: o avatar cabe maior
+    assert d.ISLAND_SIZES["media"][1] >= 60  # V8.6.2: pílula maior: o avatar cabe sem encostar
+    assert d.POKE_ZONE_PX > 0 and "on_avatar" in Path(d.__file__).read_text(encoding="utf-8")  # cutucar não abre a janela
+    assert callable(d.create_chaser_window)
     src = Path(d.__file__).read_text(encoding="utf-8")
     assert "SetCursorPos" in src and "0x1B" in src  # devolve o mouse e o Esc para tudo

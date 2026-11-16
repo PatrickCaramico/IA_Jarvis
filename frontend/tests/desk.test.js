@@ -192,3 +192,10 @@ test("V8.6.0: cutucadas: surpreso, bravo e, na 5ª, o modo Pac-Man", async () =>
   const main = await import("node:fs").then((fs) => fs.readFileSync(new URL("../src/main.jsx", import.meta.url), "utf8"));
   assert.ok(main.includes('get("pacman") === "1"') && main.includes("PacmanApp"));
 });
+
+test("V8.6.2: pílula: cutucar o avatar não abre o painel e avisa quando o app precisa ser reaberto", async () => {
+  const src = await import("node:fs").then((fs) => fs.readFileSync(new URL("../src/components/IslandApp.jsx", import.meta.url), "utf8"));
+  assert.ok(src.includes('className={`il-face${mood ? " is-poked" : ""}`} data-il-click'));
+  assert.ok(src.includes("e.stopPropagation(); poke();"));
+  assert.ok(src.includes("if (!startPacman())") && src.includes("feche o app pelo ⏻"));
+});

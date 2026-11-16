@@ -34,7 +34,8 @@ log = logging.getLogger("jarvis.app")
 
 API = "http://127.0.0.1:8000"
 FRONT = "http://127.0.0.1:5173"
-ISLAND_SIZES = {"pequena": (320, 46), "media": (400, 56), "grande": (480, 66)}  # V8.6.0: mais alta (avatar maior)
+ISLAND_SIZES = {"pequena": (340, 52), "media": (420, 60), "grande": (500, 70)}  # V8.6.2: maior (avatar bem visível)
+POKE_ZONE_PX = 64  # V8.6.2: o avatar na ponta esquerda da pílula: cliques ali são cutucadas (não abrem a janela grande)
 ISLAND_OPEN_H = 120  # altura quando mostra uma resposta
 # V8.1.2: modos da ilha (como a "ilha dinâmica"): mini (pílula), resposta (cresce com o texto) e cartão (ao clicar)
 ISLAND_MODES = {"mini": (0, 0), "resposta": (80, ISLAND_OPEN_H), "cartao": (180, 210), "painel": (0, 0)}
@@ -278,7 +279,8 @@ def shape_window(window, radius: int) -> bool:
         except Exception:  # noqa: BLE001 - Windows antigo
             scale = 1
         r = min(int(radius * scale), h)
-        rgn = gdi32.CreateRoundRectRgn(0, 0, w + 1, h + 1, r, r)
+        # V8.6.2: o recorte fica 1 px para dentro: some o filete claro que aparecia na borda da pílula
+        rgn = gdi32.CreateRoundRectRgn(1, 1, w, h, max(2, r - 2), max(2, r - 2))
         ok = bool(user32.SetWindowRgn(hwnd, rgn, True))
         log.info("recorte da ilha %sx%s raio %s: %s", w, h, r, "ok" if ok else "falhou")
         return ok
@@ -386,8 +388,14 @@ class Bridge:
 
     def pacman_start(self) -> bool:
         """V8.6.0: cutucaram demais o avatar: ele sai da ilha e corre atrás do mouse (Pac-Man)."""
-        if self._pac_running or not self._chaser or sys.platform != "win32":
+        if self._pac_running or sys.platform != "win32":
             return False
+        if not self._chaser:  # V8.6.2: a janelinha não foi criada na abertura: cria agora
+            self._chaser = create_chaser_window()
+            if not self._chaser:
+                log.info("pac-man: sem a janelinha, não dá")
+                return False
+            time.sleep(1.0)
         self._pac_running = True
         threading.Thread(target=run_pacman, args=(self,), daemon=True).start()
         return True
@@ -521,7 +529,8 @@ def watch_island_clicks(bridge: Bridge) -> None:
                 else:
                     now = time.time()
                     # dois cliques na pílula fechada (o 1º já abriu o painel: vale o modo do 1º clique)
-                    if last_mode != "painel" and now - last_click < 0.45:
+                    on_avatar = press["mode"] != "painel" and press["hit"][0] < POKE_ZONE_PX  # cutucando o avatar
+                    if not on_avatar and last_mode != "painel" and now - last_click < 0.45:
                         log.info("dois cliques na ilha: abrindo o JARVIS")
                         js("window.__jarvisIslandDragged && window.__jarvisIslandDragged()")
                         js("window.__jarvisIslandOutside && window.__jarvisIslandOutside()")
@@ -572,6 +581,19 @@ def chase_step(pos: tuple[float, float], target: tuple[float, float], speed: flo
 def chase_speed(elapsed: float, scale: float = 1.0) -> float:
     """Pixels por quadro: começa devagar (dá para fugir um pouco) e vai acelerando."""
     return scale * min(26.0, 7.0 + elapsed * 2.2)
+
+
+def create_chaser_window():
+    """A janelinha transparente do modo Pac-Man (começa escondida). None se o Windows/pywebview não deixar."""
+    try:
+        import webview
+
+        return webview.create_window(PACMAN_TITLE, f"{FRONT}/?pacman=1", width=PACMAN_SIZE, height=PACMAN_SIZE,
+                                     frameless=True, on_top=True, transparent=True, hidden=True,
+                                     resizable=False, easy_drag=False, focus=False, min_size=(60, 60))
+    except Exception as exc:  # noqa: BLE001 - sem o Pac-Man o resto continua
+        log.info("pac-man indisponível: %s", exc)
+        return None
 
 
 def run_pacman(bridge: Bridge) -> None:
@@ -773,12 +795,7 @@ def main() -> None:
                                               js_api=bridge, focus=True, min_size=(120, 30))  # o padrão (200x100) esticava a ilha
         bridge._island.events.shown += lambda: shape_window(bridge._island, island_radius("mini", 9999))
         # V8.6.0: a janelinha do modo Pac-Man (transparente e "atravessável": só o avatar aparece; começa escondida)
-        try:
-            bridge._chaser = webview.create_window(PACMAN_TITLE, f"{FRONT}/?pacman=1", width=PACMAN_SIZE, height=PACMAN_SIZE,
-                                                   frameless=True, on_top=True, transparent=True, hidden=True,
-                                                   resizable=False, easy_drag=False, focus=False, min_size=(60, 60))
-        except Exception as exc:  # noqa: BLE001 - sem o Pac-Man o resto continua
-            log.info("pac-man indisponível: %s", exc)
+        bridge._chaser = create_chaser_window()
         threading.Thread(target=watch_island_clicks, args=(bridge,), daemon=True).start()
     threading.Thread(target=listen_hotkey, args=(bridge, cfg.get("atalho", "PageDown")), daemon=True).start()
     threading.Thread(target=watch_self_update, args=(bridge,), daemon=True).start()  # V8.5.0

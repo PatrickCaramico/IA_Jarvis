@@ -65,9 +65,12 @@ html.is-island, html.is-island body, html.is-island #root { margin: 0; height: 1
 @media (prefers-reduced-motion: reduce) { .il-app { animation: none; } }
 
 /* V8.5.0: pílula mais bonita: avatar, estado no meio, hora à direita; "pensando" com pontinhos e "falando" com ondas */
-.il { padding: 2px 18px 2px 8px; background: linear-gradient(180deg, #0b0d12, #000); box-shadow: inset 0 0 0 1px rgba(var(--il-rgb, 34, 211, 238), 0.22), 0 6px 20px rgba(0, 0, 0, 0.55); }
+.il { padding: 2px 18px 2px 4px; background: linear-gradient(180deg, #0b0d12, #000); box-shadow: inset 0 0 0 1px rgba(var(--il-rgb, 34, 211, 238), 0.22), 0 6px 20px rgba(0, 0, 0, 0.55); }
 .il-row { gap: 10px; }
-.il-face { display: grid; place-items: center; flex: none; margin: -4px 0; border-radius: 50%; background: radial-gradient(circle, rgba(var(--il-rgb, 34, 211, 238), 0.22), transparent 68%); }
+.il-face { display: grid; place-items: center; flex: none; padding: 3px; border-radius: 50%; cursor: pointer; overflow: hidden;
+  background: radial-gradient(circle at 50% 40%, #12233c, #05080f 70%); box-shadow: inset 0 0 0 1.5px rgba(var(--il-rgb, 34, 211, 238), 0.55), 0 0 10px rgba(var(--il-rgb, 34, 211, 238), 0.25); transition: transform 120ms; }
+.il-face:hover { transform: rotate(-6deg) scale(1.04); }
+.il-face.is-poked { box-shadow: inset 0 0 0 1.5px #f87171, 0 0 12px rgba(248, 113, 113, 0.5); }
 .il-face .ra { filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.5)); }
 .il-txt { display: flex; align-items: center; gap: 7px; letter-spacing: 0.04em; }
 .il-music span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }

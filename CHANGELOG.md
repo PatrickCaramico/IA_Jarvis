@@ -2,6 +2,15 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 8.6.2 — 16 de novembro de 2026
+
+**🏝️ Pílula mais bonita e Pac-Man mais fácil de ativar**
+- **Pílula maior** (60 px na média): o avatar fica num **círculo escuro com anel** na cor do app e não encosta mais nas bordas. O recorte da janela ficou 1 px para dentro, o que tira o filete claro da borda.
+- **Cutucar direto na pílula fechada:** clicar no avatar da pílula é uma cutucada. Não abre o painel, e os cliques rápidos ali **não abrem a janela grande** por engano. Ele fica surpreso, depois bravo (anel vermelho) e, na 5ª, sai correndo atrás do mouse.
+- **Pac-Man mais confiável:**
+  - se a janelinha dele não foi criada na abertura do app, é criada na hora;
+  - se o app do Windows aberto é de antes do Pac-Man, a ilha avisa: "feche o app pelo ⏻ e abra de novo".
+
 ## 8.6.1 — 16 de novembro de 2026
 
 **📐 Telas que se adaptam a qualquer tamanho (bloqueio e central)**
