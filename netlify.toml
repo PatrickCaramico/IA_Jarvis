@@ -46,6 +46,12 @@
   to = "/app/index.html"
   status = 200
 
+# V8.2.2: interface pronta para o PC (o atualizador baixa); o files.json nunca fica em cache
+[[headers]]
+  for = "/pc/files.json"
+  [headers.values]
+    Cache-Control = "no-cache, max-age=0"
+
 # Segurança básica
 [[headers]]
   for = "/*"

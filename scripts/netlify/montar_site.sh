@@ -41,6 +41,10 @@ if [ "${PULAR_CENTRAL:-0}" != "1" ]; then
     if [ ! -d node_modules ]; then npm ci --no-audit --no-fund; fi
     # MSYS_NO_PATHCONV: no Git Bash do Windows, "/app/" não pode virar caminho de disco
     MSYS_NO_PATHCONV=1 VITE_API_URL="http://127.0.0.1:8000" npx vite build --base=/app/ --outDir ../_site/app --emptyOutDir
+    # V8.2.2: a INTERFACE PRONTA para o PC (igual ao `npm run build` de lá: base / e sem VITE_API_URL), com o
+    # files.json que o scripts/prebuilt.py confere. Assim o PC baixa pronta em vez de montar (bem mais rápido).
+    env -u VITE_API_URL npx vite build --base=/ --outDir ../_site/pc --emptyOutDir
+    node "$ROOT/scripts/netlify/manifest.mjs" "$ROOT/frontend" "$ROOT/_site/pc" "$VERSAO"
   )
 fi
 
