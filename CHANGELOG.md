@@ -2,6 +2,16 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 8.1.6 — 16 de novembro de 2026
+
+**🏝 App para Windows: fim do "Python não está respondendo" e da ilha que não respondia**
+- **Corrigido:** a causa de verdade da ilha não responder e do app travar estava na ponte entre a página e o Windows.
+  - O pywebview entrega à página tudo o que é público nessa ponte, entrando em cada objeto.
+  - A ponte guardava as próprias janelas, então ele saía varrendo os objetos internos do Windows. A janela travava ("Python não está respondendo") e a página ficava sem as funções: abrir, falar, sair, mudar o tamanho da ilha.
+  - Isso acontecia desde a 8.0.
+  - Agora a ponte só expõe as funções, e o estado fica escondido.
+- Um teste novo garante que a ponte nunca mais exponha nada além de funções.
+
 ## 8.1.5 — 16 de novembro de 2026
 
 **🔊 Voz de volta e ⬆ ATUALIZAR no Modo Desk**
