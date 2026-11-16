@@ -164,11 +164,12 @@ test("V8.4.0: brincadeiras: nada antes de 1min30, sorteio depois e cochilo com m
   const consts = src.match(/export const FUN_AFTER_MS[\s\S]*?export const ANTICS = \[[^\]]*\];/)[0].replace(/export /g, "");
   const body = src.match(/export function pickAntic\(idleMs, rnd = Math.random\(\)\) \{([\s\S]*?)\n\}/)[1];
   const pick = new Function("idleMs", "rnd", `${consts}${body}`);
-  assert.equal(pick(30_000, 0.9), null);
+  assert.equal(pick(10_000, 0.9), null); // V8.6.0: começa aos 25 s parado
   assert.equal(pick(120_000, 0.1), null); // às vezes não faz nada
-  for (const r of [0.4, 0.6, 0.8, 0.999]) assert.ok(["olhar", "piscando", "bocejo"].includes(pick(120_000, r)));
-  assert.equal(pick(7 * 60_000, 0.1), "dormindo");
-  assert.ok(src.includes('case "bocejo"') && src.includes("ra-noblink"));
+  for (const r of [0.4, 0.55, 0.7, 0.85, 0.999]) assert.ok(["olhar", "piscando", "bocejo", "pulinho", "feliz"].includes(pick(120_000, r)));
+  assert.equal(pick(7 * 60_000, 0.5) === "dormindo", false);
+  assert.equal(pick(9 * 60_000, 0.1), "dormindo");
+  assert.ok(src.includes('case "bocejo"') && src.includes("ra-noblink") && src.includes('case "comendo"') && src.includes("ra-alive"));
 });
 
 test("V8.4.0: voz: o limite de fala se ajusta ao ruído do ambiente", async () => {
@@ -178,4 +179,16 @@ test("V8.4.0: voz: o limite de fala se ajusta ao ruído do ambiente", async () =
   assert.equal(th(0, min), min); // sala silenciosa: um microfone baixinho (0,02) já conta
   assert.ok(0.02 > th(0, min));
   assert.ok(Math.abs(th(0.03, min) - 0.09) < 1e-9); // sala barulhenta: precisa falar mais alto que o ruído
+});
+
+test("V8.6.0: cutucadas: surpreso, bravo e, na 5ª, o modo Pac-Man", async () => {
+  const src = await import("node:fs").then((fs) => fs.readFileSync(new URL("../src/utils/poke.js", import.meta.url), "utf8"));
+  const max = Number(src.match(/export const POKES_TO_ANGRY = (\d+);/)[1]);
+  const mood = new Function("count", "POKES_TO_ANGRY", src.match(/export function pokeMood\(count\) \{([\s\S]*?)\n\}/)[1]);
+  assert.equal(mood(0, max), null);
+  assert.equal(mood(1, max), "surpreso");
+  assert.equal(mood(3, max), "bravo");
+  assert.equal(mood(5, max), "comendo");
+  const main = await import("node:fs").then((fs) => fs.readFileSync(new URL("../src/main.jsx", import.meta.url), "utf8"));
+  assert.ok(main.includes('get("pacman") === "1"') && main.includes("PacmanApp"));
 });

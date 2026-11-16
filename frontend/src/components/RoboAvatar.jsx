@@ -137,6 +137,14 @@ function Face({ face, color, shape }) {
           <path d="M52 78 Q63 82 71 73" fill="none" stroke={color} strokeWidth="3.5" strokeLinecap="round" />
         </g>
       );
+    case "comendo": // V8.6.0: modo Pac-Man (correndo atrás do mouse e mastigando)
+      return (
+        <g className="ra-glow">
+          <path d="M34 50 L52 57 M86 50 L68 57" stroke={color} strokeWidth="4" strokeLinecap="round" />
+          <Eye cx={45} cy={63} r={5.5} color={color} shape={shape} /><Eye cx={75} cy={63} r={5.5} color={color} shape={shape} />
+          <g className="ra-chomp"><path d="M46 74 H74 L70 86 Q60 90 50 86 Z" fill={color} /><path d="M50 74 L53 78 L56 74 L59 78 L62 74 L65 78 L68 74" fill="none" stroke="#0b1220" strokeWidth="1.5" /></g>
+        </g>
+      );
     case "bravo":
       return (
         <g className="ra-glow">
@@ -394,15 +402,28 @@ function Effect({ kind, color }) {
 
 /** V8.2: olhos seguindo o mouse (suave; a velocidade vem de Personalizar). Só nos avatares grandes. */
 // V8.4.0: brincadeiras quando parado (só visual, sem som)
-export const FUN_AFTER_MS = 90_000; // parado 1 min e meio: começam as brincadeiras
-export const SLEEP_AFTER_MS = 6 * 60_000; // parado 6 min: cochila
-export const ANTICS = ["olhar", "piscando", "bocejo"];
+// V8.6.0: começam mais cedo, são mais variadas e (no app do Windows) contam o tempo parado do PC inteiro
+export const FUN_AFTER_MS = 25_000; // parado 25 s: começam as brincadeiras
+export const SLEEP_AFTER_MS = 8 * 60_000; // parado 8 min: cochila
+export const ANTICS = ["olhar", "piscando", "bocejo", "pulinho", "feliz"];
 
 /** A brincadeira da vez: "dormindo" depois de muito tempo; antes disso, uma das ANTICS (sorteada) ou nada. */
 export function pickAntic(idleMs, rnd = Math.random()) {
   if (idleMs >= SLEEP_AFTER_MS) return "dormindo";
   if (idleMs < FUN_AFTER_MS || rnd < 0.4) return null;
   return ANTICS[Math.floor(((rnd - 0.4) / 0.6) * ANTICS.length) % ANTICS.length];
+}
+
+/** Quanto tempo (ms) o PC está parado: no app do Windows vem do próprio Windows (o mouse quase nunca passa por
+ *  cima da ilha); no navegador, desde o último movimento nesta página. */
+async function idleFor(lastLocal) {
+  try {
+    const sec = await window.pywebview?.api?.idle_seconds?.();
+    if (typeof sec === "number" && sec >= 0) return sec * 1000;
+  } catch {
+    /* sem o app: usa a página */
+  }
+  return Date.now() - lastLocal;
 }
 
 function useIdleFun(enabled) {
@@ -415,23 +436,28 @@ function useIdleFun(enabled) {
     let last = Date.now();
     let next = 0;
     let undo = 0;
+    let alive = true;
     const wake = () => {
       last = Date.now();
       setAntic((a) => (a ? null : a));
     };
-    const tick = () => {
-      const a = isLite() ? null : pickAntic(Date.now() - last);
+    const tick = async () => {
+      const idle = await idleFor(last);
+      if (!alive) return;
+      if (idle < FUN_AFTER_MS) setAntic((a) => (a === "dormindo" ? null : a)); // mexeu no PC: acorda
+      const a = isLite() ? null : pickAntic(idle);
       if (a) {
         setAntic(a);
         clearTimeout(undo);
         if (a !== "dormindo") undo = setTimeout(() => setAntic((c) => (c === a ? null : c)), 2600);
       }
-      next = setTimeout(tick, 12_000 + Math.random() * 18_000);
+      next = setTimeout(tick, 7_000 + Math.random() * 11_000);
     };
-    next = setTimeout(tick, 15_000);
+    next = setTimeout(tick, 8_000);
     const evs = ["mousemove", "keydown", "pointerdown", "wheel"];
     evs.forEach((e) => window.addEventListener(e, wake, { passive: true }));
     return () => {
+      alive = false;
       clearTimeout(next);
       clearTimeout(undo);
       evs.forEach((e) => window.removeEventListener(e, wake));
@@ -473,10 +499,12 @@ function useLook(enabled, speed) {
   return [ref, enabled ? look : { x: 0, y: 0 }];
 }
 
-export default function RoboAvatar({ avatar = DEFAULT_AVATAR, tema = null, state = "idle", size = 64, className = "", still = false }) {
+export default function RoboAvatar({ avatar = DEFAULT_AVATAR, tema = null, state = "idle", size = 64, className = "", still = false, tight = false }) {
   const a = withTheme(avatar, tema);
   const antic = useIdleFun(!still && a.brincadeiras !== false && state === "idle"); // `still`: miniaturas (guarda-roupa)
-  const face = state === "idle" && antic && antic !== "olhar" ? antic : faceFor(state, a.expressao);
+  const FACE_ANTICS = ["piscando", "bocejo", "feliz", "dormindo"];
+  const face = state === "idle" && FACE_ANTICS.includes(antic) ? antic : faceFor(state, a.expressao);
+  const alive = !still && a.brincadeiras !== false && state === "idle"; // V8.6.0: "respira" de leve quando parado
   const gid = useId().replace(/:/g, "");
   const shade = `ra-shade-${gid}`;
   const gloss = `ra-gloss-${gid}`;
@@ -484,7 +512,7 @@ export default function RoboAvatar({ avatar = DEFAULT_AVATAR, tema = null, state
   const eyes = `translate(${(look.x * 6).toFixed(2)} ${(look.y * 4).toFixed(2)})`;
   const showAntenna = a.antena !== false && ANTENNA_HATS.includes(a.chapeu);
   return (
-    <svg ref={ref} className={`ra ra-${face}${a.piscar === false ? " ra-noblink" : ""}${antic === "olhar" ? " ra-antic-olhar" : ""} ${className}`} width={size} height={size} viewBox="0 -10 120 132" overflow="visible" role="img" aria-label={`Avatar do JARVIS: ${face}`}>
+    <svg ref={ref} className={`ra ra-${face}${a.piscar === false ? " ra-noblink" : ""}${antic === "olhar" ? " ra-antic-olhar" : ""}${antic === "pulinho" ? " ra-antic-pulinho" : ""}${alive ? " ra-alive" : ""} ${className}`} width={size} height={size} viewBox={tight ? "2 16 116 96" : "0 -10 120 132"} overflow="visible" role="img" aria-label={`Avatar do JARVIS: ${face}`}>
       <defs>
         <linearGradient id={shade} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor="#fff" stopOpacity="0.55" />
@@ -497,6 +525,7 @@ export default function RoboAvatar({ avatar = DEFAULT_AVATAR, tema = null, state
         </linearGradient>
       </defs>
       <ellipse className="ra-shadow" cx="60" cy="116" rx="34" ry="5" fill="#000" opacity="0.22" />
+      <g className="ra-body">
       {a.efeito === "brilho" && <Effect kind="brilho" color={a.olhos} />}
       <OutfitBack kind={a.roupa} accent={a.olhos} />
       {showAntenna && (
@@ -524,6 +553,7 @@ export default function RoboAvatar({ avatar = DEFAULT_AVATAR, tema = null, state
       <OutfitFront kind={a.roupa} />
       <Hat kind={a.chapeu} accent={a.olhos} />
       {a.efeito !== "brilho" && <Effect kind={a.efeito} color={a.olhos} />}
+      </g>
     </svg>
   );
 }

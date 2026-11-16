@@ -2,6 +2,20 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 8.6.0 — 16 de novembro de 2026
+
+**😈 Modo Pac-Man, avatar "vivo" e avatar maior na pílula**
+- **Modo Pac-Man:** cutuque o avatar 5 vezes seguidas, no topo da ilha aberta ou na barra lateral do app. Ele fica surpreso, depois bravo e, na 5ª:
+  - sai da ilha numa janelinha transparente e **corre atrás do seu mouse** com a boca abrindo e fechando, virando para o lado certo;
+  - começa devagar (dá para fugir um pouco), vai acelerando e sempre alcança em até 12 s;
+  - quando pega, **"come" o mouse**: segura o cursor na boca por 2,6 s mastigando ("nhac nhac!" e migalhas);
+  - depois devolve o mouse, feliz, e volta para a ilha;
+  - **Esc** para tudo na hora e solta o mouse;
+  - no navegador (fora do app do Windows), ele só fica bravo e avisa.
+- **Avatar "vivo" quando parado:** ele "respira" de leve o tempo todo. As brincadeiras começam bem mais cedo (25 s parado, antes era 1 min 30 s) e ganharam o **pulinho** e o **sorriso**. Ele cochila depois de 8 min.
+- **Brincadeiras na ilha:** no app do Windows, o tempo parado agora é o do **PC inteiro** (o Windows informa a última vez que você mexeu no mouse ou no teclado). Antes a ilha só via o mouse passando por cima dela.
+- **Avatar maior na pílula:** a ilha ficou um pouco mais alta (56 px na média) e o avatar aparece em **close no rosto** (50 px), para dar para ver a expressão.
+
 ## 8.5.0 — 16 de novembro de 2026
 
 **🔄 Atualização automática, pílula nova da ilha, zoom e tamanho do painel**

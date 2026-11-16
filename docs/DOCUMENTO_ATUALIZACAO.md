@@ -565,6 +565,7 @@ Itens que já estavam na lista e continuam **em espera**:
 ---
 
 ## Anotações da conversa
+- **16/11:** 8.6.0 (pedidos do Patrick): modo Pac-Man (irritar o avatar faz ele correr atrás do mouse, comer e devolver), avatar "vivo" quando parado e avatar maior na pílula.
 - **16/11:** 8.5.0 (pedidos do Patrick): atualização automática (sem CMD), pílula da ilha nova, "Pensando…" que não fica mais preso, zoom e tamanho do painel da ilha.
 - **16/11:** Ideia 10 desenhada e implementada (8.4.0): modo leve automático, voz pela Groq na ilha e no app, brincadeiras do avatar e piscar liga/desliga. Antes, a 8.3.2 (revisão de erros, OneDrive e nuvem).
 - **16/11:** Ideia 9 (menus direto na ilha) desenhada: a ilha cresce para baixo, abre no Resumo do dia e tem Conversa, Tarefas, Lembretes, Música, Timers, Missões, Hábitos e Copiados. Também saiu a 8.2.4 (Iniciar-JARVIS.bat voltou a ligar o JARVIS).

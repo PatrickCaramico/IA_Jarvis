@@ -5,6 +5,7 @@ import { api } from "../utils/api.js";
 import { hexToRgb } from "../utils/desk.js";
 import { watchNewBuild } from "../utils/newBuild.js";
 import { useLiteMode } from "../utils/lite.js";
+import { startPacman, usePoke } from "../utils/poke.js";
 import "../island.css";
 
 // V8.0: a ILHA do app para Windows: pílula preta no topo da tela, sempre visível (como a "ilha" dos celulares).
@@ -18,6 +19,8 @@ import "../island.css";
 // Fecha no ✕, com Esc, clicando fora ou depois de 2 minutos parada.
 // Esta página é aberta só pelo app (?ilha=1); as funções do Windows vêm do window.pywebview.api.
 const IDLE_CLOSE_MS = 120000;
+// V8.6.0: o avatar da pílula bem maior, em close no rosto (dava para ver a expressão)
+const PILL_AVATAR = { pequena: 40, media: 50, grande: 60 };
 const DEDUPE_MS = 800;
 
 /** Toque avisado pelo app. O app avisa quando o botão DESCE (aí o clique real que vier é ignorado) e, se não foi
@@ -107,6 +110,7 @@ export default function IslandApp() {
     api("/api/profile").then((d) => setNames((n) => ({ ...n, user: d?.name || "" }))).catch(() => {});
   }, []);
 
+  const { mood, poke } = usePoke(() => { setOpen(false); startPacman(); }); // V8.6.0: irritou -> corre atrás do mouse
   const lite = useLiteMode(st?.desempenho?.leve || "auto"); // V8.4.0: modo leve -> atualiza mais devagar
   useEffect(() => {
     document.documentElement.classList.add("is-island");
@@ -215,7 +219,9 @@ export default function IslandApp() {
       <div className={`il-app il-${estado}`} style={style} role="dialog" aria-label="JARVIS na ilha">
         <div className="il-bar" data-il-drag title="Arraste para mover a ilha · dois cliques: volta ao centro"
           onDoubleClick={(e) => { if (e.target === e.currentTarget) pyApi().island_center?.(); }}>
-          <RoboAvatar avatar={st?.avatar} tema={st?.tema} state={face} size={24} />
+          <button type="button" className="il-poke" onClick={poke} title="Não cutuque o JARVIS… 😈" aria-label="Cutucar o JARVIS">
+            <RoboAvatar avatar={mood ? { ...st?.avatar, expressao: mood } : st?.avatar} tema={st?.tema} state={mood ? "idle" : face} size={30} tight still={Boolean(mood)} />
+          </button>
           <i className="il-dot" />
           <span className="il-bar-txt">{playing ? `♫ ${track.title}${track.artist ? ` · ${track.artist}` : ""}` : stateLabel}</span>
           {locked && <button type="button" className="il-locked" onClick={openMain}>🔒 Bloqueado: toque para desbloquear</button>}
@@ -245,7 +251,7 @@ export default function IslandApp() {
     <button type="button" className={`il il-${estado}${mode === "resposta" ? " is-open" : ""}`} style={style}
       onClick={() => setOpen(true)} title="Clique: abre o JARVIS aqui · arraste: move · dois cliques: janela grande">
       <span className="il-row">
-        <span className="il-face"><RoboAvatar avatar={st?.avatar} tema={st?.tema} state={face} size={mode === "resposta" ? 30 : 26} /></span>
+        <span className="il-face"><RoboAvatar avatar={st?.avatar} tema={st?.tema} state={face} size={PILL_AVATAR[st?.ilha?.tamanho] || PILL_AVATAR.media} tight /></span>
         {playing ? (
           <span className="il-txt il-music"><b className="il-eq"><i /><i /><i /><i /></b><span>{track.title}{track.artist ? ` · ${track.artist}` : ""}</span></span>
         ) : (
