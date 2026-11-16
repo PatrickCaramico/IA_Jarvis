@@ -1,7 +1,9 @@
 """V8.0: o app do JARVIS para Windows (ideia 6, Modo Desk).
 
 - Janela própria com o Modo Desk (sem barra do navegador).
-- A ILHA: uma barrinha sempre visível no topo da tela (avatar, hora, música e respostas). Tocar nela mostra a janela.
+- A ILHA: uma barrinha sempre visível no topo da tela (avatar, hora, música e respostas).
+  V8.1.3: o app abre SÓ com a ilha; a janela do JARVIS aparece quando você clica na ilha (ABRIR JARVIS ou dois
+  cliques) e, ao fechar no X, volta a esconder (a ilha continua). Para sair de vez: ⏻ SAIR na ilha.
 - Tecla de atalho para falar com o JARVIS de qualquer lugar (PageDown por padrão; muda em Configurações › Ilha).
 - Se o JARVIS não estiver rodando, liga sozinho (Iniciar-JARVIS.bat site, sem abrir o navegador).
 
@@ -12,6 +14,7 @@ oficial (assinado). Antes era um JARVIS.exe do PyInstaller, que o McAfee acusava
 from __future__ import annotations
 
 import json
+import logging
 import os
 import subprocess
 import sys
@@ -25,6 +28,9 @@ try:  # gerado pelo build (pasta do JARVIS neste PC e versão)
 except Exception:  # noqa: BLE001 - rodando direto do código
     JARVIS_ROOT = str(Path(__file__).resolve().parent.parent)
     VERSION = "dev"
+
+LOG_DIR = Path(os.getenv("APPDATA", ".")) / "JARVIS"
+log = logging.getLogger("jarvis.app")
 
 API = "http://127.0.0.1:8000"
 FRONT = "http://127.0.0.1:5173"
@@ -137,11 +143,37 @@ class Bridge:
         self.size = "media"
         self.mode = "mini"
         self.screen_w = 1920
+        self.quitting = False
 
     def show_main(self) -> None:
         if self.main:
             self.main.show()
             self.main.restore()
+
+    def hide_main(self) -> None:
+        if self.main:
+            self.main.hide()
+
+    def on_main_closing(self):
+        """X da janela: com a ilha ligada, só esconde (a ilha continua no topo). Devolver False cancela o fechamento."""
+        if self.quitting or not self.island:
+            return True
+        threading.Thread(target=self.hide_main, daemon=True).start()
+        return False
+
+    def quit(self) -> None:
+        """⏻ SAIR na ilha: fecha o app de vez (o JARVIS continua rodando no PC)."""
+        self.quitting = True
+        for w in (self.island, self.main):
+            try:
+                if w:
+                    w.destroy()
+            except Exception:  # noqa: BLE001
+                pass
+
+    def log(self, msg: str) -> None:
+        """A página da ilha registra problemas aqui (%APPDATA%\\JARVIS\\app.log)."""
+        log.info("ilha: %s", str(msg)[:300])
 
     def island_expand(self, open_: bool) -> None:  # 8.0 (ainda usado por versões antigas da página)
         self.island_mode("resposta" if open_ else "mini")
@@ -166,6 +198,55 @@ class Bridge:
         return VERSION
 
 
+def island_hit(pt: tuple[int, int], rect: tuple[int, int, int, int], scale: float) -> tuple[int, int] | None:
+    """Clique da tela (pixels reais) -> ponto dentro da página da ilha (pixels CSS), ou None se for fora."""
+    x, y = pt
+    left, top, right, bottom = rect
+    if not (left <= x < right and top <= y < bottom):
+        return None
+    scale = scale or 1
+    return int((x - left) / scale), int((y - top) / scale)
+
+
+def watch_island_clicks(bridge: Bridge) -> None:
+    """V8.1.3: garante o clique na ilha.
+
+    Em alguns PCs o WebView2 de uma janela pequena, sem moldura e "sempre no topo" não recebe o mouse. Aqui o
+    Windows avisa quando o botão esquerdo desce em cima da ilha e a página recebe o toque (ela ignora o clique
+    repetido se o WebView2 também receber, então não conta duas vezes).
+    """
+    if sys.platform != "win32":
+        return
+    import ctypes
+    from ctypes import wintypes
+
+    user32 = ctypes.windll.user32
+    was_down = False
+    while not bridge.quitting:
+        time.sleep(0.03)
+        down = bool(user32.GetAsyncKeyState(0x01) & 0x8000)  # VK_LBUTTON
+        if down and not was_down and bridge.island:
+            try:
+                hwnd = int(bridge.island.native.Handle.ToInt32())
+                pt = wintypes.POINT()
+                user32.GetCursorPos(ctypes.byref(pt))
+                under = user32.GetAncestor(user32.WindowFromPoint(pt), 2)  # GA_ROOT
+                if under == hwnd:
+                    r = wintypes.RECT()
+                    user32.GetWindowRect(hwnd, ctypes.byref(r))
+                    try:
+                        scale = user32.GetDpiForWindow(hwnd) / 96
+                    except Exception:  # noqa: BLE001
+                        scale = 1
+                    hit = island_hit((pt.x, pt.y), (r.left, r.top, r.right, r.bottom), scale)
+                    if hit:
+                        log.info("clique na ilha em %s", hit)
+                        bridge.island.evaluate_js(f"window.__jarvisIslandPress && window.__jarvisIslandPress({hit[0]}, {hit[1]})")
+            except Exception as exc:  # noqa: BLE001
+                log.info("clique na ilha falhou: %s", exc)
+        was_down = down
+
+
 def listen_hotkey(bridge: Bridge, name: str) -> None:
     """Tecla de atalho global (Windows): manda a janela do JARVIS começar a ouvir."""
     if sys.platform != "win32":
@@ -186,6 +267,13 @@ def listen_hotkey(bridge: Bridge, name: str) -> None:
 def main() -> None:
     import webview  # pywebview
 
+    try:
+        LOG_DIR.mkdir(parents=True, exist_ok=True)
+        logging.basicConfig(filename=str(LOG_DIR / "app.log"), level=logging.INFO, format="%(asctime)s %(message)s", encoding="utf-8")
+        log.info("app %s abrindo (pywebview %s)", VERSION, getattr(webview, "__version__", "?"))
+    except Exception:  # noqa: BLE001
+        pass
+
     if not jarvis_up() and not start_jarvis():
         webview.create_window("JARVIS", html=(
             "<body style='background:#0b0d12;color:#eef2f7;font-family:sans-serif;display:grid;place-items:center;height:100vh;margin:0'>"
@@ -196,17 +284,21 @@ def main() -> None:
     cfg = (get_json(f"{API}/api/desk") or {}).get("ilha") or {}
     bridge = Bridge()
     bridge.size = cfg.get("tamanho", "media")
+    island_on = cfg.get("ligada", True)
+    # V8.1.3: com a ilha ligada, a janela do JARVIS começa escondida e só aparece quando você clica na ilha
     bridge.main = webview.create_window("JARVIS", f"{FRONT}/?desk=1&app=windows", width=1280, height=820, min_size=(900, 600),
-                                        background_color="#0b0d12", js_api=bridge, text_select=True)
-    if cfg.get("ligada", True):
+                                        background_color="#0b0d12", js_api=bridge, text_select=True, hidden=island_on)
+    bridge.main.events.closing += bridge.on_main_closing
+    if island_on:
         screens = webview.screens
         bridge.screen_w = screens[0].width if screens else 1920
         x, y, w, h = island_position(bridge.screen_w, bridge.size)
         # V8.1.2: sem transparent (o clique atravessava); a pílula é recortada no shown (SetWindowRgn)
         bridge.island = webview.create_window("Ilha do JARVIS", f"{FRONT}/?ilha=1", x=x, y=y, width=w, height=h, frameless=True,
                                               on_top=True, resizable=False, easy_drag=False, background_color="#000000",
-                                              js_api=bridge, focus=True)
+                                              js_api=bridge, focus=True, min_size=(120, 30))  # o padrão (200x100) esticava a ilha
         bridge.island.events.shown += lambda: shape_window(bridge.island, island_radius("mini", h))
+        threading.Thread(target=watch_island_clicks, args=(bridge,), daemon=True).start()
     threading.Thread(target=listen_hotkey, args=(bridge, cfg.get("atalho", "PageDown")), daemon=True).start()
     os.environ.setdefault("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS", "--autoplay-policy=no-user-gesture-required")
     webview.start(private_mode=False, user_agent=USER_AGENT, storage_path=str(Path(os.getenv("APPDATA", ".")) / "JARVIS" / "webview"))

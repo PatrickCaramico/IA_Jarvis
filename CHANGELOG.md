@@ -2,6 +2,22 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 8.1.3 — 16 de novembro de 2026
+
+**🏝 App para Windows: abre só pela ilha, e o clique na ilha é garantido**
+- **A janela do JARVIS só aparece quando você pede pela ilha:**
+  - pelo botão **🖥 ABRIR JARVIS** do cartão;
+  - com **dois cliques** na pílula;
+  - pela tecla de atalho para falar.
+- Ao abrir o app, aparece só a ilha no topo da tela.
+- Fechar a janela no **X** só a esconde; a ilha continua.
+- Para sair de vez, use **⏻** no cartão da ilha. O JARVIS continua rodando no PC.
+- **Corrigido:** em alguns PCs, o WebView2 de uma janela pequena, sem moldura e sempre no topo não recebia o mouse.
+  - Agora o app também percebe o clique pelo Windows, quando o botão do mouse desce em cima da ilha, e repassa para ela.
+  - O clique não conta duas vezes.
+- **Corrigido:** a ilha ficava esticada com 100 px de altura, que é o tamanho mínimo padrão de janela do pywebview.
+- **Diagnóstico:** o app grava um registro em `%APPDATA%\JARVIS\app.log` (cliques na ilha e erros), para investigar se algo ainda falhar.
+
 ## 8.1.2 — 16 de novembro de 2026
 
 **🏝 Ilha do app para Windows: agora dá para clicar (e ela abre, como a ilha dinâmica)**
