@@ -51,7 +51,8 @@ import WaterAutoClose from "./components/WaterAutoClose.jsx";
 import NotificationTray from "./components/NotificationTray.jsx";
 import lazyComponent from "./utils/lazyComponent.jsx";
 import OfflineBanner from "./components/ui/OfflineBanner.jsx";
-import ProgressBar, { useCreepingProgress } from "./components/ProgressBar.jsx";
+import { useCreepingProgress } from "./components/ProgressBar.jsx";
+import UpdateSteps from "./components/UpdateSteps.jsx";
 import WelcomeLogo from "./components/WelcomeLogo.jsx";
 import { APP_VERSION } from "./utils/version.js";
 import { tabTitle } from "./utils/tabTitle.js";
@@ -72,6 +73,7 @@ const FaceRecheckPanel = lazyComponent(() => import("./components/FaceRecheckPan
 const GuestScreen = lazyComponent(() => import("./components/GuestScreen.jsx"));
 const GodsEye = lazyComponent(() => import("./godseye/GodsEye.jsx"));
 const DeskApp = lazyComponent(() => import("./components/DeskApp.jsx")); // V8.0: Modo Desk
+// V8.1.7: tela de atualização (import direto: durante o reinício o servidor da interface some)
 const DesktopDownload = lazyComponent(() => import("./components/DesktopDownload.jsx")); // V8.0: JARVIS.exe
 const SettingsPanel = lazyComponent(() => import("./components/SettingsPanel.jsx"));
 const DeviceTestModal = lazyComponent(() => import("./components/DeviceTestModal.jsx"));
@@ -1169,32 +1171,43 @@ export default function App() {
       return;
     }
     const base = res.changed ? `Versão nova baixada (${res.after}).` : "Já estava na versão mais nova.";
-    setUpdating({ message: `${base} Avisando e preparando o reinício…`, stage: "Preparando", target: 50 });
+    // V8.1.7: a tela mostra as etapas de verdade (o PC conta em /api/system/update/progress)
+    const info = { antes: res.before, depois: res.after, changed: res.changed, notas: [] };
+    setUpdating({ message: `${base} Preparando o reinício…`, stage: "Preparando", target: 45, etapa: "baixado", info });
     const oldBoot = res.boot_id;
     const started = Date.now();
     let wentDown = false;
+    const STEP = { baixado: ["Preparando", 45], interface: ["Montando a interface nova", 65], reiniciando: ["Reiniciando", 82] };
     const poll = setInterval(async () => {
       try {
         const r = await fetch(`${API_URL}/api/health`, { cache: "no-store" });
         const h = await r.json();
         if (h.boot_id && h.boot_id !== oldBoot) {
           clearInterval(poll);
-          setUpdating({ message: "Versão nova no ar. Carregando a central…", stage: "Carregando", target: 100 });
+          setUpdating((u) => ({ ...u, message: "Versão nova no ar. Carregando a central…", stage: "Pronto", target: 100, etapa: "pronto" }));
           setTimeout(() => window.location.reload(), 900); // pega também a interface nova
           return;
+        }
+        if (!wentDown) {
+          const p = await api("/api/system/update/progress", { timeout: 4000 }).catch(() => null);
+          if (p && STEP[p.etapa]) {
+            const [stage, target] = STEP[p.etapa];
+            setUpdating((u) => ({ ...u, message: p.detalhe || u.message, stage, target, etapa: p.etapa,
+              info: { ...u.info, notas: p.notas?.length ? p.notas : u.info?.notas || [] } }));
+          }
         }
       } catch {
         // reiniciando: o backend some por alguns segundos
         if (!wentDown) {
           wentDown = true;
-          setUpdating({ message: `${base} Reiniciando os sistemas…`, stage: "Reiniciando", target: 85 });
+          setUpdating((u) => ({ ...u, message: "Reiniciando os sistemas…", stage: "Reiniciando", target: 88, etapa: "reiniciando" }));
         }
       }
       if (Date.now() - started > 4 * 60 * 1000) {
         clearInterval(poll);
-        setUpdating({ message: "Está demorando mais que o normal. Se não voltar, abra o Iniciar-JARVIS.bat no PC.", slow: true, stage: "Demorando", target: 90 });
+        setUpdating((u) => ({ ...u, message: "Está demorando mais que o normal. Se não voltar, abra o Iniciar-JARVIS.bat no PC.", slow: true, stage: "Demorando", target: 90 }));
       }
-    }, 1500);
+    }, 1000);
   }, []);
   const updatePct = useCreepingProgress(updating?.target ?? 0, updating?.target === 100); // no fim, salta para 100
 
@@ -2774,10 +2787,7 @@ export default function App() {
         <div className="ls-status-box">
           {updating ? (
             <>
-              <div className="ls-title is-amber">ATUALIZANDO O JARVIS</div>
-              <ProgressBar pct={updatePct} label={updating.stage || "Atualizando"} />
-              <p className="ls-hint" style={{ margin: "8px auto", maxWidth: "34rem" }}>{updating.message}</p>
-              {!updating.slow && <p className="ls-hint ls-boot-wait" style={{ marginTop: "10px" }}>Volto em instantes e faço a verificação do seu rosto…</p>}
+              <UpdateSteps updating={updating} pct={updatePct} current={APP_VERSION} />
             </>
           ) : bootError && bootOffline && BACKEND_ON_THIS_PC && !IS_JARVIS_APP && returningUser ? (
             <>

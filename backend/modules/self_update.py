@@ -5,6 +5,10 @@
    se ela mudou e sobe tudo de novo, sem abrir aba nova (a central aberta reconecta sozinha).
 
 BOOT_ID muda a cada início do backend: a central usa isso para saber que a versão nova já subiu.
+
+V8.1.7: mais rápido e com o andamento de verdade (PROGRESS, lido pela tela em /api/system/update/progress):
+- a interface nova é compilada AQUI, com o JARVIS ainda ligado (antes era depois de desligar, no .bat);
+- o aviso por voz não segura mais o reinício (antes esperava a fala inteira, e a voz falhando atrasava tudo).
 """
 from __future__ import annotations
 
@@ -59,6 +63,56 @@ def pull() -> dict:
     log.info("Atualização: %s -> %s", before, after)
     return {"ok": True, "changed": changed, "before": before, "after": after,
             "message": f"Atualizado de {before} para {after}." if changed else "Já estava na versão mais nova."}
+
+
+# ------------------------------------------------------------------ V8.1.7: andamento
+FRONTEND = ROOT / "frontend"
+BUILD_TIMEOUT = 600
+PROGRESS: dict = {"etapa": "", "detalhe": "", "inicio": 0.0, "antes": "", "depois": "", "notas": []}
+
+
+def set_progress(etapa: str, detalhe: str = "", **extra) -> None:
+    PROGRESS.update(etapa=etapa, detalhe=detalhe, **extra)
+    if etapa == "baixando":
+        PROGRESS["inicio"] = time.time()
+
+
+def progress() -> dict:
+    out = dict(PROGRESS)
+    out["segundos"] = round(time.time() - out["inicio"]) if out.get("inicio") else 0
+    return out
+
+
+def frontend_stale() -> bool:
+    """A interface compilada (frontend/dist) está atrás do código? (a mesma conta do serve_frontend.py --stale)"""
+    index = FRONTEND / "dist" / "index.html"
+    if not index.exists():
+        return True
+    built = index.stat().st_mtime
+    for name in ("src", "public", "index.html", "package.json", "vite.config.js"):
+        path = FRONTEND / name
+        files = [path] if path.is_file() else list(path.rglob("*")) if path.is_dir() else []
+        if any(f.is_file() and f.stat().st_mtime > built for f in files):
+            return True
+    return False
+
+
+def build_frontend() -> bool:
+    """Compila a interface nova antes de reiniciar (o .bat vê que está em dia e pula essa parte)."""
+    npm = shutil.which("npm.cmd") or shutil.which("npm")
+    if not npm or not (FRONTEND / "node_modules").exists():
+        return False
+    try:
+        r = subprocess.run(  # noqa: S603 - comando fixo
+            [npm, "run", "build"], cwd=str(FRONTEND), capture_output=True, text=True, encoding="utf-8",
+            errors="replace", timeout=BUILD_TIMEOUT, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+        )
+    except (subprocess.TimeoutExpired, OSError) as exc:
+        log.warning("Build da interface antes de reiniciar falhou: %s", exc)
+        return False
+    if r.returncode != 0:
+        log.warning("Build da interface falhou: %s", (r.stderr or r.stdout)[-400:])
+    return r.returncode == 0
 
 
 def restart() -> bool:

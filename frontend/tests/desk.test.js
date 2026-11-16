@@ -68,3 +68,14 @@ test("V8.1.3: ilha: o toque avisado pelo app clica no botão e o clique real log
   off();
   assert.equal(win.__jarvisIslandPress, undefined);
 });
+
+test("V8.1.7: tela de atualização: etapas na ordem certa", async () => {
+  const src = (await import("node:fs")).readFileSync(new URL("../src/components/UpdateSteps.jsx", import.meta.url), "utf8");
+  const order = new Function(`${src.match(/const ORDER = [^;]+;/)[0]} return ORDER;`)();
+  const body = src.match(/export function stepState\(index, etapa\) \{([\s\S]*?)\n\}/)[1];
+  const stepState = new Function("index", "etapa", "ORDER", body.replace(/ORDER/g, "ORDER"));
+  const st = (i, e) => stepState(i, e, order);
+  assert.deepEqual([0, 1, 2, 3].map((i) => st(i, "baixado")), ["done", "now", "next", "next"]);
+  assert.deepEqual([0, 1, 2, 3].map((i) => st(i, "reiniciando")), ["done", "done", "now", "next"]);
+  assert.deepEqual([0, 1, 2, 3].map((i) => st(i, "pronto")), ["done", "done", "done", "done"]);
+});
