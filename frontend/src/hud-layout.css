@@ -1355,3 +1355,20 @@
   .agh-grid { grid-auto-rows: max-content; align-content: start; }
   .agh-grid > .agh-chat { min-height: 360px; }
 }
+
+/* V8.6.1: telas estreitas (até 1100 px): uma coluna só que rola, cada parte com a altura dela. Antes a grade
+   espremia as colunas (35 px) e os painéis ficavam uns por cima dos outros. */
+@media (max-width: 1100px) {
+  .hl-root { display: flex !important; flex-direction: column; overflow-y: auto; }
+  .hl-root > * { flex: none; }
+  .hl-root > .hl-top { order: 0; }
+  .hl-root > .hl-col { height: auto; min-height: 0; overflow: visible; }
+  .hl-col > * { flex: none !important; }
+  .hl-center { min-height: min(420px, 62vh); }
+  .hl-left-tab-trigger, .hl-right-tab-trigger { display: none !important; }
+}
+/* V8.6.1: cabeçalho em telas estreitas: quebra em linhas em vez de cortar o perfil e o BLOQUEAR */
+@media (max-width: 1000px) {
+  .hl-root > .hl-top { grid-template-columns: minmax(0, 1fr) auto; row-gap: 8px; }
+  .hl-root > .hl-top > :last-child { grid-column: 1 / -1; justify-self: center; flex-wrap: wrap; justify-content: center; }
+}
