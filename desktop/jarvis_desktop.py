@@ -133,17 +133,35 @@ def _user32():
 def focus_window(hwnd: int) -> bool:
     """V8.3.0: traz a ilha para a frente com o foco do teclado (para digitar nos menus).
 
-    O Windows só deixa um programa pegar o foco se ele "acabou de receber uma tecla": apertar e soltar o Alt
-    (sem efeito visível) libera o SetForegroundWindow."""
+    V8.3.2: o Windows só deixa pegar o foco quem está "ligado" à janela da frente; aqui a ilha se liga
+    por um instante à fila de entrada dela (AttachThreadInput), pega o foco e se solta. Antes apertava o Alt
+    de mentira, o que podia abrir o menu do programa que estava na frente."""
     if sys.platform != "win32" or not hwnd:
         return False
     try:
+        import ctypes
+        from ctypes import wintypes
+
         u = _user32()
-        if int(u.GetForegroundWindow() or 0) == hwnd:
+        k32 = ctypes.WinDLL("kernel32")
+        fg = u.GetForegroundWindow()
+        if int(fg or 0) == hwnd:
             return True
-        u.keybd_event(0x12, 0, 0, 0)  # VK_MENU (Alt) desce
-        u.keybd_event(0x12, 0, 2, 0)  # ... e sobe (KEYEVENTF_KEYUP)
-        return bool(u.SetForegroundWindow(hwnd))
+        u.GetWindowThreadProcessId.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.DWORD)]
+        u.GetWindowThreadProcessId.restype = wintypes.DWORD
+        u.AttachThreadInput.argtypes = [wintypes.DWORD, wintypes.DWORD, wintypes.BOOL]
+        u.BringWindowToTop.argtypes = [wintypes.HWND]
+        u.SetFocus.argtypes = [wintypes.HWND]
+        mine = k32.GetCurrentThreadId()
+        other = u.GetWindowThreadProcessId(fg, None) if fg else 0
+        attached = bool(other and other != mine and u.AttachThreadInput(mine, other, True))
+        try:
+            u.BringWindowToTop(hwnd)
+            ok = bool(u.SetForegroundWindow(hwnd))
+        finally:
+            if attached:
+                u.AttachThreadInput(mine, other, False)
+        return ok
     except Exception as exc:  # noqa: BLE001
         log.info("foco na ilha falhou: %s", exc)
         return False
@@ -172,7 +190,11 @@ def copy_to_clipboard(text: str) -> bool:
     try:
         u.EmptyClipboard()
         h = k32.GlobalAlloc(0x0002, len(data))  # GMEM_MOVEABLE
+        if not h:
+            return False
         ptr = k32.GlobalLock(h)
+        if not ptr:
+            return False
         ctypes.memmove(ptr, data, len(data))
         k32.GlobalUnlock(h)
         return bool(u.SetClipboardData(13, h))  # CF_UNICODETEXT
@@ -341,6 +363,7 @@ def watch_island_clicks(bridge: Bridge) -> None:
     user32 = _user32()
     user32.GetAsyncKeyState.restype = ctypes.c_short
     was_down, last_click, shaped = False, 0.0, False
+    last_mode = "mini"  # V8.3.2: o modo da ilha no PRIMEIRO clique (o 1º clique já abre os menus)
     started = time.time()
     while not bridge._quitting:
         time.sleep(0.03)
@@ -365,13 +388,15 @@ def watch_island_clicks(bridge: Bridge) -> None:
                     hit = None
                 if hit and (int(under) == hwnd or not under):
                     now = time.time()
-                    # V8.3.0: com os menus abertos, cliques rápidos são cliques nos menus (não abrem o JARVIS)
-                    if bridge._mode != "painel" and now - last_click < 0.45:
+                    # V8.3.0: com os menus abertos, cliques rápidos são cliques nos menus (não abrem o JARVIS).
+                    # V8.3.2: vale o modo do 1º clique: dois cliques na pílula fechada ainda abrem o JARVIS.
+                    if last_mode != "painel" and now - last_click < 0.45:
                         log.info("dois cliques na ilha: abrindo o JARVIS")
+                        bridge._island.evaluate_js("window.__jarvisIslandOutside && window.__jarvisIslandOutside()")
                         bridge.show_main()
                         last_click = 0.0
                     else:
-                        last_click = now
+                        last_click, last_mode = now, bridge._mode
                         log.info("clique na ilha em %s", hit)
                         bridge._island.evaluate_js(f"window.__jarvisIslandPress && window.__jarvisIslandPress({hit[0]}, {hit[1]})")
                 elif hit:

@@ -16,6 +16,7 @@ import re
 from datetime import date
 
 from config import settings
+from core.safe_io import replace_file
 from modules import desk
 
 _PATH = settings.DATA_DIR / "missoes.json"
@@ -105,7 +106,7 @@ def _save(data: dict) -> None:
     _PATH.parent.mkdir(parents=True, exist_ok=True)
     tmp = _PATH.with_suffix(".tmp")
     tmp.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
-    tmp.replace(_PATH)
+    replace_file(tmp, _PATH)  # V8.3.2: resiste ao OneDrive
 
 
 def _pick(pool: list, rng: random.Random, avoid: set) -> tuple:

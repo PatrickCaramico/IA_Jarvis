@@ -118,3 +118,5 @@ html.is-island, html.is-island body, html.is-island #root { margin: 0; height: 1
 .ilp-hint { margin: 0; color: rgba(248, 250, 252, 0.75); font-size: 12px; font-weight: 500; }
 .il.is-panel .il-actions { margin-top: 0; }
 @media (prefers-reduced-motion: reduce) { .ilp-body, .ilp-msg.is-live, .ilp-add button.is-on { animation: none; } }
+.ilp-locked { all: unset; box-sizing: border-box; cursor: pointer; padding: 8px 12px; border-radius: 12px; background: rgba(250, 204, 21, 0.15); color: #fde68a; font-size: 12px; font-weight: 600; }
+.ilp-locked:hover { background: rgba(250, 204, 21, 0.25); }

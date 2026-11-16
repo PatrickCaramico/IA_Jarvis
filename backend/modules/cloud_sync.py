@@ -13,6 +13,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import time
 from datetime import datetime, timedelta
 from typing import Any
 
@@ -305,10 +306,38 @@ def _places() -> dict:
         return {}
 
 
+# V8.3.2: no PC do Patrick a conexão segura com o Netlify às vezes é cortada no meio ("SSL EOF", o antivírus
+# olhando a conexão). Agora a sincronização usa uma conexão reaproveitada e tenta de novo (até 3 vezes, com
+# uma pausa curta) antes de desistir da rodada. A rodada é segura de repetir: o PC só confirma o que aplicou.
+RETRY_DELAYS_S = (1.5, 4.0)
+_session: requests.Session | None = None
+
+
+def _http() -> requests.Session:
+    global _session
+    if _session is None:
+        _session = requests.Session()
+    return _session
+
+
+def _request(method: str, sleep=time.sleep, **kwargs) -> requests.Response:
+    """GET/POST na nuvem com nova tentativa quando a conexão cai (SSL cortado, reset, tempo esgotado)."""
+    global _session
+    for attempt in range(len(RETRY_DELAYS_S) + 1):
+        try:
+            return _http().request(method, _base(), timeout=15, **kwargs)
+        except (requests.exceptions.SSLError, requests.exceptions.ConnectionError, requests.exceptions.Timeout):
+            _session = None  # conexão estragada: abre outra
+            if attempt == len(RETRY_DELAYS_S):
+                raise
+            sleep(RETRY_DELAYS_S[attempt])
+    raise RuntimeError("inalcançável")
+
+
 def sync_once() -> dict:
     """Uma rodada completa (bloqueante: roda numa thread)."""
     headers = {"X-Jarvis-Nuvem": _key(), "Content-Type": "application/json"}
-    r = requests.get(_base(), headers=headers, timeout=15)
+    r = _request("GET", headers=headers)
     r.raise_for_status()
     data = r.json()
     applied = 0
@@ -318,7 +347,7 @@ def sync_once() -> dict:
                 applied += 1
         except Exception as exc:  # noqa: BLE001 - uma operação ruim não trava as outras
             log.warning("Operação da nuvem ignorada (%s): %s", op.get("op"), exc)
-    r = requests.post(_base(), headers=headers, json={"ack": data.get("last_id", 0), "snapshot": snapshot()}, timeout=15)
+    r = _request("POST", headers=headers, json={"ack": data.get("last_id", 0), "snapshot": snapshot()})
     r.raise_for_status()
     if applied:
         log.info("Modo nuvem: %d mudança(s) do celular aplicada(s) no PC.", applied)

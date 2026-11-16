@@ -25,6 +25,7 @@ from typing import Any, Dict, Optional
 from urllib.parse import quote, quote_plus, urlparse
 
 from config import settings
+from core.safe_io import replace_file
 from services import http_client
 
 log = logging.getLogger("jarvis.sports")
@@ -148,7 +149,7 @@ def save_fan_cache(data: Dict[str, Any]) -> None:
         tmp = CACHE_FILE.with_suffix(".tmp")
         with open(tmp, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
-        tmp.replace(CACHE_FILE)
+        replace_file(tmp, CACHE_FILE)  # V8.3.2: o OneDrive prendia o arquivo ("Acesso negado")
     except Exception as exc:  # noqa: BLE001
         log.warning("Falha ao salvar cache de partidas: %s", exc)
 

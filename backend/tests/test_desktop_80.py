@@ -136,7 +136,8 @@ def test_island_panel_v830():
         assert d.copy_to_clipboard("oi") is False and b.copy_text("oi") is False
     src = (Path(d.__file__)).read_text(encoding="utf-8")
     # com os menus abertos, cliques rápidos não abrem o JARVIS e clicar fora fecha
-    assert 'bridge._mode != "painel" and now - last_click' in src
+    assert 'last_mode != "painel" and now - last_click' in src and "last_click, last_mode = now, bridge._mode" in src
+    assert "keybd_event" not in src and "AttachThreadInput" in src  # V8.3.2: foco sem apertar o Alt de mentira
     assert "__jarvisIslandOutside" in src
 
 

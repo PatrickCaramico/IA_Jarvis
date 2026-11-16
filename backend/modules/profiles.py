@@ -24,6 +24,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 from config import settings
+from core.safe_io import replace_file
 
 log = logging.getLogger("jarvis.profiles")
 
@@ -83,7 +84,7 @@ def _save(data: dict[str, Any]) -> None:
     REGISTRY_PATH.parent.mkdir(parents=True, exist_ok=True)
     tmp = REGISTRY_PATH.with_suffix(".tmp")
     tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
-    tmp.replace(REGISTRY_PATH)
+    replace_file(tmp, REGISTRY_PATH)  # V8.3.2: resiste ao OneDrive
 
 
 def _point_modules_to(profile_id: str) -> None:
