@@ -99,32 +99,73 @@ def island_radius(mode: str, height: int) -> int:
     return height if mode == "mini" else 44
 
 
-def shape_window(window, radius: int) -> None:
-    """V8.1.2: recorta a janela da ilha em formato de pílula (SetWindowRgn).
+ISLAND_TITLE = "Ilha do JARVIS"
 
-    Antes a ilha usava janela "transparente" (cor-chave do Windows): com o WebView2, o clique atravessava a ilha
-    e ia para o que estava atrás. Agora a janela é normal (100% clicável) e só o formato é recortado.
-    """
+
+def _user32():
+    """user32 com os tipos certos (HWND de 64 bits não pode virar int de 32)."""
+    import ctypes
+    from ctypes import wintypes
+
+    u = ctypes.WinDLL("user32", use_last_error=True)
+    u.FindWindowW.argtypes = [wintypes.LPCWSTR, wintypes.LPCWSTR]
+    u.FindWindowW.restype = wintypes.HWND
+    u.GetWindowRect.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.RECT)]
+    u.WindowFromPoint.argtypes = [wintypes.POINT]
+    u.WindowFromPoint.restype = wintypes.HWND
+    u.GetAncestor.argtypes = [wintypes.HWND, wintypes.UINT]
+    u.GetAncestor.restype = wintypes.HWND
+    u.SetWindowRgn.argtypes = [wintypes.HWND, wintypes.HANDLE, wintypes.BOOL]
+    u.GetDpiForWindow.argtypes = [wintypes.HWND]
+    u.GetDpiForWindow.restype = wintypes.UINT
+    return u
+
+
+def island_hwnd(window=None) -> int:
+    """V8.1.4: acha a janela da ilha pelo título (Win32 puro, funciona de qualquer thread)."""
+    try:
+        h = _user32().FindWindowW(None, ISLAND_TITLE)
+        if h:
+            return int(h)
+    except Exception as exc:  # noqa: BLE001
+        log.info("FindWindow falhou: %s", exc)
+    try:
+        return int(window.native.Handle.ToInt64()) if window is not None else 0
+    except Exception as exc:  # noqa: BLE001
+        log.info("Handle da ilha indisponível: %s", exc)
+        return 0
+
+
+def shape_window(window, radius: int) -> bool:
+    """Recorta a janela da ilha em formato de pílula (SetWindowRgn). Devolve se conseguiu."""
     if sys.platform != "win32" or window is None:
-        return
+        return False
     try:
         import ctypes
         from ctypes import wintypes
 
-        hwnd = int(window.native.Handle.ToInt32())
-        user32, gdi32 = ctypes.windll.user32, ctypes.windll.gdi32
+        hwnd = island_hwnd(window)
+        if not hwnd:
+            log.info("recorte da ilha: janela não encontrada")
+            return False
+        user32 = _user32()
+        gdi32 = ctypes.WinDLL("gdi32")
+        gdi32.CreateRoundRectRgn.restype = wintypes.HANDLE
         rect = wintypes.RECT()
         user32.GetWindowRect(hwnd, ctypes.byref(rect))
         w, h = rect.right - rect.left, rect.bottom - rect.top
         try:
-            scale = user32.GetDpiForWindow(hwnd) / 96
+            scale = (user32.GetDpiForWindow(hwnd) or 96) / 96
         except Exception:  # noqa: BLE001 - Windows antigo
             scale = 1
-        r = min(int(radius * scale), h) if radius < 999 else h
+        r = min(int(radius * scale), h)
         rgn = gdi32.CreateRoundRectRgn(0, 0, w + 1, h + 1, r, r)
-        user32.SetWindowRgn(hwnd, rgn, True)
-    except Exception:  # noqa: BLE001 - sem recorte a ilha continua funcionando (só fica retangular)
-        pass
+        ok = bool(user32.SetWindowRgn(hwnd, rgn, True))
+        log.info("recorte da ilha %sx%s raio %s: %s", w, h, r, "ok" if ok else "falhou")
+        return ok
+    except Exception as exc:  # noqa: BLE001 - sem recorte a ilha continua funcionando (só fica retangular)
+        log.info("recorte da ilha falhou: %s", exc)
+        return False
 
 
 def hotkey_spec(name: str) -> tuple[int, int]:
@@ -146,6 +187,7 @@ class Bridge:
         self.quitting = False
 
     def show_main(self) -> None:
+        log.info("mostrando a janela do JARVIS")
         if self.main:
             self.main.show()
             self.main.restore()
@@ -183,6 +225,7 @@ class Bridge:
         if not self.island or mode not in ISLAND_MODES:
             return
         self.mode = mode
+        log.info("ilha: modo %s", mode)
         x, y, w, h = island_position(self.screen_w, self.size, mode)
         self.island.resize(w, h)
         self.island.move(x, y)
@@ -209,39 +252,54 @@ def island_hit(pt: tuple[int, int], rect: tuple[int, int, int, int], scale: floa
 
 
 def watch_island_clicks(bridge: Bridge) -> None:
-    """V8.1.3: garante o clique na ilha.
+    """V8.1.3/8.1.4: garante o clique na ilha, sem depender do WebView2 receber o mouse.
 
-    Em alguns PCs o WebView2 de uma janela pequena, sem moldura e "sempre no topo" não recebe o mouse. Aqui o
-    Windows avisa quando o botão esquerdo desce em cima da ilha e a página recebe o toque (ela ignora o clique
-    repetido se o WebView2 também receber, então não conta duas vezes).
+    - 1 clique em cima da ilha: a página recebe o toque (abre/fecha o cartão; ela ignora o clique repetido).
+    - 2 cliques rápidos: o próprio app mostra a janela do JARVIS (funciona mesmo se a página não responder).
+    O ponto é testado contra a janela da ilha achada pelo título (Win32), não pelo .NET.
     """
     if sys.platform != "win32":
         return
     import ctypes
     from ctypes import wintypes
 
-    user32 = ctypes.windll.user32
-    was_down = False
+    user32 = _user32()
+    user32.GetAsyncKeyState.restype = ctypes.c_short
+    was_down, last_click, shaped = False, 0.0, False
+    started = time.time()
     while not bridge.quitting:
         time.sleep(0.03)
+        if not shaped and time.time() - started > 1.5:  # o recorte de novo, depois que a janela existe de verdade
+            shaped = shape_window(bridge.island, 9999 if bridge.mode == "mini" else 44) or time.time() - started > 20
         down = bool(user32.GetAsyncKeyState(0x01) & 0x8000)  # VK_LBUTTON
         if down and not was_down and bridge.island:
             try:
-                hwnd = int(bridge.island.native.Handle.ToInt32())
+                hwnd = island_hwnd(bridge.island)
                 pt = wintypes.POINT()
                 user32.GetCursorPos(ctypes.byref(pt))
-                under = user32.GetAncestor(user32.WindowFromPoint(pt), 2)  # GA_ROOT
-                if under == hwnd:
-                    r = wintypes.RECT()
+                under = user32.GetAncestor(user32.WindowFromPoint(pt), 2) or 0  # GA_ROOT
+                r = wintypes.RECT()
+                if hwnd:
                     user32.GetWindowRect(hwnd, ctypes.byref(r))
                     try:
-                        scale = user32.GetDpiForWindow(hwnd) / 96
+                        scale = (user32.GetDpiForWindow(hwnd) or 96) / 96
                     except Exception:  # noqa: BLE001
                         scale = 1
                     hit = island_hit((pt.x, pt.y), (r.left, r.top, r.right, r.bottom), scale)
-                    if hit:
+                else:
+                    hit = None
+                if hit and (int(under) == hwnd or not under):
+                    now = time.time()
+                    if now - last_click < 0.45:
+                        log.info("dois cliques na ilha: abrindo o JARVIS")
+                        bridge.show_main()
+                        last_click = 0.0
+                    else:
+                        last_click = now
                         log.info("clique na ilha em %s", hit)
                         bridge.island.evaluate_js(f"window.__jarvisIslandPress && window.__jarvisIslandPress({hit[0]}, {hit[1]})")
+                elif hit:
+                    log.info("clique sobre a ilha, mas outra janela está por cima (%s)", under)
             except Exception as exc:  # noqa: BLE001
                 log.info("clique na ilha falhou: %s", exc)
         was_down = down
@@ -294,10 +352,10 @@ def main() -> None:
         bridge.screen_w = screens[0].width if screens else 1920
         x, y, w, h = island_position(bridge.screen_w, bridge.size)
         # V8.1.2: sem transparent (o clique atravessava); a pílula é recortada no shown (SetWindowRgn)
-        bridge.island = webview.create_window("Ilha do JARVIS", f"{FRONT}/?ilha=1", x=x, y=y, width=w, height=h, frameless=True,
+        bridge.island = webview.create_window(ISLAND_TITLE, f"{FRONT}/?ilha=1", x=x, y=y, width=w, height=h, frameless=True,
                                               on_top=True, resizable=False, easy_drag=False, background_color="#000000",
                                               js_api=bridge, focus=True, min_size=(120, 30))  # o padrão (200x100) esticava a ilha
-        bridge.island.events.shown += lambda: shape_window(bridge.island, island_radius("mini", h))
+        bridge.island.events.shown += lambda: shape_window(bridge.island, island_radius("mini", 9999))
         threading.Thread(target=watch_island_clicks, args=(bridge,), daemon=True).start()
     threading.Thread(target=listen_hotkey, args=(bridge, cfg.get("atalho", "PageDown")), daemon=True).start()
     os.environ.setdefault("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS", "--autoplay-policy=no-user-gesture-required")
