@@ -1,31 +1,39 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import RoboAvatar from "./RoboAvatar.jsx";
+import DeskApp from "./DeskApp.jsx";
 import { api } from "../utils/api.js";
 import { hexToRgb } from "../utils/desk.js";
-import IslandPanel from "./IslandPanel.jsx";
 import { watchNewBuild } from "../utils/newBuild.js";
 import { useLiteMode } from "../utils/lite.js";
-import { useGroqVoice } from "../utils/voiceRecord.js";
 import "../island.css";
 
 // V8.0: a ILHA do app para Windows: pílula preta no topo da tela, sempre visível (como a "ilha" dos celulares).
 // Em repouso: o avatar e a hora. Com música: a música tocando. Quando o JARVIS responde: a resposta, que some sozinha.
-// V8.1.2: clicar ABRE a ilha (como a ilha dinâmica): avatar e estado, a música com ⏮ ⏯ ⏭ e a capa, a última
-// resposta e os botões 🎙 FALAR e 🖥 ABRIR. Fecha ao clicar de novo, ao sair dela ou sozinha depois de alguns segundos.
-// V8.1.3: a janela do JARVIS só aparece pela ilha (🖥 ABRIR JARVIS ou dois cliques na pílula). O app também avisa
-// aqui quando o botão do mouse desce em cima da ilha (window.__jarvisIslandPress), para o clique funcionar mesmo
-// se o WebView2 não receber o mouse; o clique repetido (o de verdade, logo depois) é ignorado.
-// V8.3.0 (ideia 9): clicar ABRE OS MENUS NA PRÓPRIA ILHA (painel que cresce para baixo, ~440×560): Resumo do
-// dia, Conversa, Tarefas, Lembretes, Música, Timers, Missões, Hábitos e Copiados. Fecha ao clicar fora, no ✕,
-// com Esc ou depois de 1 minuto parada. Dois cliques na pílula (ou 🖥 ABRIR JARVIS) ainda abrem a janela toda.
+// V8.1.3: a janela grande do JARVIS só aparece pela ilha (dois cliques ou 🖥). O app também avisa aqui quando o botão
+// do mouse desce/sobe em cima da ilha (window.__jarvisIslandDown/Press), para o clique funcionar mesmo se o WebView2
+// não receber o mouse; o clique repetido (o de verdade) é ignorado.
+// V8.4.1 (igual ao vídeo): clicar na pílula ABRE O APP INTEIRO DENTRO DA ILHA: um painel largo que desce do topo com
+// a barra lateral do Modo Desk (Início, Conversa, Memória, Tarefas, ... e as Configurações: Personalizar, Cérebro,
+// Ilha...). A barra de cima do painel (e a pílula fechada) arrasta a ilha para os lados; ela lembra onde ficou.
+// Fecha no ✕, com Esc, clicando fora ou depois de 2 minutos parada.
 // Esta página é aberta só pelo app (?ilha=1); as funções do Windows vêm do window.pywebview.api.
-const IDLE_CLOSE_MS = 60000;
+const IDLE_CLOSE_MS = 120000;
 const DEDUPE_MS = 800;
 
-/** Toque avisado pelo app: clica no que está naquele ponto; o clique real que vier logo depois é ignorado. */
+/** Toque avisado pelo app. O app avisa quando o botão DESCE (aí o clique real que vier é ignorado) e, se não foi
+ *  um arraste, quando SOBE (aí clica no que está naquele ponto). Arrastou: só ignora o clique real. */
 export function installIslandPress(win = window, doc = document) {
   let last = 0;
+  let pending = false;
+  win.__jarvisIslandDown = () => {
+    pending = true;
+  };
+  win.__jarvisIslandDragged = () => {
+    pending = false;
+    last = Date.now();
+  };
   win.__jarvisIslandPress = (x, y) => {
+    pending = false;
     last = Date.now();
     const el = doc.elementFromPoint(x, y);
     if (el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)) {
@@ -36,7 +44,7 @@ export function installIslandPress(win = window, doc = document) {
     target?.click?.();
   };
   const swallow = (e) => {
-    if (e.isTrusted && Date.now() - last < DEDUPE_MS) {
+    if (e.isTrusted && (pending || Date.now() - last < DEDUPE_MS)) {
       e.stopPropagation();
       e.preventDefault();
     }
@@ -44,6 +52,8 @@ export function installIslandPress(win = window, doc = document) {
   doc.addEventListener("click", swallow, true);
   return () => {
     delete win.__jarvisIslandPress;
+    delete win.__jarvisIslandDown;
+    delete win.__jarvisIslandDragged;
     doc.removeEventListener("click", swallow, true);
   };
 }
@@ -55,22 +65,22 @@ export function islandMode(open, reply) {
   return reply ? "resposta" : "mini";
 }
 
-let msgId = 0;
-
 export default function IslandApp() {
   const [st, setSt] = useState(null);
   const [track, setTrack] = useState(null);
   const [open, setOpen] = useState(false);
-  const [tab, setTab] = useState("resumo");
-  const [chat, setChat] = useState([]);
-  const [busy, setBusy] = useState(false);
-  const [hint, setHint] = useState("");
   const [locked, setLocked] = useState(false);
+  const [names, setNames] = useState({ ai: "JARVIS", user: "" });
+  const [turn, setTurn] = useState({ userText: "", response: "", error: "" });
+  const [busy, setBusy] = useState(false);
   const modeRef = useRef("");
+  const openRef = useRef(false);
   const closeTimer = useRef(null);
 
   useEffect(() => installIslandPress(), []);
-  useEffect(() => { // V8.3.2: JARVIS bloqueado: os menus avisam em vez de mostrar "Erro 403"
+  useEffect(() => { openRef.current = open; }, [open]);
+  useEffect(() => watchNewBuild(() => !openRef.current, 30000), []); // V8.3.1: interface nova -> recarrega fechada
+  useEffect(() => { // V8.3.2: JARVIS bloqueado: avisa em vez de mostrar "Erro 403"
     let t;
     const onDenied = () => {
       setLocked(true);
@@ -83,9 +93,6 @@ export default function IslandApp() {
       window.removeEventListener("jarvis_access_denied", onDenied);
     };
   }, []);
-  const openRef = useRef(false);
-  useEffect(() => { openRef.current = open; }, [open]);
-  useEffect(() => watchNewBuild(() => !openRef.current, 30000), []); // V8.3.1: interface nova -> recarrega fechada
   useEffect(() => {
     const report = (e) => pyApi().log?.(`${e.message || e.reason || e}`);
     window.addEventListener("error", report);
@@ -95,6 +102,11 @@ export default function IslandApp() {
       window.removeEventListener("unhandledrejection", report);
     };
   }, []);
+  useEffect(() => {
+    api("/api/prefs").then((d) => setNames((n) => ({ ...n, ai: d?.ai_name ? d.ai_name.toUpperCase() : "JARVIS" }))).catch(() => {});
+    api("/api/profile").then((d) => setNames((n) => ({ ...n, user: d?.name || "" }))).catch(() => {});
+  }, []);
+
   const lite = useLiteMode(st?.desempenho?.leve || "auto"); // V8.4.0: modo leve -> atualiza mais devagar
   useEffect(() => {
     document.documentElement.classList.add("is-island");
@@ -112,9 +124,14 @@ export default function IslandApp() {
     };
   }, [lite]);
 
+  // a resposta que o JARVIS deu por outro caminho (voz "Jarvis, …", celular) também entra na conversa do painel
+  useEffect(() => {
+    if (st?.resposta) setTurn((t) => (t.response === st.resposta ? t : { ...t, response: st.resposta, error: "" }));
+  }, [st?.resposta]);
+
   const reply = Boolean(st?.resposta);
   const mode = islandMode(open, reply);
-  useEffect(() => { // a janela do Windows muda de tamanho junto (centralizada, recortada)
+  useEffect(() => { // a janela do Windows muda de tamanho junto (recortada no formato da ilha)
     if (mode === modeRef.current) return;
     modeRef.current = mode;
     const p = pyApi();
@@ -122,10 +139,7 @@ export default function IslandApp() {
     else p.island_expand?.(mode !== "mini");
   }, [mode]);
 
-  const close = useCallback(() => {
-    setOpen(false);
-    setHint("");
-  }, []);
+  const close = useCallback(() => setOpen(false), []);
   const armClose = useCallback(() => {
     clearTimeout(closeTimer.current);
     closeTimer.current = setTimeout(close, IDLE_CLOSE_MS);
@@ -138,89 +152,65 @@ export default function IslandApp() {
       if (e.key === "Escape") close();
     };
     window.__jarvisIslandOutside = close; // o app avisa quando você clica fora da ilha
-    window.addEventListener("blur", close);
     window.addEventListener("keydown", onKey);
+    window.addEventListener("mousemove", armClose, { passive: true });
     return () => {
       clearTimeout(closeTimer.current);
       delete window.__jarvisIslandOutside;
-      window.removeEventListener("blur", close);
       window.removeEventListener("keydown", onKey);
+      window.removeEventListener("mousemove", armClose);
     };
   }, [open, armClose, close]);
 
-  const openPanel = (where = "resumo") => {
-    if (where === "conversa" && st?.resposta) { // tocou na resposta: ela aparece na Conversa
-      setChat((c) => (c.some((m) => m.text === st.resposta) ? c : [...c, { id: ++msgId, role: "jarvis", text: st.resposta }]));
-    }
-    setTab(where);
-    setOpen(true);
-  };
-
-  const control = (action) => {
-    armClose();
-    api("/api/integrations/spotify/control", { method: "POST", body: JSON.stringify({ action }) })
-      .then(() => setTrack((t) => (t && (action === "play" || action === "pause") ? { ...t, state: action === "play" ? "playing" : "paused" } : t)))
-      .catch(() => {});
-    setTimeout(() => api("/api/integrations/spotify/track").then((d) => setTrack(d || null)).catch(() => {}), 900);
-  };
-
   const send = useCallback(async (text) => {
-    const add = (role, t) => setChat((c) => [...c.slice(-30), { id: ++msgId, role, text: t }]);
-    add("user", text);
+    setTurn({ userText: text, response: "", error: "" });
     setBusy(true);
-    armClose();
     try {
       const r = await api("/api/chat", { method: "POST", body: JSON.stringify({ message: text }) });
-      if (r?.response) add("jarvis", r.response);
-      return r;
+      setTurn((t) => ({ ...t, response: r?.response || t.response }));
     } catch (e) {
-      add("error", e.message || "Não consegui falar com o JARVIS.");
-      throw e;
+      setTurn((t) => ({ ...t, error: e.message || "Não consegui falar com o JARVIS." }));
     } finally {
       setBusy(false);
-      armClose();
     }
-  }, [armClose]);
-  const sendQuiet = (text) => send(text).catch(() => {});
-
-  // 🎙 FALAR na própria ilha. V8.4.0: grava e a Groq entende (o reconhecimento do navegador falha dentro do app).
-  const voice = useGroqVoice({ onText: (t) => { setHint(""); sendQuiet(t); }, onError: setHint });
-  const listening = voice.listening;
-  const talk = () => {
-    setTab("conversa");
-    armClose();
-    setHint("");
-    voice.toggle();
-  };
+  }, []);
   const openMain = () => {
     close();
     pyApi().show_main?.();
   };
+  const lock = () => {
+    api("/api/access/lock", { method: "POST" }).catch(() => {});
+    openMain(); // o desbloqueio (rosto ou PIN) é na janela do JARVIS
+  };
+  const rename = (n) => api("/api/prefs", { method: "PATCH", body: JSON.stringify({ ai_name: n.trim() }) })
+    .then((d) => setNames((x) => ({ ...x, ai: d?.ai_name ? d.ai_name.toUpperCase() : x.ai }))).catch(() => {});
 
   const hasTrack = track && (track.state === "playing" || track.state === "paused") && track.title;
   const playing = hasTrack && track.state === "playing";
-  const estado = st?.offline ? "offline" : st?.estado || "idle";
+  const estado = st?.offline ? "offline" : busy ? "processing" : st?.estado || "idle";
   const face = estado === "speaking" ? "speaking" : estado === "processing" ? "processing" : "idle";
   const stateLabel = { offline: "Desligado", speaking: "Falando…", processing: "Pensando…", listening: "Ouvindo…" }[estado] || "Pronto";
   const style = { "--il-accent": st?.cor || "#22d3ee", "--il-rgb": hexToRgb(st?.cor) };
 
   if (mode === "painel") {
     return (
-      <div className={`il il-${estado} is-card is-panel`} style={style} onMouseMove={armClose} role="dialog" aria-label="Ilha do JARVIS">
-        <div className="il-head">
-          <RoboAvatar avatar={st?.avatar} tema={st?.tema} state={face} size={40} />
-          <div className="il-head-txt"><b>JARVIS</b><small><i className="il-dot" />{stateLabel}</small></div>
+      <div className={`il-app il-${estado}`} style={style} role="dialog" aria-label="JARVIS na ilha">
+        <div className="il-bar" data-il-drag title="Arraste para mover a ilha · dois cliques: volta ao centro"
+          onDoubleClick={(e) => { if (e.target === e.currentTarget) pyApi().island_center?.(); }}>
+          <RoboAvatar avatar={st?.avatar} tema={st?.tema} state={face} size={24} />
+          <i className="il-dot" />
+          <span className="il-bar-txt">{playing ? `♫ ${track.title}${track.artist ? ` · ${track.artist}` : ""}` : stateLabel}</span>
+          {locked && <button type="button" className="il-locked" onClick={openMain}>🔒 Bloqueado: toque para desbloquear</button>}
           <span className="il-clock">{st?.hora || ""}</span>
+          <button type="button" className="il-x" onClick={openMain} aria-label="Abrir a janela do JARVIS" title="Abrir a janela grande">🖥</button>
           <button type="button" className="il-x" onClick={() => pyApi().quit?.()} aria-label="Sair do app" title="Sair do app (o JARVIS continua rodando no PC)">⏻</button>
           <button type="button" className="il-x" onClick={close} aria-label="Fechar a ilha" title="Fechar (Esc)">✕</button>
         </div>
-        <IslandPanel tab={tab} setTab={(t) => { setTab(t); armClose(); }} st={st} track={hasTrack ? track : null} onControl={control}
-          chat={chat} busy={busy || voice.busy} onSend={send} onTalk={talk} listening={listening} />
-        {locked && <button type="button" className="ilp-locked" onClick={openMain}>🔒 O JARVIS está bloqueado. Toque aqui para desbloquear (rosto ou PIN).</button>}
-        {hint && <p className="ilp-hint">{hint}</p>}
-        <div className="il-actions">
-          <button type="button" className="is-main" onClick={talk}>🎙 FALAR</button>
-          <button type="button" onClick={openMain}>🖥 ABRIR JARVIS</button>
+        <div className="il-desk">
+          <DeskApp api={api} aiName={names.ai === "J.A.R.V.I.S." ? "JARVIS" : names.ai} userName={names.user} jarvisState={estado}
+            listening={false} interim="" userText={turn.userText} response={turn.response} responseCards={[]} error={turn.error}
+            send={send} onToggleMic={() => {}} onClassic={openMain} onLock={lock} onOpenSettings={openMain} onOpenQr={openMain}
+            onRename={rename} embedded />
         </div>
       </div>
     );
@@ -228,7 +218,7 @@ export default function IslandApp() {
 
   return (
     <button type="button" className={`il il-${estado}${mode === "resposta" ? " is-open" : ""}`} style={style}
-      onClick={() => openPanel(mode === "resposta" ? "conversa" : "resumo")} onDoubleClick={openMain} title="Clique: abre os menus · dois cliques: abre o JARVIS">
+      onClick={() => setOpen(true)} title="Clique: abre o JARVIS aqui · arraste: move · dois cliques: janela grande">
       <span className="il-row">
         <RoboAvatar avatar={st?.avatar} tema={st?.tema} state={face} size={mode === "resposta" ? 30 : 24} />
         <i className="il-dot" />

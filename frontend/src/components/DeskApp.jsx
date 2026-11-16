@@ -820,7 +820,7 @@ function LinkCard({ title, icon, text, actions }) {
 // ------------------------------------------------------------------ app
 export default function DeskApp(props) {
   const { api, aiName = "JARVIS", userName = "", jarvisState = "idle", listening = false, interim = "", userText, response, responseCards, error,
-    send, onToggleMic, onClassic, onLock, onOpenSettings, onOpenQr, onRename, updateInfo = null, onUpdate = null } = props;
+    send, onToggleMic, onClassic, onLock, onOpenSettings, onOpenQr, onRename, updateInfo = null, onUpdate = null, embedded = false } = props;
   const [section, setSection] = useState(() => {
     try {
       return localStorage.getItem("jarvis.desk.section") || "inicio";
@@ -935,7 +935,7 @@ export default function DeskApp(props) {
   }
 
   return (
-    <div className={`dk-root${menu ? " is-menu" : ""}`} style={style} role="application" aria-label="JARVIS, Modo Desk">
+    <div className={`dk-root${menu ? " is-menu" : ""}${embedded ? " is-embedded" : ""}`} style={style} role="application" aria-label="JARVIS, Modo Desk">
       <aside className="dk-side">
         <div className="dk-brand">
           <RoboAvatar avatar={cfg?.avatar} tema={cfg?.tema} state={orbState} size={44} />
@@ -973,12 +973,19 @@ export default function DeskApp(props) {
             ⬆ ATUALIZAR{updateInfo.count ? <b>{updateInfo.count}</b> : null}
           </button>
         )}
+        {embedded ? ( // V8.4.1: dentro da ilha (os outros botões ficam na barra de cima da ilha)
+          <div className="dk-side-foot">
+            <button type="button" className="dk-btn" onClick={onClassic} title="Abrir a janela grande do JARVIS">🖥 JANELA GRANDE</button>
+            <button type="button" className="dk-btn" onClick={onLock} title="Bloquear">🔒</button>
+          </div>
+        ) : (
         <div className="dk-side-foot">
           <button type="button" className="dk-btn" onClick={onClassic} title="Voltar para a central clássica">◐ CENTRAL CLÁSSICA</button>
           <button type="button" className="dk-btn" onClick={() => window.dispatchEvent(new CustomEvent("jarvis-desktop-download"))} title="App do JARVIS para Windows">⬇</button>
           <button type="button" className="dk-btn" onClick={onLock}>🔒</button>
           {IS_DESKTOP_APP && <button type="button" className="dk-btn" onClick={() => window.pywebview?.api?.quit?.()} title="Sair do app (fecha a janela e a ilha; o JARVIS continua rodando no PC)">⏻</button>}
         </div>
+        )}
       </aside>
       <main className="dk-main">{body}</main>
       {toast && <div className="dk-toast" role="status">🎁 {toast}</div>}

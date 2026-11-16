@@ -39,13 +39,27 @@ ISLAND_OPEN_H = 120  # altura quando mostra uma resposta
 # V8.1.2: modos da ilha (como a "ilha dinâmica"): mini (pílula), resposta (cresce com o texto) e cartão (ao clicar)
 ISLAND_MODES = {"mini": (0, 0), "resposta": (80, ISLAND_OPEN_H), "cartao": (180, 210), "painel": (0, 0)}
 # V8.3.0 (ideia 9): "painel" = os menus abertos na própria ilha (tamanho fixo, cresce para baixo)
-ISLAND_PANEL = (440, 560)
+ISLAND_PANEL = (980, 600)  # V8.4.1: o app inteiro (Modo Desk) dentro da ilha, como no vídeo
+DRAG_PX = 6  # arrastar: depois de mover o mouse isso com o botão apertado (senão é um clique)
+BAR_H = 40  # altura (px da página) da barra de cima do painel aberto, por onde se arrasta
 # teclas para o RegisterHotKey (códigos virtuais do Windows)
 VK = {"PageDown": 0x22, "F9": 0x78, "Ctrl+Space": 0x20}
 MOD_CONTROL, MOD_NOREPEAT = 0x0002, 0x4000
 # o backend reconhece o app pelo "JarvisDesktop/" (a janela não ouve pelo navegador: o ouvido do PC atende)
 USER_AGENT = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 "
               "Safari/537.36 Edg/130.0.0.0 JarvisDesktop/" + str(VERSION))
+
+
+def patch_json(url: str, body: dict, timeout: float = 4) -> bool:
+    """PATCH no JARVIS deste PC (só 127.0.0.1)."""
+    try:
+        req = urllib.request.Request(url, data=json.dumps(body).encode("utf-8"), method="PATCH",
+                                     headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=timeout) as r:  # noqa: S310 - só 127.0.0.1
+            return 200 <= r.status < 300
+    except Exception as exc:  # noqa: BLE001
+        log.info("não consegui salvar a posição da ilha: %s", exc)
+        return False
 
 
 def get_json(url: str, timeout: float = 2.5) -> dict | None:
@@ -88,22 +102,37 @@ def start_jarvis(root: str = JARVIS_ROOT) -> bool:
     return False
 
 
-def island_position(screen_w: int, size: str, mode: str = "mini") -> tuple[int, int, int, int]:
-    """(x, y, largura, altura) da ilha: sempre centralizada no topo da tela (cresce para os dois lados)."""
+def island_position(screen_w: int, size: str, mode: str = "mini", pos: float = 0.5) -> tuple[int, int, int, int]:
+    """(x, y, largura, altura) da ilha no topo da tela. `pos` (0..1): onde fica o MEIO da ilha na largura da tela
+    (0,5 = centro; V8.4.1: você arrasta para os lados e ela lembra). Nunca sai da tela."""
     w, h = ISLAND_SIZES.get(size, ISLAND_SIZES["media"])
     if mode == "painel":
-        w, h = max(w, ISLAND_PANEL[0]), ISLAND_PANEL[1]
-        return (max(0, (screen_w - w) // 2), 6, w, h)
-    extra_w, open_h = ISLAND_MODES.get(mode, ISLAND_MODES["mini"])
-    w, h = w + extra_w, max(h, open_h)
-    return (max(0, (screen_w - w) // 2), 6, w, h)
+        w, h = min(max(w, ISLAND_PANEL[0]), max(screen_w - 12, 300)), ISLAND_PANEL[1]
+    else:
+        extra_w, open_h = ISLAND_MODES.get(mode, ISLAND_MODES["mini"])
+        w, h = w + extra_w, max(h, open_h)
+    pos = min(1.0, max(0.0, float(pos if pos is not None else 0.5)))
+    x = round(pos * screen_w - w / 2)
+    return (max(0, min(x, screen_w - w)), 6, w, h)
+
+
+def drag_x(start_win_x: int, start_cursor_x: int, cursor_x: int, win_w: int, screen_w: int) -> int:
+    """Nova posição (x) da janela enquanto arrasta, sem sair da tela."""
+    return max(0, min(start_win_x + (cursor_x - start_cursor_x), screen_w - win_w))
+
+
+def center_fraction(win_x: int, win_w: int, screen_w: int) -> float:
+    """Onde está o meio da ilha (0..1) na largura da tela."""
+    if screen_w <= 0:
+        return 0.5
+    return round(min(1.0, max(0.0, (win_x + win_w / 2) / screen_w)), 4)
 
 
 def island_radius(mode: str, height: int) -> int:
     """Raio do recorte: pílula inteira no modo mini; cantos arredondados quando abre."""
     if mode == "mini":
         return height
-    return 56 if mode == "painel" else 44
+    return 28 if mode == "painel" else 44
 
 
 ISLAND_TITLE = "Ilha do JARVIS"
@@ -271,6 +300,7 @@ class Bridge:
         self._size = "media"
         self._mode = "mini"
         self._screen_w = 1920
+        self._pos = 0.5  # V8.4.1: onde fica a ilha (0..1 na largura da tela)
         self._quitting = False
 
     def show_main(self) -> None:
@@ -313,12 +343,22 @@ class Bridge:
             return
         self._mode = mode
         log.info("ilha: modo %s", mode)
-        x, y, w, h = island_position(self._screen_w, self._size, mode)
+        x, y, w, h = island_position(self._screen_w, self._size, mode, self._pos)
         self._island.resize(w, h)
         self._island.move(x, y)
         shape_window(self._island, island_radius(mode, h))
         if mode == "painel":  # os menus abertos: a ilha pega o foco do teclado (para digitar)
             focus_window(island_hwnd(self._island))
+
+    def island_center(self) -> None:
+        """Dois cliques no espaço vazio da barra: a ilha volta para o meio da tela."""
+        self._set_pos(0.5)
+        self.island_mode(self._mode)
+
+    def _set_pos(self, pos: float) -> None:
+        """Guarda a posição (aqui e no JARVIS, para lembrar na próxima vez)."""
+        self._pos = min(1.0, max(0.0, float(pos)))
+        threading.Thread(target=patch_json, args=(f"{API}/api/desk", {"ilha": {"posicao": self._pos}}), daemon=True).start()
 
     def copy_text(self, text: str) -> bool:
         """⧉ Copiados na ilha: copia de novo pelo Windows."""
@@ -351,8 +391,12 @@ def island_hit(pt: tuple[int, int], rect: tuple[int, int, int, int], scale: floa
 def watch_island_clicks(bridge: Bridge) -> None:
     """V8.1.3/8.1.4: garante o clique na ilha, sem depender do WebView2 receber o mouse.
 
-    - 1 clique em cima da ilha: a página recebe o toque (abre/fecha o cartão; ela ignora o clique repetido).
-    - 2 cliques rápidos: o próprio app mostra a janela do JARVIS (funciona mesmo se a página não responder).
+    V8.4.1: e ARRASTA a ilha para os lados (como no vídeo):
+    - botão desce em cima da pílula (ou da barra de cima do painel aberto): começa a acompanhar;
+    - mexeu mais que DRAG_PX com o botão apertado: é arraste (a ilha anda junto e, ao soltar, lembra o lugar);
+    - soltou sem arrastar: na pílula é um clique (a página recebe o toque); dois cliques rápidos abrem a janela
+      grande do JARVIS. Com o painel aberto, o resto do painel recebe o mouse normalmente (não é repassado);
+    - clicou fora com o painel aberto: fecha o painel.
     O ponto é testado contra a janela da ilha achada pelo título (Win32), não pelo .NET.
     """
     if sys.platform != "win32":
@@ -362,21 +406,32 @@ def watch_island_clicks(bridge: Bridge) -> None:
 
     user32 = _user32()
     user32.GetAsyncKeyState.restype = ctypes.c_short
+    user32.SetWindowPos.argtypes = [wintypes.HWND, wintypes.HWND, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int, wintypes.UINT]
+    swp = 0x0001 | 0x0004 | 0x0010  # SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE
     was_down, last_click, shaped = False, 0.0, False
-    last_mode = "mini"  # V8.3.2: o modo da ilha no PRIMEIRO clique (o 1º clique já abre os menus)
+    last_mode = "mini"  # V8.3.2: o modo da ilha no PRIMEIRO clique (o 1º clique já abre o painel)
+    press = None  # {"hit", "cursor_x", "win_x", "win_w", "y", "dragging", "mode"} enquanto o botão está apertado
     started = time.time()
+
+    def js(code: str) -> None:
+        try:
+            bridge._island.evaluate_js(code)
+        except Exception as exc:  # noqa: BLE001
+            log.info("ilha: js falhou: %s", exc)
+
     while not bridge._quitting:
-        time.sleep(0.03)
+        time.sleep(0.02 if press else 0.03)
         if not shaped and time.time() - started > 1.5:  # o recorte de novo, depois que a janela existe de verdade
             shaped = shape_window(bridge._island, 9999 if bridge._mode == "mini" else 44) or time.time() - started > 20
         down = bool(user32.GetAsyncKeyState(0x01) & 0x8000)  # VK_LBUTTON
-        if down and not was_down and bridge._island:
-            try:
+        try:
+            if down and not was_down and bridge._island:  # o botão DESCEU
                 hwnd = island_hwnd(bridge._island)
                 pt = wintypes.POINT()
                 user32.GetCursorPos(ctypes.byref(pt))
                 under = user32.GetAncestor(user32.WindowFromPoint(pt), 2) or 0  # GA_ROOT
                 r = wintypes.RECT()
+                hit = None
                 if hwnd:
                     user32.GetWindowRect(hwnd, ctypes.byref(r))
                     try:
@@ -384,27 +439,50 @@ def watch_island_clicks(bridge: Bridge) -> None:
                     except Exception:  # noqa: BLE001
                         scale = 1
                     hit = island_hit((pt.x, pt.y), (r.left, r.top, r.right, r.bottom), scale)
-                else:
-                    hit = None
                 if hit and (int(under) == hwnd or not under):
-                    now = time.time()
-                    # V8.3.0: com os menus abertos, cliques rápidos são cliques nos menus (não abrem o JARVIS).
-                    # V8.3.2: vale o modo do 1º clique: dois cliques na pílula fechada ainda abrem o JARVIS.
-                    if last_mode != "painel" and now - last_click < 0.45:
-                        log.info("dois cliques na ilha: abrindo o JARVIS")
-                        bridge._island.evaluate_js("window.__jarvisIslandOutside && window.__jarvisIslandOutside()")
-                        bridge.show_main()
-                        last_click = 0.0
-                    else:
-                        last_click, last_mode = now, bridge._mode
-                        log.info("clique na ilha em %s", hit)
-                        bridge._island.evaluate_js(f"window.__jarvisIslandPress && window.__jarvisIslandPress({hit[0]}, {hit[1]})")
+                    on_bar = bridge._mode != "painel" or hit[1] < BAR_H
+                    if on_bar:
+                        press = {"hit": hit, "cursor_x": pt.x, "win_x": r.left, "win_w": r.right - r.left, "y": r.top,
+                                 "dragging": False, "mode": bridge._mode, "hwnd": hwnd}
+                        if bridge._mode != "painel":
+                            js("window.__jarvisIslandDown && window.__jarvisIslandDown()")
                 elif hit:
                     log.info("clique sobre a ilha, mas outra janela está por cima (%s)", under)
-                elif hwnd and bridge._mode == "painel":  # clicou fora: fecha os menus
-                    bridge._island.evaluate_js("window.__jarvisIslandOutside && window.__jarvisIslandOutside()")
-            except Exception as exc:  # noqa: BLE001
-                log.info("clique na ilha falhou: %s", exc)
+                elif hwnd and bridge._mode == "painel":  # clicou fora: fecha o painel
+                    js("window.__jarvisIslandOutside && window.__jarvisIslandOutside()")
+            elif down and press:  # segurando: arrastou?
+                pt = wintypes.POINT()
+                user32.GetCursorPos(ctypes.byref(pt))
+                if press["dragging"] or abs(pt.x - press["cursor_x"]) > DRAG_PX:
+                    press["dragging"] = True
+                    screen_w = user32.GetSystemMetrics(0) or 1920  # SM_CXSCREEN (mesma escala do cursor)
+                    x = drag_x(press["win_x"], press["cursor_x"], pt.x, press["win_w"], screen_w)
+                    user32.SetWindowPos(press["hwnd"], None, x, press["y"], 0, 0, swp)
+                    press["x"] = x
+            elif not down and was_down and press:  # SOLTOU
+                if press["dragging"]:
+                    screen_w = user32.GetSystemMetrics(0) or 1920
+                    bridge._set_pos(center_fraction(press.get("x", press["win_x"]), press["win_w"], screen_w))
+                    log.info("ilha arrastada para %.2f da tela", bridge._pos)
+                    js("window.__jarvisIslandDragged && window.__jarvisIslandDragged()")
+                else:
+                    now = time.time()
+                    # dois cliques na pílula fechada (o 1º já abriu o painel: vale o modo do 1º clique)
+                    if last_mode != "painel" and now - last_click < 0.45:
+                        log.info("dois cliques na ilha: abrindo o JARVIS")
+                        js("window.__jarvisIslandDragged && window.__jarvisIslandDragged()")
+                        js("window.__jarvisIslandOutside && window.__jarvisIslandOutside()")
+                        bridge.show_main()
+                        last_click = 0.0
+                    elif press["mode"] != "painel":  # um clique na pílula
+                        last_click, last_mode = now, press["mode"]
+                        hit = press["hit"]
+                        log.info("clique na ilha em %s", hit)
+                        js(f"window.__jarvisIslandPress && window.__jarvisIslandPress({hit[0]}, {hit[1]})")
+                press = None
+        except Exception as exc:  # noqa: BLE001
+            log.info("clique na ilha falhou: %s", exc)
+            press = None
         was_down = down
 
 
@@ -445,6 +523,10 @@ def main() -> None:
     cfg = (get_json(f"{API}/api/desk") or {}).get("ilha") or {}
     bridge = Bridge()
     bridge._size = cfg.get("tamanho", "media")
+    try:
+        bridge._pos = min(1.0, max(0.0, float(cfg.get("posicao", 0.5))))
+    except (TypeError, ValueError):
+        bridge._pos = 0.5
     island_on = cfg.get("ligada", True)
     # V8.1.3: com a ilha ligada, a janela do JARVIS começa escondida e só aparece quando você clica na ilha
     bridge._main = webview.create_window("JARVIS", f"{FRONT}/?desk=1&app=windows", width=1280, height=820, min_size=(900, 600),
@@ -453,7 +535,7 @@ def main() -> None:
     if island_on:
         screens = webview.screens
         bridge._screen_w = screens[0].width if screens else 1920
-        x, y, w, h = island_position(bridge._screen_w, bridge._size)
+        x, y, w, h = island_position(bridge._screen_w, bridge._size, "mini", bridge._pos)
         # V8.1.2: sem transparent (o clique atravessava); a pílula é recortada no shown (SetWindowRgn)
         bridge._island = webview.create_window(ISLAND_TITLE, f"{FRONT}/?ilha=1", x=x, y=y, width=w, height=h, frameless=True,
                                               on_top=True, resizable=False, easy_drag=False, background_color="#000000",
