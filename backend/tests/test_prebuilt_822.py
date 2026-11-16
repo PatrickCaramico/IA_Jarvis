@@ -113,9 +113,58 @@ def test_v823_background_build_lock_and_log(tmp_path, monkeypatch):
     assert bg.main() == 0  # já tem uma rodando: não começa outra
     (tmp_path / "build.running").unlink()
     monkeypatch.setattr(_sh, "which", lambda n: sys.executable)
+    monkeypatch.setattr(bg, "try_prebuilt", lambda out, wait_s=0: False)  # V8.3.1: site sem a versão: monta no PC
     monkeypatch.setattr(bg.subprocess, "call", lambda cmd, **kw: (kw["stdout"].write("built\n"), 0)[1])
     assert bg.main() == 0
     log = (tmp_path / "build.log").read_text()
     assert "built" in log and "Fim: código 0" in log and not (tmp_path / "build.running").exists()
     bat = (ROOT / "Iniciar-JARVIS.bat").read_text(encoding="utf-8", errors="replace")
     assert "build_background.py" in bat and "'/c npm run build" not in bat
+
+
+def test_v831_background_prefers_site_and_never_runs_npm_when_it_works(tmp_path, monkeypatch):
+    spec2 = importlib.util.spec_from_file_location("bg2", ROOT / "scripts" / "build_background.py")
+    bg = importlib.util.module_from_spec(spec2)
+    spec2.loader.exec_module(bg)
+    monkeypatch.setattr(bg, "LOGS", tmp_path)
+    monkeypatch.setattr(bg, "LOCK", tmp_path / "build.running")
+    import shutil as _sh
+    import sys
+
+    monkeypatch.setattr(_sh, "which", lambda n: sys.executable)
+    monkeypatch.setattr(bg, "try_prebuilt", lambda out, wait_s=0: True)
+    monkeypatch.setattr(bg.subprocess, "call", lambda *a, **k: (_ for _ in ()).throw(AssertionError("não devia montar")))
+    assert bg.main() == 0
+    assert "interface pronta do site instalada" in (tmp_path / "build.log").read_text()
+    assert bg.PREBUILT_WAIT >= 300
+
+
+def test_v831_same_commit_counts_and_curl_fallback(tmp_path, monkeypatch):
+    pb = prebuilt
+    assert pb.same_code({"source_hash": "x"}, "x", "")
+    assert pb.same_code({"source_hash": "y", "commit": "abc1234def"}, "x", "abc1234def")
+    assert not pb.same_code({"source_hash": "y", "commit": "abc1234def"}, "x", "fff")
+    assert not pb.same_code({"source_hash": "y", "commit": ""}, "x", "")
+    # o Python não consegue baixar (SSL cortado): segue pelo curl do Windows, e continua por ele
+    calls = []
+    monkeypatch.setattr(pb, "_get_python", lambda u: (_ for _ in ()).throw(OSError("SSL EOF")))
+    monkeypatch.setattr(pb, "_get_curl", lambda u: calls.append(u) or b"ok")
+    pb._USE_CURL["on"] = False
+    assert pb._get("https://x/a") == b"ok" and pb._get("https://x/b") == b"ok"
+    assert calls == ["https://x/a", "https://x/b"]
+    pb._USE_CURL["on"] = False
+    # mesmo commit do site: instala mesmo com um arquivo do PC diferente (ex.: package-lock mexido)
+    fe = tmp_path / "frontend"
+    (fe / "src").mkdir(parents=True)
+    (fe / "src" / "a.js").write_text("1")
+    (fe / "dist").mkdir()
+    page = b"<html>novo</html>"
+    man = {"versao": "8.3.1", "commit": "c0ffee1234", "source_hash": "outro",
+           "arquivos": [{"p": "index.html", "sha256": hashlib.sha256(page).hexdigest()}]}
+    files = {"files.json": json.dumps(man).encode(), "index.html": page}
+    get = lambda url: files[url.split("/pc/")[-1].split("?")[0]]  # noqa: E731
+    assert pb.fetch(fe, base_url="https://site/pc/", get=get, log=lambda m: None, commit="c0ffee1234")
+    assert (fe / "dist" / "index.html").read_bytes() == page
+    assert not pb.fetch(fe, base_url="https://site/pc/", get=get, log=lambda m: None, commit="0000000")
+    mjs = (ROOT / "scripts" / "netlify" / "manifest.mjs").read_text(encoding="utf-8")
+    assert "COMMIT_REF" in mjs

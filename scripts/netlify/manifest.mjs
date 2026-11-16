@@ -42,7 +42,8 @@ export function sourceHash(frontend) {
 export function manifest(frontend, built, versao) {
   const arquivos = walk(built).map((f) => ({ p: posix(built, f), sha256: createHash("sha256").update(readFileSync(f)).digest("hex") }))
     .filter((a) => a.p !== "files.json");
-  return { versao, source_hash: sourceHash(frontend), arquivos };
+  // V8.3.1: o commit que o Netlify montou (o PC aceita a interface pronta se estiver no mesmo commit)
+  return { versao, commit: process.env.COMMIT_REF || "", source_hash: sourceHash(frontend), arquivos };
 }
 
 if (process.argv[1] && process.argv[1].endsWith("manifest.mjs") && process.argv.length >= 5) {

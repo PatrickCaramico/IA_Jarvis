@@ -10,6 +10,13 @@ interface (source_hash) e o sha256 de cada arquivo. Aqui:
 
 Uso: python prebuilt.py [pasta-do-frontend]  -> sai com 0 se instalou, 1 se não deu (aí o .bat monta no PC).
 Só biblioteca padrão (roda antes de qualquer dependência).
+
+V8.3.1: no PC do Patrick a interface pronta nunca chegava. Agora:
+- se o Python não conseguir baixar (o antivírus corta a conexão segura dele: "SSL EOF" no log), baixa pelo
+  curl.exe do próprio Windows, que usa a mesma conexão do navegador;
+- se o código deste PC for o MESMO commit que o site montou (files.json traz o "commit"), vale mesmo que algum
+  arquivo tenha mudado no PC (ex.: o npm install mexe no package-lock.json);
+- tudo vai para logs/prebuilt.log (antes as mensagens sumiam com a janela escondida).
 """
 from __future__ import annotations
 
@@ -17,6 +24,7 @@ import hashlib
 import json
 import os
 import shutil
+import subprocess
 import sys
 import time
 import urllib.request
@@ -49,16 +57,63 @@ def source_hash(frontend: Path) -> str:
     return h.hexdigest()
 
 
-def _get(url: str) -> bytes:
+def _get_python(url: str) -> bytes:
     req = urllib.request.Request(url, headers={"User-Agent": "JARVIS-atualizador", "Cache-Control": "no-cache"})
     with urllib.request.urlopen(req, timeout=TIMEOUT) as r:  # noqa: S310 - endereço fixo do site do JARVIS
         return r.read(MAX_FILE + 1)
 
 
-def fetch(frontend: Path, base_url: str = BASE_URL, get=_get, log=print, wait_s: float = 0, sleep=time.sleep) -> bool:
+def _get_curl(url: str) -> bytes:
+    """O curl.exe vem no Windows 10/11 e usa a conexão segura do Windows (a mesma do navegador)."""
+    curl = shutil.which("curl.exe") or shutil.which("curl")
+    if not curl:
+        raise OSError("curl indisponível")
+    r = subprocess.run([curl, "-fsSL", "--max-time", str(TIMEOUT * 2), "-H", "Cache-Control: no-cache", url],  # noqa: S603
+                       capture_output=True, check=False, timeout=TIMEOUT * 3, stdin=subprocess.DEVNULL,
+                       creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+    if r.returncode != 0:
+        raise OSError(f"curl saiu com {r.returncode}: {r.stderr.decode('utf-8', 'replace').strip()[:200]}")
+    return r.stdout
+
+
+_USE_CURL = {"on": False}
+
+
+def _get(url: str) -> bytes:
+    """Python primeiro; se a conexão dele falhar uma vez, segue pelo curl.exe do Windows."""
+    if not _USE_CURL["on"]:
+        try:
+            return _get_python(url)
+        except Exception:  # noqa: BLE001 - erro de conexão/SSL: tenta pelo Windows
+            _USE_CURL["on"] = True
+    return _get_curl(url)
+
+
+def local_commit(root: Path) -> str:
+    """Commit atual do git deste PC ("" se não der)."""
+    try:
+        r = subprocess.run(["git", "rev-parse", "HEAD"], cwd=str(root), capture_output=True, check=False, timeout=15,  # noqa: S603,S607
+                           stdin=subprocess.DEVNULL, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+        return r.stdout.decode().strip() if r.returncode == 0 else ""
+    except Exception:  # noqa: BLE001
+        return ""
+
+
+def same_code(manifest: dict, local_hash: str, commit: str) -> bool:
+    """O site montou ESTE código? Pela impressão digital, ou pelo mesmo commit do git."""
+    if manifest.get("source_hash") == local_hash:
+        return True
+    site_commit = str(manifest.get("commit") or "")
+    return bool(commit) and len(site_commit) >= 7 and site_commit == commit
+
+
+def fetch(frontend: Path, base_url: str = BASE_URL, get=_get, log=print, wait_s: float = 0, sleep=time.sleep,
+          commit: str | None = None) -> bool:
     """wait_s: logo depois de uma versão nova o site leva 1 a 3 min para ficar pronto; espera até esse tempo."""
     frontend = Path(frontend)
     local = source_hash(frontend)
+    if commit is None:
+        commit = local_commit(frontend.parent)
     deadline = time.monotonic() + wait_s
     while True:
         try:
@@ -66,10 +121,11 @@ def fetch(frontend: Path, base_url: str = BASE_URL, get=_get, log=print, wait_s:
         except Exception as exc:  # noqa: BLE001
             log(f"  Interface pronta indisponível ({exc}).")
             return False
-        if manifest.get("source_hash") == local:
+        if same_code(manifest, local, commit):
             break
         if time.monotonic() >= deadline:
-            log("  A interface pronta do site ainda é de outra versão: montando aqui mesmo.")
+            log(f"  A interface pronta do site ainda é de outra versão (site {manifest.get('versao', '?')} "
+                f"{str(manifest.get('commit') or '')[:7]}, PC {commit[:7]}): montando aqui mesmo.")
             return False
         log("  O site ainda está preparando a versão nova: esperando…")
         sleep(15)
@@ -105,6 +161,22 @@ def fetch(frontend: Path, base_url: str = BASE_URL, get=_get, log=print, wait_s:
     return True
 
 
+def _log_to_file(root: Path):
+    """Mostra na tela E guarda em logs/prebuilt.log."""
+    path = root / "logs" / "prebuilt.log"
+
+    def write(msg: str) -> None:
+        print(msg)
+        try:
+            path.parent.mkdir(exist_ok=True)
+            with open(path, "a", encoding="utf-8") as f:
+                f.write(f"{time.strftime('%d/%m %H:%M:%S')} {msg.strip()}\n")
+        except OSError:
+            pass
+    return write
+
+
 if __name__ == "__main__":
     fe = Path(sys.argv[1]) if len(sys.argv) > 1 else Path(__file__).resolve().parent.parent / "frontend"
-    sys.exit(0 if fetch(fe, wait_s=float(os.getenv("JARVIS_PREBUILT_WAIT", "60"))) else 1)
+    out = _log_to_file(fe.resolve().parent)
+    sys.exit(0 if fetch(fe, log=out, wait_s=float(os.getenv("JARVIS_PREBUILT_WAIT", "60"))) else 1)
