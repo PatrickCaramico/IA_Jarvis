@@ -72,7 +72,8 @@ ITEM_NAMES = {
     "bruxa": "chapéu de bruxa", "headset": "headset", "coroa": "coroa", "oculos": "óculos", "laco": "laço",
     "bigode": "bigode", "oculos_escuros": "óculos escuros", "cachecol": "cachecol", "gravata": "gravata-borboleta",
     "camisa": "camisa do time", "capa": "capa de herói", "armadura": "colete de armadura", "coracao": "olhos de coração",
-    "estrela": "olhos de estrela", "pixel": "olhos de pixel", "brilho": "brilho", "neve": "neve", "faiscas": "faíscas",
+    "estrela": "olhos de estrela", "aureola": "auréola", "chifrinhos": "chifrinhos", "festa": "chapéu de festa",
+    "flor": "flor", "bone_time": "boné do time", "pixel": "olhos de pixel", "brilho": "brilho", "neve": "neve", "faiscas": "faíscas",
 }
 
 
