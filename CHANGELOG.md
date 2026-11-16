@@ -2,6 +2,20 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 8.1.7 — 16 de novembro de 2026
+
+**⬆ Atualização mais rápida e tela nova de ATUALIZANDO**
+- **Mais rápido:**
+  - O aviso por voz não segura mais o reinício (antes esperava a fala inteira, e com a voz falhando a tela parava em "Preparando").
+  - A interface nova agora é montada com o JARVIS ainda ligado. Antes era montada depois de desligar, com o JARVIS fora do ar por mais tempo.
+  - A montagem ficou mais leve: não calcula mais o tamanho compactado de cada arquivo.
+- **Tela nova de atualização**, com as etapas de verdade vindas do PC:
+  - ⬇ Baixar a versão nova;
+  - 🧩 Montar a interface nova;
+  - ⟳ Reiniciar os sistemas;
+  - ✓ Abrir a versão nova.
+- A tela também mostra o tempo passando, de qual versão para qual e **O QUE MUDOU**.
+
 ## 8.1.6 — 16 de novembro de 2026
 
 **🏝 App para Windows: fim do "Python não está respondendo" e da ilha que não respondia**

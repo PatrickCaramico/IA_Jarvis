@@ -22,6 +22,8 @@ def _patch(monkeypatch, pull_result):
     monkeypatch.setattr(self_update, "pull", lambda: pull_result)
     monkeypatch.setattr(self_update, "restart", fake_restart)
     monkeypatch.setattr(speech, "say_quietly", fake_say)
+    monkeypatch.setattr(self_update, "frontend_stale", lambda: False)
+    monkeypatch.setattr(self_update, "check", lambda force=False: {"notes": ["JARVIS 9.9.9: teste"]})
     return calls
 
 
@@ -70,3 +72,49 @@ def test_pull_sem_git_so_reinicia(monkeypatch, tmp_path):
     monkeypatch.setattr(self_update, "ROOT", tmp_path)
     result = self_update.pull()
     assert result["ok"] is True and result["changed"] is False
+
+
+def test_v817_build_antes_de_reiniciar_e_voz_nao_segura(monkeypatch):
+    """V8.1.7: a interface nova é montada com o JARVIS ainda ligado; a voz lenta não atrasa o reinício."""
+    import asyncio
+
+    calls = _patch(monkeypatch, {"ok": True, "changed": True, "before": "a1", "after": "b2", "message": "ok"})
+    order = []
+
+    async def slow_say(text):
+        await asyncio.sleep(30)
+
+    monkeypatch.setattr(speech, "say_quietly", slow_say)
+    monkeypatch.setattr(self_update, "frontend_stale", lambda: True)
+    monkeypatch.setattr(self_update, "build_frontend", lambda: order.append("build") or True)
+
+    def fake_restart():
+        order.append("restart")
+        calls["restart"] += 1
+        return True
+
+    monkeypatch.setattr(self_update, "restart", fake_restart)
+    with TestClient(main.app) as client:
+        t0 = time.monotonic()
+        assert client.post("/api/system/update", json={"confirm": True}).json()["status"] == "restarting"
+        assert _wait(lambda: calls["restart"] == 1, seconds=8)
+        assert time.monotonic() - t0 < 7  # não esperou os 30 s da fala
+        p = client.get("/api/system/update/progress").json()
+        assert p["etapa"] == "reiniciando" and p["depois"] == "b2" and p["notas"] == ["JARVIS 9.9.9: teste"]
+    assert order == ["build", "restart"]
+
+
+def test_v817_frontend_stale(monkeypatch, tmp_path):
+    fe = tmp_path / "frontend"
+    (fe / "src").mkdir(parents=True)
+    monkeypatch.setattr(self_update, "FRONTEND", fe)
+    assert self_update.frontend_stale() is True  # sem build
+    (fe / "src" / "a.js").write_text("x")
+    (fe / "dist").mkdir()
+    (fe / "dist" / "index.html").write_text("<html>")
+    import os
+
+    os.utime(fe / "src" / "a.js", (1, 1))
+    assert self_update.frontend_stale() is False
+    (fe / "src" / "b.js").write_text("novo")
+    assert self_update.frontend_stale() is True

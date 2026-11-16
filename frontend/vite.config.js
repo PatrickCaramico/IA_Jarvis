@@ -30,6 +30,9 @@ export default defineConfig({
     port: 5173,
   },
   build: {
+    // V8.1.7: não calcular o tamanho gzip de cada arquivo (só deixava a atualização mais lenta)
+    reportCompressedSize: false,
+    chunkSizeWarningLimit: 2500,
     rollupOptions: {
       output: {
         // V7: React num pacote separado: muda pouco entre versões, então o navegador/app reaproveita do cache

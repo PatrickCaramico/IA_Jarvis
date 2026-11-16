@@ -61,6 +61,12 @@ class UpdateRequest(BaseModel):
     confirm: bool = False
 
 
+@router.get("/api/system/update/progress")
+async def system_update_progress() -> dict:
+    """V8.1.7: em que etapa está a atualização (a tela mostra os passos de verdade)."""
+    return self_update.progress()
+
+
 @router.get("/api/system/update/status")
 async def system_update_status(force: bool = False) -> dict:
     """V6.7.2: tem versão nova? (a central mostra a bolinha com o número no botão ATUALIZAR)"""
@@ -81,16 +87,33 @@ async def system_update(req: UpdateRequest, request: Request) -> dict:
     if "application/json" not in request.headers.get("content-type", "") or not req.confirm:
         raise HTTPException(status_code=400, detail="Confirme a atualização.")
 
+    self_update.set_progress("baixando", "Baixando a versão nova…")
     result = await asyncio.to_thread(self_update.pull)
     if not result["ok"]:
+        self_update.set_progress("erro", result.get("message", ""))
         return {"status": "error", **result}
+    notes = []
+    try:
+        notes = (await asyncio.to_thread(self_update.check, False)).get("notes") or []
+    except Exception:  # noqa: BLE001
+        pass
+    self_update.set_progress("baixado", result.get("message", ""), antes=result.get("before", ""), depois=result.get("after", ""), notas=notes[:6])
 
     async def speak_and_restart() -> None:
+        # V8.1.7: a voz começa, mas não segura o reinício (no máximo 4 s de espera)
+        talk = asyncio.create_task(speech.say_quietly(UPDATE_SPEECH if result["changed"] else UPDATE_SPEECH_SAME))
         try:
-            await speech.say_quietly(UPDATE_SPEECH if result["changed"] else UPDATE_SPEECH_SAME)
-        except Exception:  # noqa: BLE001 - sem voz, reinicia do mesmo jeito
-            log.warning("Não consegui falar o aviso de atualização", exc_info=True)
+            if await asyncio.to_thread(self_update.frontend_stale):
+                self_update.set_progress("interface", "Montando a interface nova (com o JARVIS ainda ligado)…")
+                await asyncio.to_thread(self_update.build_frontend)
+            await asyncio.wait_for(asyncio.shield(talk), timeout=4)
+        except asyncio.TimeoutError:
+            pass
+        except Exception:  # noqa: BLE001 - sem voz ou sem build, reinicia do mesmo jeito
+            log.warning("Preparação da atualização com problema", exc_info=True)
+        self_update.set_progress("reiniciando", "Reiniciando os sistemas…")
         if not self_update.restart():
+            self_update.set_progress("erro", "Não consegui reiniciar sozinho. Use o Iniciar-JARVIS.bat.")
             await runtime.manager.broadcast({"type": "error", "message": "Não consegui reiniciar sozinho. Use o Iniciar-JARVIS.bat."})
 
     runtime.track(speak_and_restart())
