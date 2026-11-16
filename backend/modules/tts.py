@@ -17,6 +17,8 @@ import logging
 import os
 import re
 import shutil
+import subprocess
+import sys
 import tempfile
 from pathlib import Path
 from typing import Awaitable, Callable, Optional
@@ -261,8 +263,48 @@ async def _synthesize(text: str, path: str) -> None:
                 return
         except Exception:  # noqa: BLE001 - a geração adiantada falhou: gera agora, como antes
             log.debug("Voz adiantada falhou; gerando de novo.")
-    await _synthesize_remote(text, path, volume)
+    try:
+        await _synthesize_remote(text, path, volume)
+    except asyncio.CancelledError:
+        raise
+    except Exception as exc:  # noqa: BLE001 - V8.1.5: a voz da Microsoft falhou: fala com a voz do Windows
+        if not await asyncio.to_thread(synthesize_offline, text, path):
+            raise
+        log.warning("Voz da Microsoft indisponível (%s); falei com a voz do Windows.", str(exc)[:80])
+        return  # não guarda no cache: na próxima, tenta a voz normal de novo
     _to_cache(text, volume, path)
+
+
+# V8.1.5: VOZ RESERVA. Quando a voz da Microsoft (edge-tts, pela internet) não responde, o JARVIS fala com a
+# voz do próprio Windows (System.Speech, sem internet). O texto vai pela entrada padrão (nunca na linha de
+# comando) e o arquivo sai em WAV (o pygame reconhece pelo cabeçalho).
+_OFFLINE_PS = (
+    "Add-Type -AssemblyName System.Speech;"
+    "$s = New-Object System.Speech.Synthesis.SpeechSynthesizer;"
+    "$v = $s.GetInstalledVoices() | Where-Object { $_.Enabled -and $_.VoiceInfo.Culture.Name -like 'pt-*' } | Select-Object -First 1;"
+    "if ($v) { $s.SelectVoice($v.VoiceInfo.Name) };"
+    "$s.Rate = 1;"
+    "$s.SetOutputToWaveFile($env:JARVIS_TTS_OUT);"
+    "$s.Speak([Console]::In.ReadToEnd());"
+    "$s.Dispose()"
+)
+
+
+def synthesize_offline(text: str, path: str) -> bool:
+    """Gera a fala com a voz do Windows. Devolve False fora do Windows ou se falhar."""
+    if sys.platform != "win32" or not (text or "").strip():
+        return False
+    try:
+        env = {**os.environ, "JARVIS_TTS_OUT": str(path)}
+        flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+        r = subprocess.run(  # noqa: S603,S607 - comando fixo; o texto entra pela stdin
+            ["powershell", "-NoProfile", "-NonInteractive", "-Command", _OFFLINE_PS],
+            input=text.encode("utf-8"), env=env, capture_output=True, timeout=60, creationflags=flags,
+        )
+        return r.returncode == 0 and Path(path).exists() and Path(path).stat().st_size > 1000
+    except Exception as exc:  # noqa: BLE001
+        log.info("Voz do Windows também falhou: %s", exc)
+        return False
 
 
 # ---- V6.5.1: voz adiantada ------------------------------------------------------------------

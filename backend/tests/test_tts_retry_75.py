@@ -47,3 +47,36 @@ def test_gives_up_after_retries(tmp_path, monkeypatch):
 def test_nothing_to_say():
     assert tts.speakable("Olá") and tts.speakable("42")
     assert not tts.speakable("✦ 🌌 …") and not tts.speakable("")
+
+
+def test_offline_voice_fallback(monkeypatch, tmp_path):
+    """V8.1.5: a voz da Microsoft falhou -> fala com a voz do Windows (e não guarda no cache)."""
+    import asyncio
+
+    from modules import tts
+
+    async def boom(*_a, **_k):
+        raise RuntimeError("No audio was received")
+
+    cached = []
+    monkeypatch.setattr(tts, "_synthesize_remote", boom)
+    monkeypatch.setattr(tts, "_from_cache", lambda *a: False)
+    monkeypatch.setattr(tts, "_to_cache", lambda *a: cached.append(a))
+    monkeypatch.setattr(tts, "synthesize_offline", lambda text, path: True)
+    asyncio.run(tts._synthesize("Olá, senhor.", str(tmp_path / "a.mp3")))
+    assert cached == []
+    monkeypatch.setattr(tts, "synthesize_offline", lambda text, path: False)
+    import pytest
+
+    with pytest.raises(RuntimeError):
+        asyncio.run(tts._synthesize("Olá de novo.", str(tmp_path / "b.mp3")))
+
+
+def test_offline_voice_only_on_windows(tmp_path):
+    import sys
+
+    from modules import tts
+
+    if sys.platform != "win32":
+        assert tts.synthesize_offline("Olá", str(tmp_path / "c.wav")) is False
+    assert "[Console]::In.ReadToEnd()" in tts._OFFLINE_PS  # o texto nunca vai na linha de comando

@@ -4,6 +4,8 @@ import NowPlaying, { useNowPlaying } from "./NowPlaying.jsx";
 import { useConversationLog } from "./HudLayout.jsx";
 import { DESK_COLORS, FUNCTIONS, greeting, hexToRgb, isLight, stateText } from "../utils/desk.js";
 import { IS_DESKTOP_APP } from "../utils/device.js";
+import { checkForUpdate, saveUpdateResult } from "../utils/updateCheck.js";
+import { APP_VERSION } from "../utils/version.js";
 import "../desk.css";
 
 // V8.0: MODO DESK (ideia 6): o JARVIS como app de assistente pessoal. Barra lateral com o avatar robô, Início,
@@ -18,7 +20,7 @@ const NAV = [
   ["copiados", "⧉", "Copiados"], ["rotinas", "⚡", "Rotinas"], ["meupc", "🖥", "Meu PC"],
 ];
 const SETTINGS = [
-  ["Assistente", [["personalizar", "🎨", "Personalizar"], ["cerebro", "🧠", "Cérebro (IA)"], ["funcoes", "🧩", "Funções"], ["voz", "🎙", "Voz"], ["ilha", "▭", "Ilha"]]],
+  ["Assistente", [["personalizar", "🎨", "Personalizar"], ["cerebro", "🧠", "Cérebro (IA)"], ["funcoes", "🧩", "Funções"], ["voz", "🎙", "Voz"], ["ilha", "▭", "Ilha"], ["atualizar", "⬆", "Atualizações"]]],
   ["Conexões", [["celular", "📱", "Celular e agendas"], ["rosto", "🙂", "Proteção com rosto"], ["atalhos", "⌘", "Atalhos"]]],
 ];
 
@@ -81,6 +83,11 @@ function Home({ api, ctx, avatar, tema, setSection }) {
   const pend = (tasks?.tasks || []).filter((t) => !t.concluida).length;
   return (
     <div className="dk-home">
+      {ctx.updateInfo && (
+        <button type="button" className="dk-update-banner" onClick={() => setSection("atualizar")}>
+          ⬆ Tem versão nova do {ctx.aiName}{ctx.updateInfo.latest ? ` (${ctx.updateInfo.latest})` : ""}. Toque para atualizar.
+        </button>
+      )}
       <Card className="dk-hero">
         <RoboAvatar avatar={avatar} tema={tema} state={ctx.orbState} size={96} />
         <div>
@@ -464,6 +471,46 @@ function MyPc({ avatar }) {
 }
 
 // ------------------------------------------------------------------ configurações
+// V8.1.5: ATUALIZAR no Modo Desk (antes só existia na central clássica e no bloqueio)
+function Updates({ api, info, onUpdate }) {
+  const [state, setState] = useState(info ? { updateAvailable: true, count: info.count, latestVersion: info.latest, notes: (info.notes || []).join("\n") } : null);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+  useEffect(() => {
+    if (info) setState({ updateAvailable: true, count: info.count, latestVersion: info.latest, notes: (info.notes || []).join("\n") });
+  }, [info]);
+  const check = async () => {
+    setBusy(true);
+    setMsg("");
+    try {
+      const r = await checkForUpdate(api);
+      saveUpdateResult(r);
+      setState(r);
+      window.dispatchEvent(new CustomEvent("jarvis-update-check", { detail: r }));
+    } catch (err) {
+      setMsg(err.message || "Não consegui conferir.");
+    } finally {
+      setBusy(false);
+    }
+  };
+  const notes = (state?.notes || "").split("\n").filter(Boolean).slice(0, 8);
+  return (
+    <Card title="Atualizações" icon="⬆" right={<span className="dk-pill">versão {APP_VERSION}</span>}>
+      {state?.updateAvailable ? (
+        <div className="dk-update is-new">
+          <b>⬆ Versão nova disponível{state.latestVersion ? `: ${state.latestVersion}` : ""}{state.count ? ` (${state.count} ${state.count === 1 ? "mudança" : "mudanças"})` : ""}</b>
+          {notes.length > 0 && <ul>{notes.map((n) => <li key={n}>{n}</li>)}</ul>}
+          {onUpdate ? <button type="button" className="dk-btn is-main" onClick={onUpdate}>⬆ ATUALIZAR AGORA</button>
+            : <p className="dk-muted">A atualização é feita no próprio PC do JARVIS.</p>}
+          <small className="dk-muted">O JARVIS baixa a versão nova, avisa por voz e reinicia sozinho (leva uns segundos). No app para Windows, depois feche pelo ⏻ e abra de novo pelo atalho.</small>
+        </div>
+      ) : state ? <p className="dk-muted">✓ Você está na versão mais nova.</p> : <p className="dk-muted">Toque em VERIFICAR para conferir se tem versão nova.</p>}
+      <div className="dk-row"><button type="button" className="dk-btn" onClick={check} disabled={busy}>{busy ? "Conferindo…" : "🔄 VERIFICAR AGORA"}</button></div>
+      {msg && <p className="dk-err" role="alert">{msg}</p>}
+    </Card>
+  );
+}
+
 function Personalize({ api, cfg, setCfg, aiName, onRename }) {
   const [msg, setMsg] = useState("");
   const [name, setName] = useState(aiName);
@@ -663,7 +710,7 @@ function LinkCard({ title, icon, text, actions }) {
 // ------------------------------------------------------------------ app
 export default function DeskApp(props) {
   const { api, aiName = "JARVIS", userName = "", jarvisState = "idle", listening = false, interim = "", userText, response, responseCards, error,
-    send, onToggleMic, onClassic, onLock, onOpenSettings, onOpenQr, onRename } = props;
+    send, onToggleMic, onClassic, onLock, onOpenSettings, onOpenQr, onRename, updateInfo = null, onUpdate = null } = props;
   const [section, setSection] = useState(() => {
     try {
       return localStorage.getItem("jarvis.desk.section") || "inicio";
@@ -725,7 +772,7 @@ export default function DeskApp(props) {
   const accent = cfg?.cor || "#22d3ee";
   const style = useMemo(() => ({ "--dk-accent": accent, "--dk-accent-rgb": hexToRgb(accent), "--dk-on-accent": isLight(accent) ? "#06121f" : "#fff" }), [accent]);
   const orbState = listening ? "listening" : jarvisState;
-  const ctx = { log, send, onToggleMic, listening, interim, userName, aiName, orbState, level, missions, setMissions: onMissions };
+  const ctx = { log, send, onToggleMic, listening, interim, userName, aiName, orbState, level, missions, setMissions: onMissions, updateInfo };
   const go = (id) => {
     setSection(id);
     setMenu(false);
@@ -751,6 +798,7 @@ export default function DeskApp(props) {
     case "funcoes": case "atalhos": body = <Functions api={api} send={send} />; break;
     case "voz": body = <LinkCard title="Voz" icon="🎙" text="Voz do JARVIS, velocidade, microfone e palavra de ativação." actions={[["⚙ ABRIR CONFIGURAÇÕES DE VOZ", onOpenSettings], ["🎙 TESTAR MICROFONE", () => send("testar microfone")]]} />; break;
     case "ilha": body = <Island api={api} cfg={cfg} setCfg={setCfg} />; break;
+    case "atualizar": body = <Updates api={api} info={updateInfo} onUpdate={onUpdate} />; break;
     case "celular": body = <LinkCard title="Celular e agendas" icon="📱" text="Pareie o celular pelo QR, conecte a agenda do Google e veja os aparelhos." actions={[["📱 QR DO CELULAR", onOpenQr], ["⚙ AGENDA E CONTAS", onOpenSettings]]} />; break;
     case "rosto": body = <LinkCard title="Proteção com rosto" icon="🙂" text="O bloqueio reconhece o seu rosto (e o PIN como alternativa)." actions={[["🔒 BLOQUEAR AGORA", onLock], ["⚙ SEGURANÇA", onOpenSettings]]} />; break;
     default: body = <Home api={api} ctx={ctx} avatar={cfg?.avatar} tema={cfg?.tema} setSection={go} />;
@@ -790,6 +838,11 @@ export default function DeskApp(props) {
             </div>
           ))}
         </nav>
+        {updateInfo && (
+          <button type="button" className="dk-btn is-main dk-update-btn" onClick={() => go("atualizar")} title="Tem versão nova do JARVIS">
+            ⬆ ATUALIZAR{updateInfo.count ? <b>{updateInfo.count}</b> : null}
+          </button>
+        )}
         <div className="dk-side-foot">
           <button type="button" className="dk-btn" onClick={onClassic} title="Voltar para a central clássica">◐ CENTRAL CLÁSSICA</button>
           <button type="button" className="dk-btn" onClick={() => window.dispatchEvent(new CustomEvent("jarvis-desktop-download"))} title="App do JARVIS para Windows">⬇</button>

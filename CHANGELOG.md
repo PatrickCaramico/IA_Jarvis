@@ -2,6 +2,19 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 8.1.5 — 16 de novembro de 2026
+
+**🔊 Voz de volta e ⬆ ATUALIZAR no Modo Desk**
+- **Corrigido: o JARVIS parou de falar.**
+  - Causa: a biblioteca da voz da Microsoft (edge-tts) instalada no PC era antiga. A Microsoft mudou o serviço e ela passou a receber "No audio was received" e "403".
+  - O Iniciar-JARVIS.bat só instalava dependências que faltavam, então ela nunca era atualizada.
+  - Agora ele confere a versão e atualiza sozinho (edge-tts 7.3 ou mais nova).
+- **Voz reserva:** se a voz da Microsoft não responder (sem internet ou com o serviço fora), o JARVIS fala com a voz do próprio Windows em vez de ficar mudo. Na próxima fala, ele tenta a voz normal de novo.
+- **⬆ ATUALIZAR no Modo Desk.** Antes o botão só existia na central clássica e no bloqueio. Agora aparece em três lugares:
+  - um aviso no Início quando tem versão nova;
+  - o botão **⬆ ATUALIZAR** com o número de mudanças na barra lateral;
+  - a seção **Configurações › Atualizações**, com a versão atual, o que mudou, **VERIFICAR AGORA** e **ATUALIZAR AGORA**.
+
 ## 8.1.4 — 16 de novembro de 2026
 
 **🏝 Ilha do app para Windows: clique e recorte que não dependem do .NET**
