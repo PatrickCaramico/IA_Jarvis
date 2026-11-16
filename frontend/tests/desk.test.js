@@ -49,3 +49,22 @@ test("V8.1.2: ilha: clicar abre o cartão (vence a resposta); sem nada fica a p�
   assert.equal(islandMode(false, true), "resposta");
   assert.equal(islandMode(false, false), "mini");
 });
+
+test("V8.1.3: ilha: o toque avisado pelo app clica no botão e o clique real logo depois é ignorado", async () => {
+  const src = await import("node:fs").then((fs) => fs.readFileSync(new URL("../src/components/IslandApp.jsx", import.meta.url), "utf8"));
+  const body = src.match(/export function installIslandPress\(win = window, doc = document\) \{([\s\S]*?)\n\}/)[1];
+  const install = new Function("win", "doc", "DEDUPE_MS", body);
+  let clicks = 0;
+  let captured = null;
+  const btn = { click: () => clicks++, closest: () => btn };
+  const doc = { elementFromPoint: () => btn, addEventListener: (_t, fn) => { captured = fn; }, removeEventListener() {} };
+  const win = {};
+  const off = install(win, doc, 800);
+  win.__jarvisIslandPress(10, 10);
+  assert.equal(clicks, 1);
+  let stopped = false;
+  captured({ isTrusted: true, stopPropagation: () => { stopped = true; }, preventDefault() {} });
+  assert.equal(stopped, true);
+  off();
+  assert.equal(win.__jarvisIslandPress, undefined);
+});

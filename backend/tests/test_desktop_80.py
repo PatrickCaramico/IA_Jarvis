@@ -73,3 +73,32 @@ def test_installer_has_no_pyinstaller_exe():
     assert "pythonw.exe" in ps and "CreateShortcut" in ps and "app.json" in ps
     src = (ROOT / "desktop" / "jarvis_desktop.py").read_text(encoding="utf-8")
     assert "CREATE_NO_WINDOW" not in src
+
+
+def test_island_click_fallback_and_hidden_main():
+    """V8.1.3: o toque na ilha é convertido para a página; o X da janela só esconde (a ilha continua)."""
+    d = _desktop()
+    assert d.island_hit((1000, 20), (770, 6, 1150, 98), 2.0) == (115, 7)
+    assert d.island_hit((10, 20), (770, 6, 1150, 98), 2.0) is None
+
+    class W:
+        hidden = destroyed = False
+
+        def hide(self):
+            self.hidden = True
+
+        def destroy(self):
+            self.destroyed = True
+
+    b = d.Bridge()
+    b.main, b.island = W(), W()
+    assert b.on_main_closing() is False  # cancela o fechamento e esconde
+    import time as _t
+
+    _t.sleep(0.05)
+    assert b.main.hidden is True
+    b.quit()
+    assert b.quitting and b.main.destroyed and b.island.destroyed
+    assert b.on_main_closing() is True
+    src = (ROOT / "desktop" / "jarvis_desktop.py").read_text(encoding="utf-8")
+    assert "hidden=island_on" in src and "min_size=(120, 30)" in src

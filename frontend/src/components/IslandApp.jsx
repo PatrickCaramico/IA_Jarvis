@@ -8,8 +8,34 @@ import "../island.css";
 // Em repouso: o avatar e a hora. Com música: a música tocando. Quando o JARVIS responde: a resposta, que some sozinha.
 // V8.1.2: clicar ABRE a ilha (como a ilha dinâmica): avatar e estado, a música com ⏮ ⏯ ⏭ e a capa, a última
 // resposta e os botões 🎙 FALAR e 🖥 ABRIR. Fecha ao clicar de novo, ao sair dela ou sozinha depois de alguns segundos.
+// V8.1.3: a janela do JARVIS só aparece pela ilha (🖥 ABRIR JARVIS ou dois cliques na pílula). O app também avisa
+// aqui quando o botão do mouse desce em cima da ilha (window.__jarvisIslandPress), para o clique funcionar mesmo
+// se o WebView2 não receber o mouse; o clique repetido (o de verdade, logo depois) é ignorado.
 // Esta página é aberta só pelo app (?ilha=1); as funções do Windows vêm do window.pywebview.api.
 const AUTO_CLOSE_MS = 9000;
+const DEDUPE_MS = 800;
+
+/** Toque avisado pelo app: clica no que está naquele ponto; o clique real que vier logo depois é ignorado. */
+export function installIslandPress(win = window, doc = document) {
+  let last = 0;
+  win.__jarvisIslandPress = (x, y) => {
+    last = Date.now();
+    const el = doc.elementFromPoint(x, y);
+    const target = el?.closest?.("button, [data-il-click]") || el;
+    target?.click?.();
+  };
+  const swallow = (e) => {
+    if (e.isTrusted && Date.now() - last < DEDUPE_MS) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+  };
+  doc.addEventListener("click", swallow, true);
+  return () => {
+    delete win.__jarvisIslandPress;
+    doc.removeEventListener("click", swallow, true);
+  };
+}
 
 const pyApi = () => window.pywebview?.api || {};
 
@@ -26,6 +52,16 @@ export default function IslandApp() {
   const modeRef = useRef("");
   const closeTimer = useRef(null);
 
+  useEffect(() => installIslandPress(), []);
+  useEffect(() => {
+    const report = (e) => pyApi().log?.(`${e.message || e.reason || e}`);
+    window.addEventListener("error", report);
+    window.addEventListener("unhandledrejection", report);
+    return () => {
+      window.removeEventListener("error", report);
+      window.removeEventListener("unhandledrejection", report);
+    };
+  }, []);
   useEffect(() => {
     document.documentElement.classList.add("is-island");
     let alive = true;
@@ -101,6 +137,7 @@ export default function IslandApp() {
           <RoboAvatar avatar={st?.avatar} tema={st?.tema} state={face} size={40} />
           <div className="il-head-txt"><b>JARVIS</b><small><i className="il-dot" />{stateLabel}</small></div>
           <span className="il-clock">{st?.hora || ""}</span>
+          <button type="button" className="il-x" onClick={() => pyApi().quit?.()} aria-label="Sair do app" title="Sair do app (o JARVIS continua rodando no PC)">⏻</button>
           <button type="button" className="il-x" onClick={() => setCard(false)} aria-label="Fechar a ilha">✕</button>
         </div>
         {hasTrack ? (
@@ -127,7 +164,7 @@ export default function IslandApp() {
 
   return (
     <button type="button" className={`il il-${estado}${mode === "resposta" ? " is-open" : ""}`} style={style}
-      onClick={() => setCard(true)} title="Abrir a ilha do JARVIS">
+      onClick={() => setCard(true)} onDoubleClick={openMain} title="Clique: abre a ilha · dois cliques: abre o JARVIS">
       <span className="il-row">
         <RoboAvatar avatar={st?.avatar} tema={st?.tema} state={face} size={mode === "resposta" ? 30 : 24} />
         <i className="il-dot" />
