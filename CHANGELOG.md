@@ -2,6 +2,22 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 8.1.2 — 16 de novembro de 2026
+
+**🏝 Ilha do app para Windows: agora dá para clicar (e ela abre, como a ilha dinâmica)**
+- **Corrigido:** o clique na ilha passava direto para o que estava atrás.
+  - Causa: a janela usava a "transparência por cor-chave" do Windows, que com o WebView2 deixa a janela atravessável.
+  - Agora a janela é normal e o Windows recorta o formato de pílula, então a ilha inteira é clicável.
+- **Clicar abre a ilha num cartão**, que cresce para os dois lados e continua centralizada:
+  - o avatar, o estado e a hora;
+  - a música com a capa e os botões ⏮ ⏯ ⏭;
+  - a última resposta do JARVIS;
+  - **🎙 FALAR**, que abre o JARVIS já ouvindo;
+  - **🖥 ABRIR JARVIS**.
+- O cartão fecha no ✕, ao clicar fora dele ou sozinho depois de uns segundos sem mexer.
+- Ao passar o mouse, a pílula acende na cor do app.
+- Para aparecer: feche o app e abra de novo pelo atalho **JARVIS**. Não é preciso rodar o Gerar-App-Windows.bat de novo.
+
 ## 8.1.1 — 15 de novembro de 2026
 
 **🛡 App para Windows sem alerta de vírus (McAfee)**

@@ -31,6 +31,11 @@ def test_island_geometry_and_hotkeys():
     x, y, w, h = d.island_position(1920, "media")
     assert (w, h) == d.ISLAND_SIZES["media"] and x == (1920 - w) // 2 and y < 20
     assert d.island_position(1920, "xyz")[2:] == d.ISLAND_SIZES["media"]
+    # V8.1.2: ao clicar a ilha vira cartão, continua centralizada e o recorte arredonda os cantos
+    cx, _, cw, ch = d.island_position(1920, "media", "cartao")
+    assert cw > w and ch >= 200 and cx + cw // 2 in (960, 959)
+    assert d.island_radius("mini", h) == h and d.island_radius("cartao", ch) < ch
+    d.shape_window(None, 10)  # sem janela (ou fora do Windows) não quebra
     assert d.hotkey_spec("PageDown") == (d.MOD_NOREPEAT, 0x22)
     assert d.hotkey_spec("Ctrl+Space") == (d.MOD_NOREPEAT | d.MOD_CONTROL, 0x20)
     assert "JarvisDesktop/" in d.USER_AGENT
