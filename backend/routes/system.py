@@ -104,10 +104,10 @@ async def system_update(req: UpdateRequest, request: Request) -> dict:
         talk = asyncio.create_task(speech.say_quietly(UPDATE_SPEECH if result["changed"] else UPDATE_SPEECH_SAME))
         try:
             if await asyncio.to_thread(self_update.frontend_stale):
-                self_update.set_progress("interface", "Baixando a interface pronta (se o site ainda estiver preparando a versão nova, espero um pouco)…")
-                if not await asyncio.to_thread(self_update.fetch_prebuilt):
-                    self_update.set_progress("interface", "Montando a interface nova neste PC (pode levar alguns minutos)…")
-                    await asyncio.to_thread(self_update.build_frontend)
+                # V8.2.3: só tenta a interface pronta (segundos). Montar no PC não segura mais o reinício:
+                # o Iniciar-JARVIS.bat liga o JARVIS na hora e monta em segundo plano, se precisar.
+                self_update.set_progress("interface", "Baixando a interface pronta…")
+                await asyncio.to_thread(self_update.fetch_prebuilt)
             await asyncio.wait_for(asyncio.shield(talk), timeout=4)
         except asyncio.TimeoutError:
             pass

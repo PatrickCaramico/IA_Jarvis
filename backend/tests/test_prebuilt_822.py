@@ -87,3 +87,35 @@ def test_fetch_waits_for_site_to_finish(tmp_path):
     slept = []
     assert prebuilt.fetch(fe, "https://x/pc/", get=get, log=lambda m: None, wait_s=3600, sleep=slept.append) is True
     assert calls["n"] == 3 and slept == [15, 15]
+
+
+def test_v823_bat_starts_jarvis_before_building():
+    """V8.2.3: com interface já montada, o .bat liga o JARVIS na hora e monta a nova em segundo plano."""
+    bat = (ROOT / "Iniciar-JARVIS.bat").read_text(encoding="utf-8", errors="replace")
+    assert "BUILD_LATER" in bat
+    start_backend = bat.index("run_server.py")
+    bg = bat.index("if defined BUILD_LATER")
+    assert start_backend < bg  # o build em segundo plano vem depois de ligar o backend
+    assert "JARVIS_PREBUILT_WAIT=20" in bat
+
+
+def test_v823_background_build_lock_and_log(tmp_path, monkeypatch):
+    spec2 = importlib.util.spec_from_file_location("bg", ROOT / "scripts" / "build_background.py")
+    bg = importlib.util.module_from_spec(spec2)
+    spec2.loader.exec_module(bg)
+    monkeypatch.setattr(bg, "LOGS", tmp_path)
+    monkeypatch.setattr(bg, "LOCK", tmp_path / "build.running")
+    monkeypatch.setattr(bg, "FRONTEND", tmp_path)
+    import shutil as _sh
+    import sys
+
+    (tmp_path / "build.running").write_text("1")
+    assert bg.main() == 0  # já tem uma rodando: não começa outra
+    (tmp_path / "build.running").unlink()
+    monkeypatch.setattr(_sh, "which", lambda n: sys.executable)
+    monkeypatch.setattr(bg.subprocess, "call", lambda cmd, **kw: (kw["stdout"].write("built\n"), 0)[1])
+    assert bg.main() == 0
+    log = (tmp_path / "build.log").read_text()
+    assert "built" in log and "Fim: código 0" in log and not (tmp_path / "build.running").exists()
+    bat = (ROOT / "Iniciar-JARVIS.bat").read_text(encoding="utf-8", errors="replace")
+    assert "build_background.py" in bat and "'/c npm run build" not in bat
