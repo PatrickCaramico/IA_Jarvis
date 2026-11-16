@@ -118,3 +118,24 @@ def test_v817_frontend_stale(monkeypatch, tmp_path):
     assert self_update.frontend_stale() is False
     (fe / "src" / "b.js").write_text("novo")
     assert self_update.frontend_stale() is True
+
+
+def test_v821_build_does_not_wait_for_pipes(monkeypatch, tmp_path):
+    """V8.2.1: o build escreve num arquivo e o JARVIS espera só o processo (não o tubo); passou do tempo, encerra."""
+    import shutil as _sh
+    import sys
+
+    fe = tmp_path / "frontend"
+    (fe / "node_modules").mkdir(parents=True)
+    monkeypatch.setattr(self_update, "FRONTEND", fe)
+    monkeypatch.setattr(self_update, "ROOT", tmp_path)
+    script = tmp_path / "fake_npm.py"
+    # o "build" deixa um filho vivo segurando a saída (como o esbuild no Windows) e termina na hora
+    script.write_text("import subprocess, sys, time\nsubprocess.Popen([sys.executable, '-c', 'import time; time.sleep(20)'])\nprint('built')\n")
+    monkeypatch.setattr(_sh, "which", lambda name: "x" if name in ("npm.cmd", "npm") else None)
+    real_popen = self_update.subprocess.Popen
+    monkeypatch.setattr(self_update.subprocess, "Popen", lambda cmd, **kw: real_popen([sys.executable, str(script)], **kw))
+    t0 = time.monotonic()
+    assert self_update.build_frontend() is True
+    assert time.monotonic() - t0 < 10
+    assert "built" in (tmp_path / "logs" / "build.log").read_text()

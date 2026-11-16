@@ -63,7 +63,10 @@ export default function UpdateSteps({ updating, pct, current }) {
           <ul>{notes.map((n) => <li key={n}>{n.replace(/^JARVIS \d+\.\d+\.\d+:?\s*/, "")}</li>)}</ul>
         </div>
       )}
-      {!updating.slow && <p className="us-foot">Leva uns segundos. Depois eu volto e faço a verificação do seu rosto.</p>}
+      {!updating.slow && secs < 150 && <p className="us-foot">Leva uns segundos. Depois eu volto e faço a verificação do seu rosto.</p>}
+      {!updating.slow && secs >= 150 && (
+        <p className="us-foot is-warn">Está demorando mais que o normal. Se passar de 5 minutos, dê dois cliques no <b>Iniciar-JARVIS.bat</b> do PC: ele termina a atualização.</p>
+      )}
     </div>
   );
 }

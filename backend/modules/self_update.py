@@ -67,7 +67,7 @@ def pull() -> dict:
 
 # ------------------------------------------------------------------ V8.1.7: andamento
 FRONTEND = ROOT / "frontend"
-BUILD_TIMEOUT = 600
+BUILD_TIMEOUT = 240  # V8.2.1: era 600; passou disso, o .bat refaz a interface do jeito antigo
 PROGRESS: dict = {"etapa": "", "detalhe": "", "inicio": 0.0, "antes": "", "depois": "", "notas": []}
 
 
@@ -89,7 +89,7 @@ def frontend_stale() -> bool:
     if not index.exists():
         return True
     built = index.stat().st_mtime
-    for name in ("src", "public", "index.html", "package.json", "vite.config.js"):
+    for name in ("src", "public", "index.html", "package.json", "vite.config.js", "tailwind.config.js", "postcss.config.js"):
         path = FRONTEND / name
         files = [path] if path.is_file() else list(path.rglob("*")) if path.is_dir() else []
         if any(f.is_file() and f.stat().st_mtime > built for f in files):
@@ -98,21 +98,46 @@ def frontend_stale() -> bool:
 
 
 def build_frontend() -> bool:
-    """Compila a interface nova antes de reiniciar (o .bat vê que está em dia e pula essa parte)."""
+    """Compila a interface nova antes de reiniciar (o .bat vê que está em dia e pula essa parte).
+
+    V8.2.1: a saída vai para logs/build.log (antes era capturada por "tubo": no Windows um processo auxiliar
+    do build herdava o tubo e o JARVIS ficava esperando ele fechar, até 10 minutos). Agora espera só o build
+    terminar e, se passar do tempo, encerra o build inteiro e deixa o .bat fazer.
+    """
     npm = shutil.which("npm.cmd") or shutil.which("npm")
     if not npm or not (FRONTEND / "node_modules").exists():
         return False
+    logs = ROOT / "logs"
+    logs.mkdir(exist_ok=True)
+    started = time.time()
     try:
-        r = subprocess.run(  # noqa: S603 - comando fixo
-            [npm, "run", "build"], cwd=str(FRONTEND), capture_output=True, text=True, encoding="utf-8",
-            errors="replace", timeout=BUILD_TIMEOUT, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
-        )
-    except (subprocess.TimeoutExpired, OSError) as exc:
+        with open(logs / "build.log", "w", encoding="utf-8", errors="replace") as out:
+            proc = subprocess.Popen(  # noqa: S603 - comando fixo
+                [npm, "run", "build"], cwd=str(FRONTEND), stdout=out, stderr=subprocess.STDOUT,
+                stdin=subprocess.DEVNULL, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+            )
+            try:
+                code = proc.wait(timeout=BUILD_TIMEOUT)
+            except subprocess.TimeoutExpired:
+                _kill_tree(proc.pid)
+                log.warning("Build da interface passou de %s s: o .bat refaz no reinício.", BUILD_TIMEOUT)
+                return False
+    except OSError as exc:
         log.warning("Build da interface antes de reiniciar falhou: %s", exc)
         return False
-    if r.returncode != 0:
-        log.warning("Build da interface falhou: %s", (r.stderr or r.stdout)[-400:])
-    return r.returncode == 0
+    log.info("Build da interface em %.0f s (código %s).", time.time() - started, code)
+    return code == 0
+
+
+def _kill_tree(pid: int) -> None:
+    try:
+        if os.name == "nt":
+            subprocess.run(["taskkill", "/PID", str(pid), "/T", "/F"], capture_output=True, timeout=15,  # noqa: S603,S607
+                           creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+        else:
+            os.kill(pid, 9)
+    except Exception:  # noqa: BLE001
+        pass
 
 
 def restart() -> bool:

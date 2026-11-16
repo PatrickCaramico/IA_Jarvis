@@ -29,3 +29,4 @@
 @keyframes us-pulse { 50% { box-shadow: 0 0 2px rgba(94, 234, 212, 0.2); } }
 @keyframes us-blink { 50% { opacity: 0.25; } }
 @media (prefers-reduced-motion: reduce) { .us-spark, .us-dot, .us-live i { animation: none !important; } }
+.us-foot.is-warn { color: #fbbf24; }
