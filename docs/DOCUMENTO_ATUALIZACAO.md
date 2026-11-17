@@ -556,6 +556,28 @@
 
 **Status:** implementada na versão 8.8.0. Por privacidade, o balão mostra só **contagens** (quantas tarefas, quantos lembretes e a hora do próximo), nunca o texto delas.
 
+### Ideia 12: Papel de parede e mais atividades do robô no bloqueio do Desk
+
+**O que o Patrick pediu:** poder mudar o papel de parede do bloqueio do Modo Desk e deixar o robô ainda mais interativo (às vezes dormindo, às vezes andando de um lado pro outro, e assim vai).
+
+**Decidido (17/11):**
+1. **Papéis de parede animados prontos** (feitos no próprio app, leves, sem foto pesada):
+   - **Escuro do app** (o de hoje, padrão);
+   - **Céu estrelado** (estrelas piscando e, de vez em quando, uma estrela cadente);
+   - **Aurora** (faixas verdes e roxas ondulando devagar);
+   - **Cidade à noite** (prédios com janelas acendendo e apagando);
+   - **Pôr do sol** (céu laranja e rosa com o sol baixando e nuvens passando).
+   - A troca fica num botão 🖼 FUNDO no próprio bloqueio (escolha guardada no aparelho), e também em Personalizar › Bloqueio.
+2. **Atividades do robô** (ele vai alternando sozinho, uma de cada vez, a cada ~20–40 s):
+   - **Andar de um lado pro outro:** passeia pela tela, vira para o lado que anda e para no meio para olhar você;
+   - **Dormir de verdade:** deita com uma cobertinha, "zzz" subindo; acorda (espreguiçando) se você mexer o mouse ou tocar na tela;
+   - **Tomar café e ler:** xícara fumegando ou um livrinho sendo folheado;
+   - **Dançar e brincar:** dança com notinhas musicais (mais animado quando tem música tocando no Spotify), faz embaixadinha com uma bola ou solta bolhas.
+3. **Continua igual:** desbloqueio (rosto ou PIN), balão de fala, cutucadas, mini-jogo de estrelas. Quando você interage (clica, joga, desbloqueia), o robô para a atividade e volta para o centro.
+4. **Leve no PC:** só animações de GPU (transform/opacity); no **modo leve**, os fundos ficam parados e as atividades mais calmas.
+
+**Status:** desenhada, aguardando aprovação do Patrick.
+
 ## Ideias extras do Claude (para avaliar)
 
 | # | Ideia | Por que vale |
@@ -588,6 +610,7 @@ Itens que já estavam na lista e continuam **em espera**:
 ---
 
 ## Anotações da conversa
+- **17/11:** Ideia 12 (papel de parede animado e atividades do robô no bloqueio do Desk: andar, dormir, café/leitura, dançar/brincar) desenhada.
 - **17/11:** Ideia 11 (bloqueio do Modo Desk com o JARVIS interagindo) desenhada: robô grande no centro, brincadeiras, reage ao mouse, balão com frases e informações, mini-jogo de estrelas e desbloqueio igual ao de hoje.
 - **16/11:** 8.6.0 (pedidos do Patrick): modo Pac-Man (irritar o avatar faz ele correr atrás do mouse, comer e devolver), avatar "vivo" quando parado e avatar maior na pílula.
 - **16/11:** 8.5.0 (pedidos do Patrick): atualização automática (sem CMD), pílula da ilha nova, "Pensando…" que não fica mais preso, zoom e tamanho do painel da ilha.
