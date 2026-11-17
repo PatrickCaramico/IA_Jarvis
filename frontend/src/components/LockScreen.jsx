@@ -290,9 +290,10 @@ export default function LockScreen({
 
   // ---------------------------------------------------------------- V8.8.0: bloqueio do Modo Desk (ideia 11)
   // Só a aparência muda: o desbloqueio (rosto ou PIN) é o mesmo das outras telas.
-  if (deskLock && !phoneApp) {
+  // V8.8.1: também no celular (lá não tem a câmera do PC: entra pela digital ou pelo PIN, como no bloqueio do app).
+  if (deskLock) {
     const autoEntering = Boolean(clap?.autoEntering || sentinel?.autoEntering);
-    const failedActions = phase === "failed" ? (
+    const failedActions = phase === "failed" && !phoneApp ? (
       <div className="lo-quick">
         {showPinButton && <button type="button" className={`ls-chip ${failCount >= 2 ? "is-strong" : ""}`} onClick={onUsePin}>⌨ USAR PIN</button>}
         {unknownFace && <button type="button" className="ls-chip is-strong" onClick={(e) => { e.stopPropagation(); onNewProfile(); }}>＋ SOU NOVO: CRIAR PERFIL</button>}
@@ -309,8 +310,11 @@ export default function LockScreen({
         pinBlock={pinBlock}
         mainLabel={phase === "verified" ? "ENTRAR" : phase === "failed" ? "TENTAR DE NOVO" : "DESBLOQUEAR COM O ROSTO"}
         onMain={handleBtnClick}
-        mainVisible={!(phase === "verified" && autoEntering)}
+        mainVisible={!(phase === "verified" && autoEntering) && !phoneEntry}
         failedActions={failedActions}
+        phoneButtons={phonePinButton}
+        hint={phoneEntry ? (phase === "failed" && message ? message : phoneHint) : ""}
+        phone={phoneApp}
         jarvisState={jarvisState}
         onClassic={onDeskLock ? () => onDeskLock(false) : null}
       />

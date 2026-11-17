@@ -112,7 +112,7 @@ function useStarsGame(onCatch) {
 }
 
 export default function DeskLock({ api, phase, name, message, photoUrl, scan, pinBlock, mainLabel, onMain, mainVisible = true,
-  failedActions = null, phoneButtons = null, jarvisState = "idle", onClassic = null }) {
+  failedActions = null, phoneButtons = null, jarvisState = "idle", onClassic = null, hint = "", phone = false }) {
   const now = useNow(true);
   const [face, setFace] = useState(null);
   const [weather, setWeather] = useState(null);
@@ -127,6 +127,13 @@ export default function DeskLock({ api, phase, name, message, photoUrl, scan, pi
   useEffect(() => () => clearTimeout(reactTimer.current), []);
   const game = useStarsGame(() => react("conseguiu", 700));
   const { mood, poke } = usePoke(() => { if (!startPacman()) react("bravo", 2500); });
+  const [hintShown, setHintShown] = useState(Boolean(hint)); // V8.8.1: no celular, a 1ª fala explica como entrar
+  useEffect(() => {
+    if (!hint) return undefined;
+    setHintShown(true);
+    const t = setTimeout(() => setHintShown(false), 9000);
+    return () => clearTimeout(t);
+  }, [hint]);
 
   useEffect(() => {
     if (!api) return undefined;
@@ -168,7 +175,8 @@ export default function DeskLock({ api, phase, name, message, photoUrl, scan, pi
   };
   const expr = mood || reaction;
   const state = scanning ? "processing" : jarvisState === "speaking" ? "speaking" : "idle";
-  const say = phase === "failed" && message ? message
+  const say = hint && (hintShown || phase === "failed") ? hint
+    : phase === "failed" && message ? message
     : phase === "verified" ? `Bem-vindo de volta${name ? `, ${name}` : ""}! 💙`
       : scanning ? "Olhe para a câmera… estou te reconhecendo."
         : game.playing ? `⭐ ${game.score} · ${game.left}s`
@@ -177,7 +185,7 @@ export default function DeskLock({ api, phase, name, message, photoUrl, scan, pi
               : lines[line % lines.length];
 
   return (
-    <div className="dkl" role="main" style={{ "--dk-accent": accent, "--dk-accent-rgb": hexToRgb(accent) }}>
+    <div className={`dkl${phone ? " is-phone" : ""}`} role="main" style={{ "--dk-accent": accent, "--dk-accent-rgb": hexToRgb(accent) }}>
       <div className="dkl-glow" aria-hidden="true" />
       <header className="dkl-top">
         <div className="dkl-clock">{now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</div>
@@ -218,7 +226,7 @@ export default function DeskLock({ api, phase, name, message, photoUrl, scan, pi
           <div className="dkl-row">
             {game.playing ? <button type="button" className="dkl-chip" onClick={(e) => { e.stopPropagation(); game.stop(); }}>⏹ PARAR O JOGO</button>
               : <button type="button" className="dkl-chip" onClick={(e) => { e.stopPropagation(); game.start(); }}>⭐ JOGAR{game.record ? ` · recorde ${game.record}` : ""}</button>}
-            {onClassic && <button type="button" className="dkl-chip is-ghost" onClick={(e) => { e.stopPropagation(); onClassic(); }}>◐ BLOQUEIO CLÁSSICO</button>}
+            {onClassic && !phone && <button type="button" className="dkl-chip is-ghost" onClick={(e) => { e.stopPropagation(); onClassic(); }}>◐ BLOQUEIO CLÁSSICO</button>}
           </div>
         )}
       </footer>

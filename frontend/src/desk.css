@@ -424,3 +424,26 @@ svg.ra.ra-alive.ra-dormindo { animation-duration: 6s; }
 @keyframes dkl-wave { from { transform: rotate(-12deg); } to { transform: rotate(18deg); } }
 @keyframes dkl-star { 0% { opacity: 0; scale: 0.3; } 15% { opacity: 1; scale: 1.1; } 80% { opacity: 1; scale: 1; } 100% { opacity: 0; scale: 0.6; } }
 @media (prefers-reduced-motion: reduce) { .dkl-bubble, .dkl-wave, .dkl-star { animation: none; } }
+
+/* V8.8.1: bloqueio do Modo Desk no celular (tela estreita): tudo no tamanho do dedo, respeitando o entalhe e a barra */
+@media (max-width: 600px) {
+  .dkl { justify-content: space-between; gap: 10px; padding: max(16px, env(safe-area-inset-top)) 14px max(18px, env(safe-area-inset-bottom)); }
+  .dkl-clock { font-size: clamp(2.6rem, 15vw, 3.6rem); }
+  .dkl-date { font-size: 0.9rem; }
+  .dkl-stage { width: 100%; height: clamp(300px, 52vh, 440px); }
+  .dkl-robot .ra { width: clamp(160px, 50vw, 220px); }
+  .dkl-face { width: clamp(170px, 56vw, 230px); }
+  .dkl-bubble { top: 0; max-width: 92%; font-size: 0.98rem; padding: 9px 14px; }
+  .dkl-wave { right: 6%; top: 46%; font-size: 2rem; }
+  .dkl-star { font-size: 2.4rem; padding: 6px; } /* maiores: fáceis de tocar com o dedo */
+  .dkl-actions { width: 100%; gap: 8px; }
+  .dkl-main, .dkl-actions .ls-chip { box-sizing: border-box; width: 100%; justify-content: center; text-align: center; padding: 15px 18px; font-size: 0.95rem; }
+  .dkl-key { display: none; } /* no celular não tem barra de espaço */
+  .dkl-row { width: 100%; }
+  .dkl-row .dkl-chip { flex: 1; text-align: center; padding: 11px 12px; }
+  .dkl-pin { width: 100%; }
+}
+@media (max-height: 640px) and (max-width: 600px) {
+  .dkl-stage { height: clamp(240px, 46vh, 300px); }
+  .dkl-robot .ra { width: clamp(130px, 38vw, 170px); }
+}

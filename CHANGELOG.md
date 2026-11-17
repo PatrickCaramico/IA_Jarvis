@@ -2,6 +2,17 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 8.8.1 — 17 de novembro de 2026
+
+**📱 Bloqueio do Modo Desk também no celular**
+- **No app do celular** (e no navegador do celular), o bloqueio novo com o robô JARVIS também aparece. Como lá não tem a câmera do PC, entra pela **digital** ou pelo **PIN**, como no bloqueio do app. O balão explica como entrar.
+- **Layout de celular:**
+  - robô, relógio e balão no tamanho da tela;
+  - botões largos, no tamanho do dedo;
+  - estrelas do mini-jogo maiores para tocar;
+  - respeita o entalhe e a barra de baixo do celular.
+- Conferido no Pixel 7 e no iPhone SE.
+
 ## 8.8.0 — 17 de novembro de 2026
 
 **🤖 Bloqueio do Modo Desk com o JARVIS interagindo (ideia 11)**

@@ -224,5 +224,13 @@ test("V8.8.0: bloqueio do Desk: falas do balão só com contagens, estrelas fora
     assert.ok(d >= 27 && d <= 47, `estrela longe do robô e dentro da área (${d})`);
   }
   const lock = await import("node:fs").then((fs) => fs.readFileSync(new URL("../src/components/LockScreen.jsx", import.meta.url), "utf8"));
-  assert.ok(lock.includes("if (deskLock && !phoneApp)") && lock.includes("onMain={handleBtnClick}") && lock.includes("pinBlock={pinBlock}"));
+  assert.ok(lock.includes("if (deskLock) {") && lock.includes("onMain={handleBtnClick}") && lock.includes("pinBlock={pinBlock}"));
+});
+
+test("V8.8.1: bloqueio do Desk também no celular (PIN/digital, sem o botão do rosto)", async () => {
+  const lock = await import("node:fs").then((fs) => fs.readFileSync(new URL("../src/components/LockScreen.jsx", import.meta.url), "utf8"));
+  assert.ok(lock.includes("  if (deskLock) {") && !lock.includes("if (deskLock && !phoneApp)"));
+  assert.ok(lock.includes("mainVisible={!(phase === \"verified\" && autoEntering) && !phoneEntry}") && lock.includes("phoneButtons={phonePinButton}"));
+  const css = await import("node:fs").then((fs) => fs.readFileSync(new URL("../src/desk.css", import.meta.url), "utf8"));
+  assert.ok(css.includes("V8.8.1: bloqueio do Modo Desk no celular") && css.includes("env(safe-area-inset-bottom)"));
 });
