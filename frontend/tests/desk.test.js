@@ -207,3 +207,22 @@ test("V8.7.1: no app do Windows não há escuta pelo navegador (o som subia e de
   assert.ok(src.includes("enabled: BROWSER_EARS && sentinelOn"));
   assert.ok(src.includes("Boolean(appPrefs.clap_wake_enabled) && !IS_DESKTOP_APP"));
 });
+
+test("V8.8.0: bloqueio do Desk: falas do balão só com contagens, estrelas fora do robô e as peças no lugar", async () => {
+  const src = await import("node:fs").then((fs) => fs.readFileSync(new URL("../src/components/DeskLock.jsx", import.meta.url), "utf8"));
+  const phrases = new Function(`return ${src.match(/const PHRASES = (\[[\s\S]*?\]);/)[1]}`)();
+  const bubble = new Function("face", "weather", "now", "PHRASES", src.match(/export function bubbleLines\(face, weather, now = new Date\(\)\) \{([\s\S]*?)\n\}/)[1]);
+  const lines = bubble({ tarefas: 2, lembretes_hoje: 1, proximo_lembrete: "09:00", ofensiva: 3 }, { temperature: 21, description: "céu limpo", rain_probability: 10 }, new Date(2026, 10, 17, 14, 5), phrases);
+  assert.ok(lines[0].startsWith("Boa tarde! Agora são 14:05"));
+  assert.ok(lines.some((l) => l.includes("21°")) && lines.some((l) => l.includes("09:00")) && lines.some((l) => l.includes("2 tarefas")));
+  assert.ok(lines.some((l) => l.includes("3 dias")));
+  assert.equal(bubble(null, null, new Date(2026, 10, 17, 2, 0), phrases)[0].startsWith("Boa noite"), true);
+  const star = new Function("rnd", "id", src.match(/export function randomStar\(rnd = Math.random, id = 0\) \{([\s\S]*?)\n\}/)[1]);
+  for (const r of [0, 0.25, 0.5, 0.75, 0.99]) {
+    const s = star(() => r, 1);
+    const d = Math.hypot(s.x - 50, (s.y - 50) / 0.8);
+    assert.ok(d >= 27 && d <= 47, `estrela longe do robô e dentro da área (${d})`);
+  }
+  const lock = await import("node:fs").then((fs) => fs.readFileSync(new URL("../src/components/LockScreen.jsx", import.meta.url), "utf8"));
+  assert.ok(lock.includes("if (deskLock && !phoneApp)") && lock.includes("onMain={handleBtnClick}") && lock.includes("pinBlock={pinBlock}"));
+});

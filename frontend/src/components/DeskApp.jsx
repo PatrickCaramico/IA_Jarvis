@@ -595,6 +595,11 @@ function Personalize({ api, cfg, setCfg, aiName, onRename }) {
                 <b>{(Number(av.olhos_vel) || 1).toFixed(2)}x</b></label>
             )}
           </div>
+          <div className="dk-field dk-jeito"><span>Bloqueio</span>
+            <label className="dk-toggle-row"><input type="checkbox" defaultChecked={(() => { try { return localStorage.getItem("jarvis.deskLock") !== "0"; } catch { return true; } })()}
+              onChange={(e) => window.dispatchEvent(new CustomEvent("jarvis-desklock", { detail: e.target.checked }))} />
+              <span>Bloqueio com o {aiName} interagindo (robô grande, balão, mini-jogo). Desligado: a tela de bloqueio clássica.</span></label>
+          </div>
           <div className="dk-field dk-jeito"><span>Animações e desempenho</span>
             <label className="dk-toggle-row"><input type="checkbox" checked={av.piscar !== false} onChange={(e) => save({ avatar: { piscar: e.target.checked } })} />
               <span>Piscar sozinho</span></label>

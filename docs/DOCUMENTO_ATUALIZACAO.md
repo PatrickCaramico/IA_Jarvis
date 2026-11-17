@@ -554,7 +554,7 @@
 5. **Mini-jogo "Pegue as estrelas":** estrelinhas aparecem em volta do robô. Clique nelas antes que sumam: cada uma vale ponto, o robô comemora, e o recorde fica guardado. Começa num botão ⭐ JOGAR e não atrapalha o desbloqueio.
 6. **Desbloquear igual ao de hoje:** rosto pela câmera ou PIN, com o mesmo nível de segurança. Só a aparência muda. Dá para voltar para o bloqueio clássico por uma opção em Personalizar.
 
-**Status:** desenhada, esperando aprovação para implementar.
+**Status:** implementada na versão 8.8.0. Por privacidade, o balão mostra só **contagens** (quantas tarefas, quantos lembretes e a hora do próximo), nunca o texto delas.
 
 ## Ideias extras do Claude (para avaliar)
 

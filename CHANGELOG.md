@@ -2,6 +2,21 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 8.8.0 — 17 de novembro de 2026
+
+**🤖 Bloqueio do Modo Desk com o JARVIS interagindo (ideia 11)**
+- **Com o Modo Desk ligado, ao bloquear:** em vez da tela clássica, aparece o fundo escuro do Desk com o **robô JARVIS grande no centro**, a hora e a data, nas suas cores e no seu visual.
+- **Brincadeiras:** ele respira, olha em volta, boceja, dá pulinhos, cochila com "zzz" e, de tempos em tempos, uma mãozinha 👋 **acena** ao lado dele.
+- **Reage ao mouse:**
+  - os olhos seguem o cursor;
+  - clicar nele faz o robô reagir (feliz, rindo);
+  - as cutucadas também valem: surpreso, bravo e, na 5ª, o Pac-Man no app do Windows.
+- **Balão de fala** (troca a cada 6,5 s): saudação com a hora, o clima, quantos lembretes hoje e a hora do próximo, quantas tarefas pendentes, a ofensiva 🔥 e frases curtas.
+- **Mini-jogo "Pegue as estrelas"** (⭐ JOGAR): 30 s pegando as estrelinhas que aparecem em volta do robô. Cada uma vale ponto, o robô comemora, e o recorde fica guardado.
+- **Desbloqueio igual ao de hoje:** rosto pela câmera ou PIN, com a mesma segurança. Só a aparência mudou.
+- **Privacidade:** a tela bloqueada lê só a nova rota pública `/api/desk/lockface`, que traz a **aparência do robô e contagens**. Nenhum texto de tarefa, lembrete, memória ou conversa aparece para quem estiver na frente do PC.
+- **Voltar ao bloqueio clássico:** botão "◐ BLOQUEIO CLÁSSICO" na própria tela, ou em Personalizar › Bloqueio.
+
 ## 8.7.2 — 17 de novembro de 2026
 
 **🎬 Atualizar não engasga mais o vídeo que você está vendo**

@@ -323,3 +323,35 @@ async def voice_groq_status() -> dict:
     from modules import voice_groq
 
     return {"disponivel": voice_groq.available()}
+
+
+# --------------------------------------------------------------------------- V8.8.0: bloqueio do Modo Desk
+@router.get("/api/desk/lockface")
+async def desk_lockface() -> dict:
+    """O que a tela de BLOQUEIO do Modo Desk pode mostrar (rota pública: a tela está bloqueada).
+
+    Só a aparência do robô e CONTAGENS: nenhum texto de tarefa, lembrete, memória ou conversa aparece para quem
+    estiver na frente do PC."""
+    from datetime import datetime
+
+    from modules import prefs, reminders, tasks
+
+    cfg = desk.config()
+    now = datetime.now()
+    pend = [t for t in tasks.get_tasks(False) if not t.get("concluida")]
+    today = []
+    for r in reminders.get_reminders(True):
+        try:
+            when = datetime.fromisoformat(str(r.get("data_hora", "")).replace(" ", "T")[:19])
+        except ValueError:
+            continue
+        if when.date() == now.date() and when >= now:
+            today.append(when)
+    try:
+        ofensiva = desk_missions.view().get("ofensiva", {}).get("atual", 0)
+    except Exception:  # noqa: BLE001
+        ofensiva = 0
+    ai = prefs.get_ai_name() or "JARVIS"
+    return {"avatar": cfg["avatar"], "cor": cfg["cor"], "tema": cfg.get("tema"), "nome": str(ai)[:20],
+            "hora": now.strftime("%H:%M"), "tarefas": len(pend), "lembretes_hoje": len(today),
+            "proximo_lembrete": min(today).strftime("%H:%M") if today else None, "ofensiva": int(ofensiva or 0)}

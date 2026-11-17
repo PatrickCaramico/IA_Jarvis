@@ -379,3 +379,48 @@ svg.ra.ra-alive.ra-dormindo { animation-duration: 6s; }
 .dk-poke:hover .ra { transform: rotate(-6deg); }
 .dk-poke:active .ra { transform: scale(0.9); }
 .dk-poke:focus-visible { outline: 2px solid var(--dk-accent); outline-offset: 2px; }
+
+/* V8.8.0 (ideia 11): bloqueio do Modo Desk com o JARVIS interagindo */
+.dkl { position: fixed; inset: 0; z-index: 70; display: flex; flex-direction: column; align-items: center; justify-content: safe center; gap: clamp(8px, 2vh, 20px);
+  overflow: auto; padding: 24px 16px; box-sizing: border-box; color: #eef2f7; font-family: "Rajdhani", "Inter", system-ui, sans-serif;
+  background: radial-gradient(ellipse 70% 60% at 50% 45%, #141a26 0%, #0b0d12 70%); user-select: none; }
+.dkl-glow { position: absolute; inset: 0; pointer-events: none; background:
+  radial-gradient(circle at 20% 25%, rgba(var(--dk-accent-rgb), 0.14), transparent 35%),
+  radial-gradient(circle at 80% 70%, rgba(var(--dk-accent-rgb), 0.1), transparent 40%); filter: blur(10px); }
+.dkl > * { position: relative; flex-shrink: 0; }
+.dkl-top { text-align: center; }
+.dkl-clock { font: 300 clamp(2.6rem, min(8vw, 10vh), 5rem) "Orbitron", sans-serif; letter-spacing: 0.06em; font-variant-numeric: tabular-nums; line-height: 1; }
+.dkl-date { margin-top: 6px; color: #8b93a7; letter-spacing: 0.1em; text-transform: capitalize; }
+.dkl-stage { position: relative; display: grid; place-items: center; width: min(560px, 92vw); height: clamp(260px, 46vh, 420px); }
+.dkl-robot { all: unset; cursor: pointer; display: grid; place-items: center; border-radius: 50%; transition: transform 150ms; }
+.dkl-robot .ra { width: clamp(170px, 34vh, 260px); height: auto; filter: drop-shadow(0 18px 30px rgba(0, 0, 0, 0.5)); }
+.dkl-robot:hover { transform: scale(1.03); }
+.dkl-robot:active { transform: scale(0.96); }
+.dkl-robot:focus-visible { outline: 2px solid var(--dk-accent); outline-offset: 6px; }
+.dkl-face { width: clamp(180px, 32vh, 260px); }
+.dkl-bubble { position: absolute; top: 4%; left: 50%; transform: translateX(-50%); max-width: min(420px, 86vw); margin: 0; padding: 10px 16px; border-radius: 16px;
+  background: rgba(20, 26, 38, 0.92); border: 1px solid rgba(var(--dk-accent-rgb), 0.45); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  font-size: 1.02rem; font-weight: 600; text-align: center; animation: dkl-pop 300ms ease-out; }
+.dkl-bubble::after { content: ""; position: absolute; left: 50%; bottom: -8px; width: 14px; height: 14px; transform: translateX(-50%) rotate(45deg);
+  background: rgba(20, 26, 38, 0.92); border-right: 1px solid rgba(var(--dk-accent-rgb), 0.45); border-bottom: 1px solid rgba(var(--dk-accent-rgb), 0.45); }
+.dkl-wave { position: absolute; right: 18%; top: 42%; font-size: 2.4rem; transform-origin: 70% 80%; animation: dkl-wave 0.5s ease-in-out 4 alternate; }
+.dkl-game { position: absolute; inset: 0; pointer-events: none; }
+.dkl-star { all: unset; position: absolute; transform: translate(-50%, -50%); cursor: pointer; pointer-events: auto; font-size: 2rem; animation: dkl-star 1.7s ease-in-out forwards; }
+.dkl-star:hover { filter: drop-shadow(0 0 8px #fde047); }
+.dkl-actions { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.dkl-main { all: unset; box-sizing: border-box; cursor: pointer; display: inline-flex; align-items: center; gap: 10px; padding: 14px 26px; border-radius: 999px;
+  background: var(--dk-accent); color: #06121f; font: 700 1rem "Orbitron", sans-serif; letter-spacing: 0.06em; box-shadow: 0 10px 30px rgba(var(--dk-accent-rgb), 0.35); }
+.dkl-main:hover { filter: brightness(1.08); }
+.dkl-main:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+.dkl-key { padding: 2px 8px; border-radius: 6px; background: rgba(0, 0, 0, 0.18); font-size: 0.65rem; }
+.dkl-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.dkl-chip { all: unset; cursor: pointer; padding: 8px 14px; border-radius: 999px; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.12); font-weight: 600; letter-spacing: 0.04em; }
+.dkl-chip:hover { background: rgba(255, 255, 255, 0.16); }
+.dkl-chip.is-ghost { background: transparent; color: #8b93a7; }
+.dkl-chip:focus-visible { outline: 2px solid var(--dk-accent); outline-offset: 2px; }
+.dkl .lo-quick, .dkl .ls-chip { margin: 0; }
+.dkl-pin { width: min(380px, 92vw); }
+@keyframes dkl-pop { from { opacity: 0; transform: translate(-50%, 6px) scale(0.96); } }
+@keyframes dkl-wave { from { transform: rotate(-12deg); } to { transform: rotate(18deg); } }
+@keyframes dkl-star { 0% { opacity: 0; scale: 0.3; } 15% { opacity: 1; scale: 1.1; } 80% { opacity: 1; scale: 1; } 100% { opacity: 0; scale: 0.6; } }
+@media (prefers-reduced-motion: reduce) { .dkl-bubble, .dkl-wave, .dkl-star { animation: none; } }
