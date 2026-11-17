@@ -447,3 +447,135 @@ svg.ra.ra-alive.ra-dormindo { animation-duration: 6s; }
   .dkl-stage { height: clamp(240px, 46vh, 300px); }
   .dkl-robot .ra { width: clamp(130px, 38vw, 170px); }
 }
+
+/* V8.9.0 (ideia 12): papéis de parede animados e atividades do robô no bloqueio do Desk.
+   Regra de desempenho: só transform/translate/rotate/scale e opacity em elementos HTML (nada de zoom nem SVG interno). */
+.dkl > .dkl-bg { position: fixed; inset: 0; overflow: hidden; pointer-events: none; }
+.dkl.has-bg .dkl-glow { opacity: 0.45; }
+.dkl-bg i { position: absolute; display: block; }
+.dkl-bg.is-estrelas { background: radial-gradient(ellipse 120% 80% at 50% 100%, #1b2350 0%, #0b1030 45%, #04050f 100%); }
+.dkl-twinkle { border-radius: 50%; background: #fff; box-shadow: 0 0 4px rgba(255, 255, 255, 0.8); animation: dkl-twinkle 4s ease-in-out infinite alternate; }
+.dkl-shoot { top: 12%; left: 70%; width: 140px; height: 2px; border-radius: 2px; background: linear-gradient(90deg, #fff, transparent);
+  rotate: -28deg; transform-origin: left center; opacity: 0; animation: dkl-shoot 11s ease-in 3s infinite; }
+.dkl-bg.is-aurora { background: linear-gradient(180deg, #020611 0%, #06142a 55%, #0a1d2e 100%); }
+.dkl-band { left: -30%; width: 160%; height: 46%; border-radius: 50%; mix-blend-mode: screen; opacity: 0.55; animation: dkl-aurora 18s ease-in-out infinite alternate; }
+.dkl-band.is-1 { top: 4%; background: radial-gradient(ellipse 50% 40% at 50% 60%, rgba(52, 211, 153, 0.75), transparent 70%); }
+.dkl-band.is-2 { top: 14%; background: radial-gradient(ellipse 45% 35% at 40% 50%, rgba(167, 139, 250, 0.6), transparent 70%); animation-duration: 24s; animation-delay: -8s; }
+.dkl-band.is-3 { top: 22%; background: radial-gradient(ellipse 40% 30% at 60% 50%, rgba(34, 211, 238, 0.5), transparent 70%); animation-duration: 30s; animation-delay: -15s; }
+.dkl-hills { left: 0; right: 0; bottom: 0; height: 22%; background: radial-gradient(ellipse 60% 100% at 25% 100%, #030812 60%, transparent 61%),
+  radial-gradient(ellipse 70% 90% at 80% 100%, #050b16 60%, transparent 61%); }
+.dkl-bg.is-cidade { background: linear-gradient(180deg, #050816 0%, #111637 60%, #2a1f4a 100%); }
+.dkl-moon { top: 9%; right: 12%; width: 64px; height: 64px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #fffbe8, #e8dcb0 70%);
+  box-shadow: 0 0 40px rgba(255, 245, 200, 0.35); }
+.dkl-city { position: absolute; left: 0; right: 0; bottom: 0; height: 52%; }
+.dkl-bld { position: absolute; bottom: 0; background: linear-gradient(180deg, #151a33, #0a0d1f); border-radius: 3px 3px 0 0; box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.04); }
+.dkl-win { width: 6px; height: 8px; border-radius: 1px; background: #ffd77a; box-shadow: 0 0 6px rgba(255, 215, 122, 0.7); opacity: 0;
+  animation: dkl-window 10s steps(1, end) infinite; }
+.dkl-bg.is-porsol { background: linear-gradient(180deg, #2b1055 0%, #7b2f8e 30%, #e0567a 55%, #ff9a5a 72%, #ffcf7a 82%, #3a1d4a 82.2%, #1c1030 100%); }
+.dkl-sun { left: 22%; top: 66%; width: 150px; height: 150px; margin-left: -75px; border-radius: 50%;
+  background: radial-gradient(circle, #fff3c4 0%, #ffd27a 45%, #ff9a5a 70%, transparent 72%); animation: dkl-sunset 60s ease-in-out infinite alternate; }
+.dkl-sea { left: 0; right: 0; top: 82%; bottom: 0; background: repeating-linear-gradient(180deg, rgba(255, 170, 120, 0.18) 0 2px, transparent 2px 9px); }
+.dkl-cloud { height: 26px; border-radius: 30px; background: rgba(255, 210, 220, 0.35); animation: dkl-cloud 70s linear infinite; }
+.dkl-cloud.is-1 { top: 18%; width: 180px; left: -200px; }
+.dkl-cloud.is-2 { top: 30%; width: 120px; left: -140px; animation-duration: 95s; animation-delay: -40s; }
+.dkl-cloud.is-3 { top: 42%; width: 220px; left: -240px; animation-duration: 120s; animation-delay: -80s; opacity: 0.7; }
+@keyframes dkl-twinkle { from { opacity: 0.15; } to { opacity: 1; } }
+@keyframes dkl-shoot { 0%, 88% { opacity: 0; translate: 0 0; } 90% { opacity: 1; } 100% { opacity: 0; translate: -420px 220px; } }
+@keyframes dkl-aurora { from { translate: -6% 0; scale: 1 0.9; } to { translate: 6% 4%; scale: 1.1 1.15; } }
+@keyframes dkl-window { 0% { opacity: 0; } 30% { opacity: 1; } 75% { opacity: 0; } }
+@keyframes dkl-sunset { from { translate: 0 -40px; } to { translate: 0 30px; } }
+@keyframes dkl-cloud { to { translate: calc(100vw + 260px) 0; } }
+
+/* As atividades: o "ator" (robô + objetos) anda; o robô inclina, deita, dança… */
+.dkl-actor { position: relative; display: grid; place-items: center; --walk: 70%; }
+.dkl-props { position: absolute; inset: 0; pointer-events: none; }
+.dkl-props i, .dkl-props span { position: absolute; display: block; font-style: normal; }
+.dkl-actor.is-andar { animation: dkl-walk 12s ease-in-out infinite; }
+.dkl-actor.is-andar .dkl-robot { animation: dkl-lean 12s ease-in-out infinite, dkl-step 0.45s ease-in-out infinite alternate; }
+.dkl-actor.is-dormir .dkl-robot, .dkl-actor.is-acordando .dkl-robot { rotate: -9deg; translate: 0 6%; transition: rotate 600ms, translate 600ms; }
+.dkl-actor.is-acordando .dkl-robot { animation: dkl-stretch 1s ease-in-out 2 alternate; }
+.dkl-blanket { left: 4%; right: 4%; bottom: 2%; height: 21%; border-radius: 45% 45% 16px 16px;
+  background: repeating-linear-gradient(135deg, rgba(var(--dk-accent-rgb), 0.85) 0 12px, rgba(var(--dk-accent-rgb), 0.6) 12px 24px);
+  box-shadow: 0 -4px 14px rgba(0, 0, 0, 0.35), inset 0 6px 10px rgba(255, 255, 255, 0.18); transform-origin: bottom center; animation: dkl-breath 3.2s ease-in-out infinite; }
+.dkl-actor.is-acordando .dkl-blanket { animation: dkl-off 1.8s ease-in forwards; }
+.dkl-zzz { right: 4%; top: 6%; }
+.dkl-zzz i { color: var(--dk-accent); font: 700 1.6rem "Orbitron", sans-serif; opacity: 0; animation: dkl-z 3.6s ease-out infinite; }
+.dkl-zzz i:nth-child(2) { animation-delay: 1.2s; font-size: 2rem; }
+.dkl-zzz i:nth-child(3) { animation-delay: 2.4s; font-size: 2.5rem; }
+.dkl-cup { right: -6%; bottom: 14%; font-size: 2.8rem; animation: dkl-sip 5s ease-in-out infinite; }
+.dkl-steam { left: 38%; bottom: 82%; width: 4px; height: 22px; border-radius: 4px; background: rgba(255, 255, 255, 0.55); opacity: 0; animation: dkl-steam 2.4s ease-out infinite; }
+.dkl-steam:nth-child(2) { left: 22%; animation-delay: 0.8s; }
+.dkl-steam:nth-child(3) { left: 54%; animation-delay: 1.6s; }
+.dkl-book { left: 50%; bottom: -10%; translate: -50% 0; font-size: 3.4rem; animation: dkl-read 4s ease-in-out infinite; }
+.dkl-page { left: 50%; top: 22%; width: 38%; height: 52%; border-radius: 2px 6px 6px 2px; background: #f4efe2; transform-origin: left center; animation: dkl-flip 3s ease-in-out infinite; }
+.dkl-actor.is-dancar { animation: dkl-bounce 0.5s ease-in-out infinite alternate; }
+.dkl-actor.is-dancar .dkl-robot { animation: dkl-sway 1s ease-in-out infinite alternate; }
+.dkl-actor.is-dancar.is-music { animation-duration: 0.33s; }
+.dkl-actor.is-dancar.is-music .dkl-robot { animation-duration: 0.66s; }
+.dkl-notes { inset: 0; }
+.dkl-notes i { bottom: 40%; color: var(--dk-accent); font-size: 1.8rem; opacity: 0; animation: dkl-note 2.6s ease-out infinite; }
+.dkl-notes i:nth-child(1) { left: -6%; }
+.dkl-notes i:nth-child(2) { right: -6%; animation-delay: 0.5s; }
+.dkl-notes i:nth-child(3) { left: 4%; animation-delay: 1s; }
+.dkl-notes i:nth-child(4) { right: 2%; animation-delay: 1.5s; }
+.dkl-notes i:nth-child(5) { left: 46%; animation-delay: 2s; }
+.dkl-actor.is-music .dkl-notes i { animation-duration: 1.6s; }
+.dkl-ball { right: -16%; bottom: 4%; font-size: 2.2rem; animation: dkl-kick 0.9s cubic-bezier(0.3, 0, 0.7, 1) infinite alternate; }
+.dkl-actor.is-bola .dkl-robot { animation: dkl-hop 0.9s ease-in-out infinite alternate-reverse; }
+.dkl-soap i { left: 50%; top: 55%; width: 26px; height: 26px; border-radius: 50%; border: 2px solid rgba(186, 230, 253, 0.85);
+  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.7), rgba(125, 211, 252, 0.12) 45%, rgba(244, 114, 182, 0.12)); opacity: 0;
+  animation: dkl-soap 4.2s ease-out infinite; --dx: 60px; }
+.dkl-soap i:nth-child(2) { --dx: -80px; animation-delay: 0.7s; width: 18px; height: 18px; }
+.dkl-soap i:nth-child(3) { --dx: 110px; animation-delay: 1.4s; width: 34px; height: 34px; }
+.dkl-soap i:nth-child(4) { --dx: -40px; animation-delay: 2.1s; }
+.dkl-soap i:nth-child(5) { --dx: -130px; animation-delay: 2.8s; width: 22px; height: 22px; }
+.dkl-soap i:nth-child(6) { --dx: 20px; animation-delay: 3.5s; width: 30px; height: 30px; }
+@keyframes dkl-walk { 0%, 6% { translate: 0 0; } 22%, 32% { translate: calc(var(--walk) * -1) 0; } 48%, 56% { translate: 0 0; } 72%, 82% { translate: var(--walk) 0; } 98%, 100% { translate: 0 0; } }
+@keyframes dkl-lean { 0%, 6% { rotate: 0deg; } 8%, 20% { rotate: -7deg; } 23%, 32% { rotate: 0deg; } 34%, 46% { rotate: 7deg; } 49%, 56% { rotate: 0deg; } 58%, 70% { rotate: 7deg; }
+  73%, 82% { rotate: 0deg; } 84%, 96% { rotate: -7deg; } 99%, 100% { rotate: 0deg; } }
+@keyframes dkl-step { from { translate: 0 0; } to { translate: 0 -5px; } }
+@keyframes dkl-stretch { from { scale: 1 1; } to { scale: 0.96 1.06; } }
+@keyframes dkl-breath { 0%, 100% { scale: 1 1; } 50% { scale: 1.02 1.06; } }
+@keyframes dkl-off { to { translate: 0 60%; opacity: 0; } }
+@keyframes dkl-z { 0% { opacity: 0; translate: 0 0; } 20% { opacity: 1; } 100% { opacity: 0; translate: 26px -70px; } }
+@keyframes dkl-sip { 0%, 60%, 100% { rotate: 0deg; translate: 0 0; } 70%, 85% { rotate: -22deg; translate: -18px -26px; } }
+@keyframes dkl-steam { 0% { opacity: 0; translate: 0 0; scale: 1 0.6; } 30% { opacity: 0.8; } 100% { opacity: 0; translate: 6px -34px; scale: 1 1.4; } }
+@keyframes dkl-read { 0%, 100% { rotate: -3deg; } 50% { rotate: 3deg; } }
+@keyframes dkl-flip { 0%, 55% { transform: rotateY(0deg); opacity: 0; } 60% { opacity: 1; } 90% { transform: rotateY(-180deg); opacity: 1; } 100% { transform: rotateY(-180deg); opacity: 0; } }
+@keyframes dkl-bounce { from { translate: 0 0; } to { translate: 0 -12px; } }
+@keyframes dkl-sway { from { rotate: -10deg; } to { rotate: 10deg; } }
+@keyframes dkl-note { 0% { opacity: 0; translate: 0 0; rotate: -10deg; } 20% { opacity: 1; } 100% { opacity: 0; translate: 12px -110px; rotate: 15deg; } }
+@keyframes dkl-kick { from { translate: 0 0; rotate: 0deg; } to { translate: 0 -90px; rotate: 300deg; } }
+@keyframes dkl-hop { from { translate: 0 0; } to { translate: 0 -8px; } }
+@keyframes dkl-soap { 0% { opacity: 0; translate: 0 0; scale: 0.3; } 15% { opacity: 1; scale: 1; } 100% { opacity: 0; translate: var(--dx) -200px; scale: 1.15; } }
+
+/* O seletor de fundo (🖼 FUNDO) */
+.dkl-chip.is-on { background: rgba(var(--dk-accent-rgb), 0.25); border-color: rgba(var(--dk-accent-rgb), 0.6); }
+.dkl-bgpick { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; max-width: min(760px, 94vw); padding: 10px; border-radius: 18px;
+  background: rgba(8, 10, 18, 0.72); border: 1px solid rgba(255, 255, 255, 0.1); animation: dkl-up 200ms ease-out; }
+.dkl-swatch { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 12px; font-weight: 600; font-size: 0.9rem;
+  border: 2px solid transparent; color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6); }
+.dkl-swatch.is-on { border-color: var(--dk-accent); }
+.dkl-swatch:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.dkl-swatch.sw-escuro { background: linear-gradient(135deg, #141a26, #0b0d12); }
+.dkl-swatch.sw-estrelas { background: radial-gradient(circle at 30% 30%, #fff 1px, transparent 2px) 0 0 / 14px 14px, linear-gradient(135deg, #1b2350, #04050f); }
+.dkl-swatch.sw-aurora { background: linear-gradient(135deg, #0a3d3a, #3b2a6b 60%, #06142a); }
+.dkl-swatch.sw-cidade { background: linear-gradient(180deg, #111637 55%, #0a0d1f 55%); }
+.dkl-swatch.sw-porsol { background: linear-gradient(180deg, #7b2f8e, #e0567a 50%, #ff9a5a); }
+@keyframes dkl-up { from { opacity: 0; translate: 0 8px; } }
+.dkl.has-bg .dkl-date { color: #d6dbe7; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5); }
+.dkl.has-bg .dkl-chip { background: rgba(8, 10, 18, 0.55); color: #eef2f7; }
+.dkl.has-bg .dkl-clock { text-shadow: 0 2px 10px rgba(0, 0, 0, 0.45); }
+
+/* Leve e "reduzir movimento": fundos parados e objetos sem animação (o robô continua, só sem passear) */
+html.is-lite .dkl-bg *, html.is-lite .dkl-props *, html.is-lite .dkl-actor, html.is-lite .dkl-actor .dkl-robot { animation: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  .dkl-bg *, .dkl-props *, .dkl-actor, .dkl-actor .dkl-robot { animation: none !important; }
+}
+@media (max-width: 600px) {
+  .dkl-actor { --walk: 42%; }
+  .dkl-moon { width: 44px; height: 44px; }
+  .dkl-sun { width: 110px; height: 110px; margin-left: -55px; }
+  .dkl-bgpick { width: 100%; box-sizing: border-box; }
+  .dkl-swatch { flex: 1 1 40%; justify-content: center; padding: 11px 10px; }
+}

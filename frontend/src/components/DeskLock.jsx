@@ -4,6 +4,8 @@ import { FaceCircle } from "./LockOrbe.jsx";
 import useNow from "../hooks/useNow.js";
 import { hexToRgb } from "../utils/desk.js";
 import { startPacman, usePoke } from "../utils/poke.js";
+import { isLite } from "../utils/lite.js";
+import DeskLockBg, { BG_EVENT, LOCK_BGS, readBg, saveBg } from "./DeskLockBg.jsx";
 import "../desk.css";
 
 // V8.8.0 (ideia 11): BLOQUEIO DO MODO DESK. Em vez da tela de bloqueio clássica, o robô JARVIS grande no centro,
@@ -47,6 +49,86 @@ export function randomStar(rnd = Math.random, id = 0) {
   const angle = rnd() * Math.PI * 2;
   const dist = 0.28 + rnd() * 0.18; // fora do robô, dentro da área
   return { id, x: 50 + Math.cos(angle) * dist * 100, y: 50 + Math.sin(angle) * dist * 100 * 0.8, born: Date.now() };
+}
+
+// V8.9.0 (ideia 12): AS ATIVIDADES do robô. Ele vai alternando sozinho, uma de cada vez, com um descanso no
+// centro entre elas: andar de um lado pro outro, dormir de cobertinha (acorda quando você mexe), tomar café, ler,
+// dançar (mais animado com música tocando), embaixadinha e bolhas. Qualquer interação o traz de volta ao centro.
+export const ACTIVITIES = ["andar", "dormir", "cafe", "ler", "dancar", "bola", "bolhas"];
+export const CALM_ACTIVITIES = ["cafe", "ler", "dormir"]; // no modo leve: só as calmas
+export const WAKE_MOVE_PX = 40;
+const ACT_SAY = {
+  andar: "Vou dar uma voltinha… 🚶",
+  dormir: "Zzz… 😴 (mexa o mouse ou toque para me acordar)",
+  acordando: "Uaaah… acordei! 🥱",
+  cafe: "Hora do cafezinho. ☕",
+  ler: "Deixa eu ler um pouquinho… 📖",
+  dancar: "Um, dois, um, dois… 💃",
+  bola: "Olha a embaixadinha! ⚽",
+  bolhas: "Bolhas de sabão! 🫧",
+};
+const ACT_FACE = { dormir: "dormindo", acordando: "bocejo", dancar: "feliz", bolhas: "feliz", cafe: "repouso" };
+
+/** A próxima atividade: diferente da anterior; com música tocando, dançar fica bem mais provável. */
+export function nextActivity(prev, { music = false, lite = false, rnd = Math.random } = {}) {
+  let pool = lite ? CALM_ACTIVITIES : ACTIVITIES;
+  if (music && !lite) pool = [...pool, "dancar", "dancar", "dancar"];
+  const options = pool.filter((a) => a !== prev);
+  return options[Math.floor(rnd() * options.length)] || pool[0];
+}
+
+/** Quanto tempo cada atividade dura (ms). Dormir dura mais; andar dá duas voltas inteiras. */
+export function activityMs(act, rnd = Math.random) {
+  if (act === "dormir") return 35000 + rnd() * 20000;
+  if (act === "andar") return 24000;
+  return 15000 + rnd() * 9000;
+}
+
+/** A fala do balão para a atividade (e para a música, quando está dançando com ela). */
+export function activityLine(act, music = false) {
+  if (act === "dancar" && music) return "Essa música está boa demais! 🎶";
+  return ACT_SAY[act] || "";
+}
+
+function useActivity(enabled, musicRef) {
+  const [act, setAct] = useState(null); // { id, at } ou null (parado no centro)
+  const [cycle, setCycle] = useState(0);
+  const prev = useRef(null);
+  const waking = useRef(false);
+  useEffect(() => {
+    if (!enabled) return undefined;
+    let t = 0;
+    const rest = (ms) => {
+      setAct(null);
+      t = setTimeout(go, ms);
+    };
+    const go = () => {
+      const id = nextActivity(prev.current, { music: musicRef.current, lite: isLite() });
+      prev.current = id;
+      setAct({ id, at: Date.now() });
+      t = setTimeout(() => rest(9000 + Math.random() * 8000), activityMs(id));
+    };
+    if (waking.current) {
+      waking.current = false;
+      t = setTimeout(() => rest(9000 + Math.random() * 6000), 2000);
+    } else {
+      t = setTimeout(() => (act ? rest(9000) : go()), act ? 0 : 7000 + Math.random() * 5000);
+    }
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- recomeça só ao ligar/desligar ou ao interromper
+  }, [enabled, cycle]);
+  /** Interação: acorda (se dormindo) ou volta para o centro e recomeça o ciclo. */
+  const interrupt = useCallback(() => {
+    setAct((a) => {
+      if (a?.id === "dormir") {
+        waking.current = true;
+        return { id: "acordando", at: Date.now() };
+      }
+      return null;
+    });
+    setCycle((c) => c + 1);
+  }, []);
+  return [enabled ? act : null, interrupt];
 }
 
 function readRecord() {
@@ -159,6 +241,31 @@ export default function DeskLock({ api, phase, name, message, photoUrl, scan, pi
       clearTimeout(off);
     };
   }, []);
+  const [bg, setBg] = useState(readBg);
+  const [picking, setPicking] = useState(false);
+  useEffect(() => {
+    const on = (e) => setBg(e.detail || readBg());
+    window.addEventListener(BG_EVENT, on);
+    return () => window.removeEventListener(BG_EVENT, on);
+  }, []);
+  const musicRef = useRef(false);
+  const [music, setMusic] = useState(false);
+  useEffect(() => {
+    if (!api) return undefined;
+    let alive = true;
+    const check = () => {
+      if (isLite() || document.hidden) return;
+      api("/api/integrations/spotify/track")
+        .then((d) => { if (alive) { musicRef.current = d?.state === "playing"; setMusic(musicRef.current); } })
+        .catch(() => { musicRef.current = false; });
+    };
+    check();
+    const t = setInterval(check, 20000);
+    return () => {
+      alive = false;
+      clearInterval(t);
+    };
+  }, [api]);
   const lines = bubbleLines(face, weather, now);
   useEffect(() => {
     const t = setInterval(() => setLine((n) => n + 1), 6500);
@@ -167,13 +274,38 @@ export default function DeskLock({ api, phase, name, message, photoUrl, scan, pi
 
   const scanning = phase === "scanning";
   const showFace = Boolean(scan) || scanning || (phase === "verified" && Boolean(photoUrl));
+  const calm = !showFace && !pinBlock && !game.playing && phase !== "verified" && phase !== "failed" && !mood;
+  const [act, interrupt] = useActivity(calm, musicRef);
+  useEffect(() => { // dormindo: mexer o mouse (de verdade, não um tremidinho), tocar ou teclar acorda
+    if (act?.id !== "dormir") return undefined;
+    let start = null;
+    const wake = () => interrupt();
+    const move = (e) => {
+      if (!start) start = { x: e.clientX, y: e.clientY };
+      else if (Math.hypot(e.clientX - start.x, e.clientY - start.y) > WAKE_MOVE_PX) wake();
+    };
+    const t = setTimeout(() => { // um respiro: quem acabou de mexer não acorda ele na hora
+      window.addEventListener("mousemove", move);
+      window.addEventListener("pointerdown", wake);
+      window.addEventListener("keydown", wake);
+    }, 1500);
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener("mousemove", move);
+      window.removeEventListener("pointerdown", wake);
+      window.removeEventListener("keydown", wake);
+    };
+  }, [act?.id, interrupt]);
   const accent = face?.cor || "#22d3ee";
   const clickRobot = (e) => {
     e.stopPropagation();
+    if (act?.id === "dormir") return interrupt(); // a 1ª cutucada só acorda
+    if (act) interrupt();
     poke();
     if (!mood) react(Math.random() < 0.5 ? "feliz" : "rindo");
   };
-  const expr = mood || reaction;
+  const expr = mood || reaction || ACT_FACE[act?.id] || null;
+  const actSay = act && (act.id === "dormir" || act.id === "acordando" || now - act.at < 6000) ? activityLine(act.id, music) : "";
   const state = scanning ? "processing" : jarvisState === "speaking" ? "speaking" : "idle";
   const say = hint && (hintShown || phase === "failed") ? hint
     : phase === "failed" && message ? message
@@ -182,10 +314,11 @@ export default function DeskLock({ api, phase, name, message, photoUrl, scan, pi
         : game.playing ? `⭐ ${game.score} · ${game.left}s`
           : game.result ? (game.result.novo ? `Recorde novo: ${game.result.score} estrelas! 🏆` : `Você pegou ${game.result.score} ${game.result.score === 1 ? "estrela" : "estrelas"}. Recorde: ${game.record}.`)
             : mood === "comendo" ? "Agora você me irritou! 😤" : mood ? "Ei! Pare de me cutucar! 😠"
-              : lines[line % lines.length];
+              : actSay || lines[line % lines.length];
 
   return (
-    <div className={`dkl${phone ? " is-phone" : ""}`} role="main" style={{ "--dk-accent": accent, "--dk-accent-rgb": hexToRgb(accent) }}>
+    <div className={`dkl${phone ? " is-phone" : ""}${bg !== "escuro" ? ` has-bg bg-${bg}` : ""}`} role="main" style={{ "--dk-accent": accent, "--dk-accent-rgb": hexToRgb(accent) }}>
+      <DeskLockBg bg={bg} />
       <div className="dkl-glow" aria-hidden="true" />
       <header className="dkl-top">
         <div className="dkl-clock">{now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</div>
@@ -203,12 +336,15 @@ export default function DeskLock({ api, phase, name, message, photoUrl, scan, pi
           {showFace ? (
             <div className="dkl-face"><FaceCircle scan={scan} phase={phase} photoUrl={photoUrl} /></div>
           ) : (
-            <button type="button" className={`dkl-robot${mood ? " is-poked" : ""}`} onClick={clickRobot} aria-label={`${face?.nome || "JARVIS"}: clique para interagir`}>
-              <RoboAvatar avatar={expr ? { ...(face?.avatar || {}), expressao: expr } : face?.avatar} tema={face?.tema}
-                state={expr ? "idle" : state} size={260} still={Boolean(expr)} />
-            </button>
+            <div className={`dkl-actor${act ? ` is-${act.id}` : ""}${music ? " is-music" : ""}`}>
+              <button type="button" className={`dkl-robot${mood ? " is-poked" : ""}`} onClick={clickRobot} aria-label={`${face?.nome || "JARVIS"}: clique para interagir`}>
+                <RoboAvatar avatar={expr ? { ...(face?.avatar || {}), expressao: expr } : face?.avatar} tema={face?.tema}
+                  state={expr ? "idle" : state} size={260} still={Boolean(expr)} />
+              </button>
+              <ActivityProps act={act?.id} />
+            </div>
           )}
-          {waving && !showFace && !game.playing && <span className="dkl-wave" aria-hidden="true">👋</span>}
+          {waving && !act && !showFace && !game.playing && <span className="dkl-wave" aria-hidden="true">👋</span>}
           <p className="dkl-bubble" key={say} aria-live="polite">{say}</p>
         </div>
       )}
@@ -226,10 +362,41 @@ export default function DeskLock({ api, phase, name, message, photoUrl, scan, pi
           <div className="dkl-row">
             {game.playing ? <button type="button" className="dkl-chip" onClick={(e) => { e.stopPropagation(); game.stop(); }}>⏹ PARAR O JOGO</button>
               : <button type="button" className="dkl-chip" onClick={(e) => { e.stopPropagation(); game.start(); }}>⭐ JOGAR{game.record ? ` · recorde ${game.record}` : ""}</button>}
+            <button type="button" className={`dkl-chip${picking ? " is-on" : ""}`} aria-expanded={picking}
+              onClick={(e) => { e.stopPropagation(); setPicking((v) => !v); }}>🖼 FUNDO</button>
             {onClassic && !phone && <button type="button" className="dkl-chip is-ghost" onClick={(e) => { e.stopPropagation(); onClassic(); }}>◐ BLOQUEIO CLÁSSICO</button>}
+          </div>
+        )}
+        {picking && !pinBlock && !showFace && (
+          <div className="dkl-bgpick" role="radiogroup" aria-label="Papel de parede do bloqueio">
+            {LOCK_BGS.map((b) => (
+              <button type="button" key={b.id} role="radio" aria-checked={bg === b.id} className={`dkl-swatch sw-${b.id}${bg === b.id ? " is-on" : ""}`}
+                onClick={(e) => { e.stopPropagation(); setBg(saveBg(b.id)); }}>
+                <span aria-hidden="true">{b.emoji}</span>{b.label}
+              </button>
+            ))}
           </div>
         )}
       </footer>
     </div>
   );
+}
+
+/** Os objetos de cada atividade (cobertinha, xícara, livro, notas, bola, bolhas): só enfeite, sem clique. */
+function ActivityProps({ act }) {
+  if (!act) return null;
+  if (act === "dormir" || act === "acordando") {
+    return (
+      <span className="dkl-props" aria-hidden="true">
+        <i className="dkl-blanket" />
+        {act === "dormir" && <span className="dkl-zzz"><i>z</i><i>z</i><i>Z</i></span>}
+      </span>
+    );
+  }
+  if (act === "cafe") return <span className="dkl-props" aria-hidden="true"><span className="dkl-cup">☕<i className="dkl-steam" /><i className="dkl-steam" /><i className="dkl-steam" /></span></span>;
+  if (act === "ler") return <span className="dkl-props" aria-hidden="true"><span className="dkl-book"><i className="dkl-page" />📖</span></span>;
+  if (act === "dancar") return <span className="dkl-props" aria-hidden="true"><span className="dkl-notes">{["♪", "♫", "♬", "♪", "♫"].map((n, i) => <i key={i}>{n}</i>)}</span></span>;
+  if (act === "bola") return <span className="dkl-props" aria-hidden="true"><i className="dkl-ball">⚽</i></span>;
+  if (act === "bolhas") return <span className="dkl-props" aria-hidden="true"><span className="dkl-soap">{[0, 1, 2, 3, 4, 5].map((i) => <i key={i} />)}</span></span>;
+  return null;
 }

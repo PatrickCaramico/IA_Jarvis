@@ -1,5 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import RoboAvatar, { DEFAULT_AVATAR, EXPRESSIONS, WARDROBE } from "./RoboAvatar.jsx";
+import { LOCK_BGS, readBg, saveBg } from "./DeskLockBg.jsx";
 import NowPlaying, { useNowPlaying } from "./NowPlaying.jsx";
 import { useConversationLog } from "./HudLayout.jsx";
 import { DESK_COLORS, FUNCTIONS, greeting, hexToRgb, isLight, stateText } from "../utils/desk.js";
@@ -599,6 +600,10 @@ function Personalize({ api, cfg, setCfg, aiName, onRename }) {
             <label className="dk-toggle-row"><input type="checkbox" defaultChecked={(() => { try { return localStorage.getItem("jarvis.deskLock") !== "0"; } catch { return true; } })()}
               onChange={(e) => window.dispatchEvent(new CustomEvent("jarvis-desklock", { detail: e.target.checked }))} />
               <span>Bloqueio com o {aiName} interagindo (robô grande, balão, mini-jogo). Desligado: a tela de bloqueio clássica.</span></label>
+            <label className="dk-slider"><span>Fundo do bloqueio</span>
+              <select defaultValue={readBg()} onChange={(e) => saveBg(e.target.value)} aria-label="Papel de parede do bloqueio">
+                {LOCK_BGS.map((b) => <option key={b.id} value={b.id}>{b.emoji} {b.label}</option>)}
+              </select></label>
           </div>
           <div className="dk-field dk-jeito"><span>Animações e desempenho</span>
             <label className="dk-toggle-row"><input type="checkbox" checked={av.piscar !== false} onChange={(e) => save({ avatar: { piscar: e.target.checked } })} />

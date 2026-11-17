@@ -576,7 +576,7 @@
 3. **Continua igual:** desbloqueio (rosto ou PIN), balão de fala, cutucadas, mini-jogo de estrelas. Quando você interage (clica, joga, desbloqueia), o robô para a atividade e volta para o centro.
 4. **Leve no PC:** só animações de GPU (transform/opacity); no **modo leve**, os fundos ficam parados e as atividades mais calmas.
 
-**Status:** desenhada, aguardando aprovação do Patrick.
+**Status:** implementada na versão 8.9.0.
 
 ## Ideias extras do Claude (para avaliar)
 
