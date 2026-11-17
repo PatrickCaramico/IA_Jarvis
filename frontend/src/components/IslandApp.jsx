@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
 import RoboAvatar from "./RoboAvatar.jsx";
 import DeskApp from "./DeskApp.jsx";
 import { api } from "../utils/api.js";
@@ -6,7 +6,10 @@ import { hexToRgb } from "../utils/desk.js";
 import { watchNewBuild } from "../utils/newBuild.js";
 import { useLiteMode } from "../utils/lite.js";
 import { startPacman, usePoke } from "../utils/poke.js";
+import { scanFromCards } from "../utils/pcScan.js";
 import "../island.css";
+
+const PcScanPanel = lazy(() => import("./PcScanPanel.jsx")); // V8.10.0: varredura do PC lento
 
 // V8.0: a ILHA do app para Windows: pílula preta no topo da tela, sempre visível (como a "ilha" dos celulares).
 // Em repouso: o avatar e a hora. Com música: a música tocando. Quando o JARVIS responde: a resposta, que some sozinha.
@@ -193,12 +196,15 @@ export default function IslandApp() {
     };
   }, [open, armClose, close]);
 
+  const [pcScan, setPcScan] = useState(null);
   const send = useCallback(async (text) => {
     setTurn({ userText: text, response: "", error: "" });
     setBusy(true);
     try {
       const r = await api("/api/chat", { method: "POST", body: JSON.stringify({ message: text }) });
       setTurn((t) => ({ ...t, response: r?.response || t.response }));
+      const scan = scanFromCards(r?.cards);
+      if (scan) setPcScan({ data: scan, at: Date.now() });
     } catch (e) {
       setTurn((t) => ({ ...t, error: e.message || "Não consegui falar com o JARVIS." }));
     } finally {
@@ -250,6 +256,7 @@ export default function IslandApp() {
             send={send} onToggleMic={() => {}} onClassic={openMain} onLock={lock} onOpenSettings={openMain} onOpenQr={openMain}
             onRename={rename} embedded />
         </div>
+        {pcScan && <Suspense fallback={null}><PcScanPanel key={pcScan.at} api={api} initial={pcScan.data} onClose={() => setPcScan(null)} /></Suspense>}
       </div>
     );
   }

@@ -2,6 +2,32 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 8.10.0 — 17 de novembro de 2026
+
+**🔎 Varredura quando o PC está lento (ideia 13)**
+- Diga **"meu note está lento"**, "o PC está travando", "o computador está pesado", "roda uma varredura" ou "otimiza o PC". O JARVIS mede:
+  - processador, memória e disco;
+  - os programas que mais pesam (somando as janelas do mesmo programa);
+  - há quanto tempo o PC está ligado;
+  - quantos programas abrem com o Windows;
+  - os temporários, a lixeira e a bateria.
+- Ele fala a causa principal (ex.: "a memória está quase cheia: 92%; o que mais gasta é o Google Chrome") e abre o cartão **🔎 VARREDURA DO PC**, com as barras e a lista.
+- **Correções só com o seu "sim":**
+  - fechar os programas que você marcar (nunca os do Windows, o antivírus ou o próprio JARVIS);
+  - limpar os temporários com mais de 1 dia;
+  - esvaziar a lixeira, quando ela está grande.
+- Se o PC está ligado há dias ou tem muita coisa na inicialização, ele avisa e explica onde mexer.
+- Funciona no app, no Modo Desk e na ilha. Com a central bloqueada, a varredura não roda.
+
+**⚡ Mais rápido para abrir as coisas**
+- **Abrir programas por voz** ("abre o Discord") agora procura direto nos atalhos do Menu Iniciar. Antes, chamava o PowerShell, que no Windows com antivírus leva até 3 s só para ligar e desistia em 2 s: o comando demorava ou falhava.
+- **Pedido novo enquanto ele fala:** ele para de falar e atende na hora. Antes, enquanto falava a resposta anterior, o pedido era ignorado e parecia que o app estava travado.
+
+**🤖 Bloqueio com o robô também na versão web**
+- O bloqueio com o robô agora aparece em todas as versões: web, app do PC e celular, com ou sem o Modo Desk.
+- No **modo nuvem** do celular, entra com o **PIN da nuvem** pelo mesmo bloqueio com o robô.
+- Para voltar ao bloqueio antigo: **◐ BLOQUEIO CLÁSSICO**. E para voltar ao robô: **🤖 BLOQUEIO COM O ROBÔ**.
+
 ## 8.9.0 — 17 de novembro de 2026
 
 **🖼 Bloqueio do Modo Desk: papel de parede animado e o robô fazendo atividades (ideia 12)**

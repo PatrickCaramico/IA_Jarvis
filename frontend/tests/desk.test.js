@@ -278,3 +278,31 @@ test("V8.9.0: bloqueio do Desk: fundos animados com semente e atividades do rob�
   assert.ok(!/\bzoom\s*:/.test(block) && !/\b(width|height|left|top)\s*:[^;]*;\s*\}\s*(to|from|\d+%)/.test(block));
   for (const k of ["dkl-walk", "dkl-blanket", "dkl-steam", "dkl-page", "dkl-notes", "dkl-ball", "dkl-soap", "html.is-lite .dkl-bg *"]) assert.ok(block.includes(k), k);
 });
+
+test("V8.10.0: varredura do PC lento, bloqueio do robô em todas as versões e fala que não bloqueia pedidos", async () => {
+  const fs = await import("node:fs");
+  const read = (p) => fs.readFileSync(new URL(p, import.meta.url), "utf8");
+  const { barTone, scanFromCards } = await import("../src/utils/pcScan.js");
+  assert.equal(barTone(null), "off");
+  assert.equal(barTone(40), "ok");
+  assert.equal(barTone(70), "warn");
+  assert.equal(barTone(92), "fail");
+  assert.deepEqual(scanFromCards([{ type: "weather", data: {} }, { type: "pc_scan", data: { verdict: "warn" } }]), { verdict: "warn" });
+  assert.equal(scanFromCards([{ type: "water", data: {} }]), null);
+  assert.equal(scanFromCards(undefined), null);
+  const panel = read("../src/components/PcScanPanel.jsx");
+  assert.ok(panel.includes("✓ SIM, PODE") && panel.includes('api("/api/pc/fix"'), "corrige só depois do sim");
+  const app = read("../src/App.jsx");
+  assert.ok(app.includes("deskLock={deskLockOn /*") && !app.includes("deskLock={deskMode && deskLockOn}"));
+  assert.ok(app.includes('busyRef.current = msg.state !== "idle" && msg.state !== "speaking";'));
+  assert.ok(app.includes("if (scanFromCards(msg.cards)) openPcScan(scanFromCards(msg.cards));"));
+  const island = read("../src/components/IslandApp.jsx");
+  assert.ok(island.includes("const scan = scanFromCards(r?.cards);"));
+  const cloudSrc = read("../src/components/CloudMode.jsx");
+  const wants = new Function("storage", cloudSrc.match(/export function wantsDeskLock\(storage[^)]*\) \{([\s\S]*?)\n\}/)[1]);
+  const store = (v) => ({ getItem: (k) => (k === "jarvis.deskLock" ? v : null) });
+  assert.equal(wants(store(null)), true, "padrão: o robô também na web/nuvem");
+  assert.equal(wants(store("0")), false);
+  assert.ok(cloudSrc.includes('mainLabel="ENTRAR COM O PIN"') && cloudSrc.includes('title="PIN DA NUVEM"'));
+  assert.ok(read("../src/components/LockScreen.jsx").includes("🤖 BLOQUEIO COM O ROBÔ"));
+});

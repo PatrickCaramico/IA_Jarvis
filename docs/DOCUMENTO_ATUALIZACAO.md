@@ -600,7 +600,7 @@
    - **Reiniciar e inicialização:** se o PC está ligado há dias ou tem muita coisa abrindo com o Windows, ele avisa e explica onde desligar. Não mexe sozinho.
 5. **Privacidade e segurança:** tudo roda só no PC; nada vai para a nuvem. Com a tela bloqueada, as correções não funcionam.
 
-**Status:** desenhada, aguardando aprovação do Patrick.
+**Status:** implementada na versão 8.10.0.
 
 ## Ideias extras do Claude (para avaliar)
 
