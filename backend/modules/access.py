@@ -115,6 +115,7 @@ def reset_for_tests(state: str = LOCKED) -> None:
 # Tudo o que começa com /api e não está aqui exige acesso liberado (negação por padrão).
 _PUBLIC_EXACT = {
     ("GET", "/api/health"),
+    ("GET", "/api/desk/lockface"),  # V8.8.0: bloqueio do Modo Desk (aparência do robô e só CONTAGENS, nada pessoal)
     ("GET", "/api/system/update/status"),  # V6.7.2: bolinha de atualização no botão ATUALIZAR do bloqueio
     ("POST", "/api/system/optimize"),
     ("GET", "/api/system/health-check"),

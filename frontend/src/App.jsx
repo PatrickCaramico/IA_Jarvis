@@ -239,6 +239,27 @@ export default function App() {
   const [godsEyeLayer, setGodsEyeLayer] = useState(null);
   // V7.12: estilo da tela de bloqueio neste aparelho. V7.13.1: o padrão voltou a ser o "classico" (a verificação
   // nova do rosto continua nele); "orbe" (igual ao vídeo) fica como opção em ◐ ESTILO.
+  // V8.8.0 (ideia 11): no Modo Desk, o bloqueio com o robô JARVIS interagindo (lembra no navegador; liga em Personalizar)
+  const [deskLockOn, setDeskLockOn] = useState(() => {
+    try {
+      return localStorage.getItem("jarvis.deskLock") !== "0";
+    } catch {
+      return true;
+    }
+  });
+  const changeDeskLock = useCallback((on) => {
+    setDeskLockOn(Boolean(on));
+    try {
+      localStorage.setItem("jarvis.deskLock", on ? "1" : "0");
+    } catch {
+      /* sem armazenamento */
+    }
+  }, []);
+  useEffect(() => {
+    const onPref = (e) => changeDeskLock(e.detail !== false);
+    window.addEventListener("jarvis-desklock", onPref);
+    return () => window.removeEventListener("jarvis-desklock", onPref);
+  }, [changeDeskLock]);
   const [lockStyle, setLockStyle] = useState(() => {
     try {
       return localStorage.getItem("jarvis.lockStyle") === "orbe" ? "orbe" : "classico";
@@ -2968,6 +2989,8 @@ export default function App() {
           lockStyle={lockStyle}
           deskOn={deskMode}
           onLockStyle={changeLockStyle}
+          deskLock={deskMode && deskLockOn}
+          onDeskLock={changeDeskLock}
           onBiometric={IS_JARVIS_APP && (() => { try { return window.JarvisApp?.hasBiometric?.(); } catch { return false; } })()
             ? () => window.JarvisApp.biometricUnlock() : null}
           audioToggle={{ onOpen: () => setAudioOpen(true) }}

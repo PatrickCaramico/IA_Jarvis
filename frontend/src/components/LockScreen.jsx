@@ -11,6 +11,7 @@ import { APP_VERSION } from "../utils/version.js";
 import FanLockPanel from "./FanLockPanel.jsx";
 import MobileAppQr from "./MobileAppQr.jsx";
 import LockOrbe, { FaceCircle } from "./LockOrbe.jsx";
+import DeskLock from "./DeskLock.jsx";
 
 // Tela inicial biométrica do J.A.R.V.I.S.
 // phase: "ready" | "scanning" | "verified" | "failed" | "pin"
@@ -154,6 +155,8 @@ export default function LockScreen({
   deskOn = false, // V8.0.1: o Modo Desk abre ao entrar?
   lockStyle = "classico", // V7.12: "orbe" (igual ao vídeo: orbe de linhas, estado em cima, cartões numa faixa) | "classico"
   onLockStyle = null,
+  deskLock = false, // V8.8.0 (ideia 11): Modo Desk ligado: o bloqueio com o robô JARVIS interagindo
+  onDeskLock = null, // (on) => liga/desliga esse bloqueio
 }) {
   const scanning = phase === "scanning";
   const orbState = scanning ? "processing" : phase === "ready" || phase === "pin" ? "idle" : jarvisState;
@@ -284,6 +287,35 @@ export default function LockScreen({
     </div>
     </>
   );
+
+  // ---------------------------------------------------------------- V8.8.0: bloqueio do Modo Desk (ideia 11)
+  // Só a aparência muda: o desbloqueio (rosto ou PIN) é o mesmo das outras telas.
+  if (deskLock && !phoneApp) {
+    const autoEntering = Boolean(clap?.autoEntering || sentinel?.autoEntering);
+    const failedActions = phase === "failed" ? (
+      <div className="lo-quick">
+        {showPinButton && <button type="button" className={`ls-chip ${failCount >= 2 ? "is-strong" : ""}`} onClick={onUsePin}>⌨ USAR PIN</button>}
+        {unknownFace && <button type="button" className="ls-chip is-strong" onClick={(e) => { e.stopPropagation(); onNewProfile(); }}>＋ SOU NOVO: CRIAR PERFIL</button>}
+      </div>
+    ) : null;
+    return (
+      <DeskLock
+        api={cards?.api}
+        phase={phase}
+        name={name}
+        message={message}
+        photoUrl={photoUrl}
+        scan={lastFrame}
+        pinBlock={pinBlock}
+        mainLabel={phase === "verified" ? "ENTRAR" : phase === "failed" ? "TENTAR DE NOVO" : "DESBLOQUEAR COM O ROSTO"}
+        onMain={handleBtnClick}
+        mainVisible={!(phase === "verified" && autoEntering)}
+        failedActions={failedActions}
+        jarvisState={jarvisState}
+        onClassic={onDeskLock ? () => onDeskLock(false) : null}
+      />
+    );
+  }
 
   // ---------------------------------------------------------------- V7.12: estilo ORBE (padrão)
   if (lockStyle === "orbe") {
