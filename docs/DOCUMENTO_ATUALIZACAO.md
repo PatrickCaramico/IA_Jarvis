@@ -578,6 +578,30 @@
 
 **Status:** implementada na versão 8.9.0.
 
+### Ideia 13: Varredura quando o PC está lento
+
+**O que o Patrick pediu:** foco em otimização. Quando ele falar algo como "meu note está lento", o JARVIS roda uma varredura.
+
+**Decidido (17/11):**
+1. **Quando dispara:** frases como "meu note está lento", "o PC está travando", "o computador está pesado", "roda uma varredura" ou "otimiza o PC".
+2. **O que ele mede:**
+   - uso de CPU e de memória;
+   - espaço livre no disco;
+   - os programas que mais gastam;
+   - há quanto tempo o PC está ligado;
+   - quantos programas abrem junto com o Windows;
+   - o tamanho da pasta de temporários e da lixeira;
+   - se o note está na bateria/economia.
+3. **Resultado:** uma fala curta com a causa principal (ex.: "o Chrome está usando 70% da memória") e um cartão com barras, os programas mais pesados e os botões de corrigir.
+4. **Correções (sempre com a sua confirmação, nunca sozinho):**
+   - **Fechar programas pesados:** você escolhe quais. Ele nunca fecha programas do Windows nem o próprio JARVIS.
+   - **Limpar temporários:** a pasta TEMP do usuário, só arquivos com mais de 1 dia; mostra quanto liberou.
+   - **Esvaziar a lixeira:** só aparece se ela estiver ocupando bastante.
+   - **Reiniciar e inicialização:** se o PC está ligado há dias ou tem muita coisa abrindo com o Windows, ele avisa e explica onde desligar. Não mexe sozinho.
+5. **Privacidade e segurança:** tudo roda só no PC; nada vai para a nuvem. Com a tela bloqueada, as correções não funcionam.
+
+**Status:** desenhada, aguardando aprovação do Patrick.
+
 ## Ideias extras do Claude (para avaliar)
 
 | # | Ideia | Por que vale |
@@ -610,6 +634,7 @@ Itens que já estavam na lista e continuam **em espera**:
 ---
 
 ## Anotações da conversa
+- **17/11:** Ideia 13 (varredura quando o PC está lento, com correções só com confirmação) desenhada.
 - **17/11:** Ideia 12 (papel de parede animado e atividades do robô no bloqueio do Desk: andar, dormir, café/leitura, dançar/brincar) desenhada.
 - **17/11:** Ideia 11 (bloqueio do Modo Desk com o JARVIS interagindo) desenhada: robô grande no centro, brincadeiras, reage ao mouse, balão com frases e informações, mini-jogo de estrelas e desbloqueio igual ao de hoje.
 - **16/11:** 8.6.0 (pedidos do Patrick): modo Pac-Man (irritar o avatar faz ele correr atrás do mouse, comer e devolver), avatar "vivo" quando parado e avatar maior na pílula.
