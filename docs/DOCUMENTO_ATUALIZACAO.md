@@ -533,6 +533,29 @@
 
 **Status:** implementada na versão 8.4.0.
 
+### Ideia 11: Bloqueio do Modo Desk com o JARVIS interagindo
+
+**O que o Patrick pediu:** no Modo Desk (e no app do Windows), ao bloquear, em vez da tela de bloqueio clássica, aparecer o JARVIS fazendo alguma interação, para ficar mais dinâmico.
+
+**Decidido (17/11):**
+1. **Tela:** o fundo escuro do Desk desfocado e o **robô JARVIS grande no centro**, com a hora e a data. Fica no estilo do app (cor e avatar escolhidos em Personalizar).
+2. **Brincadeiras do avatar:** olha em volta, acena, boceja, dá pulinhos e, depois de um tempo, cochila com "zzz".
+3. **Reage ao mouse:**
+   - os olhos seguem o mouse;
+   - clicar nele faz o robô reagir (feliz, surpreso);
+   - as cutucadas valem também: bravo e, na 5ª, o Pac-Man no app do Windows.
+4. **Frases e informações:** um balão de fala ao lado do robô, que troca de tempos em tempos, com:
+   - a hora;
+   - o clima;
+   - o próximo lembrete;
+   - as tarefas pendentes;
+   - a ofensiva 🔥;
+   - frases curtas.
+5. **Mini-jogo "Pegue as estrelas":** estrelinhas aparecem em volta do robô. Clique nelas antes que sumam: cada uma vale ponto, o robô comemora, e o recorde fica guardado. Começa num botão ⭐ JOGAR e não atrapalha o desbloqueio.
+6. **Desbloquear igual ao de hoje:** rosto pela câmera ou PIN, com o mesmo nível de segurança. Só a aparência muda. Dá para voltar para o bloqueio clássico por uma opção em Personalizar.
+
+**Status:** desenhada, esperando aprovação para implementar.
+
 ## Ideias extras do Claude (para avaliar)
 
 | # | Ideia | Por que vale |
@@ -565,6 +588,7 @@ Itens que já estavam na lista e continuam **em espera**:
 ---
 
 ## Anotações da conversa
+- **17/11:** Ideia 11 (bloqueio do Modo Desk com o JARVIS interagindo) desenhada: robô grande no centro, brincadeiras, reage ao mouse, balão com frases e informações, mini-jogo de estrelas e desbloqueio igual ao de hoje.
 - **16/11:** 8.6.0 (pedidos do Patrick): modo Pac-Man (irritar o avatar faz ele correr atrás do mouse, comer e devolver), avatar "vivo" quando parado e avatar maior na pílula.
 - **16/11:** 8.5.0 (pedidos do Patrick): atualização automática (sem CMD), pílula da ilha nova, "Pensando…" que não fica mais preso, zoom e tamanho do painel da ilha.
 - **16/11:** Ideia 10 desenhada e implementada (8.4.0): modo leve automático, voz pela Groq na ilha e no app, brincadeiras do avatar e piscar liga/desliga. Antes, a 8.3.2 (revisão de erros, OneDrive e nuvem).
