@@ -234,3 +234,47 @@ test("V8.8.1: bloqueio do Desk também no celular (PIN/digital, sem o botão do 
   const css = await import("node:fs").then((fs) => fs.readFileSync(new URL("../src/desk.css", import.meta.url), "utf8"));
   assert.ok(css.includes("V8.8.1: bloqueio do Modo Desk no celular") && css.includes("env(safe-area-inset-bottom)"));
 });
+
+test("V8.9.0: bloqueio do Desk: fundos animados com semente e atividades do robô que alternam", async () => {
+  const fs = await import("node:fs");
+  const bgSrc = fs.readFileSync(new URL("../src/components/DeskLockBg.jsx", import.meta.url), "utf8");
+  const fn = (src, name, args) => src.match(new RegExp(`export function ${name}\\(${args}\\) \\{([\\s\\S]*?)\\n\\}`))[1];
+  const seeded = new Function("seed", fn(bgSrc, "seeded", "seed = 1"));
+  const starField = new Function("n", "seed", "seeded", fn(bgSrc, "starField", "n = 70, seed = 7"));
+  const cityBlocks = new Function("seed", "seeded", fn(bgSrc, "cityBlocks", "seed = 11"));
+  const a = starField(70, 7, seeded);
+  assert.equal(a.length, 70);
+  assert.deepEqual(a, starField(70, 7, seeded), "o mesmo céu toda vez (nada pula ao redesenhar)");
+  assert.ok(a.every((s) => s.x >= 0 && s.x <= 100 && s.y >= 0 && s.y <= 78 && [1, 2, 3].includes(s.size)));
+  const city = cityBlocks(11, seeded);
+  assert.ok(city.length >= 8 && city.at(-1).x + city.at(-1).w >= 100, "os prédios cobrem a largura toda");
+  assert.ok(city.every((b) => b.h >= 18 && b.h <= 52 && b.windows.length >= 3));
+  const ids = [...bgSrc.matchAll(/\{ id: "(\w+)", label/g)].map((m) => m[1]);
+  assert.deepEqual(ids, ["escuro", "estrelas", "aurora", "cidade", "porsol"]);
+  assert.ok(bgSrc.includes('export const BG_KEY = "jarvis.deskLock.bg";') && bgSrc.includes('return LOCK_BGS.some((b) => b.id === id) ? id : "escuro";'));
+
+  const src = fs.readFileSync(new URL("../src/components/DeskLock.jsx", import.meta.url), "utf8");
+  const ACTIVITIES = new Function(`return ${src.match(/export const ACTIVITIES = (\[[^\]]*\]);/)[1]}`)();
+  const CALM_ACTIVITIES = new Function(`return ${src.match(/export const CALM_ACTIVITIES = (\[[^\]]*\]);/)[1]}`)();
+  assert.deepEqual(ACTIVITIES, ["andar", "dormir", "cafe", "ler", "dancar", "bola", "bolhas"]);
+  const next = new Function("prev", "opts", "ACTIVITIES", "CALM_ACTIVITIES",
+    `const { music = false, lite = false, rnd = Math.random } = opts || {};${fn(src, "nextActivity", "prev, \\{ music = false, lite = false, rnd = Math.random \\} = \\{\\}")}`);
+  for (let i = 0; i < 40; i++) {
+    const r = i / 40;
+    const n = next("andar", { rnd: () => r }, ACTIVITIES, CALM_ACTIVITIES);
+    assert.notEqual(n, "andar", "nunca repete a mesma em seguida");
+    assert.ok(ACTIVITIES.includes(n));
+    assert.ok(CALM_ACTIVITIES.includes(next("cafe", { lite: true, rnd: () => r }, ACTIVITIES, CALM_ACTIVITIES)), "modo leve: só as calmas");
+  }
+  let dances = 0;
+  for (let i = 0; i < 100; i++) if (next("ler", { music: true, rnd: () => i / 100 }, ACTIVITIES, CALM_ACTIVITIES) === "dancar") dances++;
+  assert.ok(dances >= 40, `com música, dançar fica bem mais provável (${dances}%)`);
+  const ms = new Function("act", "rnd", fn(src, "activityMs", "act, rnd = Math.random"));
+  assert.ok(ms("dormir", () => 0) >= 35000 && ms("cafe", () => 1) <= 24000);
+  assert.ok(src.includes("WAKE_MOVE_PX = 40") && src.includes('if (act?.id === "dormir") return interrupt(); // a 1ª cutucada só acorda'));
+  assert.ok(src.includes('api("/api/integrations/spotify/track")') && src.includes('d?.state === "playing"'));
+  const css = fs.readFileSync(new URL("../src/desk.css", import.meta.url), "utf8");
+  const block = css.slice(css.indexOf("V8.9.0 (ideia 12)"));
+  assert.ok(!/\bzoom\s*:/.test(block) && !/\b(width|height|left|top)\s*:[^;]*;\s*\}\s*(to|from|\d+%)/.test(block));
+  for (const k of ["dkl-walk", "dkl-blanket", "dkl-steam", "dkl-page", "dkl-notes", "dkl-ball", "dkl-soap", "html.is-lite .dkl-bg *"]) assert.ok(block.includes(k), k);
+});

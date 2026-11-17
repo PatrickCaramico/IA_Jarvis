@@ -2,6 +2,33 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 8.9.0 — 17 de novembro de 2026
+
+**🖼 Bloqueio do Modo Desk: papel de parede animado e o robô fazendo atividades (ideia 12)**
+- **5 papéis de parede animados:**
+  - Escuro do app (o de antes);
+  - Céu estrelado, com estrela cadente;
+  - Aurora;
+  - Cidade à noite, com janelas acendendo e apagando;
+  - Pôr do sol, com o sol e nuvens passando.
+- **Onde trocar:**
+  - no botão **🖼 FUNDO**, no próprio bloqueio;
+  - ou em **Personalizar › Bloqueio**.
+  - A escolha fica guardada no aparelho.
+- **O robô alterna sozinho entre atividades,** com um descanso no centro entre elas:
+  - **anda de um lado pro outro** (inclina para o lado que anda e para no meio para olhar você);
+  - **dorme de cobertinha** com "zzz", e acorda espreguiçando quando você mexe o mouse, toca na tela ou aperta uma tecla;
+  - **toma café** (xícara fumegando);
+  - **lê um livrinho** (folheando);
+  - **dança com notinhas musicais**. Com música tocando no Spotify, dança mais e mais rápido;
+  - **faz embaixadinha** com a bola;
+  - **solta bolhas de sabão**.
+- Qualquer interação (clicar, jogar, desbloquear) traz o robô de volta ao centro. A 1ª cutucada nele dormindo só acorda.
+- **Leve no PC:**
+  - só animações que a placa de vídeo faz sozinha;
+  - no **modo leve**, os fundos ficam parados e ele só faz as atividades calmas (café, ler, dormir).
+- Conferido no PC (1600×900) e no celular (Pixel 7).
+
 ## 8.8.1 — 17 de novembro de 2026
 
 **📱 Bloqueio do Modo Desk também no celular**
