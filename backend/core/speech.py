@@ -33,12 +33,40 @@ def time_greeting() -> str:
     return "Boa noite"
 
 
+# V8.10.0: falas que ENCERRAM um pedido (release_busy=True). Enquanto só uma delas toca, o JARVIS já terminou de
+# pensar: um pedido novo corta a fala e é atendido na hora (antes ele respondia "ocupado" e o comando se perdia).
+_final_speech: set = set()
+
+
+def only_speaking() -> bool:
+    """O JARVIS está "ocupado" só porque está falando a resposta final (já dá para interromper)?"""
+    return any(not t.done() for t in _final_speech)
+
+
+async def interrupt() -> None:
+    """Corta a fala da resposta anterior para atender um pedido novo (não mexe em timers, lembretes nem avisos)."""
+    session.turn_id += 1  # a fala cortada não devolve a tela para "em espera" por cima do pedido novo
+    tts_module.stop_playback()
+    tts_module.clear_prefetch()
+    me = asyncio.current_task()
+    for task in list(_final_speech):
+        if task is not me and not task.done():
+            task.cancel()
+    session.busy = False
+    await runtime.manager.broadcast({"type": "speech_stop"})
+    log.info("Fala interrompida por um pedido novo.")
+
+
 async def speak(text: str, release_busy: bool = True, idle_after: bool = True) -> None:
     """Sintetiza e toca a voz, mantendo o frontend informado sobre cada fase.
 
     idle_after=False (V4.3, briefing em etapas): não volta a tela para "em espera" entre uma parte e outra.
     """
     turn = session.turn_id
+    current = asyncio.current_task()
+    if release_busy and current is not None:
+        _final_speech.add(current)
+        current.add_done_callback(_final_speech.discard)
     if prefs.is_silent_mode():
         await runtime.manager.broadcast({"type": "step", "step": "tts", "status": "done"})
         if not canceled(turn):

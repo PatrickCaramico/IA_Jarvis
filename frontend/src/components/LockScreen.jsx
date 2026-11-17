@@ -267,6 +267,9 @@ export default function LockScreen({
             title={deskOn ? "Desligar: entrar na central clássica" : "Entrar no Modo Desk (o JARVIS como app de assistente)"}>
             {deskOn ? "🖥 MODO DESK: LIGADO" : "🖥 ENTRAR NO MODO DESK"}
           </button>
+          {onDeskLock && ( /* V8.10.0: volta para o bloqueio com o robô (que agora vale em todas as versões) */
+            <button type="button" className="ls-chip" onClick={(e) => { e.stopPropagation(); onDeskLock(true); }}>🤖 BLOQUEIO COM O ROBÔ</button>
+          )}
           <button type="button" className="ls-chip" onClick={(e) => { e.stopPropagation(); window.dispatchEvent(new CustomEvent("jarvis-desktop-download")); }}
             title="App do JARVIS para Windows (com a ilha no topo)">⬇ APP WINDOWS</button>
           <button type="button" className="ls-chip" onClick={(e) => { e.stopPropagation(); window.dispatchEvent(new CustomEvent("jarvis-open-branding")); }}

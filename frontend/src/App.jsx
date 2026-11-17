@@ -55,6 +55,7 @@ import { useCreepingProgress } from "./components/ProgressBar.jsx";
 import UpdateSteps from "./components/UpdateSteps.jsx";
 import WelcomeLogo from "./components/WelcomeLogo.jsx";
 import { APP_VERSION } from "./utils/version.js";
+import { PC_SCAN_EVENT, openPcScan, scanFromCards } from "./utils/pcScan.js";
 import { tabTitle } from "./utils/tabTitle.js";
 import { canResumeSession, hasLoggedBefore, launcherWorks, markLauncherWorks, rememberLogin } from "./utils/session.js";
 
@@ -89,6 +90,7 @@ const BrandingBook = lazyComponent(() => import("./components/BrandingBook.jsx")
 const OptimizerPanel = lazyComponent(() => import("./components/OptimizerPanel.jsx")); // V7.2
 const ReleaseNotes = lazyComponent(() => import("./components/ReleaseNotes.jsx")); // V7.3
 const DiagnosticPanel = lazyComponent(() => import("./components/DiagnosticPanel.jsx")); // V7.4
+const PcScanPanel = lazyComponent(() => import("./components/PcScanPanel.jsx")); // V8.10.0
 const PhotoPanel = lazyComponent(() => import("./components/PhotoPanel.jsx")); // V7.8
 const LogReportWidget = lazyComponent(() => import("./components/LogReportWidget.jsx"));
 const Onboarding = lazyComponent(() => import("./components/Onboarding.jsx"));
@@ -364,6 +366,12 @@ export default function App() {
 
   // V7.4: 🩺 DIAGNÓSTICO
   const [diagOpen, setDiagOpen] = useState(false);
+  const [pcScan, setPcScan] = useState(null); // V8.10.0: varredura do PC lento ({ data } ou null)
+  useEffect(() => {
+    const on = (e) => setPcScan({ data: e.detail || null, at: Date.now() });
+    window.addEventListener(PC_SCAN_EVENT, on);
+    return () => window.removeEventListener(PC_SCAN_EVENT, on);
+  }, []);
   useEffect(() => {
     const open = () => setDiagOpen(true);
     window.addEventListener("jarvis-open-diagnostic", open);
@@ -722,7 +730,8 @@ export default function App() {
         break;
       case "state":
         setJarvisState(msg.state);
-        busyRef.current = msg.state !== "idle";
+        // V8.10.0: falando a resposta não é "ocupado": um pedido novo corta a fala e é atendido (antes era ignorado)
+        busyRef.current = msg.state !== "idle" && msg.state !== "speaking";
         // Cancelado no meio do briefing: os cards já falados ficam na fileira
         if (msg.state === "idle") {
           setBriefing((b) => (b && b.phase === "running"
@@ -875,6 +884,7 @@ export default function App() {
         if ((msg.cards || []).some((c) => c.type === "water" && c.open_panel)) {
           openWaterPanelRef.current();
         }
+        if (scanFromCards(msg.cards)) openPcScan(scanFromCards(msg.cards));
         break;
       case "response_cards": // V7.2: cartões (clima, notícias…) que chegam depois da resposta já falada
         setResponse((current) => {
@@ -2092,6 +2102,7 @@ export default function App() {
         if ((data.cards || []).some((c) => c.type === "water" && c.open_panel)) {
           openWaterPanelRef.current();
         }
+        if (scanFromCards(data.cards)) openPcScan(scanFromCards(data.cards));
       }
       if (!connectedRef.current) {
         setJarvisState("idle"); // sem WebSocket não chegam eventos de voz
@@ -2989,7 +3000,7 @@ export default function App() {
           lockStyle={lockStyle}
           deskOn={deskMode}
           onLockStyle={changeLockStyle}
-          deskLock={deskMode && deskLockOn}
+          deskLock={deskLockOn /* V8.10.0: o robô em todas as versões (web, app e celular), não só no Modo Desk */}
           onDeskLock={changeDeskLock}
           onBiometric={IS_JARVIS_APP && (() => { try { return window.JarvisApp?.hasBiometric?.(); } catch { return false; } })()
             ? () => window.JarvisApp.biometricUnlock() : null}
@@ -3065,6 +3076,7 @@ export default function App() {
         {optimizerOpen && <OptimizerPanel api={api} onClose={() => setOptimizerOpen(false)} />}
         {notesOpen && <ReleaseNotes highlight={notesOpen.highlight} onClose={() => setNotesOpen(null)} />}
         {diagOpen && <DiagnosticPanel api={api} connected={connected} onClose={() => setDiagOpen(false)} />}
+        {pcScan && <PcScanPanel key={pcScan.at} api={api} initial={pcScan.data} onClose={() => setPcScan(null)} />}
       </>
     );
   }
@@ -3162,6 +3174,7 @@ export default function App() {
       {optimizerOpen && <OptimizerPanel api={api} onClose={() => setOptimizerOpen(false)} />}
       {notesOpen && <ReleaseNotes highlight={notesOpen.highlight} onClose={() => setNotesOpen(null)} />}
       {diagOpen && <DiagnosticPanel api={api} connected={connected} onClose={() => setDiagOpen(false)} />}
+        {pcScan && <PcScanPanel key={pcScan.at} api={api} initial={pcScan.data} onClose={() => setPcScan(null)} />}
       {photoDrag && <div className="ph-drop" aria-hidden="true"><div>🖼 SOLTE A IMAGEM AQUI<small>O JARVIS analisa, lê, pesquisa ou explica. A foto não é guardada.</small></div></div>}
       {photoWin && (
         <PhotoPanel

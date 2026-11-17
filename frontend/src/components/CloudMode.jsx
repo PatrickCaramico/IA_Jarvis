@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import PinPad from "./PinPad.jsx";
+import DeskLock from "./DeskLock.jsx";
 import { cloud, cloudToken, setCloudToken } from "../utils/cloudApi.js";
 import { applyAccessibility, applyBackground, applyTheme } from "../utils/theme.js";
 
@@ -7,9 +8,31 @@ import { applyAccessibility, applyBackground, applyTheme } from "../utils/theme.
 // e entrega as configurações da central (onReady). Depois disso, a central de sempre abre por cima do
 // adaptador da nuvem (utils/cloudShim.js): mesmo layout do app e do site.
 
+/** V8.10.0: o bloqueio do robô está ligado neste aparelho? (padrão: sim; no modo nuvem ele entra pelo PIN da nuvem) */
+export function wantsDeskLock(storage = typeof localStorage !== "undefined" ? localStorage : null) {
+  try {
+    return storage?.getItem("jarvis.deskLock") !== "0";
+  } catch {
+    return false;
+  }
+}
+
 function CloudLogin({ status, onLogged, onBack }) {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+  const [desk] = useState(() => wantsDeskLock());
+  const [pinOpen, setPinOpen] = useState(false);
+  useEffect(() => { // ESPAÇO abre o PIN, igual ao bloqueio do PC
+    if (!desk || pinOpen) return undefined;
+    const onKey = (e) => {
+      if (e.code === "Space" && !e.repeat) {
+        e.preventDefault();
+        setPinOpen(true);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [desk, pinOpen]);
   const submit = async (pin) => {
     setBusy(true);
     setMessage("");
@@ -36,6 +59,18 @@ function CloudLogin({ status, onLogged, onBack }) {
         <p>Depois, em Deploys, toque em <b>Trigger deploy</b>. O passo a passo está em <code>docs/MODO-NUVEM.md</code>.</p>
         {onBack && <button type="button" className="cm-chip" onClick={onBack}>VOLTAR</button>}
       </div>
+    );
+  }
+  if (desk) { // V8.10.0: na web, o bloqueio do Modo Desk (robô, fundos, mini-jogo) também aparece; entra pelo PIN da nuvem
+    const narrow = typeof window !== "undefined" && window.innerWidth <= 600;
+    return (
+      <DeskLock api={null} phase={message ? "failed" : "ready"} name={status?.nome || ""} message={message}
+        mainLabel="ENTRAR COM O PIN" onMain={() => setPinOpen(true)} phone={narrow}
+        hint={message ? "" : "Acesso pela nuvem: toque em ENTRAR COM O PIN."}
+        pinBlock={pinOpen ? (
+          <PinPad title="PIN DA NUVEM" cancelLabel="VOLTAR" busy={busy} message={message} onSubmit={submit}
+            onCancel={() => { setPinOpen(false); setMessage(""); }} />
+        ) : null} />
     );
   }
   return (

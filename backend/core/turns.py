@@ -111,6 +111,8 @@ async def handle_turn(message: str, routine: bool, force_deep: bool = False) -> 
     if access.is_restricted():
         return await handle_restricted_turn(message)
     event_log.add("command", message)
+    if session.busy and speech.only_speaking():  # V8.10.0: ainda falando a resposta anterior: corta e atende
+        await speech.interrupt()
     if session.busy:
         raise HTTPException(status_code=409, detail="O JARVIS já está ocupado com outra solicitação.")
     session.busy = True
@@ -394,6 +396,13 @@ async def handle_turn(message: str, routine: bool, force_deep: bool = False) -> 
                 "Também deixei o link do Google Agenda no card. Bora Palmeiras!"
             )
         return await finish_local(reply, extra_cards=extra_cards)
+
+    # V8.10.0 (ideia 13): "meu note está lento": varredura com cartão (as correções só pelos botões, com confirmação)
+    from modules import pc_scan
+    if pc_scan.is_slow_request(message):
+        await runtime.manager.broadcast({"type": "response", "text": "Rodando uma varredura no PC, senhor…", "cards": [], "local": True})
+        result = await asyncio.to_thread(pc_scan.scan)
+        return await finish_local(result["speech"], extra_cards=[{"type": "pc_scan", "data": result, "open_panel": True}])
 
     # Comandos de Hidratação / Água (Fase W)
     water_cmd = water.parse_water_command(message)

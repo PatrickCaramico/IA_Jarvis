@@ -14,6 +14,7 @@ import time
 import unicodedata
 import webbrowser
 from datetime import datetime
+from pathlib import Path
 from html.parser import HTMLParser
 from typing import Any, Awaitable, Callable, Optional
 from urllib.parse import quote_plus, urlparse
@@ -697,6 +698,67 @@ _SMART_WEB_SERVICES = {
 }
 
 
+# V8.10.0: ÍNDICE DO MENU INICIAR. Antes, abrir um programa que não estava nos atalhos chamava o PowerShell, que no
+# Windows (com antivírus) leva 1 a 3 s só para ligar, e desistia em 2 s: o "abre o Discord" demorava ou falhava.
+# Agora procura primeiro nos atalhos do Menu Iniciar (lista guardada por 10 min) e abre direto, sem PowerShell.
+_START_MENU_TTL_S = 600
+_start_menu_cache: dict = {"at": 0.0, "items": {}}
+
+
+def _start_menu_dirs() -> list[Path]:
+    dirs = []
+    for env in ("APPDATA", "PROGRAMDATA"):
+        base = os.environ.get(env)
+        if base:
+            dirs.append(Path(base) / "Microsoft" / "Windows" / "Start Menu" / "Programs")
+    return dirs
+
+
+def _start_menu_index(dirs: list[Path] | None = None, now: float | None = None) -> dict[str, str]:
+    """nome normalizado -> caminho do atalho (.lnk/.url/.appref-ms). Ignora desinstaladores e ajudas."""
+    now = now or time.time()
+    if dirs is None and now - _start_menu_cache["at"] < _START_MENU_TTL_S and _start_menu_cache["items"]:
+        return _start_menu_cache["items"]
+    items: dict[str, str] = {}
+    for base in dirs if dirs is not None else _start_menu_dirs():
+        for root, _subdirs, files in os.walk(base, onerror=lambda _e: None):
+            for f in files:
+                stem, ext = os.path.splitext(f)
+                if ext.lower() not in {".lnk", ".url", ".appref-ms"}:
+                    continue
+                key = _deaccent(stem).lower().strip()
+                if not key or re.search(r"\b(uninstall|desinstalar|remover|readme|leia-me|help|ajuda|manual)\b", key):
+                    continue
+                items.setdefault(key, os.path.join(root, f))
+    if dirs is None:
+        _start_menu_cache.update(at=now, items=items)
+    return items
+
+
+def _find_start_menu_app(name: str, index: dict[str, str] | None = None) -> tuple[str, str] | None:
+    """O atalho que melhor bate com o nome falado: igual > começa com > contém (o nome mais curto ganha)."""
+    want = _deaccent(name).lower().strip()
+    if len(want) < 2:
+        return None
+    index = index if index is not None else _start_menu_index()
+    if want in index:
+        return want, index[want]
+    squash = want.replace(" ", "")
+    for key, path in index.items():
+        if key.replace(" ", "") == squash:
+            return key, path
+    starts = [k for k in index if k.startswith(want + " ") or k.startswith(want)]
+    if starts:
+        best = min(starts, key=len)
+        return best, index[best]
+    if len(want) >= 4:
+        within = [k for k in index if re.search(rf"\b{re.escape(want)}\b", k)]
+        if within:
+            best = min(within, key=len)
+            return best, index[best]
+    return None
+
+
 def _try_open_smart(target_name: str) -> tuple[bool, str, str]:
     """Tenta abrir de forma inteligente e segura:
     1. Se for serviço de streaming/web conhecido com limites de palavra (\b), abre direto no navegador.
@@ -731,6 +793,16 @@ def _try_open_smart(target_name: str) -> tuple[bool, str, str]:
         except Exception:
             pass
 
+    # V8.10.0: Menu Iniciar (rápido, sem PowerShell)
+    if os.name == "nt":
+        hit = _find_start_menu_app(clean)
+        if hit:
+            try:
+                os.startfile(hit[1])  # type: ignore[attr-defined]
+                return True, "app", hit[0].title()
+            except OSError:
+                log.info("Atalho do Menu Iniciar não abriu: %s", hit[1])
+
     # No Windows, tenta Start-Process direto de forma segura sem injeção de comandos
     if os.name == "nt":
         # Bloqueia caracteres de controle perigosos
@@ -741,7 +813,7 @@ def _try_open_smart(target_name: str) -> tuple[bool, str, str]:
                 res = subprocess.run(
                     ["powershell", "-NoProfile", "-NonInteractive", "-WindowStyle", "Hidden", "-Command", "Start-Process -FilePath $env:JARVIS_TARGET -ErrorAction Stop"],
                     capture_output=True,
-                    timeout=2.0,
+                    timeout=6.0,  # V8.10.0: o PowerShell leva até uns 3 s só para ligar no Windows com antivírus
                     env=env
                 )
                 if res.returncode == 0:

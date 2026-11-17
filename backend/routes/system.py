@@ -466,6 +466,35 @@ async def system_health_check(request: Request) -> dict:
     return await health_check.run()
 
 
+class PcFixRequest(BaseModel):
+    acao: str
+    nomes: list[str] = []
+
+
+@router.get("/api/pc/scan")
+async def pc_scan_route() -> dict:
+    """V8.10.0 (ideia 13): a varredura do PC lento (só mede; nada é mudado)."""
+    from modules import pc_scan
+
+    return await asyncio.to_thread(pc_scan.scan)
+
+
+@router.post("/api/pc/fix")
+async def pc_fix_route(body: PcFixRequest) -> dict:
+    """V8.10.0: as correções da varredura, cada uma só quando o usuário aperta o botão e confirma."""
+    from modules import pc_scan
+
+    if body.acao == "fechar":
+        if not body.nomes:
+            raise HTTPException(status_code=400, detail="Escolha pelo menos um programa.")
+        return await asyncio.to_thread(pc_scan.close_programs, body.nomes[:20])
+    if body.acao == "temporarios":
+        return await asyncio.to_thread(pc_scan.clean_temp)
+    if body.acao == "lixeira":
+        return await asyncio.to_thread(pc_scan.empty_recycle_bin)
+    raise HTTPException(status_code=400, detail="Correção desconhecida.")
+
+
 @router.post("/api/system/optimize")
 async def system_optimize(request: Request) -> dict:
     """V7.2: botão ⚡ OTIMIZAR: limpa sobras de áudio (falas interrompidas), cache de voz velho e libera memória."""
