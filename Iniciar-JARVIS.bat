@@ -152,7 +152,7 @@ if defined RELOAD (
 if defined USE_VITE (
   powershell -NoProfile -Command "Start-Process -FilePath 'cmd.exe' -ArgumentList '/c npm run dev -- --host %HOST%' -WorkingDirectory '%FRONTEND%' -WindowStyle Hidden"
 ) else (
-  powershell -NoProfile -Command "Start-Process -FilePath '%PY%' -ArgumentList 'serve_frontend.py --host %HOST% --port 5173' -WorkingDirectory '%ROOT%scripts' -WindowStyle Hidden"
+  powershell -NoProfile -Command "$p=Start-Process -FilePath '%PY%' -ArgumentList 'serve_frontend.py --host %HOST% --port 5173' -WorkingDirectory '%ROOT%scripts' -WindowStyle Hidden -PassThru; try { $p.PriorityClass='BelowNormal' } catch {}"
 )
 
 rem V8.2.3: a interface nova e montada em segundo plano, com o JARVIS ja ligado (registro em logs\build.log)
@@ -164,7 +164,7 @@ rem V6.3: ouvido offline ("Jarvis, ..." com o navegador fechado). So liga se o m
 rem baixado (%USERPROFILE%\.jarvis-voice). Fica quieto sozinho quando a central esta aberta numa aba do PC.
 powershell -NoProfile -Command "$f=Join-Path '%ROOT%' 'logs\ouvido.pid'; if (Test-Path $f) { $i=Get-Content $f -ErrorAction SilentlyContinue; if ($i) { Stop-Process -Id $i -Force -ErrorAction SilentlyContinue }; Remove-Item $f -ErrorAction SilentlyContinue }"
 if exist "%USERPROFILE%\.jarvis-voice\vosk-model-small-pt-0.3" if exist "%BACKEND%\venv\Scripts\pythonw.exe" (
-  powershell -NoProfile -Command "Start-Process -FilePath '%BACKEND%\venv\Scripts\pythonw.exe' -ArgumentList 'voice_listener.py' -WorkingDirectory '%ROOT%scripts' -WindowStyle Hidden"
+  powershell -NoProfile -Command "$p=Start-Process -FilePath '%BACKEND%\venv\Scripts\pythonw.exe' -ArgumentList 'voice_listener.py' -WorkingDirectory '%ROOT%scripts' -WindowStyle Hidden -PassThru; try { $p.PriorityClass='BelowNormal' } catch {}"
 )
 
 rem Abre o painel assim que backend e frontend responderem (ate 60 s), sem espera fixa.

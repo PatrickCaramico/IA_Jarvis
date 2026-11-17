@@ -2,6 +2,17 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 8.7.2 — 17 de novembro de 2026
+
+**🎬 Atualizar não engasga mais o vídeo que você está vendo**
+- **Causa:** a atualização faz várias coisas pesadas de uma vez, todas com a **mesma prioridade** do navegador: baixar e conferir a versão nova, religar e carregar os modelos, religar o ouvido do PC e, às vezes, montar a interface. E a atualização automática considerava o PC "parado" só porque ninguém falava com o JARVIS, então podia rodar no meio de um vídeo do YouTube.
+- **Prioridade baixa no Windows**, para o Windows dar a vez ao vídeo:
+  - o download (git) e o religar inteiro (e tudo o que ele abre) rodam em prioridade baixa;
+  - o servidor do JARVIS liga em prioridade baixa e volta à normal 1 minuto depois de ligado;
+  - a montagem da interface roda em prioridade **mínima** (só usa o processador que sobrar);
+  - o download da interface pronta, o ouvido do PC e o servidor da interface ficam em prioridade baixa.
+- **Atualização automática só com o PC realmente livre:** nada em **tela cheia** (vídeo, jogo) e, além disso, **de madrugada (1h às 6h)** ou **30 min sem mexer no mouse e no teclado**. Ela espera até 3 h por esse momento.
+
 ## 8.7.1 — 16 de novembro de 2026
 
 **🔊 O som parou de ficar aumentando e diminuindo**

@@ -214,7 +214,21 @@ def _log_to_file(root: Path):
     return write
 
 
+def _lower_priority(level: int = 0x00004000) -> None:
+    """V8.7.2: roda em prioridade baixa no Windows (não engasga o vídeo/jogo que você estiver usando)."""
+    if sys.platform != "win32":
+        return
+    try:
+        import ctypes
+
+        k32 = ctypes.windll.kernel32
+        k32.SetPriorityClass(k32.GetCurrentProcess(), level)
+    except Exception:  # noqa: BLE001
+        return
+
+
 if __name__ == "__main__":
+    _lower_priority()
     fe = Path(sys.argv[1]) if len(sys.argv) > 1 else Path(__file__).resolve().parent.parent / "frontend"
     out = _log_to_file(fe.resolve().parent)
     sys.exit(0 if fetch(fe, log=out, wait_s=float(os.getenv("JARVIS_PREBUILT_WAIT", "60"))) else 1)

@@ -23,6 +23,12 @@ log = logging.getLogger("jarvis.update")
 
 ROOT = Path(__file__).resolve().parents[2]
 START_BAT = ROOT / "Iniciar-JARVIS.bat"
+
+
+def _low() -> int:
+    from core import priority
+
+    return priority.creationflags("below")
 BOOT_ID = str(int(time.time() * 1000))
 GIT_TIMEOUT = 90
 
@@ -35,7 +41,8 @@ def _git(*args: str) -> subprocess.CompletedProcess:
         encoding="utf-8",
         errors="replace",
         timeout=GIT_TIMEOUT,
-        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+        # V8.7.2: prioridade baixa (baixar a versão nova não pode engasgar um vídeo)
+        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0) | _low(),
     )
 
 
@@ -128,7 +135,7 @@ def build_frontend() -> bool:
         with open(logs / "build.log", "w", encoding="utf-8", errors="replace") as out:
             proc = subprocess.Popen(  # noqa: S603 - comando fixo
                 [npm, "run", "build"], cwd=str(FRONTEND), stdout=out, stderr=subprocess.STDOUT,
-                stdin=subprocess.DEVNULL, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+                stdin=subprocess.DEVNULL, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0) | _low(),
             )
             try:
                 code = proc.wait(timeout=BUILD_TIMEOUT)
@@ -161,7 +168,8 @@ def restart() -> bool:
         return False
     # Console escondido (não DETACHED_PROCESS: sem console, cada PowerShell do .bat abriria uma janela).
     # Grupo próprio: o .bat continua vivo quando encerra este backend.
-    flags = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0) | getattr(subprocess, "CREATE_NO_WINDOW", 0)
+    # V8.7.2: o religar todo (e o que ele abre) em prioridade baixa
+    flags = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0) | getattr(subprocess, "CREATE_NO_WINDOW", 0) | _low()
     subprocess.Popen(  # noqa: S603 - comando fixo, sem nada vindo do pedido
         ["cmd.exe", "/c", str(START_BAT), "site"],
         cwd=str(ROOT),

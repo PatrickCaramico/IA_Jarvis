@@ -41,7 +41,21 @@ def try_prebuilt(out, wait_s: float = PREBUILT_WAIT) -> bool:
         return False
 
 
+def _lower_priority(level: int = 0x00004000) -> None:
+    """V8.7.2: roda em prioridade baixa no Windows (não engasga o vídeo/jogo que você estiver usando)."""
+    if sys.platform != "win32":
+        return
+    try:
+        import ctypes
+
+        k32 = ctypes.windll.kernel32
+        k32.SetPriorityClass(k32.GetCurrentProcess(), level)
+    except Exception:  # noqa: BLE001
+        return
+
+
 def main() -> int:
+    _lower_priority(0x00000040)  # IDLE: montar a interface só usa o processador que estiver sobrando
     LOGS.mkdir(exist_ok=True)
     if LOCK.exists() and time.time() - LOCK.stat().st_mtime < MAX_AGE:
         return 0  # já tem uma montagem rodando
@@ -60,7 +74,8 @@ def main() -> int:
             out.write("Montando aqui no PC (npm run build)...\n")
             out.flush()
             code = subprocess.call([npm, "run", "build"], cwd=str(FRONTEND), stdout=out, stderr=subprocess.STDOUT,  # noqa: S603
-                                   stdin=subprocess.DEVNULL, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+                                   stdin=subprocess.DEVNULL,
+                                   creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0) | (0x40 if sys.platform == "win32" else 0))
             out.write(f"\nFim: código {code} em {time.time() - started:.0f} s\n")
         return code
     finally:

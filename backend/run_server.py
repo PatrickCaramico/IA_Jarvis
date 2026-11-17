@@ -40,6 +40,11 @@ async def serve(host: str, port: int) -> None:
 
 
 def main() -> None:
+    # V8.7.2: ligar o JARVIS (carregar os modelos) é pesado: começa em prioridade baixa e o próprio JARVIS volta
+    # para a normal uns segundos depois de ligado (main.lifespan)
+    from core import priority
+
+    priority.set_self("below")
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8000)
