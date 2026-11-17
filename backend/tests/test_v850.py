@@ -193,3 +193,25 @@ def test_v870_autohide_and_performance_fixes():
     assert "html.is-app-hidden" in (fe / "index.css").read_text(encoding="utf-8")
     css = (fe / "desk.css").read_text(encoding="utf-8")
     assert "@keyframes ra-spark { 0%, 100% { opacity" in css and "svg.ra.ra-alive" in css
+
+
+def test_v872_update_does_not_choke_the_pc():
+    """V8.7.2: atualizar não engasga um vídeo: prioridade baixa e só com o PC realmente parado."""
+    from core import priority
+
+    assert priority.creationflags("below") in (0, 0x4000) and priority.creationflags("xyz") == 0
+    if __import__("sys").platform != "win32":
+        assert priority.set_self("below") is False
+    # PC livre: nada em tela cheia e (madrugada ou 30 min sem mexer)
+    assert auto_update.pc_free(now_hour=3, idle_s=0, fullscreen=False)
+    assert auto_update.pc_free(now_hour=15, idle_s=31 * 60, fullscreen=False)
+    assert not auto_update.pc_free(now_hour=15, idle_s=60, fullscreen=False)  # vendo vídeo / usando o PC
+    assert not auto_update.pc_free(now_hour=3, idle_s=99999, fullscreen=True)  # vídeo em tela cheia
+    su = (ROOT / "backend" / "modules" / "self_update.py").read_text(encoding="utf-8")
+    assert su.count("_low()") >= 3
+    assert 'priority.set_self("below")' in (ROOT / "backend" / "run_server.py").read_text(encoding="utf-8")
+    assert 'priority.set_self("normal")' in (ROOT / "backend" / "main.py").read_text(encoding="utf-8")
+    assert "_lower_priority(0x00000040)" in (ROOT / "scripts" / "build_background.py").read_text(encoding="utf-8")
+    assert "_lower_priority()" in (ROOT / "scripts" / "prebuilt.py").read_text(encoding="utf-8")
+    bat = (ROOT / "Iniciar-JARVIS.bat").read_text(encoding="utf-8", errors="replace")
+    assert bat.count("PriorityClass='BelowNormal'") == 2

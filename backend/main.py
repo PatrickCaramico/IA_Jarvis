@@ -5,6 +5,7 @@ O código foi dividido por área (refatoração 4.2):
 - routes/: uma APIRouter por área (acesso, água, foco, integrações...).
 Este arquivo só configura o log, o middleware de segurança, o CORS e inclui as rotas.
 """
+import asyncio
 import inspect
 import logging
 from contextlib import asynccontextmanager
@@ -67,6 +68,14 @@ async def lifespan(app: FastAPI):
     from modules import auto_update
 
     runtime.track_service(auto_update.auto_update_loop())  # V8.5.0: atualiza sozinho com o JARVIS parado
+
+    async def back_to_normal_priority() -> None:  # V8.7.2: depois de ligado, o JARVIS volta à prioridade normal
+        await asyncio.sleep(60)
+        from core import priority
+
+        priority.set_self("normal")
+
+    runtime.track(back_to_normal_priority())
     runtime.track(tts.preload())  # V4.4: voz carrega depois que o servidor já está no ar
     from modules import tools
 
