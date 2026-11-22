@@ -64,3 +64,63 @@ def test_watchdog_revives_only_after_real_outage():
     assert not vl.should_revive(80, 100, 0, True)                # fora há só 20 s
     assert vl.should_revive(50, 100, -1000, True)                # fora há 50 s: religa
     assert not vl.should_revive(50, 100, 0, True)                # tentou há pouco: espera
+
+
+# ------------------------------------------------------------------ V8.11
+def test_barge_in_only_while_jarvis_talks_or_thinks():
+    ok = {"status": "ok"}
+    assert not vl.can_barge_in({**ok, "speaking": False, "busy": False}, None, True)
+    assert vl.can_barge_in({**ok, "speaking": True}, None, True)
+    assert vl.can_barge_in({**ok, "busy": True}, {"devices": 1, "phones": 1}, True)
+    assert not vl.can_barge_in({**ok, "speaking": True}, None, False)  # ouvido desligado
+    assert not vl.can_barge_in({**ok, "speaking": True}, {"devices": 2, "phones": 1}, True)  # central aberta no PC
+    assert not vl.can_barge_in(None, None, True)
+
+
+def test_stop_phrases_are_exact():
+    assert vl.is_stop_phrase("jarvis para")
+    assert vl.is_stop_phrase("Jarvis  silêncio")
+    assert not vl.is_stop_phrase("jarvis para onde vamos")
+    assert not vl.is_stop_phrase("para")
+
+
+def test_backoff_grows_and_resets_after_a_good_run():
+    assert vl.next_backoff(0, 0) == 2.0
+    assert vl.next_backoff(2.0, 1) == 4.0
+    assert vl.next_backoff(16.0, 1) == 30.0
+    assert vl.next_backoff(30.0, 1) == 30.0
+    assert vl.next_backoff(30.0, 120) == 2.0  # funcionou 2 min: falha nova começa do início
+
+
+def test_sender_does_not_block_the_audio_loop():
+    import threading
+
+    release, sent = threading.Event(), []
+
+    def slow_send(text):
+        release.wait(5)
+        sent.append(text)
+
+    sender = vl.CommandSender(send=slow_send)
+    assert sender.submit("que horas são")  # volta na hora, mesmo com o envio preso
+    assert sender.submit("e amanhã?")
+    release.set()
+    sender._queue.join()
+    assert sent == ["que horas são", "e amanhã?"]
+
+
+def test_send_command_beeps_on_busy(monkeypatch):
+    beeps = []
+    monkeypatch.setattr(vl, "_post", lambda path, payload, timeout: 409)
+    monkeypatch.setattr(vl, "beep_error", lambda: beeps.append(1))
+    assert vl.send_command("oi") is False
+    assert beeps == [1]
+
+
+def test_gate_check_never_touches_the_network(monkeypatch):
+    calls = []
+    monkeypatch.setattr(vl, "_get", lambda path: calls.append(path))
+    gate = vl.Gate()
+    gate.open = True
+    assert gate.check() is True
+    assert calls == []

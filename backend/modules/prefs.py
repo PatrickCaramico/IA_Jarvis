@@ -2,11 +2,11 @@
 
 Armazenado em data/jarvis_settings.json.
 """
-import json
 import logging
 from typing import Any, Optional
 
 from config import settings
+from core import safe_io
 
 log = logging.getLogger("jarvis.prefs")
 
@@ -208,7 +208,7 @@ def _load() -> dict[str, Any]:
         _save(_DEFAULTS.copy())
         return _DEFAULTS.copy()
     try:
-        data = json.loads(_SETTINGS_PATH.read_text(encoding="utf-8"))
+        data = safe_io.read_json(_SETTINGS_PATH)  # V8.11: cache enquanto o arquivo não muda
         if not isinstance(data, dict):
             return _DEFAULTS.copy()
         # garante que todas as chaves padrão existem
@@ -234,7 +234,7 @@ def _load() -> dict[str, Any]:
 
 
 def _save(data: dict[str, Any]) -> None:
-    _SETTINGS_PATH.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    safe_io.write_json(_SETTINGS_PATH, data)  # V8.11: gravação atômica
 
 
 def get_all() -> dict[str, Any]:

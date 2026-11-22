@@ -26,6 +26,7 @@ from services.llm_orchestrator import (
     get_quota_cooldown,
     set_quota_cooldown,
     is_quota_error,
+    LLMTimeout,
 )
 from core import briefing_flow, confirm, runtime, session, speech, reactive_cards
 
@@ -646,6 +647,13 @@ async def handle_turn(message: str, routine: bool, force_deep: bool = False) -> 
                 f"Cooldown de 60s ativado. Detalhes: {exc}",
             )
             return await finish_local(quota_msg)
+
+        if isinstance(exc, LLMTimeout):  # V8.11: a IA travou; avisa e libera (antes o turno ficava preso)
+            event_log.add("warning", "A IA demorou demais", str(exc))
+            return await finish_local(
+                "Senhor, a inteligência artificial demorou demais para responder. Tente de novo em instantes; "
+                "os comandos locais continuam funcionando."
+            )
 
         log.exception("Falha ao gerar resposta")
         event_log.add(

@@ -6,6 +6,7 @@ from typing import Any, Optional
 Optional_str = Optional[str]
 
 from config import settings
+from core import safe_io
 
 _PATH = settings.DATA_DIR / "memoria.json"
 _DEFAULTS = {"facts": [], "preferences": {}, "routine": [], "conversation": []}
@@ -21,14 +22,14 @@ def _load() -> dict[str, Any]:
     if not _PATH.exists():
         return _fresh()
     try:
-        data = json.loads(_PATH.read_text(encoding="utf-8"))
+        data = safe_io.read_json(_PATH)  # V8.11: cache enquanto o arquivo não muda
         return {**_fresh(), **data} if isinstance(data, dict) else _fresh()
     except (OSError, ValueError):
         return _fresh()
 
 
 def _save(data: dict[str, Any]) -> None:
-    _PATH.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    safe_io.write_json(_PATH, data)  # V8.11: gravação atômica
 
 
 def get_memory() -> dict[str, Any]:

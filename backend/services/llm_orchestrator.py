@@ -22,6 +22,14 @@ _quota_cooldown_until: float = 0.0
 _quota_cooldown_reason: str = ""
 
 
+def _is_timeout(exc: BaseException) -> bool:
+    """V8.11: a IA não respondeu a tempo (cada biblioteca tem a sua exceção; o nome e o texto bastam)."""
+    if isinstance(exc, TimeoutError):
+        return True
+    text = f"{type(exc).__name__} {exc}".lower()
+    return "timeout" in text or "timed out" in text or "deadline" in text
+
+
 def set_quota_cooldown(seconds: int = 60, reason: str = "Cota de requisições excedida") -> None:
     """Ativa período de espera para evitar chamadas contínuas após receber erro 429."""
     global _quota_cooldown_until, _quota_cooldown_reason
@@ -43,6 +51,10 @@ def is_quota_error(exc: Exception) -> bool:
     return any(k in msg for k in (
         "429", "resource_exhausted", "quota", "rate limit", "too many requests", "rate_limit_exceeded"
     ))
+
+class LLMTimeout(RuntimeError):
+    """V8.11: o turno passou do LLM_TURN_BUDGET_S sem resposta da IA."""
+
 
 # on_step("camera", "active" | "done" | "error")
 StepCallback = Callable[[str, str], Awaitable[None]]
@@ -154,6 +166,14 @@ def _client(provider: str, api_key: str, factory):
         return client
 
 
+def _timeout_s() -> float:
+    """V8.11: segundos máximos de cada chamada à IA (LLM_TIMEOUT_S no .env)."""
+    try:
+        return max(3.0, float(getattr(settings, "LLM_TIMEOUT_S", 25) or 25))
+    except (TypeError, ValueError):
+        return 25.0
+
+
 def _image_part(frame_b64: str) -> dict:
     return {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{frame_b64}"}}
 
@@ -164,7 +184,7 @@ def _call_openai(prompt: str, frame_b64: Optional[str], history: list[dict]) -> 
     if not settings.OPENAI_API_KEY:
         raise RuntimeError("OPENAI_API_KEY não configurada no arquivo .env.")
 
-    client = _client("openai", settings.OPENAI_API_KEY, lambda: OpenAI(api_key=settings.OPENAI_API_KEY))
+    client = _client("openai", settings.OPENAI_API_KEY, lambda: OpenAI(api_key=settings.OPENAI_API_KEY, timeout=_timeout_s(), max_retries=1))
     content: list[dict] = [{"type": "text", "text": prompt}]
     if frame_b64:
         content.append(_image_part(frame_b64))
@@ -195,7 +215,10 @@ def _call_gemini(prompt: str, frame_b64: Optional[str], history: list[dict], dee
     if not settings.GEMINI_API_KEY:
         raise RuntimeError("GEMINI_API_KEY não configurada no arquivo .env.")
 
-    client = _client("gemini", settings.GEMINI_API_KEY, lambda: genai.Client(api_key=settings.GEMINI_API_KEY))
+    client = _client("gemini", settings.GEMINI_API_KEY, lambda: genai.Client(
+        api_key=settings.GEMINI_API_KEY,
+        http_options=types.HttpOptions(timeout=int(_timeout_s() * 1000)),  # milissegundos
+    ))
 
     # Constrói o histórico real de conversa (últimas ~10 mensagens)
     contents: list[types.Content] = []
@@ -251,6 +274,13 @@ def _call_gemini(prompt: str, frame_b64: Optional[str], history: list[dict], dee
             break
         except Exception as exc:
             last_exc = exc
+            # V8.11: só vale repetir "sem ferramentas" quando havia ferramenta (a pesquisa do Google) e o erro
+            # não foi de limite/tempo. Antes eram até 6 chamadas seguidas (3 modelos x 2) num erro qualquer.
+            if tools is None or is_quota_error(exc) or _is_timeout(exc):
+                log.warning("Modelo %s falhou (%s). Tentando o próximo modelo...", target_model, str(exc)[:160])
+                if _is_timeout(exc):
+                    break  # o próximo modelo esperaria o mesmo tempo: o modo automático segue para outra IA
+                continue
             log.warning("Modelo %s com ferramentas falhou (%s). Tentando sem ferramentas...", target_model, exc)
             try:
                 response = client.models.generate_content(
@@ -323,7 +353,8 @@ def _call_anthropic(prompt: str, frame_b64: Optional[str], history: list[dict]) 
     if not settings.ANTHROPIC_API_KEY:
         raise RuntimeError("ANTHROPIC_API_KEY não configurada no arquivo .env.")
 
-    client = _client("anthropic", settings.ANTHROPIC_API_KEY, lambda: anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY))
+    client = _client("anthropic", settings.ANTHROPIC_API_KEY, lambda: anthropic.Anthropic(
+        api_key=settings.ANTHROPIC_API_KEY, timeout=_timeout_s(), max_retries=1))
     content: list[dict] = []
     if frame_b64:
         content.append({
@@ -350,7 +381,8 @@ def _call_groq(prompt: str, frame_b64: Optional[str], history: list[dict]) -> st
         raise RuntimeError("GROQ_API_KEY não configurada.")
     if frame_b64:
         raise RuntimeError("A Groq não vê imagens: usando outra IA.")
-    client = _client("groq", key, lambda: OpenAI(api_key=key, base_url="https://api.groq.com/openai/v1", timeout=30))
+    client = _client("groq", key, lambda: OpenAI(api_key=key, base_url="https://api.groq.com/openai/v1",
+                                                    timeout=_timeout_s(), max_retries=1))
     response = client.chat.completions.create(
         model=settings.GROQ_MODEL,
         max_tokens=_max_tokens(),
@@ -545,7 +577,14 @@ async def generate_jarvis_response(
 
     await notify("llm", "active")
     try:
-        text = await asyncio.to_thread(_call_llm, prompt, frame, history, deep or web)
+        budget = max(1.0, float(getattr(settings, "LLM_TURN_BUDGET_S", 50) or 50))
+        # V8.11: o turno inteiro tem um teto (somando as reservas do modo automático). A thread que ficou
+        # esperando a IA termina sozinha depois; o JARVIS já fica livre para o próximo pedido.
+        text = await asyncio.wait_for(asyncio.to_thread(_call_llm, prompt, frame, history, deep or web), timeout=budget)
+    except asyncio.TimeoutError as exc:
+        await notify("llm", "error")
+        log.warning("A IA passou de %.0f s sem responder; turno liberado.", budget)
+        raise LLMTimeout(f"A inteligência artificial demorou mais de {budget:.0f} segundos para responder.") from exc
     except Exception:
         await notify("llm", "error")
         raise
