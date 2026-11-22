@@ -9,6 +9,7 @@ export const GROUPS = {
   deep_brief: { label: "Dossiês", icon: "🔎", order: 4 },
   clipboard_ai: { label: "Área de transferência", icon: "📋", order: 5 },
   dia_a_dia: { label: "Dia a dia", icon: "☀️", order: 6 },
+  inicializacao: { label: "Inicialização", icon: "🚀", order: 70 },
   habilidades: { label: "Central", icon: "⚡", order: 80 },
   abrir_programa: { label: "Segurança", icon: "🔐", order: 90 },
 };

@@ -57,6 +57,7 @@ import WelcomeLogo from "./components/WelcomeLogo.jsx";
 import { APP_VERSION } from "./utils/version.js";
 import { PC_SCAN_EVENT, openPcScan, scanFromCards } from "./utils/pcScan.js";
 import { tabTitle } from "./utils/tabTitle.js";
+import { markAutoUpdateAttempt, readAutoUpdateAttempt, shouldAutoUpdateOnOpen } from "./utils/updateCheck.js";
 import { canResumeSession, hasLoggedBefore, launcherWorks, markLauncherWorks, rememberLogin } from "./utils/session.js";
 
 // Carregados sob demanda (otimização 4.2: pacote inicial menor)
@@ -1161,13 +1162,24 @@ export default function App() {
   const [updateInfo, setUpdateInfo] = useState(null);
   const canSelfUpdate = BACKEND_ON_THIS_PC && !IS_JARVIS_APP && !cloudActive;
   const updateScreen = screen === "lock" || screen === "main";
+  const updateJarvisRef = useRef(null);
+  const autoOnOpenRef = useRef(false); // V8.11: a atualização ao abrir roda no máximo uma vez por página aberta
   useEffect(() => {
     if (!canSelfUpdate || !updateScreen) return undefined;
     let alive = true;
-    const check = () => api("/api/system/update/status", { timeout: 60_000 })
-      .then((info) => alive && setUpdateInfo(info))
+    // V8.11: a 1ª conferência ao abrir a central vai até o GitHub na hora (force) e, com versão nova, já atualiza
+    const check = (first = false) => api(`/api/system/update/status${first && !autoOnOpenRef.current ? "?force=true" : ""}`, { timeout: 60_000 })
+      .then((info) => {
+        if (!alive) return;
+        setUpdateInfo(info);
+        if (first && !autoOnOpenRef.current && shouldAutoUpdateOnOpen(info, readAutoUpdateAttempt())) {
+          autoOnOpenRef.current = true;
+          markAutoUpdateAttempt(info);
+          updateJarvisRef.current?.(`Versão nova${info.latest ? ` (${info.latest})` : ""} encontrada: atualizando antes de começar…`);
+        }
+      })
       .catch(() => {});
-    check();
+    check(true);
     const t = setInterval(check, 30 * 60 * 1000);
     // "Verificar atualizações" (Ajustes) atualiza a bolinha na hora
     const onManual = (e) => {
@@ -1188,8 +1200,10 @@ export default function App() {
   // A tela espera o backend novo subir (boot_id diferente) e recarrega a página com a versão nova.
   // V6.1: barra 0–100% por etapa real: baixar (até 30) -> aviso por voz (até 50) -> reiniciando (até 85)
   // -> versão nova no ar (95) -> recarregando (100)
-  const updateJarvis = useCallback(async () => {
-    setUpdating({ message: "Baixando a versão mais nova…", stage: "Baixando", target: 30 });
+  const updateJarvis = useCallback(async (firstMessage) => {
+    // V8.11: firstMessage = texto da atualização ao abrir (quando vem de um clique, chega o evento: ignora)
+    const opening = typeof firstMessage === "string" ? firstMessage : "";
+    setUpdating({ message: opening || "Baixando a versão mais nova…", stage: "Baixando", target: 30 });
     setScreen("boot");
     let res;
     try {
@@ -1246,6 +1260,7 @@ export default function App() {
       }
     }, 1000);
   }, []);
+  updateJarvisRef.current = updateJarvis; // V8.11: a atualização ao abrir chama por aqui
   const updatePct = useCreepingProgress(updating?.target ?? 0, updating?.target === 100); // no fim, salta para 100
 
   // V5.7.1: botão ATUALIZAR APP (bloqueio, só no app do celular). O app procura versão nova no PC

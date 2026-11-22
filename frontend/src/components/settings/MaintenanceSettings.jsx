@@ -14,6 +14,71 @@ async function copyText(text) {
   }
 }
 
+// V8.11: INICIALIZAÇÃO — ligar junto com o Windows e atualizar sozinho ao abrir a central.
+function StartupSettings({ api }) {
+  const [auto, setAuto] = useState(null); // {available, enabled}
+  const [onOpen, setOnOpen] = useState(null);
+  const [msg, setMsg] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    api("/api/system/autostart").then(setAuto).catch(() => setAuto({ available: false, enabled: false }));
+    api("/api/desk").then((d) => setOnOpen(d?.atualizacao?.ao_abrir !== false)).catch(() => setOnOpen(null));
+  }, [api]);
+
+  const toggleAuto = async (enabled) => {
+    setBusy(true);
+    setMsg("");
+    try {
+      const r = await api("/api/system/autostart", { method: "POST", body: JSON.stringify({ enabled }), timeout: 30_000 });
+      setAuto(r);
+      setMsg(r.ok === false ? r.message || "Não deu certo." : enabled ? "Pronto: o JARVIS liga sozinho quando você entrar no Windows." : "O JARVIS não liga mais sozinho com o Windows.");
+    } catch (err) {
+      setMsg(err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const toggleOnOpen = async (value) => {
+    setOnOpen(value);
+    try {
+      const d = await api("/api/desk", { method: "PATCH", body: JSON.stringify({ atualizacao: { ao_abrir: value } }) });
+      setOnOpen(d?.atualizacao?.ao_abrir !== false);
+    } catch (err) {
+      setOnOpen(!value);
+      setMsg(err.message);
+    }
+  };
+
+  const row = "flex items-start gap-2 cursor-pointer text-xs text-cyan-200/90";
+  const box = "mt-0.5 rounded border-cyan-500/40 bg-black text-emerald-500 focus:ring-0";
+  return (
+    <Section title="INICIALIZAÇÃO">
+      <div className="flex flex-col gap-2">
+        <label className={`${row}${auto && !auto.available ? " opacity-50" : ""}`}>
+          <input type="checkbox" className={box} checked={!!auto?.enabled} disabled={!auto?.available || busy}
+            onChange={(e) => toggleAuto(e.target.checked)} />
+          <span>
+            <b>Ligar junto com o Windows.</b> Ao entrar no Windows, o JARVIS liga sozinho em segundo plano (sem janela e
+            sem abrir aba). Se ele cair, o guardião liga de novo.
+            {auto && !auto.available && <em className="block text-cyan-200/60">Só no PC com Windows onde o JARVIS roda.</em>}
+          </span>
+        </label>
+        <label className={`${row}${onOpen === null ? " opacity-50" : ""}`}>
+          <input type="checkbox" className={box} checked={!!onOpen} disabled={onOpen === null}
+            onChange={(e) => toggleOnOpen(e.target.checked)} />
+          <span>
+            <b>Atualizar ao abrir a central.</b> Se tiver versão nova quando você abrir a central no PC (pelo site ou
+            aqui), o JARVIS atualiza na hora, com a barra de progresso, e já abre na versão nova.
+          </span>
+        </label>
+      </div>
+      {msg && <p className="mt-2 text-xs text-cyan-100" role="status">{msg}</p>}
+    </Section>
+  );
+}
+
 // V4.2.2: "Copiar diagnóstico" (sem segredos) e exportar/importar os ajustes.
 export default function MaintenanceSettings({ api, onImported }) {
   const [status, setStatus] = useState(null);
@@ -95,6 +160,8 @@ export default function MaintenanceSettings({ api, onImported }) {
   };
 
   return (
+    <>
+    <StartupSettings api={api} />
     <Section title="DIAGNÓSTICO & BACKUP">
       <div className="flex flex-wrap gap-2">
         <button type="button" className={btn} onClick={copyDiagnostics} disabled={busy}>⧉ Copiar diagnóstico</button>
@@ -132,5 +199,6 @@ export default function MaintenanceSettings({ api, onImported }) {
         O backup leva só as preferências (não leva chaves, rosto, memórias nem o índice da câmera).
       </Note>
     </Section>
+    </>
   );
 }

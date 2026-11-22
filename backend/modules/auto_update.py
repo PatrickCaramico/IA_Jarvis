@@ -88,6 +88,16 @@ def enabled() -> bool:
         return False
 
 
+def on_open_enabled() -> bool:
+    """V8.11: atualizar ao abrir a central (Configurações; ligado por padrão)."""
+    try:
+        from modules import desk
+
+        return bool(desk.config().get("atualizacao", {}).get("ao_abrir", True))
+    except Exception:  # noqa: BLE001
+        return False
+
+
 def is_quiet(now: float | None = None) -> bool:
     """O JARVIS está parado? (nada rodando, ilha parada e nenhuma resposta nos últimos minutos)."""
     from core import runtime, session

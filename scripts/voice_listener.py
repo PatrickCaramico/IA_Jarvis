@@ -285,6 +285,13 @@ def revive_backend() -> None:
     subprocess.Popen(command, cwd=str(ROOT), creationflags=flags, close_fds=True)  # noqa: S603
 
 
+def guardian_alive() -> bool:
+    try:
+        return time.time() - (ROOT / "logs" / "guardiao.beat").stat().st_mtime < 60
+    except OSError:
+        return False
+
+
 class Gate:
     """Consulta o backend a cada 2 s (não a cada quadro de áudio).
 
@@ -339,7 +346,8 @@ class Gate:
                 self.seen_up, self.down_since = True, None
             else:
                 self.down_since = self.down_since or now
-                if should_revive(self.down_since, now, self.last_revive, self.seen_up):
+                # V8.11: com o guardião vivo (scripts/guardiao.py), é ele quem religa (os dois juntos brigavam)
+                if should_revive(self.down_since, now, self.last_revive, self.seen_up) and not guardian_alive():
                     self.last_revive = now
                     try:
                         revive_backend()

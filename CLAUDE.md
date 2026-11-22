@@ -39,6 +39,11 @@ de `data/` para uma pasta temporária: um módulo novo que grava em `data/` entr
 - `core/runtime.py`: WebSockets (`manager.broadcast`, em paralelo e com prazo por aparelho), `track`/`track_service`.
 - `core/confirm.py`: ações que esperam "sim" (`offer(kind, data)` / `answer(norm)`).
 - `modules/access.py` + `modules/sentinel.py`: bloqueio real; rotas não listadas como públicas exigem a central liberada.
+- Inicialização (V8.11): `modules/autostart.py` (atalho na Inicialização do Windows → `scripts/ligar_jarvis.py`, sem
+  janela), `scripts/guardiao.py` (religa o backend se cair; respeita `logs/iniciando.flag`, que o
+  `Iniciar-JARVIS.bat` deixa enquanto liga/atualiza) e a atualização ao abrir a central (`auto_on_open` em
+  `/api/system/update/status`, regra em `frontend/src/utils/updateCheck.js`). O `Parar-JARVIS.bat` encerra o
+  guardião primeiro. Mudou o `.bat`? Mantenha CRLF (há teste) e não use `echo texto%var%> arquivo` (vira `2>`).
 - `core/safe_io.py`: gravação segura; **`read_json`/`write_json`** (cache por data/tamanho, atômico, guarda cópia
   de arquivo corrompido).
 

@@ -51,7 +51,8 @@ DEFAULT = {
     # V8.5.0: painel (tamanho da ilha aberta) e zoom (do conteúdo dela)
     "ilha": {"ligada": True, "tamanho": "media", "atalho": "PageDown", "posicao": 0.5, "painel": "medio", "zoom": 0.9,
              "ocultar": True},  # V8.7.0: escondida no topo, desce quando o mouse chega lá
-    "atualizacao": {"automatica": True},  # V8.5.0: atualiza sozinho quando o JARVIS está parado
+    # V8.5.0: atualiza sozinho quando o JARVIS está parado; V8.11: e ao abrir a central (se houver versão nova)
+    "atualizacao": {"automatica": True, "ao_abrir": True},
     # V8.4.0 (ideia 10): modo leve: "auto" (liga sozinho no notebook na bateria), "sim" ou "nao"
     "desempenho": {"leve": "auto"},
     "xp": {"total": 0, "hoje": {}, "eventos": []},
@@ -238,6 +239,8 @@ def update_config(patch: dict) -> dict:
         upd = patch.get("atualizacao") if isinstance(patch.get("atualizacao"), dict) else {}
         if isinstance(upd.get("automatica"), bool):
             d["atualizacao"]["automatica"] = upd["automatica"]
+        if isinstance(upd.get("ao_abrir"), bool):
+            d["atualizacao"]["ao_abrir"] = upd["ao_abrir"]
         _save(d)
     return config()
 

@@ -214,4 +214,4 @@ def test_v872_update_does_not_choke_the_pc():
     assert "_lower_priority(0x00000040)" in (ROOT / "scripts" / "build_background.py").read_text(encoding="utf-8")
     assert "_lower_priority()" in (ROOT / "scripts" / "prebuilt.py").read_text(encoding="utf-8")
     bat = (ROOT / "Iniciar-JARVIS.bat").read_text(encoding="utf-8", errors="replace")
-    assert bat.count("PriorityClass='BelowNormal'") == 2
+    assert bat.count("PriorityClass='BelowNormal'") == 3  # interface, ouvido e (V8.11) guardião

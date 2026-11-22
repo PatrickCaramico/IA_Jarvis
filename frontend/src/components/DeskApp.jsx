@@ -518,6 +518,13 @@ function Updates({ api, info, onUpdate, cfg, setCfg }) {
           <span>Atualizar sozinho: quando sair versão nova, o JARVIS atualiza num momento em que estiver parado (sem pasta nem CMD) e avisa na ilha.</span>
         </label>
       )}
+      {cfg && (
+        <label className="dk-toggle-row">
+          <input type="checkbox" checked={cfg.atualizacao?.ao_abrir !== false}
+            onChange={async (e) => setCfg(await api("/api/desk", { method: "PATCH", body: JSON.stringify({ atualizacao: { ao_abrir: e.target.checked } }) }).catch(() => cfg))} />
+          <span>Atualizar ao abrir a central: se tiver versão nova quando você abrir a central no PC, atualiza na hora (V8.11).</span>
+        </label>
+      )}
       {msg && <p className="dk-err" role="alert">{msg}</p>}
     </Card>
   );

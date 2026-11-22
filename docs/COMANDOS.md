@@ -12,7 +12,10 @@
 | **Ligar o JARVIS** | Duplo clique em `Iniciar-JARVIS.bat` (sobe backend e frontend em segundo plano e abre o navegador). |
 | **Ligar em modo desenvolvimento** | Duplo clique em `Iniciar-JARVIS-Dev.bat` (ativa `--reload` para recarregar o backend automaticamente ao editar código). |
 | **Abrir o painel** | Navegador em `http://127.0.0.1:5173` (também funciona `http://localhost:5173`). |
-| **Desligar o JARVIS** | Duplo clique em `Parar-JARVIS.bat` (encerra as portas 8000 e 5173). |
+| **Ligar sozinho com o Windows (V8.11)** | Configurações › **Inicialização** › "Ligar junto com o Windows", ou diga "liga o JARVIS junto com o Windows", ou duplo clique em `Instalar-JARVIS-no-Windows.bat`. Ao entrar no Windows ele liga em segundo plano, sem janela e sem abrir aba. Para desfazer: desmarque, diga "não liga mais com o Windows" ou use `Remover-JARVIS-do-Windows.bat`. |
+| **Ficar sempre ligado (V8.11)** | O **guardião** (liga junto com o JARVIS) confere a cada 10 s: se o JARVIS cair sozinho, liga de novo em ~45 s (no máximo 4 vezes por hora). Não interfere em atualizações nem no `Parar-JARVIS.bat`. Registro em `logs\guardiao.log`. |
+| **Atualizar ao abrir (V8.11)** | Ao abrir a central no PC (pelo site ou aqui), se tiver versão nova o JARVIS atualiza na hora, com a barra de progresso, e já abre na versão nova. Desligar: Configurações › Inicialização › "Atualizar ao abrir a central". Se a atualização falhar, ele não tenta de novo pelos próximos 15 min. |
+| **Desligar o JARVIS** | Duplo clique em `Parar-JARVIS.bat` (encerra as portas 8000 e 5173 e o guardião, para ele não religar). |
 | **Reiniciar** | `Parar-JARVIS.bat`, esperar 3 segundos, depois `Iniciar-JARVIS.bat`. |
 | **Ver o erro quando não abre** | Parar primeiro; depois duplo clique em `Diagnostico-Backend.bat`. Ele roda o backend com a janela visível e mostra o erro. |
 | **Usar no celular (V5)** | Baixe o APK da [Release mais recente](https://github.com/PatrickCaramico/IA_Jarvis/releases/latest) ou inicie o JARVIS em modo de rede. No bloqueio do PC, toque em **CELULAR** e escaneie o QR; toque em **ABRIR O JARVIS** e digite o PIN principal. PC e celular precisam estar na mesma Wi-Fi. Para ficar só no PC: `set JARVIS_LOCAL=1` antes de rodar. |
