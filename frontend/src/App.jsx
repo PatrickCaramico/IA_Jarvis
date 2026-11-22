@@ -798,6 +798,12 @@ export default function App() {
         // V5.7: a resposta a um pedido DESTE aparelho: a voz toca aqui (o PC ficou em silêncio)
         if (msg.client_id && msg.client_id === clientId() && msg.text) enqueueHere(msg.text, msg.say_id);
         break;
+      case "open_panel":
+        // V8.11: uma Skill pediu para abrir um painel (ex.: "quais são suas habilidades?" abre a aba ⚡ da Central)
+        if (msg.panel === "agents" && (!msg.client_id || msg.client_id === clientId())) {
+          window.dispatchEvent(new CustomEvent("jarvis-open-agents", { detail: { agent: msg.agent || "mercado" } }));
+        }
+        break;
       case "agent":
         // V6.8: sub-agente trabalhando ("🧭 Agente de rotas: rota para o trabalho")
         if (msg.label) setNotice(`${msg.icon || "🤖"} ${msg.label}: ${msg.text || ""}`);
@@ -3235,6 +3241,7 @@ export default function App() {
           api={api}
           initialAgent={agentsOpen.agent || "mercado"}
           onClose={() => setAgentsOpen(false)}
+          onSend={(t) => { setAgentsOpen(false); send(t); }}
           onOpenHolo={(tema) => { setAgentsOpen(false); setResponseCards([]); setHolo({ kind: "apresentacao", query: tema, at: Date.now() }); }}
         />
       )}

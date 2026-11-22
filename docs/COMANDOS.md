@@ -586,7 +586,27 @@ Para a varredura completa (temporários, lixeira, inicialização), continue usa
 | "Abre o winword" (só no PATH ou no registro do Windows) | ⚠️ "O Winword não está nos seus atalhos. Abro o programa WINWORD.EXE?" e só abre depois do "sim". |
 | "Abre o prompt de comando" / "abre o PowerShell" / "abre o regedit" | ⚠️ Sempre pede o "sim" ("executa comandos no sistema"), mesmo vindo do Menu Iniciar. Pedido feito pelo celular: recusado. |
 
-Para desligar uma skill inteira: `POST /api/skills/<nome>/toggle` com `{"enabled": false}` (a lista com os nomes está em `GET /api/skills`).
+**Texto copiado (Clipboard AI, só no Windows)**
+
+| Diga | O que acontece |
+|---|---|
+| "Resume o que eu copiei" / "explica o texto copiado" | Fala o resumo (ou a explicação) do que está na área de transferência e mostra um cartão. |
+| "Traduz o que eu copiei" / "traduz o que copiei para o espanhol" | Traduz (português ↔ inglês por padrão) e deixa a tradução copiada: é só colar com Ctrl+V. |
+| "Corrige o texto que eu copiei" / "revisa o que copiei" | Corrige ortografia e gramática e deixa o texto corrigido copiado. |
+
+**Dia a dia**
+
+| Diga | O que acontece |
+|---|---|
+| "Quanto é 5 milhas em km" / "converte 350 Fahrenheit para Celsius" / "2 xícaras em ml" / "1,5 GB em MB" / "100 km/h em mph" | Conversão na hora, sem internet e sem IA (vale com a central bloqueada): comprimento, peso, volume de cozinha, temperatura, velocidade e dados. |
+| "Gera uma senha forte" / "cria uma senha de 16 caracteres" | Copia uma senha aleatória (maiúsculas, minúsculas, números e símbolos, sem O/0/I/l/1) para a área de transferência do PC. A senha nunca é falada nem mostrada. |
+| "Quais são suas habilidades?" | Diz o que está ligado e abre a aba **⚡ HABILIDADES** da Central de Agentes. |
+
+**Aba ⚡ HABILIDADES (Central de Agentes)**: todas as skills por grupo, com o nível de permissão (LEITURA, AÇÃO, CRÍTICA), liga/desliga, quantas vezes foram usadas, falhas e tempo, e os exemplos: um toque manda a frase para o JARVIS. Também abre pelo botão da Central de Agentes.
+
+**Melhorias de velocidade e honestidade (V8.11)**: a pesquisa no navegador consulta Google, Bing e DuckDuckGo ao mesmo tempo (no máximo 7 s); "próxima aba", "fecha a aba", "nova aba" e "reabre a aba" respondem na hora, conferem que o navegador veio para a frente e nunca fecham a aba da central; e quando a IA falha, o JARVIS diz o motivo (sem chave, sem internet, recusa) em vez de um erro técnico.
+
+Para desligar uma skill inteira: na aba ⚡ HABILIDADES, ou `POST /api/skills/<nome>/toggle` com `{"enabled": false}` (a lista com os nomes está em `GET /api/skills`).
 
 ## 5. Onde mudar as coisas
 

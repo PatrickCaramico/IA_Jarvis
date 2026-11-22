@@ -101,6 +101,8 @@ async def workspace_layout(ctx: SkillContext, layout: str) -> SkillResult:
   se ela cair.
 - Dados persistentes: `settings.DATA_DIR / "<arquivo>.json"` num atributo `_PATH` do módulo, com
   `safe_io.read_json`/`write_json`, e o caminho entra no `_WRITABLE_SKILLS` do `tests/conftest.py`.
+- Grupo na aba ⚡ HABILIDADES: o módulo vira o grupo; dê nome e ícone em `GROUPS` de
+  `frontend/src/utils/skillsCatalog.js` (sem isso aparece com o nome do arquivo).
 - Cartão na tela: use o cartão genérico `{"type": "skill", "data": {"tag": "TÍTULO", "source": "resumo",
   "rows": [{"label": "...", "value": "..."}]}}` (renderizado por `ReactiveCard.jsx`). Componente próprio só se
   a skill realmente precisar de interação.
@@ -142,12 +144,13 @@ criados/afetados.
 Feito: Q1 a Q4 (prazo da IA, JSON atômico com cache, broadcast em paralelo, ouvido sem travar com
 "Jarvis, para"), Q8 ("abrir" desconhecido ou de sistema só com "sim": `skills/abrir_programa.py`), o motor de
 Skills e as skills Workspace (`skills/workspace/`), System Guard (`skills/system_guard.py`), Context Autopilot
-(`skills/context_autopilot.py`) e Deep Brief (`skills/deep_brief.py`; pesquisa com fontes por chamada via
-`llm_orchestrator.ask_web`).
+(`skills/context_autopilot.py`), Deep Brief (`skills/deep_brief.py`; pesquisa com fontes por chamada via
+`llm_orchestrator.ask_web`), Clipboard AI (`skills/clipboard_ai.py`), conversor e senha (`skills/dia_a_dia.py`),
+"quais são suas habilidades" (`skills/habilidades.py`), Q5 a Q7 e a aba ⚡ HABILIDADES da Central de Agentes
+(`frontend/src/components/SkillsPanel.jsx` + `utils/skillsCatalog.js`).
 
 Próximos, na ordem sugerida:
-- Q5 (busca web em paralelo), Q6 (abas por `ctypes`), Q7 (mensagens honestas quando a IA não responde).
-- Skills: macros de navegador por CDP, Quick Capture com escrita no Google Agenda, Clipboard AI.
+- Skills: macros de navegador por CDP, Quick Capture com escrita no Google Agenda.
 - Estruturais: streaming da IA para a voz, fila de turnos no lugar de `session.busy`, memória em SQLite + FTS5,
   logs estruturados com latência por etapa, desmontar `handle_turn` em skills, barramento de eventos.
 - Migração gradual: ao mexer num handler de `tools.py` ou num bloco de `turns.py`, prefira movê-lo para uma Skill.
