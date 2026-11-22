@@ -570,6 +570,22 @@ Para a varredura completa (temporários, lixeira, inicialização), continue usa
 | "Qual minha próxima reunião?" | O próximo compromisso com horário e se tem link de chamada. |
 | "Me avise 10 minutos antes das reuniões" / "desliga o piloto automático da agenda" | Ajusta a antecedência (1 a 30 min) ou liga/desliga os avisos. |
 
+**Deep Brief (dossiê com pesquisa a fundo)**
+
+| Diga | O que acontece |
+|---|---|
+| "Faz um dossiê sobre carros elétricos no Brasil" / "monta um relatório sobre a reforma tributária" / "prepara um resumo completo sobre o James Webb" | Divide o tema em até 4 ângulos, pesquisa todos no Google ao mesmo tempo, fala um resumo de 3 a 5 frases e abre o cartão **DOSSIÊ** (painel com tópicos e fontes). Leva de 20 s a 1 min; o progresso aparece na tela. O dossiê completo fica em `data/dossies/` (Markdown). Usa 1 da cota diária da pesquisa profunda; se ela estiver desligada, pergunta se libera só desta vez. |
+| "Quais são meus dossiês?" | Os salvos, do mais recente para o mais antigo. |
+| "Lê o dossiê sobre carros elétricos" / "abre o dossiê da reforma tributária" | Fala o resumo de novo e mostra o painel. |
+
+**Abrir programas desconhecidos (Q8)**
+
+| Diga | O que acontece |
+|---|---|
+| "Abre o Discord" (está no Menu Iniciar) | Abre direto, como antes. |
+| "Abre o winword" (só no PATH ou no registro do Windows) | ⚠️ "O Winword não está nos seus atalhos. Abro o programa WINWORD.EXE?" e só abre depois do "sim". |
+| "Abre o prompt de comando" / "abre o PowerShell" / "abre o regedit" | ⚠️ Sempre pede o "sim" ("executa comandos no sistema"), mesmo vindo do Menu Iniciar. Pedido feito pelo celular: recusado. |
+
 Para desligar uma skill inteira: `POST /api/skills/<nome>/toggle` com `{"enabled": false}` (a lista com os nomes está em `GET /api/skills`).
 
 ## 5. Onde mudar as coisas

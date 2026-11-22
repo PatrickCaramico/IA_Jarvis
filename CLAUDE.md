@@ -106,6 +106,9 @@ async def workspace_layout(ctx: SkillContext, layout: str) -> SkillResult:
   a skill realmente precisar de interação.
 - Uma skill pode usar outra com `await ctx.call("nome", ...)` (passa pelas mesmas regras) e oferecer uma ação com
   `confirm.offer("skill", {"name": ..., "args": {...}})` (o "sim" do usuário executa).
+- Skill demorada (mais que o prazo do turno da IA, `LLM_TURN_BUDGET_S`) fica com `llm=False` e mostra o progresso
+  com `ctx.broadcast({"type": "agent", "agent": ..., "label": ..., "icon": ..., "status": "working|done|error",
+  "text": ...})`. Skill que só deve rodar depois de um "sim" vindo de outro código: sem `triggers` e `llm=False`.
 - Gatilho que depende do estado do PC (ex.: programa aberto) vai num `parse` rápido e com cache; se não
   reconhecer, devolve `None` para a frase seguir para as funções legadas e a IA.
 
@@ -137,13 +140,14 @@ criados/afetados.
 ## Roadmap combinado (auditoria V8.11)
 
 Feito: Q1 a Q4 (prazo da IA, JSON atômico com cache, broadcast em paralelo, ouvido sem travar com
-"Jarvis, para"), o motor de Skills e as skills Workspace (`skills/workspace/`), System Guard
-(`skills/system_guard.py`) e Context Autopilot (`skills/context_autopilot.py`).
+"Jarvis, para"), Q8 ("abrir" desconhecido ou de sistema só com "sim": `skills/abrir_programa.py`), o motor de
+Skills e as skills Workspace (`skills/workspace/`), System Guard (`skills/system_guard.py`), Context Autopilot
+(`skills/context_autopilot.py`) e Deep Brief (`skills/deep_brief.py`; pesquisa com fontes por chamada via
+`llm_orchestrator.ask_web`).
 
 Próximos, na ordem sugerida:
-- Q8 (pedir "sim" para "abrir X" desconhecido), Q5 (busca web em paralelo), Q6 (abas por `ctypes`),
-  Q7 (mensagens honestas quando a IA não responde).
-- Skills: Deep Brief, macros de navegador por CDP, Quick Capture com escrita no Google Agenda, Clipboard AI.
+- Q5 (busca web em paralelo), Q6 (abas por `ctypes`), Q7 (mensagens honestas quando a IA não responde).
+- Skills: macros de navegador por CDP, Quick Capture com escrita no Google Agenda, Clipboard AI.
 - Estruturais: streaming da IA para a voz, fila de turnos no lugar de `session.busy`, memória em SQLite + FTS5,
   logs estruturados com latência por etapa, desmontar `handle_turn` em skills, barramento de eventos.
 - Migração gradual: ao mexer num handler de `tools.py` ou num bloco de `turns.py`, prefira movê-lo para uma Skill.

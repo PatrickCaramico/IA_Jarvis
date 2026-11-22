@@ -759,70 +759,50 @@ def _find_start_menu_app(name: str, index: dict[str, str] | None = None) -> tupl
     return None
 
 
-def _try_open_smart(target_name: str) -> tuple[bool, str, str]:
-    """Tenta abrir de forma inteligente e segura:
-    1. Se for serviço de streaming/web conhecido com limites de palavra (\b), abre direto no navegador.
-    2. Se tiver extensão de domínio explícita (.com, .br, etc), abre URL.
-    3. Se existir aplicativo local no Windows ou comando executável, abre na máquina com proteção contra injeção.
-    4. Não tenta adivinhar sites desconhecidos com .com para evitar abrir páginas indesejadas sem confirmação.
-    Retorna (sucesso, tipo_execucao, label).
+def _try_open_smart(target_name: str) -> tuple[bool, str, str, str]:
+    """Tenta abrir de forma inteligente e segura. Devolve (abriu, tipo, nome, caminho):
+    1. serviço web/streaming conhecido (limites de palavra) ou domínio explícito (.com, .br...): abre no navegador;
+    2. atalho do Menu Iniciar (os programas instalados do usuário): abre direto;
+    3. V8.11 (Q8): programa só achado no PATH/registro, ou terminal/Registro mesmo no Menu Iniciar: NÃO abre;
+       devolve tipo "ask" e o caminho, e quem chamou pergunta "Abro? Diga sim" (skills/abrir_programa.py);
+    4. não tenta adivinhar sites desconhecidos com .com sem confirmação.
     """
+    from skills import abrir_programa
+
     clean = _deaccent(target_name).strip()
     if not clean:
-        return False, "", ""
+        return False, "", "", ""
 
     # 1. Checa serviços web / streamings com limites de palavra exatos (\b)
     for key, url in _SMART_WEB_SERVICES.items():
         if clean == key or bool(re.search(rf"\b{re.escape(key)}\b", clean, flags=re.I)):
             _open_target(url)
-            return True, "web", key.title()
+            return True, "web", key.title(), url
 
-    # 2. Se for link ou domínio explicitamente digitado (.com, .br, etc)
+    # Se for link ou domínio explicitamente digitado (.com, .br, etc)
     if re.search(r"\.(com|br|org|net|io|ai|tv|gov)\b", clean, flags=re.I) or clean.startswith("http"):
         url = clean if clean.startswith("http") else f"https://{clean}"
         _open_target(url)
-        return True, "web", clean
+        return True, "web", clean, url
 
-    # 3. Tenta localizar executável local no sistema
-    import shutil
-    cmd_name = clean.replace(" ", "")
-    if shutil.which(cmd_name) or shutil.which(clean):
-        try:
-            _open_target(clean)
-            return True, "app", clean.title()
-        except Exception:
-            pass
-
-    # V8.10.0: Menu Iniciar (rápido, sem PowerShell)
+    # 2. V8.10.0: Menu Iniciar (rápido, sem PowerShell)
     if os.name == "nt":
         hit = _find_start_menu_app(clean)
         if hit:
+            if abrir_programa.is_dangerous(clean, hit[1]) or abrir_programa.is_dangerous(hit[0]):
+                return False, "ask", hit[0].title(), hit[1]
             try:
                 os.startfile(hit[1])  # type: ignore[attr-defined]
-                return True, "app", hit[0].title()
+                return True, "app", hit[0].title(), hit[1]
             except OSError:
                 log.info("Atalho do Menu Iniciar não abriu: %s", hit[1])
 
-    # No Windows, tenta Start-Process direto de forma segura sem injeção de comandos
-    if os.name == "nt":
-        # Bloqueia caracteres de controle perigosos
-        if not re.search(r"[;&|`$<>\"'\n\r]", clean):
-            try:
-                env = os.environ.copy()
-                env["JARVIS_TARGET"] = clean
-                res = subprocess.run(
-                    ["powershell", "-NoProfile", "-NonInteractive", "-WindowStyle", "Hidden", "-Command", "Start-Process -FilePath $env:JARVIS_TARGET -ErrorAction Stop"],
-                    capture_output=True,
-                    timeout=6.0,  # V8.10.0: o PowerShell leva até uns 3 s só para ligar no Windows com antivírus
-                    env=env
-                )
-                if res.returncode == 0:
-                    return True, "app", clean.title()
-            except Exception:
-                pass
+    # 3. V8.11 (Q8): executável do PATH ou do registro: só com o "sim"
+    found = abrir_programa.resolve(clean)
+    if found:
+        return False, "ask", clean.title(), found
 
-    # 4. Não tenta adivinhar abrindo .com arbitrário no navegador sem confirmação
-    return False, "", ""
+    return False, "", "", ""
 
 
 def _open_spotify_desktop() -> None:
@@ -935,7 +915,12 @@ async def _h_open(message: str, norm: str, words: int, name: str) -> Optional[st
             return f"Não consegui abrir {label}."
 
     # Roteador inteligente: se não estava na lista de atalhos, analisa automaticamente
-    ok, mode, final_label = await asyncio.to_thread(_try_open_smart, wanted)
+    ok, mode, final_label, found_path = await asyncio.to_thread(_try_open_smart, wanted)
+    if mode == "ask":  # V8.11 (Q8): programa desconhecido ou de sistema: pergunta antes
+        from core import voice_route
+        from skills import abrir_programa
+
+        return abrir_programa.offer(final_label, found_path, voice_route.is_remote())
     if ok:
         _remember_open(final_label, wanted)
         if mode == "web":

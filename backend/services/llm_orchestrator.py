@@ -306,6 +306,19 @@ def _openai_style(client, model: str, messages: list[dict], ts: Optional[_ToolSe
 _last_grounding_data: dict = {"queries": [], "sources": []}
 
 
+_grounding_local = threading.local()
+
+
+def ask_web(prompt: str, max_tokens: int | None = None) -> tuple[str, list[dict]]:
+    """V8.11: pergunta com pesquisa no Google (Gemini) que devolve o texto e as fontes DESTA chamada.
+
+    Seguro em paralelo (cada asyncio.to_thread roda numa thread). Sem Gemini, a resposta vem sem pesquisa e
+    a lista de fontes vem vazia."""
+    _grounding_local.sources = []
+    text = ask_text(prompt, web=True, max_tokens=max_tokens)
+    return text, list(getattr(_grounding_local, "sources", []) or [])
+
+
 def get_last_grounding_data() -> dict:
     """Retorna os metadados e fontes da última pesquisa realizada via Google Search Grounding."""
     return dict(_last_grounding_data)
@@ -478,6 +491,7 @@ def _call_gemini(prompt: str, frame_b64: Optional[str], history: list[dict], dee
         "queries": queries,
         "sources": sources,
     }
+    _grounding_local.sources = list(sources)  # V8.11: as fontes DESTA chamada (pesquisas em paralelo)
 
     if not full_text:
         try:

@@ -47,6 +47,8 @@ _WRITABLE_SKILLS = (
     ("skills.workspace", "_PATH", "workspaces.json"),
     ("skills.system_guard", "_PATH", "vigia_sistema.json"),
     ("skills.context_autopilot", "_PATH", "piloto_agenda.json"),
+    ("skills.deep_brief", "_PATH", "dossies.json"),
+    ("skills.deep_brief", "_DIR", "dossies"),
 )
 
 
