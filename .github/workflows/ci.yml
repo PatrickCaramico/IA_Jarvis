@@ -32,7 +32,8 @@ jobs:
         working-directory: backend
 
       - name: Testes do backend e scripts
-        run: pytest -q backend/tests scripts/tests
+        # V8.11: -v mostra cada teste (PASSED/FAILED) na hora: no Windows o relatório final às vezes não sai
+        run: pytest -v --tb=short -p no:cacheprovider backend/tests scripts/tests
         env:
           # V8.11: saída do pytest em UTF-8. No Windows ela era cp1252: acentos viravam "�" e um caractere fora do
           # cp1252 derrubava o pytest no meio do relatório (sem a lista de falhas no fim).
