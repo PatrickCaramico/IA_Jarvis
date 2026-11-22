@@ -181,6 +181,7 @@ def build_skill(handler: Handler, *, name: str, description: str, permission: Pe
 # Skills declaradas pelo decorador enquanto um arquivo é importado (o registry recolhe e valida)
 _declared: list[Skill] = []
 _declared_errors: list[str] = []
+_history: list[Skill] = []  # tudo o que já foi declarado nesta execução (os testes recolocam as skills reais)
 # Tarefas de fundo das skills (ex.: vigiar a CPU): o registry liga junto com o JARVIS
 _services: list[tuple[str, Callable[[], Awaitable[None]]]] = []
 
@@ -190,7 +191,9 @@ def skill(**options: Any) -> Callable[[Handler], Handler]:
 
     def wrap(handler: Handler) -> Handler:
         try:
-            _declared.append(build_skill(handler, **options))
+            sk = build_skill(handler, **options)
+            _declared.append(sk)
+            _history.append(sk)
         except (SkillDefinitionError, TypeError) as exc:
             _declared_errors.append(f"{getattr(handler, '__module__', '?')}: {exc}")
         return handler

@@ -375,3 +375,16 @@ def test_skill_routes(client):
 def test_skill_routes_need_unlock(client, credentials):
     access.reset_for_tests(access.LOCKED)
     assert client.get("/api/skills").status_code == 403
+
+
+def test_real_skills_become_valid_llm_tools(real_skills):
+    from core.skills import llm_adapters
+
+    skills = registry.llm_skills()
+    assert {"organizar_janelas", "fechar_programa", "modo_reuniao"} <= {s.name for s in skills}
+    tool = llm_adapters.to_gemini(skills)
+    assert len(tool.function_declarations) == len(skills)
+    oa = llm_adapters.to_openai(skills)
+    org = next(t for t in oa if t["function"]["name"] == "organizar_janelas")["function"]["parameters"]
+    assert org["properties"]["apps"]["type"] == "array"
+    assert registry.errors() == []

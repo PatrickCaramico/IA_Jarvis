@@ -99,8 +99,15 @@ async def workspace_layout(ctx: SkillContext, layout: str) -> SkillResult:
 - Função `async` para I/O assíncrono; função comum (sem `async`) roda numa thread automaticamente.
 - Tarefa de fundo: `@service("nome")` numa função `async` com laço e `await asyncio.sleep(...)`; o motor religa
   se ela cair.
-- Dados persistentes: `settings.DATA_DIR / "<arquivo>.json"` com `safe_io.read_json`/`write_json`, e o caminho
-  entra no `_WRITABLE` do `tests/conftest.py` (ou o teste aponta para `tmp_path`).
+- Dados persistentes: `settings.DATA_DIR / "<arquivo>.json"` num atributo `_PATH` do módulo, com
+  `safe_io.read_json`/`write_json`, e o caminho entra no `_WRITABLE_SKILLS` do `tests/conftest.py`.
+- Cartão na tela: use o cartão genérico `{"type": "skill", "data": {"tag": "TÍTULO", "source": "resumo",
+  "rows": [{"label": "...", "value": "..."}]}}` (renderizado por `ReactiveCard.jsx`). Componente próprio só se
+  a skill realmente precisar de interação.
+- Uma skill pode usar outra com `await ctx.call("nome", ...)` (passa pelas mesmas regras) e oferecer uma ação com
+  `confirm.offer("skill", {"name": ..., "args": {...}})` (o "sim" do usuário executa).
+- Gatilho que depende do estado do PC (ex.: programa aberto) vai num `parse` rápido e com cache; se não
+  reconhecer, devolve `None` para a frase seguir para as funções legadas e a IA.
 
 ### Permissões (aplicadas pelo executor, nunca pela IA)
 
@@ -116,9 +123,11 @@ desliga em `/api/skills/{nome}/toggle` (preferência `skills_disabled`).
 
 ### Teste obrigatório de cada skill
 
-`backend/tests/test_skill_<nome>.py`, usando `registry.reset_for_tests()` + `registry.register(build_skill(...))`
-ou importando o módulo da skill, e cobrindo: gatilho → parâmetros, execução feliz, erro/timeout e (se crítica) o
-fluxo do "sim". Veja `tests/test_skills_engine_811.py` como referência.
+`backend/tests/test_skill_<nome>.py`, com o fixture `real_skills` (catálogo só com as skills reais, central
+liberada) e trocando o que toca o sistema (Windows, psutil, agenda, Spotify) por falsos via `monkeypatch`.
+Cobre: frases → skill e parâmetros, frases legadas que NÃO podem ser capturadas, execução feliz, erro e (se
+crítica) o fluxo do "sim". Referências: `tests/test_skill_workspace.py` e `tests/test_skills_engine_811.py`.
+Atualize também a tabela da skill em `docs/COMANDOS.md` (seção "Skills").
 
 ### Ao entregar uma skill, explique
 
@@ -128,13 +137,13 @@ criados/afetados.
 ## Roadmap combinado (auditoria V8.11)
 
 Feito: Q1 a Q4 (prazo da IA, JSON atômico com cache, broadcast em paralelo, ouvido sem travar com
-"Jarvis, para") e o motor de Skills.
+"Jarvis, para"), o motor de Skills e as skills Workspace (`skills/workspace/`), System Guard
+(`skills/system_guard.py`) e Context Autopilot (`skills/context_autopilot.py`).
 
 Próximos, na ordem sugerida:
 - Q8 (pedir "sim" para "abrir X" desconhecido), Q5 (busca web em paralelo), Q6 (abas por `ctypes`),
   Q7 (mensagens honestas quando a IA não responde).
-- Skills: workspace multi-monitor, System Guard, Context Autopilot, Deep Brief, macros de navegador por CDP,
-  Quick Capture com escrita no Google Agenda, Clipboard AI.
+- Skills: Deep Brief, macros de navegador por CDP, Quick Capture com escrita no Google Agenda, Clipboard AI.
 - Estruturais: streaming da IA para a voz, fila de turnos no lugar de `session.busy`, memória em SQLite + FTS5,
   logs estruturados com latência por etapa, desmontar `handle_turn` em skills, barramento de eventos.
 - Migração gradual: ao mexer num handler de `tools.py` ou num bloco de `turns.py`, prefira movê-lo para uma Skill.

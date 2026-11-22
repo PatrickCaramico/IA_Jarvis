@@ -86,12 +86,21 @@ def _ics_events(days: int, limit: int, now: Optional[datetime] = None, raw: Opti
         if not all_day and begin < now:
             continue  # já começou/passou hoje
         title = str(ev.get("SUMMARY") or "Sem título").strip()
+        end_txt = ""  # V8.11: fim e link da chamada (o piloto automático da agenda usa)
+        try:
+            if not all_day and ev.get("DTEND") is not None:
+                end_txt = _to_local_naive(ev.get("DTEND").dt)[0].strftime("%Y-%m-%dT%H:%M:%S")
+        except Exception:  # noqa: BLE001
+            end_txt = ""
         out.append({
             "id": str(ev.get("UID") or f"{title}-{begin.isoformat()}"),
             "title": title,
             "start": begin.strftime("%Y-%m-%d") if all_day else begin.strftime("%Y-%m-%dT%H:%M:%S"),
+            "end": end_txt,
             "location": str(ev.get("LOCATION") or "").strip(),
             "link": "",
+            "meet": str(ev.get("X-GOOGLE-CONFERENCE") or ev.get("URL") or "").strip(),
+            "description": str(ev.get("DESCRIPTION") or "").strip()[:1000],
         })
     out.sort(key=lambda e: e["start"])
     return out[:limit]

@@ -532,6 +532,46 @@ O JARVIS como um mordomo atento, **não um psicólogo**: ele acolhe, sugere téc
 
 Ao entrar na central: na primeira vez do dia o JARVIS já começa o **briefing**. Nas próximas, pergunta se repete ou pula (botões, Enter/Esc ou "repetir"/"pular").
 
+### Skills: janelas, sistema e agenda (V8.11)
+
+Habilidades plug-and-play (pasta `backend/skills/`). Funcionam pela frase exata **e** pela IA: dá para pedir do seu jeito ("joga o Chrome lá na tela da direita") que a IA chama a skill certa. Ações marcadas com ⚠️ sempre pedem um "sim" antes e só valem no próprio PC.
+
+**Workspace (janelas e monitores, só no Windows)**
+
+| Diga | O que acontece |
+|---|---|
+| "Quais janelas estão abertas?" | Lista os programas abertos, separados por monitor. |
+| "Manda o Chrome pro monitor 2" / "leva o Spotify para a outra tela" / "manda isso pro monitor principal" | Move a janela (mantém maximizada, se estava). "Isso" = a janela da frente. Monitor 1 é o principal. |
+| "Organiza as janelas" / "organiza as janelas do monitor 2" | Põe as janelas em grade em cada monitor. |
+| "Coloca o Chrome e o VS Code lado a lado" | Divide a tela entre os dois. |
+| "Deixa só o Word na tela" | Maximiza o Word e minimiza as outras janelas daquele monitor. |
+| "Salva esse layout como estudo" | Guarda onde está cada janela (programa, monitor e tamanho). |
+| "Abre o workspace estudo" | Remonta: põe cada janela no lugar e abre os programas que faltam. |
+| "Quais são meus workspaces?" / ⚠️ "Apaga o workspace estudo" | Lista ou apaga os salvos. |
+
+**System Guard (o PC)**
+
+| Diga | O que acontece |
+|---|---|
+| "O que está pesando no PC?" / "quais programas estão usando mais memória?" | Os programas que mais gastam memória e processador agora, com um cartão. |
+| "Como está o uso do processador?" / "quanto de memória está usando?" | Processador, memória, disco e bateria. Vale com a central bloqueada. |
+| ⚠️ "Fecha o Discord" / "encerra o Spotify" | Pergunta antes e fecha todas as janelas do programa. Programas do Windows, antivírus e o próprio JARVIS nunca são fechados. |
+| Sozinho (vigia) | Processador acima de 90% por 2 minutos ou memória acima de 92% por 1 minuto: avisa uma vez (no máximo a cada 30 min), diz o programa que mais gasta e oferece fechar ("sim"). "Desliga o vigia do sistema" / "liga o vigia do sistema". |
+
+Para a varredura completa (temporários, lixeira, inicialização), continue usando "meu PC está lento".
+
+**Context Autopilot (agenda)**
+
+| Diga | O que acontece |
+|---|---|
+| Sozinho, 5 min antes de cada compromisso com horário | "Senhor, Daily do time começa em 5 minutos. Quer que eu ative o modo reunião e abra o link da chamada?" Com a central bloqueada, o aviso vai só para o celular. |
+| "Sim" (ao aviso) / "ativa o modo reunião" / "vou entrar em reunião" | Pausa o Spotify, abre o link (Meet, Zoom, Teams, Webex, Jitsi), monta o workspace "reuniao" se você tiver salvo um e o JARVIS fica em silêncio. |
+| "Terminei a reunião" / "sai do modo reunião" | Volta a falar. Também sai sozinho quando o evento acaba. |
+| "Qual minha próxima reunião?" | O próximo compromisso com horário e se tem link de chamada. |
+| "Me avise 10 minutos antes das reuniões" / "desliga o piloto automático da agenda" | Ajusta a antecedência (1 a 30 min) ou liga/desliga os avisos. |
+
+Para desligar uma skill inteira: `POST /api/skills/<nome>/toggle` com `{"enabled": false}` (a lista com os nomes está em `GET /api/skills`).
+
 ## 5. Onde mudar as coisas
 
 | O que quero mudar | Arquivo |

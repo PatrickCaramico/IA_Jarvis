@@ -107,6 +107,22 @@ def reset_for_tests() -> None:
         _loaded = True  # testes registram à mão; não importa a pasta real
 
 
+def use_package_skills(package: str = PACKAGE) -> list[str]:
+    """Para os testes: depois de reset_for_tests(), registra de novo as skills reais da pasta (sem recarregar os
+    módulos, então os caminhos de dados trocados pelo conftest continuam valendo). Devolve os nomes."""
+    _errors.extend(_import_package_modules(package))
+    with _lock:
+        base._declared.clear()
+        names = []
+        for sk in base._history:
+            last = sk.module.rsplit(".", 1)[-1]
+            if sk.module.startswith(package + ".") and not last.startswith("_") and not sk.module.split(".")[1].startswith("_"):
+                _skills[sk.name] = sk
+                _stats.setdefault(sk.name, Stats())
+                names.append(sk.name)
+    return sorted(names)
+
+
 def errors() -> list[str]:
     load()
     return list(_errors)
