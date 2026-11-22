@@ -17,6 +17,8 @@ def run(coro):
 def opened(real_skills, monkeypatch, tmp_path):
     calls = []
     monkeypatch.setattr(ap.subprocess, "Popen", lambda args, **kw: calls.append(args))
+    # no Windows a skill abre com os.startfile (no CI do Windows o arquivo de teste não é um programa de verdade)
+    monkeypatch.setattr(ap.os, "startfile", lambda path: calls.append([path]), raising=False)
     exe = tmp_path / "editorx.exe"
     exe.write_text("", encoding="utf-8")
     monkeypatch.setattr(ap.shutil, "which", lambda name: str(exe) if name == "editorx" else None)
