@@ -28,8 +28,11 @@ export default function ClapSettings({ prefs, onPatch }) {
       <Section title="ATIVAÇÃO POR PALMAS">
         <Toggle
           label="Bater 2 palmas para ativar"
-          hint="Na tela de bloqueio, 2 palmas iniciam o escaneamento facial. A palma nunca libera o JARVIS sozinha."
-          checked={prefs.clap_wake_enabled}
+          hint={prefs.mic_push_to_talk !== false
+            ? "Desligado enquanto “Microfone só quando eu apertar o botão” estiver ligado (aba Bloqueio › Modo Sentinela): as palmas precisam do microfone aberto o tempo todo."
+            : "Na tela de bloqueio, 2 palmas iniciam o escaneamento facial. A palma nunca libera o JARVIS sozinha."}
+          checked={prefs.clap_wake_enabled && prefs.mic_push_to_talk === false}
+          disabled={prefs.mic_push_to_talk !== false}
           onChange={(v) => onPatch({ clap_wake_enabled: v })}
         />
         <div className="py-1.5">

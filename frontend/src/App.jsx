@@ -201,7 +201,10 @@ export default function App() {
   toggleLockMicRef.current = () => {
     setSentinelMuted((muted) => {
       const on = muted; // estava silenciado -> liga
-      api("/api/lock/mic", { method: "POST", body: JSON.stringify({ on }) }).catch(() => {});
+      // V8.11: com "microfone só no botão" o toque vale para um pedido: não fica lembrado como "sempre ligado"
+      if (appPrefsRef.current?.mic_push_to_talk === false) {
+        api("/api/lock/mic", { method: "POST", body: JSON.stringify({ on }) }).catch(() => {});
+      }
       return !muted;
     });
   };
@@ -491,6 +494,12 @@ export default function App() {
   const lockPhaseRef = useRef(lockPhase);
   lockPhaseRef.current = lockPhase;
   const appPrefsRef = useRef(appPrefs);
+  // V8.11: MICROFONE SÓ NO BOTÃO (padrão). Microfone aberto o tempo todo faz o Windows tratar o PC como "em chamada":
+  // fone Bluetooth vira modo chamada (música abafada/distorcida) e os outros sons abaixam. Com isto ligado, nada fica
+  // ouvindo sozinho: só o 🎙 (que fecha ao terminar a frase) e, no bloqueio, o botão do microfone para UM pedido.
+  const pushToTalk = appPrefs.mic_push_to_talk !== false;
+  const pushToTalkRef = useRef(pushToTalk);
+  pushToTalkRef.current = pushToTalk;
   appPrefsRef.current = appPrefs;
   const responseCardsRef = useRef(responseCards);
   responseCardsRef.current = responseCards;
@@ -909,6 +918,8 @@ export default function App() {
         setResponse(msg.text);
         break;
       case "prefs_updated":
+        // V8.11: "microfone só no botão" mudou por voz: a central troca na hora
+        if (typeof msg.mic_push_to_talk === "boolean") setAppPrefs((p) => ({ ...p, mic_push_to_talk: msg.mic_push_to_talk }));
         if (msg.fan_mode_enabled !== undefined) {
           const enabled = Boolean(msg.fan_mode_enabled);
           const team = msg.fan_team || fanTeam;
@@ -2386,11 +2397,20 @@ export default function App() {
   // V4.2.2: ao voltar para a tela de bloqueio, o microfone recomeçava sempre silenciado.
   // V6.5.20: agora lembra a última escolha (P ou clique): ligado fica ligado nos próximos bloqueios.
   useEffect(() => {
-    if (screen === "lock") setSentinelMuted(!appPrefsRef.current?.lock_mic_on);
+    // V8.11: com "microfone só no botão", o bloqueio sempre começa com o microfone desligado
+    if (screen === "lock") setSentinelMuted(appPrefsRef.current?.mic_push_to_talk !== false || !appPrefsRef.current?.lock_mic_on);
   }, [screen]);
   useEffect(() => {
-    if (screenRef.current === "lock" && appPrefs.lock_mic_on !== undefined) setSentinelMuted(!appPrefs.lock_mic_on);
-  }, [appPrefs.lock_mic_on]);
+    if (screenRef.current === "lock" && appPrefs.lock_mic_on !== undefined) {
+      setSentinelMuted(appPrefs.mic_push_to_talk !== false || !appPrefs.lock_mic_on);
+    }
+  }, [appPrefs.lock_mic_on, appPrefs.mic_push_to_talk]);
+  // V8.11: só no botão: o microfone do bloqueio ligado por um toque desliga sozinho em 20 s sem pedido
+  useEffect(() => {
+    if (!pushToTalk || screen !== "lock" || sentinelMuted) return undefined;
+    const t = setTimeout(() => setSentinelMuted(true), 20_000);
+    return () => clearTimeout(t);
+  }, [pushToTalk, screen, sentinelMuted]);
 
   // ================= Seção 14/16: palmas =================
   // V6.5.21: falar perto do microfone ("Jarvis, ...") era confundido com duas palmas e entrava na central
@@ -2421,7 +2441,7 @@ export default function App() {
   // usa a Groq. Antes, a janela escondida do app abria e fechava o microfone sem parar; a cada vez o Windows
   // abaixava os outros sons ("comunicação") e depois devolvia: o som ficava aumentando e diminuindo.
   const BROWSER_EARS = !IS_JARVIS_APP && !IS_DESKTOP_APP;
-  const clapOn = Boolean(appPrefs.clap_wake_enabled) && !IS_DESKTOP_APP;
+  const clapOn = Boolean(appPrefs.clap_wake_enabled) && !IS_DESKTOP_APP && !pushToTalk;
   const lockClap = clapOn && screen === "lock" && (lockPhase === "ready" || lockPhase === "failed") && !showMicrophoneSelect
     && !sentinelMuted; // V4.2.2: palmas também esperam o microfone ser ligado (P)
   const mainClap = clapOn && appPrefs.clap_scope !== "lock" && screen === "main"
@@ -2447,6 +2467,7 @@ export default function App() {
 
   const askSentinel = useCallback(async (text) => {
     if (!text) return;
+    if (pushToTalkRef.current) setSentinelMuted(true); // V8.11: um pedido por toque no microfone do bloqueio
     setSentinelReply(text);
     try {
       const data = await api("/api/chat", { method: "POST", body: JSON.stringify({ message: text }) });
@@ -2492,7 +2513,7 @@ export default function App() {
   // Como a Alexa: com a central aberta, "Jarvis, ..." funciona sem tocar no microfone.
   // Pausa enquanto o JARVIS pensa ou fala (não escuta a própria voz) e enquanto o microfone manual está ligado.
   const central = useSentinelListener({
-    enabled: BROWSER_EARS && screen === "main" && appPrefs.hands_free_enabled !== false,
+    enabled: BROWSER_EARS && screen === "main" && appPrefs.hands_free_enabled !== false && !pushToTalk,
     paused: jarvisState !== "idle" || listening,
     wakeWords,
     onWake: () => soundManager.playListening(),
@@ -2512,7 +2533,8 @@ export default function App() {
     if (jarvisState !== "idle" || was === "idle") return;
     if (!lastVoiceRef.current) return;
     lastVoiceRef.current = false;
-    if (screen === "main" && appPrefs.follow_up_enabled !== false && appPrefs.hands_free_enabled !== false && !IS_JARVIS_APP) {
+    if (screen === "main" && appPrefs.follow_up_enabled !== false && appPrefs.hands_free_enabled !== false && !IS_JARVIS_APP
+      && !pushToTalkRef.current) {
       central.keepAwake();
       soundManager.playListening();
     }

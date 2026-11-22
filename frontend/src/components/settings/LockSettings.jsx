@@ -202,6 +202,12 @@ export default function LockSettings({ api, prefs, onPatch }) {
 
       <Section title="MODO SENTINELA">
         <Toggle
+          label="🎙 Microfone só quando eu apertar o botão"
+          hint="Recomendado. Nada fica ouvindo sozinho: o microfone abre no 🎙 e fecha ao terminar a frase (no bloqueio, o botão do microfone vale para um pedido). Com o microfone aberto o tempo todo, o Windows trata o PC como “em chamada”: a música no fone Bluetooth fica abafada ou distorcida e os outros sons abaixam. Desligue para usar “Jarvis, …” sem tocar em nada."
+          checked={prefs.mic_push_to_talk !== false}
+          onChange={(v) => onPatch({ mic_push_to_talk: v })}
+        />
+        <Toggle
           label="Tela de bloqueio em modo Sentinela"
           hint="Só o orbe e um aviso. O JARVIS escuta a palavra de ativação e responde hora, data, clima e afins; para mostrar algo, pede o escaneamento facial."
           checked={prefs.sentinel_enabled}
@@ -210,13 +216,15 @@ export default function LockSettings({ api, prefs, onPatch }) {
         <Toggle
           label="Ouvir “Jarvis” com a central aberta"
           hint="Como a Alexa: diga “Jarvis, que horas são?” sem tocar no microfone. O microfone do navegador fica ligado enquanto a central está aberta e pausa enquanto o JARVIS fala."
-          checked={prefs.hands_free_enabled !== false}
+          checked={prefs.hands_free_enabled !== false && prefs.mic_push_to_talk === false}
+          disabled={prefs.mic_push_to_talk !== false}
           onChange={(v) => onPatch({ hands_free_enabled: v })}
         />
         <Toggle
           label="Conversa contínua"
           hint="Depois de responder a um pedido de voz, o JARVIS fica 8 segundos ouvindo a próxima pergunta, sem precisar dizer “Jarvis” de novo."
-          checked={prefs.follow_up_enabled !== false}
+          checked={prefs.follow_up_enabled !== false && prefs.mic_push_to_talk === false}
+          disabled={prefs.mic_push_to_talk !== false}
           onChange={(v) => onPatch({ follow_up_enabled: v })}
         />
         <label className="block text-xs font-['Orbitron'] text-cyan-200 pt-1">Palavras de ativação (separadas por vírgula)</label>

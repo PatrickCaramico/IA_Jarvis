@@ -113,6 +113,33 @@ def probe(fetch: Callable[[str], Optional[dict]] = _get_json) -> tuple[bool, Opt
     return True, clients if isinstance(clients, int) else None
 
 
+PTT_PATH = ROOT / "logs" / "microfone_botao"
+
+
+def read_push_to_talk(fetch: Callable[[str], Optional[dict]] = None) -> bool:
+    """V8.11: "microfone só no botão" (preferência do JARVIS). Sem resposta: a última escolha conhecida."""
+    data = (fetch or _get_json)(f"{BACKEND}/api/prefs")
+    data = data.get("prefs", data) if isinstance(data, dict) else None
+    value = data.get("mic_push_to_talk") if isinstance(data, dict) else None
+    return bool(value) if isinstance(value, bool) else last_push_to_talk()
+
+
+def last_push_to_talk(path: Path = None) -> bool:
+    try:
+        return (path or PTT_PATH).read_text(encoding="ascii").strip() != "0"
+    except OSError:
+        return True  # nunca soube: na dúvida, microfone fechado
+
+
+def save_push_to_talk(value: bool, path: Path = None) -> None:
+    try:
+        target = path or PTT_PATH
+        target.parent.mkdir(exist_ok=True)
+        target.write_text("1" if value else "0", encoding="ascii")
+    except OSError:
+        pass
+
+
 def bat_command(action: str) -> Optional[list[str]]:
     name = {START: "Iniciar-JARVIS.bat", OPEN_PANEL: "Abrir-Painel.bat"}.get(action)
     if not name:
@@ -215,10 +242,20 @@ class Listener:
             self.fired.set()
 
     def presence_loop(self) -> None:
-        """Pausa a escuta enquanto houver página do JARVIS aberta (evita 2 detectores no microfone)."""
+        """Pausa a escuta enquanto houver página do JARVIS aberta (evita 2 detectores no microfone).
+
+        V8.11: pausa também com "microfone só no botão" (o microfone fica FECHADO: a música no fone não fica
+        abafada). Com o JARVIS desligado vale a última escolha conhecida (guardada em logs/microfone_botao)."""
         while not self.stop.is_set():
             up, clients = probe()
-            if up and clients and clients > 0:
+            ptt = read_push_to_talk() if up else last_push_to_talk()
+            if up:
+                save_push_to_talk(ptt)
+            if ptt and not self.test_mode:
+                if not self.paused.is_set():
+                    log.info("Microfone só no botão: Ouvinte de Palmas com o microfone fechado.")
+                self.paused.set()
+            elif up and clients and clients > 0:
                 if not self.paused.is_set():
                     log.info("Página do JARVIS aberta: escuta pausada.")
                 self.paused.set()

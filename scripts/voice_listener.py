@@ -160,6 +160,20 @@ class DeviceChanged(Exception):
     """O microfone escolhido mudou: reabre o ouvido no novo."""
 
 
+class MicReleased(Exception):
+    """V8.11: o usuário escolheu "microfone só no botão": fecha o microfone (não só ignora o áudio)."""
+
+
+def push_to_talk(prefs: Optional[dict], last: bool = True) -> bool:
+    """V8.11: "microfone só no botão" está ligado? Sem resposta do JARVIS, vale o último valor conhecido
+    (começa como ligado: na dúvida, o microfone fica fechado e a música do senhor não é atrapalhada)."""
+    if not isinstance(prefs, dict):
+        return last
+    data = prefs.get("prefs", prefs)
+    value = data.get("mic_push_to_talk") if isinstance(data, dict) else None
+    return bool(value) if isinstance(value, bool) else last
+
+
 # ------------------------------------------------------------------ backend
 def _get(path: str) -> Optional[dict]:
     try:
@@ -305,6 +319,7 @@ class Gate:
         self.open = False
         self.barge_in = False  # V8.11: só o "Jarvis, para" vale agora
         self.busy = False  # V8.11: o JARVIS está respondendo outro pedido
+        self.push_to_talk = True  # V8.11: "microfone só no botão" (fecha o microfone)
         self.device = None  # V6.5.8: microfone escolhido ("" = padrão); None = ainda não leu
         self.seen_up = False
         self.down_since: Optional[float] = None
@@ -355,6 +370,7 @@ class Gate:
                         log.warning("Não consegui religar o JARVIS: %s", exc)
             status = _get("/api/lock/status") if health else None
             prefs = _get("/api/prefs") if health else None
+            self.push_to_talk = push_to_talk(prefs, self.push_to_talk)
             enabled = True
             if isinstance(prefs, dict):
                 data = prefs.get("prefs", prefs)
@@ -395,6 +411,11 @@ def run(test: bool) -> int:
     gate.poll()  # o primeiro estado antes de abrir o microfone (microfone escolhido)
     gate.start()
     sender = _sender()
+    if not test and gate.push_to_talk:  # V8.11: microfone fechado até o modo mudar (sem abrir o dispositivo)
+        log.info("Microfone só no botão: o ouvido fica com o microfone FECHADO.")
+        while gate.push_to_talk:
+            time.sleep(2)
+        log.info("Escuta contínua ligada: abrindo o microfone.")
     try:
         return _listen(test, sd, model, gate, sender, new_recognizers, new_stop_recognizer, audio)
     finally:
@@ -437,6 +458,8 @@ def _listen(test, sd, model, gate, sender, new_recognizers, new_stop_recognizer,
             is_open = test or gate.check()
             if gate.device is not None and gate.device != chosen:
                 raise DeviceChanged
+            if not test and gate.push_to_talk:
+                raise MicReleased  # sai do "with": o microfone é fechado de verdade
             if is_open != was_open:
                 log.info("Ouvindo." if is_open else "Em espera (central aberta, JARVIS falando ou desligado).")
                 was_open = is_open
@@ -530,6 +553,10 @@ def main() -> int:
             return 0
         except DeviceChanged:
             log.info("Microfone trocado; reabrindo o ouvido.")
+            wait = 0.0
+            continue
+        except MicReleased:
+            log.info("Microfone só no botão: microfone fechado.")
             wait = 0.0
             continue
         except Exception as exc:  # noqa: BLE001 - microfone sumiu etc.: tenta de novo (2 s, 4 s ... até 30 s)
