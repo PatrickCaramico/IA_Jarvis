@@ -190,6 +190,13 @@ async def classify_and_answer(message: str, state: str, wake_words: Optional[lis
         return public(f"As principais manchetes, senhor: {spoken}.",
                       card={"kind": "news", "title": "Notícias de agora", "items": items[:5]})
 
+    # V8.11: Skills marcadas como públicas (nada pessoal) também valem no bloqueio e no modo visitante
+    from core.skills import router as skills_router
+
+    skill_result = await skills_router.try_fast_path(message, public_only=True)
+    if skill_result is not None and skill_result.speech:
+        return public(skill_result.speech, card=answer_card(message, skill_result.speech))
+
     if _SUMMARY.search(norm) and not guest:
         return protected(_counts_summary())
 

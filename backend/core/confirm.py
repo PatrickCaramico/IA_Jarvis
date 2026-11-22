@@ -74,6 +74,10 @@ async def answer(norm: str) -> Optional[str]:
             if kind == "file_move":
                 return await asyncio.to_thread(files.move_to, data["path"], data["folder"])
             return await asyncio.to_thread(files.make_folder, data["path"])
+        if kind == "skill":  # V8.11: ação crítica de uma Skill (o executor roda já com o "sim")
+            from core.skills import executor
+
+            return await executor.run_confirmed(data)
         if kind == "whatsapp":
             from modules import whatsapp
 

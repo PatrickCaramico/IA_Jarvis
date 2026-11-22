@@ -27,8 +27,10 @@ from services.llm_orchestrator import (
     set_quota_cooldown,
     is_quota_error,
     LLMTimeout,
+    take_skill_cards,
 )
 from core import briefing_flow, confirm, runtime, session, speech, reactive_cards
+from core.skills import router as skills_router
 
 log = logging.getLogger("jarvis.turns")
 
@@ -515,6 +517,12 @@ async def handle_turn(message: str, routine: bool, force_deep: bool = False) -> 
     web_search = False  # modo automático: a IA pesquisa no Google antes de responder
     # 3) Funções locais (só executa se não for force_deep)
     if not force_deep:
+        # V8.11: Skills plug-and-play (backend/skills/): gatilho reconhecido = resposta na hora, sem IA
+        skill_result = await skills_router.try_fast_path(message, name)
+        if skill_result is not None:
+            if speech.canceled(turn):
+                return {"status": "canceled"}
+            return await finish_local(skill_result.speech or "Pronto, senhor.", extra_cards=skill_result.cards or None)
         try:
             tool_reply = await tools.run(message, name)
         except Exception as exc:  # noqa: BLE001
@@ -693,6 +701,7 @@ async def handle_turn(message: str, routine: bool, force_deep: bool = False) -> 
     except Exception:  # noqa: BLE001
         log.debug("Cartões da resposta falharam", exc_info=True)
         cards = []
+    cards = list(cards) + take_skill_cards()  # V8.11: cartões das Skills que a IA chamou
     session.history.extend([{"role": "user", "content": message}, {"role": "assistant", "content": text}])
     memory.add_conversation(message, text)
     del session.history[:-MAX_HISTORY]

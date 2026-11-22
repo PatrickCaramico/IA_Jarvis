@@ -45,6 +45,7 @@ _DEFAULTS: dict[str, Any] = {
     "voice_style": "natural",             # V6.1: natural | grave | classica | thalita | andrew
     "briefing_news_themes": [],           # V6.2: temas de notícias do "bom dia" ([] = padrões, com Marvel)
     "voice_listener_enabled": True,       # V6.3: ouvido offline ("Jarvis, ..." sem o navegador)
+    "skills_disabled": [],                # V8.11: Skills desligadas pelo usuário (nomes)
     "news_notify_enabled": True,          # V6.5: manchetes novas dos temas viram aviso no celular
     "audio_output_device": "",            # V6.5.8: caixa de som da voz no PC ("" = padrão do Windows)
     "voice_input_device": "",             # V6.5.8: microfone do ouvido offline ("" = padrão do Windows)

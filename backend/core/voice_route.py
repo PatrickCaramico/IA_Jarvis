@@ -46,6 +46,22 @@ def current() -> Optional[str]:
     return _target.get()
 
 
+# V8.11: o pedido veio de outro aparelho da rede? (as Skills críticas só valem no próprio PC)
+_remote: ContextVar[bool] = ContextVar("jarvis_request_remote", default=False)
+
+
+def set_remote(remote: bool):
+    return _remote.set(bool(remote))
+
+
+def reset_remote(token) -> None:
+    _remote.reset(token)
+
+
+def is_remote() -> bool:
+    return _remote.get()
+
+
 # V6.5.1: o aparelho avisa quando terminou de tocar cada fala (POST /api/tts/played). Antes o PC só
 # "chutava" a duração e passava para o próximo card: no celular, voz e tela iam se desencontrando.
 _played: dict[str, "asyncio.Event"] = {}

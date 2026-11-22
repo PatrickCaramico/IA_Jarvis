@@ -5,6 +5,7 @@ import logging
 import threading
 import time
 from datetime import datetime
+from contextvars import ContextVar
 from typing import Awaitable, Callable, Optional
 
 from config import settings
@@ -51,6 +52,68 @@ def is_quota_error(exc: Exception) -> bool:
     return any(k in msg for k in (
         "429", "resource_exhausted", "quota", "rate limit", "too many requests", "rate_limit_exceeded"
     ))
+
+class _ToolSession:
+    """V8.11: Skills oferecidas à IA neste turno (function calling). Vive numa ContextVar: o asyncio.to_thread
+    copia o contexto, então a thread da IA enxerga a sessão e devolve aqui os cartões das skills."""
+
+    def __init__(self, loop, skills, message: str, user_name: str, device, remote: bool) -> None:
+        self.loop, self.skills = loop, skills
+        self.message, self.user_name, self.device, self.remote = message, user_name, device, remote
+        self.cards: list[dict] = []
+        self.called: list[str] = []
+
+    def run(self, name: str, args: dict):
+        from core.skills import executor
+        from core.skills.base import SkillContext
+
+        ctx = SkillContext(message=self.message, origin="llm", user_name=self.user_name, device=self.device,
+                           remote=self.remote)
+        self.called.append(name)
+        result = executor.run_from_thread(self.loop, name, args or {}, ctx)
+        self.cards.extend(result.cards or [])
+        return result
+
+
+_tools_var: ContextVar[Optional[_ToolSession]] = ContextVar("jarvis_llm_tools", default=None)
+_skill_cards_var: ContextVar[list] = ContextVar("jarvis_skill_cards", default=[])
+MAX_TOOL_CALLS = 3
+
+
+def take_skill_cards() -> list[dict]:
+    """Cartões das Skills que a IA chamou no último turno (core/turns.py junta com os outros)."""
+    cards = list(_skill_cards_var.get())
+    _skill_cards_var.set([])
+    return cards
+
+
+def _system_text(ts: Optional[_ToolSession]) -> str:
+    if ts is None:
+        return SYSTEM_PROMPT
+    from core.skills.llm_adapters import TOOL_GUIDE
+
+    return f"{SYSTEM_PROMPT} {TOOL_GUIDE}"
+
+
+def _tool_payload(result) -> dict:
+    """O que volta para a IA depois de uma skill (para ela montar a frase final)."""
+    return {"ok": result.ok, "fala": result.speech, "dados": result.data or {}, "aguardando_confirmacao": result.pending}
+
+
+def _after_skills(results: list) -> str:
+    """Frase de reserva quando a IA não conseguiu explicar o resultado das Skills."""
+    said = " ".join(r.speech.strip() for r in results if r.speech)
+    if said:
+        return said
+    return "Pronto, senhor." if all(r.ok for r in results) else "Não consegui concluir essa ação, senhor."
+
+
+def _spoken(results: list) -> Optional[str]:
+    """Todas as skills já trouxeram a frase pronta? Então nem precisa voltar à IA (economiza uma ida)."""
+    if results and all(r.speech for r in results):
+        return " ".join(r.speech.strip() for r in results)
+    return None
+
 
 class LLMTimeout(RuntimeError):
     """V8.11: o turno passou do LLM_TURN_BUDGET_S sem resposta da IA."""
@@ -189,13 +252,55 @@ def _call_openai(prompt: str, frame_b64: Optional[str], history: list[dict]) -> 
     if frame_b64:
         content.append(_image_part(frame_b64))
 
-    response = client.chat.completions.create(
-        model=settings.OPENAI_MODEL,
-        max_tokens=_max_tokens(),
-        messages=[{"role": "system", "content": SYSTEM_PROMPT}, *history,
-                  {"role": "user", "content": content}],
-    )
-    return (response.choices[0].message.content or "").strip()
+    messages = [{"role": "system", "content": _system_text(_tools_var.get())}, *history,
+                {"role": "user", "content": content}]
+    return _openai_style(client, settings.OPENAI_MODEL, messages, _tools_var.get())
+
+
+def _openai_style(client, model: str, messages: list[dict], ts: Optional[_ToolSession]) -> str:
+    """V8.11: conversa no formato da OpenAI (OpenAI e Groq), com as Skills como funções quando houver."""
+    if ts is None or not ts.skills:
+        response = client.chat.completions.create(model=model, max_tokens=_max_tokens(), messages=messages)
+        return (response.choices[0].message.content or "").strip()
+    import json
+
+    from core.skills.llm_adapters import to_openai
+
+    try:
+        response = client.chat.completions.create(model=model, max_tokens=_max_tokens(), messages=messages,
+                                                  tools=to_openai(ts.skills), tool_choice="auto")
+    except Exception as exc:  # noqa: BLE001 - modelo sem suporte a funções: responde sem elas
+        if is_quota_error(exc) or _is_timeout(exc):
+            raise
+        log.warning("IA recusou as funções (%s); respondendo sem elas.", str(exc)[:160])
+        plain = [m if m.get("role") != "system" else {"role": "system", "content": SYSTEM_PROMPT} for m in messages]
+        response = client.chat.completions.create(model=model, max_tokens=_max_tokens(), messages=plain)
+        return (response.choices[0].message.content or "").strip()
+    msg = response.choices[0].message
+    calls = list(getattr(msg, "tool_calls", None) or [])[:MAX_TOOL_CALLS]
+    if not calls:
+        return (msg.content or "").strip()
+    results = []
+    for call in calls:
+        try:
+            args = json.loads(call.function.arguments or "{}")
+        except ValueError:
+            args = {}
+        results.append(ts.run(call.function.name, args if isinstance(args, dict) else {}))
+    spoken = _spoken(results)
+    if spoken:
+        return spoken
+    follow = [*messages, {"role": "assistant", "content": msg.content or "", "tool_calls": [
+        {"id": c.id, "type": "function", "function": {"name": c.function.name, "arguments": c.function.arguments}}
+        for c in calls]}]
+    follow += [{"role": "tool", "tool_call_id": c.id, "content": json.dumps(_tool_payload(r), ensure_ascii=False)}
+               for c, r in zip(calls, results)]
+    try:
+        response = client.chat.completions.create(model=model, max_tokens=_max_tokens(), messages=follow)
+        return (response.choices[0].message.content or "").strip() or _after_skills(results)
+    except Exception:  # noqa: BLE001 - a ação já rodou: não pode falhar (nem repetir em outra IA)
+        log.exception("A IA não montou a frase depois das Skills")
+        return _after_skills(results)
 
 
 _last_grounding_data: dict = {"queries": [], "sources": []}
@@ -248,7 +353,20 @@ def _call_gemini(prompt: str, frame_b64: Optional[str], history: list[dict], dee
         ))
     contents.append(types.Content(role="user", parts=current_parts))
 
-    tools = [types.Tool(google_search=types.GoogleSearch())] if deep else None
+    ts = _tools_var.get()
+    # A pesquisa do Google e as funções (Skills) não vão juntas na mesma chamada: com pesquisa, nada de Skills
+    if deep:
+        tools = [types.Tool(google_search=types.GoogleSearch())]
+        ts = None
+    elif ts is not None and ts.skills:
+        from core.skills.llm_adapters import to_gemini
+
+        tools = [to_gemini(ts.skills)]
+    else:
+        tools, ts = None, None
+    system_text = _system_text(ts)
+    # a decisão de rodar a skill é do executor (permissão, "sim"), nunca automática dentro da biblioteca
+    afc = types.AutomaticFunctionCallingConfig(disable=True)
     max_tokens = max(_max_tokens(), 1000)
     thinking_cfg = types.ThinkingConfig(thinking_budget=0)
 
@@ -265,10 +383,11 @@ def _call_gemini(prompt: str, frame_b64: Optional[str], history: list[dict], dee
                 model=target_model,
                 contents=contents,
                 config=types.GenerateContentConfig(
-                    system_instruction=SYSTEM_PROMPT,
+                    system_instruction=system_text,
                     max_output_tokens=max_tokens,
                     thinking_config=thinking_cfg,
                     tools=tools,
+                    automatic_function_calling=afc,
                 ),
             )
             break
@@ -292,6 +411,7 @@ def _call_gemini(prompt: str, frame_b64: Optional[str], history: list[dict], dee
                         thinking_config=thinking_cfg,
                     ),
                 )
+                ts = None  # respondeu sem as funções
                 break
             except Exception as inner_exc:
                 last_exc = inner_exc
@@ -300,6 +420,30 @@ def _call_gemini(prompt: str, frame_b64: Optional[str], history: list[dict], dee
 
     if not response and last_exc:
         raise last_exc
+
+    # V8.11: a IA pediu Skills (function calling): o executor roda (com as regras de permissão)
+    calls = list(getattr(response, "function_calls", None) or [])[:MAX_TOOL_CALLS] if ts is not None else []
+    if calls:
+        results = [ts.run(fc.name, dict(fc.args or {})) for fc in calls]
+        spoken = _spoken(results)
+        if spoken:
+            _last_grounding_data = {"queries": [], "sources": []}
+            return spoken
+        follow = list(contents)
+        if response.candidates and response.candidates[0].content:
+            follow.append(response.candidates[0].content)
+        follow.append(types.Content(role="user", parts=[
+            types.Part.from_function_response(name=fc.name, response=_tool_payload(r)) for fc, r in zip(calls, results)
+        ]))
+        try:
+            response = client.models.generate_content(
+                model=target_model, contents=follow,
+                config=types.GenerateContentConfig(system_instruction=SYSTEM_PROMPT, max_output_tokens=max_tokens,
+                                                   thinking_config=thinking_cfg),
+            )
+        except Exception:  # noqa: BLE001 - a ação já rodou: não pode falhar (nem repetir em outra IA)
+            log.exception("A IA não montou a frase depois das Skills")
+            return _after_skills(results)
 
     # Extrai metadados de busca (fontes, URLs, títulos)
     queries: list[str] = []
@@ -383,12 +527,9 @@ def _call_groq(prompt: str, frame_b64: Optional[str], history: list[dict]) -> st
         raise RuntimeError("A Groq não vê imagens: usando outra IA.")
     client = _client("groq", key, lambda: OpenAI(api_key=key, base_url="https://api.groq.com/openai/v1",
                                                     timeout=_timeout_s(), max_retries=1))
-    response = client.chat.completions.create(
-        model=settings.GROQ_MODEL,
-        max_tokens=_max_tokens(),
-        messages=[{"role": "system", "content": SYSTEM_PROMPT}, *history, {"role": "user", "content": prompt}],
-    )
-    return (response.choices[0].message.content or "").strip()
+    ts = _tools_var.get()
+    messages = [{"role": "system", "content": _system_text(ts)}, *history, {"role": "user", "content": prompt}]
+    return _openai_style(client, settings.GROQ_MODEL, messages, ts)
 
 
 # ------------------------------------------------------------------ V8.2: Automático grátis
@@ -449,6 +590,9 @@ def _call_auto(prompt: str, frame_b64: Optional[str], history: list[dict], deep:
             return _call_one(provider, prompt, frame_b64, history, deep)
         except Exception as exc:  # noqa: BLE001 - tenta a próxima
             last_exc = exc
+            ts = _tools_var.get()
+            if ts is not None and ts.called:  # V8.11: uma Skill já rodou: outra IA a repetiria
+                raise
             if is_quota_error(exc):
                 daily = "day" in str(exc).lower() or "dia" in str(exc).lower() or "perday" in str(exc).lower()
                 _provider_rest[provider] = time.time() + (DAILY_REST if daily else SHORT_REST)
@@ -517,6 +661,25 @@ def ask_text(prompt: str, web: bool = False, max_tokens: int | None = None) -> s
         _budget.value = 0
 
 
+def _tool_session(user_text: str, routine: bool, deep: bool, frame: bool) -> Optional[_ToolSession]:
+    """Skills oferecidas à IA neste turno. Fica de fora na rotina, na pesquisa na internet (o conteúdo da web
+    não pode induzir ações) e com imagem da câmera."""
+    if routine or deep or frame:
+        return None
+    try:
+        from core import voice_route
+        from core.skills import registry
+
+        skills = registry.llm_skills()
+        if not skills:
+            return None
+        return _ToolSession(asyncio.get_running_loop(), skills, user_text, get_name() or "", voice_route.current(),
+                            voice_route.is_remote())
+    except Exception:  # noqa: BLE001 - sem Skills, a conversa segue normal
+        log.exception("Não consegui preparar as Skills para a IA")
+        return None
+
+
 async def generate_jarvis_response(
     user_text: str,
     on_step: Optional[StepCallback] = None,
@@ -575,6 +738,9 @@ async def generate_jarvis_response(
         news=news, news_asked=use_news,
     )
 
+    ts = _tool_session(user_text, routine=routine, deep=deep or web, frame=frame is not None)
+    token = _tools_var.set(ts)
+    _skill_cards_var.set([])
     await notify("llm", "active")
     try:
         budget = max(1.0, float(getattr(settings, "LLM_TURN_BUDGET_S", 50) or 50))
@@ -588,7 +754,11 @@ async def generate_jarvis_response(
     except Exception:
         await notify("llm", "error")
         raise
+    finally:
+        _tools_var.reset(token)
     await notify("llm", "done")
+    if ts is not None and ts.cards:
+        _skill_cards_var.set(list(ts.cards))
 
     if not text:
         if _last_grounding_data.get("sources"):
