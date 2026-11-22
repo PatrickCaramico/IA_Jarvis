@@ -16,6 +16,7 @@ from skills.workspace.layouts import Monitor, Rect, Window, order_monitors
 
 log = logging.getLogger("jarvis.skills.workspace")
 
+VK = {"ctrl": 0x11, "shift": 0x10, "alt": 0x12, "tab": 0x09, "w": 0x57, "t": 0x54}  # teclas virtuais do Windows
 _SKIP_TITLES = {"program manager", "windows input experience", "configurações", "settings"}
 _SKIP_CLASSES = {"Progman", "WorkerW", "Shell_TrayWnd", "Shell_SecondaryTrayWnd"}
 
@@ -176,6 +177,24 @@ class WindowsDesktop:
         self.u.keybd_event(0x12, 0, 0, 0)
         self.u.keybd_event(0x12, 0, 2, 0)
         self.u.SetForegroundWindow(hwnd)
+
+    def focus_checked(self, hwnd: int, timeout: float = 0.6) -> bool:
+        """V8.11 (Q6): traz a janela para a frente e CONFERE que ela ficou na frente (antes de mandar teclas)."""
+        self.focus(hwnd)
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            if self.foreground() == hwnd:
+                return True
+            time.sleep(0.05)
+        return self.foreground() == hwnd
+
+    def send_combo(self, *keys: str) -> None:
+        """V8.11 (Q6): aperta uma combinação ("ctrl", "shift", "tab") sem PowerShell."""
+        codes = [VK[k] for k in keys]
+        for code in codes:
+            self.u.keybd_event(code, 0, 0, 0)
+        for code in reversed(codes):
+            self.u.keybd_event(code, 0, 2, 0)  # KEYEVENTF_KEYUP
 
     def launch(self, exe: str) -> None:
         subprocess.Popen([exe], cwd=os.path.dirname(exe) or None, close_fds=True)  # noqa: S603 - caminho salvo pelo usuário

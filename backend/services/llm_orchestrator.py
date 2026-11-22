@@ -499,9 +499,7 @@ def _call_gemini(prompt: str, frame_b64: Optional[str], history: list[dict], dee
         except Exception:
             full_text = ""
 
-    if not full_text and sources:
-        full_text = "Com base nas consultas e notícias mais recentes na web, analisei as principais atualizações e reuni os dados essenciais para o senhor."
-
+    # V8.11 (Q7): resposta vazia volta vazia (antes virava "analisei e reuni os dados", sem ter dito nada)
     return full_text
 
 
@@ -775,9 +773,29 @@ async def generate_jarvis_response(
         _skill_cards_var.set(list(ts.cards))
 
     if not text:
+        # V8.11 (Q7): dizer a verdade. Antes: "A consulta foi concluída" / "atualizei o painel tático", sem resposta.
+        log.warning("Resposta da IA vazia para: %s", prompt[-120:])
         if _last_grounding_data.get("sources"):
-            text = "Com base nas consultas e notícias mais recentes na web, analisei as principais informações e atualizei os dados no painel tático, senhor."
+            text = ("Achei fontes sobre isso, mas a inteligência artificial não conseguiu montar a resposta agora, "
+                    "senhor. Pergunte de novo ou peça um dossiê sobre o tema.")
         else:
-            log.warning("Resposta da IA vazia para prompt: %s", prompt[:80])
-            text = "Compreendi o seu pedido, senhor. A consulta foi concluída, mas não obtive novos dados adicionais no momento."
+            text = ("A inteligência artificial não devolveu resposta desta vez, senhor. Pode repetir a pergunta, "
+                    "de outro jeito se puder?")
     return text
+
+
+def friendly_error(exc: BaseException) -> str:
+    """V8.11 (Q7): a frase honesta para cada tipo de falha da IA (o detalhe técnico vai só para o log)."""
+    text = f"{type(exc).__name__} {exc}".lower()
+    if any(k in text for k in ("nao configurada", "não configurada", "nenhuma ia conectada", "api key", "api_key",
+                               "401", "unauthorized", "permission_denied", "authentication")):
+        return ("Nenhuma inteligência artificial está conectada, ou a chave foi recusada, senhor. Confira em "
+                "Configurações, na aba Cérebro.")
+    if any(k in text for k in ("connection", "connect", "getaddrinfo", "name resolution", "network", "ssl",
+                               "unreachable", "proxy")):
+        return ("Não consegui falar com a inteligência artificial; parece que a internet caiu, senhor. "
+                "Os comandos locais continuam funcionando.")
+    if any(k in text for k in ("safety", "blocked", "content_filter", "recitation")):
+        return "A inteligência artificial se recusou a responder isso, senhor. Tente perguntar de outro jeito."
+    return ("Tive um problema ao falar com a inteligência artificial, senhor. Tente de novo em instantes; "
+            "o detalhe ficou no log.")

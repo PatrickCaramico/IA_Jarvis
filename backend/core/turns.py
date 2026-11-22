@@ -27,6 +27,7 @@ from services.llm_orchestrator import (
     set_quota_cooldown,
     is_quota_error,
     LLMTimeout,
+    friendly_error,
     take_skill_cards,
 )
 from core import briefing_flow, confirm, runtime, session, speech, reactive_cards
@@ -669,10 +670,9 @@ async def handle_turn(message: str, routine: bool, force_deep: bool = False) -> 
             "Falha ao processar solicitação",
             f"Comando: {message}\nDetalhes: {exc}",
         )
-        await runtime.manager.broadcast({"type": "error", "message": str(exc)})
-        await runtime.manager.broadcast({"type": "state", "state": "idle"})
-        runtime.track(speech.say_quietly("Desculpe, tive um problema ao processar seu pedido."))
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        # V8.11 (Q7): frase honesta do motivo (sem chave, sem internet, recusa...), falada e na conversa.
+        # Antes: o texto técnico da biblioteca na tela, "tive um problema" falado e erro 500.
+        return await finish_local(friendly_error(exc))
 
     stop.set()
     if speech.canceled(turn):  # o usuário cancelou enquanto a IA respondia: descarta a resposta
