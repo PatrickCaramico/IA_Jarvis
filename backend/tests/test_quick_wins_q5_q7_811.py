@@ -154,3 +154,18 @@ def test_chat_explains_the_failure_instead_of_error_500(isolated_data, monkeypat
         access.reset_for_tests(access.LOCKED)
     assert r.status_code == 200
     assert "internet caiu" in r.json()["response"]
+
+
+def test_system_status_survives_a_pc_without_speakers(monkeypatch):
+    """V8.11: sem caixa de som o pycaw lança COMError (não é OSError): o volume vira -1 em vez de derrubar /api/system."""
+    from modules import system_control
+
+    class COMError(Exception):
+        pass
+
+    def broken():
+        raise COMError("sem dispositivo de áudio")
+
+    monkeypatch.setattr(system_control, "_pycaw_endpoint", broken)
+    monkeypatch.setattr(system_control, "_run_ps", lambda script: "")
+    assert system_control._get_volume() == -1

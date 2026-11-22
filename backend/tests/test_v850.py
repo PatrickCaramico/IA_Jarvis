@@ -74,6 +74,8 @@ def test_is_quiet(monkeypatch):
     import time
 
     monkeypatch.setattr(session, "busy", False)
+    # V8.11: o PC "livre" (mouse parado/madrugada) fica fixo: no Windows do CI o mouse real nunca está parado há 30 min
+    monkeypatch.setattr(auto_update, "pc_free", lambda: True)
     runtime.note_island({"type": "state", "state": "idle"})
     runtime.ISLAND["resposta_em"] = time.time()
     assert not auto_update.is_quiet()
