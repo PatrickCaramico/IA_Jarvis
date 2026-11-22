@@ -33,6 +33,10 @@ jobs:
 
       - name: Testes do backend e scripts
         run: pytest -q backend/tests scripts/tests
+        env:
+          # V8.11: saída do pytest em UTF-8. No Windows ela era cp1252: acentos viravam "�" e um caractere fora do
+          # cp1252 derrubava o pytest no meio do relatório (sem a lista de falhas no fim).
+          PYTHONIOENCODING: utf-8
 
   frontend:
     name: Frontend
