@@ -91,11 +91,33 @@ async def _morning_music_finish(task, canceled: bool) -> None:
         log.exception("Música da manhã não terminou")
 
 
+async def _pause_music():
+    """V8.15.1: música tocando no Spotify? Pausa para o JARVIS ler o briefing (rápido; no máximo 6 s)."""
+    from modules import briefing_music
+
+    try:
+        return await asyncio.wait_for(asyncio.to_thread(briefing_music.pause_if_playing), timeout=6)
+    except Exception:  # noqa: BLE001 - sem pausar, o briefing segue igual
+        log.exception("Não consegui pausar a música para o briefing")
+        return None
+
+
+async def _resume_music(paused) -> None:
+    from modules import briefing_music
+
+    try:
+        await asyncio.wait_for(asyncio.to_thread(briefing_music.resume, paused), timeout=20)
+    except Exception:  # noqa: BLE001
+        log.exception("Não consegui retomar a música depois do briefing")
+
+
 async def run_sequence(message: str, turn: int, data: dict, max_history: int) -> None:
     """Fala o briefing parte a parte. Libera o JARVIS (busy) ao terminar ou cancelar."""
     global _skip
     _skip = asyncio.Event()
-    music = runtime.track(_morning_music_start()) if data.get("mode") == "morning" else None
+    paused = await _pause_music()  # V8.15.1: a sua música pausa enquanto ele lê (e volta no fim)
+    # a música da manhã (Back in Black) não entra no lugar da sua: só quando não havia nada tocando
+    music = runtime.track(_morning_music_start()) if data.get("mode") == "morning" and not paused else None
     if data.get("mode") in ("morning", "afternoon", "evening"):
         try:  # V5.4: "bom dia" pedido por voz também conta: a próxima entrada não repete o briefing
             from modules import entry_greeting
@@ -172,6 +194,8 @@ async def run_sequence(message: str, turn: int, data: dict, max_history: int) ->
         tts_module.clear_prefetch()  # V6.5.1: sobras de um briefing cancelado não ficam gerando voz
         if music is not None:  # V8.14.1: sobe o volume da música (ou toca agora a que esperou o briefing)
             runtime.track(_morning_music_finish(music, speech.canceled(turn)))
+        if paused:  # V8.15.1: a sua música continua de onde parou
+            runtime.track(_resume_music(paused))
         if not speech.canceled(turn):
             session.busy = False
             await runtime.manager.broadcast({"type": "state", "state": "idle"})

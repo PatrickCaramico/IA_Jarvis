@@ -57,15 +57,18 @@ def test_falha_no_git_nao_reinicia(monkeypatch):
 
 def test_recusa_outro_site_e_pedido_sem_confirmacao(monkeypatch):
     calls = _patch(monkeypatch, {"ok": True, "changed": False, "before": "", "after": "", "message": ""})
-    client = TestClient(main.app)
-    assert client.post("/api/system/update", json={"confirm": True},
-                       headers={"Origin": "https://site-qualquer.example"}).status_code == 403
-    assert client.post("/api/system/update", json={"confirm": False}).status_code == 400
-    assert client.post("/api/system/update", content="confirm=true",
-                       headers={"content-type": "text/plain"}).status_code in (400, 422)
-    ok = client.post("/api/system/update", json={"confirm": True}, headers={"Origin": settings.SITE_ORIGIN})
-    assert ok.status_code == 200
-    assert _wait(lambda: calls["restart"] == 1)
+    # V8.15.1: com o "with", o laço de eventos vive até o fim do teste. Sem ele, cada pedido tinha um laço próprio
+    # desmontado na resposta, e a tarefa de reinício (runtime.track) às vezes morria antes de rodar (falha rara,
+    # que aparecia com a máquina carregada).
+    with TestClient(main.app) as client:
+        assert client.post("/api/system/update", json={"confirm": True},
+                           headers={"Origin": "https://site-qualquer.example"}).status_code == 403
+        assert client.post("/api/system/update", json={"confirm": False}).status_code == 400
+        assert client.post("/api/system/update", content="confirm=true",
+                           headers={"content-type": "text/plain"}).status_code in (400, 422)
+        ok = client.post("/api/system/update", json={"confirm": True}, headers={"Origin": settings.SITE_ORIGIN})
+        assert ok.status_code == 200
+        assert _wait(lambda: calls["restart"] == 1, seconds=5.0)
 
 
 def test_pull_sem_git_so_reinicia(monkeypatch, tmp_path):

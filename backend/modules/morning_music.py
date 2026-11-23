@@ -20,7 +20,16 @@ from modules import prefs, spotify
 log = logging.getLogger("jarvis.morning_music")
 
 BACKGROUND_VOLUME = 25
-NORMAL_VOLUME = 60
+NORMAL_VOLUME = 60  # padrão; V8.15.1: no fim sobe até o volume que você escolheu no painel VOZ (music_volume)
+
+
+def target_volume() -> int:
+    """O volume da música depois do briefing: o que você escolheu no painel VOZ (ou 60)."""
+    try:
+        v = int(prefs.get_all().get("music_volume") or NORMAL_VOLUME)
+    except (TypeError, ValueError):
+        v = NORMAL_VOLUME
+    return max(BACKGROUND_VOLUME, min(100, v))
 DEFAULT_SONG = "Back in Black AC/DC"
 
 
@@ -81,9 +90,10 @@ def finish(plan: Optional[Plan], canceled: bool = False, sleep=time.sleep) -> No
                 spotify._play({"uris": [plan.uri]}, device_id=plan.device_id)
             return
         if plan.playing:
-            for vol in range(BACKGROUND_VOLUME + 10, NORMAL_VOLUME + 1, 10):
+            target = target_volume()
+            for vol in range(BACKGROUND_VOLUME + 10, target + 1, 10):
                 sleep(0.6)
                 spotify.set_volume(vol, plan.device_id)
-            spotify.set_volume(NORMAL_VOLUME, plan.device_id)
+            spotify.set_volume(target, plan.device_id)
     except Exception:  # noqa: BLE001
         log.exception("Música da manhã: não consegui terminar (volume)")

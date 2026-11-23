@@ -247,6 +247,15 @@ def playlist_uri(value: str) -> str:
     raise ValueError("Link de playlist do Spotify inválido.")
 
 
+def current_volume() -> int | None:
+    """V8.15.1: volume do aparelho que está com o Spotify agora (None: nenhum aparelho ou ele não informa)."""
+    response = _request("GET", "/me/player")
+    if response.status_code == 204:
+        return None
+    vol = ((response.json() or {}).get("device") or {}).get("volume_percent")
+    return int(vol) if isinstance(vol, (int, float)) else None
+
+
 def set_volume(percent: int, device_id: str | None = None) -> None:
     params = {"volume_percent": max(0, min(100, int(percent)))}
     if device_id:  # V8.14.1: volume de um aparelho que ainda não está tocando (antes de começar a música)

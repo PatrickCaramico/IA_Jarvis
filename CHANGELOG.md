@@ -2,6 +2,21 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 8.15.1 — 23 de novembro de 2026
+
+**⏸ Briefing pausa a sua música**
+- Se o Spotify estiver tocando quando o briefing começar (bom dia, boa tarde, boa noite ou por assunto), o JARVIS pausa a música para ler e, no fim, ela continua de onde parou.
+  - Antes, ele falava por cima da música.
+- Se você trocou de música ou deu play em outra coisa no meio, ele não retoma por cima.
+- Quando ele pausa a sua música, o Back in Black da manhã não entra no lugar dela.
+- Dá para desligar no botão VOZ, em "Pausar a minha música durante o briefing".
+
+**🔊 Volume da música no painel VOZ**
+- Uma barra de volume muda o Spotify na hora e guarda o volume escolhido.
+- O Back in Black do botão VOZ toca nesse volume.
+- A música da manhã começa baixinha durante o briefing e, no fim, sobe até esse volume.
+  - Antes, ela subia só até 60%, e o Back in Black tocava no volume em que o Spotify estivesse.
+
 ## 8.15.0 — 23 de novembro de 2026
 
 **🥚 Tamagotchi no bloqueio do Modo Desk**

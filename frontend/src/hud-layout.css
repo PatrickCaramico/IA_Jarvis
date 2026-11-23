@@ -1497,3 +1497,8 @@ body:has(.dk-root:not(.is-embedded)) .hl-root { display: none !important; }
 .hv-btn:disabled { opacity: 0.5; cursor: wait; }
 .hv-check { display: inline-flex; align-items: center; gap: 6px; font-size: 0.8rem; color: rgba(254, 243, 199, 0.85); cursor: pointer; }
 @media (prefers-reduced-motion: reduce) { .hv-now.is-playing .hv-eq i { animation: none; height: 10px; } }
+/* V8.15.1: volume da música no painel VOZ */
+.hv-volume { display: grid; grid-template-columns: auto 1fr 3.2em; align-items: center; gap: 8px; color: #fde68a; font-size: 0.85rem; }
+.hv-volume input[type="range"] { width: 100%; accent-color: #fbbf24; cursor: pointer; }
+.hv-volume b { font-variant-numeric: tabular-nums; text-align: right; }
+.hv-volnote { color: #fecaca; font-size: 0.78rem; }
