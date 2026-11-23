@@ -88,12 +88,13 @@ export default function VoiceButton({ api }) {
     }
   };
 
-  const toggleEntry = async (on) => {
-    setPrefs((p) => ({ ...(p || {}), intro_song_on_entry: on }));
+  // liga/desliga uma preferência da música (entrar na central; V8.14.1: inicialização do dia)
+  const togglePref = async (key, on) => {
+    setPrefs((p) => ({ ...(p || {}), [key]: on }));
     try {
-      await api("/api/prefs", { method: "PATCH", body: JSON.stringify({ intro_song_on_entry: on }) });
+      await api("/api/prefs", { method: "PATCH", body: JSON.stringify({ [key]: on }) });
     } catch {
-      setPrefs((p) => ({ ...(p || {}), intro_song_on_entry: !on }));
+      setPrefs((p) => ({ ...(p || {}), [key]: !on }));
     }
   };
 
@@ -126,8 +127,13 @@ export default function VoiceButton({ api }) {
                 ? <button type="button" className="hv-btn" onClick={pause}>⏸ PAUSAR</button>
                 : <button type="button" className="hv-btn" onClick={() => play(song)} disabled={music.state === "loading"}>▶ TOCAR</button>}
               <label className="hv-check">
+                <input type="checkbox" checked={prefs ? prefs.intro_song_morning !== false : true} disabled={!prefs}
+                  onChange={(e) => togglePref("intro_song_morning", e.target.checked)} />
+                Tocar na inicialização do dia (bom dia), baixinho durante o briefing
+              </label>
+              <label className="hv-check">
                 <input type="checkbox" checked={prefs ? prefs.intro_song_on_entry !== false : true} disabled={!prefs}
-                  onChange={(e) => toggleEntry(e.target.checked)} />
+                  onChange={(e) => togglePref("intro_song_on_entry", e.target.checked)} />
                 Tocar quando eu entrar na central
               </label>
             </div>

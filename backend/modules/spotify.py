@@ -146,9 +146,9 @@ def ensure_device(launch: bool = True, wait_s: float = DEVICE_WAIT_S, sleep=time
     raise SpotifyError("no_device", NO_DEVICE_MSG)
 
 
-def _play(body: dict | None = None, launch: bool = True) -> None:
+def _play(body: dict | None = None, launch: bool = True, device_id: str | None = None) -> None:
     """Toca no aparelho escolhido, com o motivo certo quando o Spotify recusa."""
-    device_id = ensure_device(launch=launch)
+    device_id = device_id or ensure_device(launch=launch)
     try:
         _request("PUT", "/me/player/play", params={"device_id": device_id}, json=body or None)
     except requests.HTTPError as exc:
@@ -209,6 +209,13 @@ def now_playing() -> dict:
     return parse_now_playing(response.status_code, response.json() if response.status_code != 204 else None)
 
 
+def find_track(query: str) -> dict | None:
+    """V8.14.1: a primeira faixa da busca (ou None)."""
+    response = _request("GET", "/search", params={"q": query.strip(), "type": "track", "limit": 1})
+    items = response.json().get("tracks", {}).get("items", [])
+    return items[0] if items else None
+
+
 def search_and_play(query: str, playlist: bool = False) -> str:
     query = query.strip()
     if not query:
@@ -240,8 +247,11 @@ def playlist_uri(value: str) -> str:
     raise ValueError("Link de playlist do Spotify inválido.")
 
 
-def set_volume(percent: int) -> None:
-    _request("PUT", "/me/player/volume", params={"volume_percent": max(0, min(100, int(percent)))})
+def set_volume(percent: int, device_id: str | None = None) -> None:
+    params = {"volume_percent": max(0, min(100, int(percent)))}
+    if device_id:  # V8.14.1: volume de um aparelho que ainda não está tocando (antes de começar a música)
+        params["device_id"] = device_id
+    _request("PUT", "/me/player/volume", params=params)
 
 
 def play_playlist(uri: str, ramp: bool = True, target_volume: int = 60) -> str:

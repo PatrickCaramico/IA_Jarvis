@@ -2,6 +2,16 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 8.14.1 — 23 de novembro de 2026
+
+**🎸 Back in Black na inicialização do dia**
+- No briefing de "bom dia" (a 1ª entrada do dia ou o pedido por voz), o Back in Black começa junto, baixinho, como trilha de fundo, para não abafar a voz do JARVIS.
+- No fim do briefing, o volume sobe aos poucos.
+- Antes, a música não tocava de manhã: a 1ª entrada do dia roda o briefing, e esse caminho não chamava a música.
+- Toca uma vez por dia e nunca no modo silencioso. Se você já estiver ouvindo outra música, não interrompe.
+- Se o aparelho não deixar o JARVIS mudar o volume, a música espera o briefing acabar, para nunca tocar por cima da fala.
+- Dá para desligar no botão VOZ, em "Tocar na inicialização do dia".
+
 ## 8.14.0 — 23 de novembro de 2026
 
 **🎸 Back in Black toca de verdade**
