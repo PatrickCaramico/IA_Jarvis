@@ -636,3 +636,38 @@ html.is-lite .dkl-bg *, html.is-lite .dkl-props *, html.is-lite .dkl-actor, html
 .dk-stop { align-self: flex-start; padding: 4px 12px; border-radius: 999px; border: 1px solid rgba(244, 63, 94, 0.55); background: rgba(244, 63, 94, 0.12); color: #fecdd3; font-size: 0.75rem; font-weight: 600; cursor: pointer; }
 .dk-stop:hover { background: rgba(244, 63, 94, 0.25); }
 @media (prefers-reduced-motion: reduce) { .dk-caret { animation: none; } }
+
+/* ---------- V8.15: TAMAGOTCHI no bloqueio do Modo Desk ---------- */
+.dkl-age { display: inline-block; margin-top: 8px; padding: 3px 12px; border-radius: 999px; background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 255, 255, 0.1); color: #c7d2fe; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.06em; }
+.dkl-needs { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 14px; padding: 8px 14px; border-radius: 16px; background: rgba(8, 10, 24, 0.55); border: 1px solid rgba(255, 255, 255, 0.08); backdrop-filter: blur(6px); }
+.dkl-need { display: inline-flex; align-items: center; gap: 6px; font-size: 0.95rem; }
+.dkl-need-bar { display: block; width: 64px; height: 8px; border-radius: 8px; background: rgba(255, 255, 255, 0.1); overflow: hidden; }
+.dkl-need-bar > b { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #f59e0b, #facc15); transition: width 600ms ease; }
+.dkl-need.is-full .dkl-need-bar > b { background: linear-gradient(90deg, #22c55e, #4ade80); }
+.dkl-need.is-low .dkl-need-bar > b { background: linear-gradient(90deg, #ef4444, #f97316); }
+.dkl-need.is-low i { animation: dkl-need-blink 1.1s ease-in-out infinite; }
+@keyframes dkl-need-blink { 50% { transform: scale(1.25); filter: drop-shadow(0 0 6px #ef4444); } }
+.dkl-care .dkl-chip.is-care { background: rgba(var(--dk-accent-rgb), 0.16); border-color: rgba(var(--dk-accent-rgb), 0.45); }
+.dkl-care .dkl-chip.is-care:hover { background: rgba(var(--dk-accent-rgb), 0.3); }
+.dkl-care .dkl-chip.is-alert { border-color: #f97316; box-shadow: 0 0 12px rgba(249, 115, 22, 0.45); }
+.dkl-row.is-sub .dkl-chip { padding: 6px 11px; font-size: 0.78rem; opacity: 0.75; }
+.dkl-row.is-sub .dkl-chip:hover { opacity: 1; }
+/* bugs andando em volta dele (clique para pegar) */
+.dkl-bug { all: unset; position: absolute; z-index: 3; cursor: pointer; font-size: 1.6rem; transform: translate(-50%, -50%); animation: dkl-bug-walk 3.2s ease-in-out infinite alternate; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.5)); }
+.dkl-bug:hover { filter: drop-shadow(0 0 8px #a3e635); }
+@keyframes dkl-bug-walk { 0% { transform: translate(-50%, -50%) rotate(-12deg); } 50% { transform: translate(-30%, -60%) rotate(10deg); } 100% { transform: translate(-70%, -40%) rotate(-6deg); } }
+/* efeitos de cada cuidado */
+.dkl-fx { position: absolute; inset: 0; z-index: 4; pointer-events: none; display: grid; place-items: center; font-size: 2rem; }
+.dkl-fx.is-feed { animation: dkl-feed 1.1s cubic-bezier(.3, .7, .4, 1) forwards; }
+@keyframes dkl-feed { 0% { transform: translate(0, 180px) scale(0.6); opacity: 0; } 30% { opacity: 1; } 75% { transform: translate(0, 10px) scale(1.2); opacity: 1; } 100% { transform: translate(0, 0) scale(0.2); opacity: 0; } }
+.dkl-fx.is-heart i, .dkl-fx.is-clean i { position: absolute; animation: dkl-float 1.2s ease-out forwards; opacity: 0; }
+.dkl-fx i:nth-child(1) { left: 30%; } .dkl-fx i:nth-child(2) { left: 50%; animation-delay: 0.15s; } .dkl-fx i:nth-child(3) { left: 66%; animation-delay: 0.3s; } .dkl-fx i:nth-child(4) { left: 42%; animation-delay: 0.45s; }
+@keyframes dkl-float { 0% { transform: translateY(40px) scale(0.6); opacity: 0; } 25% { opacity: 1; } 100% { transform: translateY(-110px) scale(1.15); opacity: 0; } }
+.dkl-fx.is-sleep { place-items: start end; font-size: 2.6rem; animation: dkl-moon 1.3s ease-out forwards; }
+@keyframes dkl-moon { from { opacity: 0; transform: translateY(20px) rotate(-20deg); } to { opacity: 1; transform: none; } }
+/* dormindo de verdade: a tela escurece como um quarto à noite */
+.dkl.is-night .dkl-glow { opacity: 0.25; }
+.dkl.is-night::after { content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none; background: radial-gradient(ellipse at 50% 55%, transparent 25%, rgba(2, 3, 12, 0.55) 80%); }
+@media (prefers-reduced-motion: reduce) {
+  .dkl-need.is-low i, .dkl-bug, .dkl-fx, .dkl-fx i { animation: none !important; opacity: 1; }
+}

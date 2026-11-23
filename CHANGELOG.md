@@ -2,6 +2,24 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 8.15.0 — 23 de novembro de 2026
+
+**🥚 Tamagotchi no bloqueio do Modo Desk**
+- O robô do bloqueio virou um bichinho virtual que precisa de você.
+- Ele tem 5 necessidades que caem com o tempo, mesmo com o PC desligado: 🔋 Bateria, ⚡ Energia, 🎾 Diversão, 💙 Carinho e ✨ Limpeza.
+- As barras ficam vermelhas e piscam quando uma necessidade está baixa.
+- Para cuidar dele:
+  - 🔋 ALIMENTAR: ele "come" uma bateria;
+  - 🎾 BRINCAR: o jogo das estrelas, e quanto mais estrelas, mais diversão;
+  - 💙 CARINHO: ou clique nele;
+  - 🧽 LIMPAR: os 🐛 bugs aparecem quando ele está sujo, e dá para pegar um por um com um clique;
+  - 💤 DORMIR / ☀ ACORDAR: dormindo, ele recarrega a energia e a tela escurece como um quarto à noite.
+- O humor e as falas mudam conforme ele está: pede bateria com fome, chora se ficar muito tempo sem cuidado e fica todo feliz quando está bem cuidado.
+- Ele cresce com os dias de convivência (🥚 Bebê, 🐣 Filhote, 🤖 Jovem, 🦾 Adulto, 👑 Lenda) e mostra o seu nível de XP.
+- Ele comenta o seu dia: "você bebeu só 30% da água… bebe um copo comigo?" e "todas as missões de hoje feitas!".
+- Nunca morre: no pior caso, fica tristinho e pede ajuda.
+- O JARVIS, as atividades, o jogo e o desbloqueio continuam iguais. Os outros botões (FUNDO, ATUALIZAR, BRANDING, BLOQUEIO CLÁSSICO) ficaram numa linha menor embaixo.
+
 ## 8.14.1 — 23 de novembro de 2026
 
 **🎸 Back in Black na inicialização do dia**

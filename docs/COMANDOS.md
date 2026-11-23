@@ -1,6 +1,6 @@
 # JARVIS — Comandos do dia a dia
 
-**Versão do projeto:** 8.14.1 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
+**Versão do projeto:** 8.15.0 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
 
 > Montado a partir do código do projeto. Se algum comando não responder como descrito, me avise que eu ajusto o guia.
 > Para a lista técnica de rotas, veja [API.md](API.md); para o `.env`, [CONFIGURACAO.md](CONFIGURACAO.md).
@@ -465,6 +465,8 @@ No Modo Desk (e no app do Windows), as habilidades novas também funcionam com b
 | 🧰 **Ferramentas** | Conversor (digite "5 milhas em km" e Enter); senha forte de 16, 20 ou 32 caracteres (vai direto para a área de transferência); texto copiado (📝 resumir, 💡 explicar, 🌐 traduzir, ✍ corrigir); dossiê (tema e Enter) e a lista dos salvos (▶ LER abre o painel com as fontes). |
 
 No bloqueio do robô também ficaram os botões ⟳ ATUALIZAR (com a bolinha de versões novas) e 📘 BRANDING.
+
+**Tamagotchi no bloqueio do robô (V8.15):** o robô virou um bichinho virtual. Ele tem 5 necessidades que caem com o tempo (também com o PC desligado: a conta usa o relógio): 🔋 Bateria, ⚡ Energia, 🎾 Diversão, 💙 Carinho e ✨ Limpeza. Cuide com os botões: **🔋 ALIMENTAR**, **🎾 BRINCAR** (o jogo das estrelas; quanto mais estrelas, mais diversão), **💙 CARINHO** (ou clique nele), **🧽 LIMPAR** (ou clique nos 🐛 que aparecem quando ele está sujo) e **💤 DORMIR / ☀ ACORDAR** (dormindo, a energia recarrega e a tela escurece). O humor e as falas mudam conforme ele está; ele cresce com os dias (🥚 Bebê, 🐣 Filhote, 🤖 Jovem, 🦾 Adulto, 👑 Lenda) e comenta o seu dia (água e missões). Nunca morre: no pior caso fica tristinho e pede ajuda. O estado fica guardado no navegador.
 
 ### Modo Desk e app para Windows (V8.0)
 
