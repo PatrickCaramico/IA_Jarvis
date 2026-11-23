@@ -2,6 +2,31 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 9.1.0 — 23 de novembro de 2026
+
+**🪟 Vidro (glassmorphism) em toda a interface**
+- Painéis, topo, menu CONTROLES, menu lateral, janelas flutuantes, Central de Widgets, paleta Ctrl+K e a fila agora usam o mesmo vidro: fundo desfocado, aresta clara, reflexo no alto e cantos arredondados.
+- No Modo Torcedor o vidro fica verde; com "alto contraste" (Acessibilidade) ele é desligado para ficar tudo sólido e legível.
+
+**🎵 Janela do Spotify relaxante**
+- A capa do álbum, desfocada, vira o fundo, com uma aurora que se mexe devagar e para quando a música pausa.
+- Capa grande com halo, barra fina, controles redondos e volume.
+- Atalhos de clima: 🎧 Lo-fi para focar, 🌙 Relaxar, 🎷 Jazz calmo, 🌧 Chuva.
+- O cartão do Spotify e o botão SPOTIFY abrem essa janela.
+  - Antes, abriam a Central de Widgets.
+
+**⚙ Configurações renovadas**
+- Janela de vidro maior, com as seções num menu lateral, cada uma com ícone.
+  - Antes, eram 13 abas espremidas numa grade.
+- No celular, as seções viram uma faixa que rola.
+
+**🖥 Modo Desk de vidro**
+- O fundo ganha uma aurora suave na sua cor de destaque, e o menu e os cartões viram vidro.
+
+**📘 Branding Book 3.0**
+- Capítulos novos: Modo Desk e Habilidades (V8), Versão 9 e Vidro, com as regras do vidro.
+- O histórico agora vai até a 9.1, e a linha do tempo foi redesenhada.
+
 ## 9.0.0 — 23 de novembro de 2026
 
 Versão 9: mais coisas que o JARVIS faz sozinho no PC, sem API externa, e uma central mais rápida de usar.
