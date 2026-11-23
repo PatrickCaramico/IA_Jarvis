@@ -133,6 +133,9 @@ function Demo() {
     }}
     updateNote={note}
     updateProgress={pct}
+    deskLock={q.get("desk") === "1" /* V8.11: ?desk=1 mostra o bloqueio do robô (Modo Desk) */}
+    onDeskLock={() => {}}
+    updateCount={q.get("desk") === "1" ? 2 : 0}
     phoneApp={phoneApp}
     hasPin={phoneApp}
     onBiometric={phoneApp && q.get("bio") === "1" ? () => setNote("Digital confirmada (demo).") : null}

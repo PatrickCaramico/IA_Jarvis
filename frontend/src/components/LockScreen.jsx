@@ -320,6 +320,10 @@ export default function LockScreen({
         phone={phoneApp}
         jarvisState={jarvisState}
         onClassic={onDeskLock ? () => onDeskLock(false) : null}
+        onUpdate={onUpdate}
+        updateCount={updateCount}
+        updateNote={updateNote}
+        updateProgress={updateProgress}
       />
     );
   }

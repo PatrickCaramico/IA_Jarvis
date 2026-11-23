@@ -579,3 +579,14 @@ html.is-lite .dkl-bg *, html.is-lite .dkl-props *, html.is-lite .dkl-actor, html
   .dkl-bgpick { width: 100%; box-sizing: border-box; }
   .dkl-swatch { flex: 1 1 40%; justify-content: center; padding: 11px 10px; }
 }
+
+/* V8.11: ATUALIZAR (com a bolinha de versões novas) e BRANDING no bloqueio do robô */
+.dkl-chip:has(> .upd-badge) { position: relative; }
+/* a bolinha mora também aqui: o hud-layout.css só carrega com a tela principal, e o bloqueio vem antes dela */
+.dkl-chip > .upd-badge {
+  position: absolute; top: -8px; right: -8px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px;
+  background: #ef4444; color: #fff; font: 700 0.68rem/18px system-ui, sans-serif; letter-spacing: 0; text-align: center;
+  box-shadow: 0 0 0 2px rgba(8, 10, 18, 0.9), 0 0 10px rgba(239, 68, 68, 0.6); pointer-events: none;
+}
+.dkl-update { width: min(420px, 90vw); margin: 10px auto 0; }
+.dkl-update-note { margin: 8px auto 0; max-width: 90vw; text-align: center; font-size: 0.85rem; color: #cfd6e4; }

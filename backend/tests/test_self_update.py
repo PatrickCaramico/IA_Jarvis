@@ -116,8 +116,12 @@ def test_v817_frontend_stale(monkeypatch, tmp_path):
     import os
 
     os.utime(fe / "src" / "a.js", (1, 1))
+    # V8.11: datas fixas. No Windows, o index.html e o b.js gravados em seguida saíam com o MESMO horário e o
+    # "b.js é mais novo" falhava às vezes (teste instável no CI).
+    os.utime(fe / "dist" / "index.html", (1000, 1000))
     assert self_update.frontend_stale() is False
     (fe / "src" / "b.js").write_text("novo")
+    os.utime(fe / "src" / "b.js", (2000, 2000))
     assert self_update.frontend_stale() is True
 
 
