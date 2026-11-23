@@ -2,6 +2,48 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 9.0.0 — 23 de novembro de 2026
+
+Versão 9: mais coisas que o JARVIS faz sozinho no PC, sem API externa, e uma central mais rápida de usar.
+
+**🧠 Memória pesquisável**
+- "O que eu te falei sobre a viagem?", "o que eu copiei sobre o hotel?", "procura na memória sobre o carro".
+- Procura em todas as conversas (antes ficavam só as 20 últimas), memórias, tarefas, lembretes e copiados, na hora, sem internet e sem IA.
+
+**📋 Copiar e colar por voz**
+- "O que eu copiei?", "copia de novo o último link", "cola o e-mail que eu copiei", "fixa o último copiado" e "apaga os copiados" (pergunta antes; os fixados ficam).
+- ★ para fixar nos Copiados do Modo Desk.
+- Endereços com número e vírgula não são mais confundidos com senha e voltam a entrar nos copiados.
+
+**⏱ Tempo de tela e resumo da semana**
+- "Quanto tempo eu fiquei no Chrome hoje?", "meu tempo de tela da semana", "resumo da semana".
+- Só o nome do programa é medido (nunca o título da janela) e não conta com o PC parado. Dá para desligar.
+
+**🔤 Ler o texto da tela, offline**
+- "Copia o texto da tela" e "copia o texto da imagem que eu copiei": o OCR do próprio Windows deixa o texto copiado, pronto para colar.
+
+**🌐 Navegador**
+- Sessões de abas ("salva as abas como sessão trabalho", "abre a sessão trabalho").
+- "Fecha as abas do youtube" (e "reabre as abas que você fechou"), "vai para a aba do gmail", "quantas abas estão abertas?".
+- Macros de passos ("roda a macro bater ponto") e "resume essa página".
+
+**⌕ Paleta de comandos (Ctrl+K)**
+- Acha telas, habilidades, o que você falou e o que copiou. Enter executa; texto livre vira pergunta.
+- Também pelo botão ⌕ COMANDOS, no rodapé.
+
+**🗣 A voz começa antes**
+- Em respostas longas, o JARVIS já fala as primeiras frases enquanto a IA termina de escrever.
+  - Antes, a voz esperava a resposta inteira.
+
+**🧾 Fila de pedidos**
+- Pedido feito enquanto ele pensa em outro espera a vez (até 3, com o aviso NA FILA) e é atendido na ordem.
+  - Antes, ele era ignorado ou recebia "ocupado".
+- Cancelar esvazia a fila.
+
+**🎨 Visual 9.0**
+- A central muda de clima com a hora do dia, com transição suave das cores.
+- Os painéis entram em sequência ao abrir a central.
+
 ## 8.16.0 — 23 de novembro de 2026
 
 **🤖 Bloqueio do Modo Desk renovado: só o JARVIS, com tudo do bloqueio clássico**

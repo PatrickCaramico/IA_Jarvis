@@ -8,6 +8,7 @@ edge-tts>=7.3.0  # V8.1.5: as antigas pararam (Microsoft mudou o serviço: 403 /
 python-dotenv>=1.0
 pygame>=2.5
 requests>=2.31
+websockets>=12  # V9.0: macros de navegador (CDP); já vinha com uvicorn[standard]
 psutil>=6.0
 pycaw>=20230407
 

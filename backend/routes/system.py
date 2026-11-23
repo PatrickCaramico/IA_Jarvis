@@ -275,6 +275,9 @@ async def cancel_operation() -> dict:
     Timers e lembretes já programados NÃO são cancelados (para isso: "cancele os timers").
     """
     session.turn_id += 1  # invalida qualquer resposta que ainda esteja sendo gerada
+    from core import turn_queue
+
+    turn_queue.cancel_all()  # V9.0: quem esperava na fila também desiste
     if session.current_stop is not None:
         session.current_stop.set()
     tts_module.stop_playback()  # corta o som que está tocando
@@ -297,6 +300,18 @@ async def chat(req: ChatRequest) -> dict:
 
     desk.xp_quietly("conversa")  # V8.0: XP do Modo Desk
     return await turns.handle_turn(req.message, routine=False)
+
+
+@router.get("/api/search/local")
+async def search_local(q: str = "", limit: int = 8) -> dict:
+    """V9.0: memória pesquisável (conversas, memórias, tarefas, lembretes, copiados), para a paleta Ctrl+K."""
+    from modules import memory_index
+
+    q = (q or "").strip()[:200]
+    if len(q) < 2:
+        return {"items": []}
+    items = await asyncio.to_thread(memory_index.search, q, limit)
+    return {"items": items}
 
 
 @router.post("/api/trigger-jarvis")

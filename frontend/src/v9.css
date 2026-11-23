@@ -1,0 +1,126 @@
+/* V9.0: fila de pedidos, paleta Ctrl+K e visual 9.0 da central */
+
+/* ---- fila de pedidos ---- */
+.turn-queue {
+  position: fixed;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: min(92vw, 720px);
+  padding: 6px 8px 6px 12px;
+  border: 1px solid rgba(31, 194, 245, 0.45);
+  border-radius: 999px;
+  background: rgba(2, 14, 28, 0.88);
+  backdrop-filter: blur(6px);
+  color: #c9f6ff;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  box-shadow: 0 0 18px rgba(31, 194, 245, 0.18);
+  animation: v9-rise 0.25s ease-out;
+}
+.turn-queue-tag { font-weight: 700; color: #ffc857; letter-spacing: 0.12em; font-size: 11px; }
+.turn-queue-item { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0.9; }
+.turn-queue-item + .turn-queue-item { border-left: 1px solid rgba(31, 194, 245, 0.3); padding-left: 10px; }
+.turn-queue-clear {
+  border: 0; background: transparent; color: #8fd8ee; font-size: 18px; line-height: 1; cursor: pointer; padding: 0 6px;
+}
+.turn-queue-clear:hover { color: #fff; }
+
+@keyframes v9-rise {
+  from { opacity: 0; transform: translate(-50%, 8px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+@media (prefers-reduced-motion: reduce) { .turn-queue { animation: none; } }
+
+/* ---- paleta de comandos (Ctrl+K) ---- */
+.cmdk-backdrop {
+  position: fixed; inset: 0; z-index: 400; display: flex; justify-content: center; align-items: flex-start;
+  padding: 12vh 16px 16px; background: rgba(1, 6, 14, 0.62); backdrop-filter: blur(3px);
+  animation: v9-fade 0.15s ease-out;
+}
+.cmdk {
+  width: min(640px, 100%); max-height: 70vh; display: flex; flex-direction: column; overflow: hidden;
+  border: 1px solid rgba(31, 194, 245, 0.5); border-radius: 14px; background: rgba(4, 16, 32, 0.97);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55), 0 0 30px rgba(31, 194, 245, 0.15); color: #c9f6ff;
+}
+.cmdk-head { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-bottom: 1px solid rgba(31, 194, 245, 0.2); }
+.cmdk-k { font-size: 11px; letter-spacing: 0.1em; color: #ffc857; border: 1px solid rgba(255, 200, 87, 0.5); border-radius: 6px; padding: 2px 6px; }
+.cmdk-input {
+  flex: 1; min-width: 0; background: transparent; border: 0; outline: none; color: #eafcff; font-size: 17px; font-family: inherit;
+}
+.cmdk-input::placeholder { color: rgba(201, 246, 255, 0.45); }
+.cmdk-list { list-style: none; margin: 0; padding: 6px; overflow-y: auto; }
+.cmdk-item {
+  display: flex; align-items: center; gap: 12px; padding: 9px 10px; border-radius: 9px; cursor: pointer;
+}
+.cmdk-item.is-on { background: rgba(31, 194, 245, 0.16); box-shadow: inset 2px 0 0 #1fc2f5; }
+.cmdk-icon { width: 22px; text-align: center; flex: none; }
+.cmdk-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.cmdk-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 15px; }
+.cmdk-hint { font-size: 12px; opacity: 0.6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cmdk-kind { flex: none; font-size: 10px; letter-spacing: 0.12em; opacity: 0.55; }
+.cmdk-item.is-perguntar .cmdk-label { color: #ffc857; }
+.cmdk-empty { padding: 16px; opacity: 0.6; text-align: center; }
+.cmdk-foot { padding: 8px 14px; font-size: 12px; opacity: 0.7; border-top: 1px solid rgba(31, 194, 245, 0.15); }
+.cmdk-foot kbd {
+  font-family: inherit; font-size: 11px; border: 1px solid rgba(201, 246, 255, 0.35); border-radius: 4px; padding: 0 5px; margin: 0 2px;
+}
+@keyframes v9-fade { from { opacity: 0; } to { opacity: 1; } }
+@media (max-width: 520px) { .cmdk-backdrop { padding-top: 8vh; } .cmdk-kind { display: none; } }
+@media (prefers-reduced-motion: reduce) { .cmdk-backdrop { animation: none; } }
+
+/* ---- Visual 9.0: clima da hora do dia (data-mood) com transição suave das cores ---- */
+@property --bp-base-1 { syntax: "<color>"; inherits: true; initial-value: #2362b8; }
+@property --bp-base-2 { syntax: "<color>"; inherits: true; initial-value: #174a95; }
+@property --bp-base-3 { syntax: "<color>"; inherits: true; initial-value: #0d3170; }
+@property --v9-glow { syntax: "<color>"; inherits: true; initial-value: rgba(10, 124, 174, 0.22); }
+
+:root { --v9-glow: rgba(10, 124, 174, 0.22); }
+[data-bg="blueprint"] body,
+[data-bg="blueprint"] .hl-root,
+body {
+  transition: --bp-base-1 3s ease, --bp-base-2 3s ease, --bp-base-3 3s ease, --v9-glow 3s ease;
+}
+/* manhã: um pouco mais claro e com um toque de luz quente no centro */
+[data-bg="blueprint"][data-mood="manha"] { --bp-base-1: #2a6fc4; --bp-base-2: #1a539f; --bp-base-3: #10397a; }
+/* tarde: o azul de sempre (valores do blueprint.css) */
+/* noite: azul mais fundo, menos brilho para não cansar a vista */
+[data-bg="blueprint"][data-mood="noite"] { --bp-base-1: #1b4f9a; --bp-base-2: #123d7c; --bp-base-3: #0a2758; }
+/* madrugada: quase apagado */
+[data-bg="blueprint"][data-mood="madrugada"] { --bp-base-1: #153f7d; --bp-base-2: #0e3063; --bp-base-3: #071c42; }
+[data-bg="blueprint"][data-mode="fan"] { --bp-base-1: #2362b8; --bp-base-2: #174a95; --bp-base-3: #0d3170; }
+
+/* fundo clássico: só o brilho do centro muda de cor */
+[data-bg="classic"][data-mood="manha"] { --v9-glow: rgba(64, 160, 190, 0.26); }
+[data-bg="classic"][data-mood="noite"] { --v9-glow: rgba(18, 70, 150, 0.2); }
+[data-bg="classic"][data-mood="madrugada"] { --v9-glow: rgba(12, 40, 100, 0.16); }
+[data-bg="classic"]:not([data-mode="fan"]) body {
+  background-image:
+    radial-gradient(ellipse at 50% 40%, var(--v9-glow), transparent 60%),
+    linear-gradient(rgba(31, 194, 245, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(31, 194, 245, 0.05) 1px, transparent 1px);
+}
+
+/* ---- Visual 9.0: painéis entram em sequência (uma vez, ao abrir a central) ---- */
+.hl-root .hl-panel { animation: v9-panel-in 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.hl-root .hl-panel:nth-child(2) { animation-delay: 0.06s; }
+.hl-root .hl-panel:nth-child(3) { animation-delay: 0.12s; }
+.hl-root .hl-panel:nth-child(4) { animation-delay: 0.18s; }
+.hl-root .hl-panel:nth-child(n + 5) { animation-delay: 0.24s; }
+@keyframes v9-panel-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+[data-motion="reduce"] .hl-root .hl-panel { animation: none; }
+@media (prefers-reduced-motion: reduce) { .hl-root .hl-panel { animation: none; } }
+
+/* ---- botão COMANDOS no rodapé (abre a paleta) ---- */
+.hl-btn-cmdk kbd {
+  font-family: inherit; font-size: 10px; margin-left: 6px; padding: 0 4px; border-radius: 4px;
+  border: 1px solid rgba(201, 246, 255, 0.35); opacity: 0.75;
+}
+@media (hover: none) { .hl-btn-cmdk kbd { display: none; } }

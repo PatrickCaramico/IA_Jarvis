@@ -30,7 +30,8 @@ from services.llm_orchestrator import (
     friendly_error,
     take_skill_cards,
 )
-from core import briefing_flow, confirm, runtime, session, speech, reactive_cards
+from core import briefing_flow, confirm, runtime, session, speech, reactive_cards, turn_queue
+from core.early_voice import EarlyVoice
 from core.skills import router as skills_router
 from services import grounding  # V8.12: IA com os pés no chão
 
@@ -126,10 +127,17 @@ async def _handle_turn(message: str, routine: bool, force_deep: bool = False) ->
     if access.is_restricted():
         return await handle_restricted_turn(message)
     event_log.add("command", message)
-    if session.busy and speech.only_speaking():  # V8.10.0: ainda falando a resposta anterior: corta e atende
+    # V8.10.0: ainda falando a resposta anterior: corta e atende. V9.0: só se ninguém está na fila (quem chegou
+    # antes ouve a resposta e é atendido primeiro).
+    if session.busy and not turn_queue.waiting() and speech.only_speaking():
         await speech.interrupt()
-    if session.busy:
-        raise HTTPException(status_code=409, detail="O JARVIS já está ocupado com outra solicitação.")
+    if session.busy or turn_queue.waiting():
+        # V9.0: antes era erro 409 na hora e o pedido se perdia; agora espera a vez numa fila curta
+        outcome = await turn_queue.wait_turn(message)
+        if outcome == "canceled":
+            return {"status": "canceled"}
+        if outcome != "ok":
+            raise HTTPException(status_code=409, detail="O JARVIS já está ocupado com outra solicitação.")
     session.busy = True
     turn = session.turn_id
     name = face.get_name()
@@ -661,6 +669,7 @@ async def _handle_turn(message: str, routine: bool, force_deep: bool = False) ->
 
     stop = asyncio.Event()
     session.current_stop = stop
+    early = EarlyVoice()
     runtime.track(speech.filler_loop(stop))
     started_ai = time.monotonic()
 
@@ -670,6 +679,7 @@ async def _handle_turn(message: str, routine: bool, force_deep: bool = False) ->
             stop.set()
             if not speech.canceled(turn):
                 runtime.track(runtime.manager.broadcast(event))
+                early.feed(event)  # V9.0: as primeiras frases completas já vão para a voz
 
         text = await generate_jarvis_response(
             message,
@@ -682,6 +692,7 @@ async def _handle_turn(message: str, routine: bool, force_deep: bool = False) ->
         )
     except Exception as exc:  # noqa: BLE001
         stop.set()
+        early.cancel()  # a resposta falhou: o começo que já ia ser falado não vale mais
         if force_deep:
             deep_search_quota.refund()
         if speech.canceled(turn):
@@ -721,13 +732,17 @@ async def _handle_turn(message: str, routine: bool, force_deep: bool = False) ->
 
     stop.set()
     if speech.canceled(turn):  # o usuário cancelou enquanto a IA respondia: descarta a resposta
+        early.cancel()
         return {"status": "canceled"}
     log.info("Resposta da IA em %.1f s", time.monotonic() - started_ai)
 
     # V7.2: a voz começa a ser gerada JÁ; os cartões (clima, notícias, cotações) vêm em paralelo.
     # Antes a resposta esperava esses dados da internet antes de aparecer e de ser falada.
     cards_task = asyncio.create_task(reactive_cards.detect_reactive_cards(message, text))
-    runtime.track(speech.speak(text))
+    if early.task is not None:  # V9.0: o começo já está sendo falado; fala só o resto, em seguida
+        runtime.track(speech.speak_after(early.task, early.rest(text)))
+    else:
+        runtime.track(speech.speak(text))
     try:
         cards = await asyncio.wait_for(asyncio.shield(cards_task), timeout=CARDS_WAIT_SECONDS)
     except asyncio.TimeoutError:

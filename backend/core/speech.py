@@ -123,6 +123,31 @@ async def speak(text: str, release_busy: bool = True, idle_after: bool = True) -
                 await runtime.manager.broadcast({"type": "state", "state": "idle"})
 
 
+async def speak_after(first: asyncio.Task, rest: str) -> None:
+    """V9.0 (voz que começa antes): espera o começo já falado e fala o resto. É a fala FINAL do turno: um pedido
+    novo pode cortá-la (como a de speak) e, no fim, solta o "ocupado" e volta a tela para "em espera"."""
+    turn = session.turn_id
+    me = asyncio.current_task()
+    if me is not None:
+        _final_speech.add(me)
+        me.add_done_callback(_final_speech.discard)
+    has_rest = bool(rest.strip()) and tts_module.speakable(rest)
+    if has_rest and not prefs.is_silent_mode():
+        tts_module.prefetch([rest])  # o resto já vai sendo sintetizado enquanto o começo toca
+    try:
+        await asyncio.gather(first, return_exceptions=True)
+    except asyncio.CancelledError:
+        first.cancel()
+        raise
+    if canceled(turn):
+        return
+    if has_rest:
+        await speak(rest)
+        return
+    session.busy = False
+    await runtime.manager.broadcast({"type": "state", "state": "idle"})
+
+
 async def say_quietly(text: str) -> None:
     """Fala sem mexer em estados da tela (avisos, erros)."""
     if prefs.is_silent_mode():

@@ -97,6 +97,19 @@ async def clips_clear() -> dict:
     return desk.clip_remove(None)
 
 
+class ClipPin(BaseModel):
+    fixado: bool = True
+
+
+@router.post("/api/desk/clips/{item_id}/pin")
+async def clips_pin(item_id: str, req: ClipPin) -> dict:
+    """V9.0: fixa (★) um copiado: não sai por limite nem no LIMPAR."""
+    try:
+        return desk.clip_pin(item_id, req.fixado)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Copiado não encontrado.") from exc
+
+
 @router.delete("/api/desk/clips/{item_id}")
 async def clips_delete(item_id: str) -> dict:
     return desk.clip_remove(item_id)

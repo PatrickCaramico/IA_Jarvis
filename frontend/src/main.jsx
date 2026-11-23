@@ -11,6 +11,7 @@ import "./blueprint.css";
 import "./profiles.css";
 import "./accessibility.css";
 import "./alarm.css";
+import "./v9.css";
 import lazyComponent, { PieceBoundary } from "./utils/lazyComponent.jsx";
 import { initialAccessibility, initialBackground } from "./utils/theme.js";
 import { IS_JARVIS_APP, markDevice } from "./utils/device.js";
