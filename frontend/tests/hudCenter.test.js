@@ -46,3 +46,12 @@ test("próximo compromisso e disco", () => {
   assert.equal(diskText(1536), "1,5 TB");
   assert.equal(diskText(null), "—");
 });
+
+test("V9.1.2: diz com o que está ocupado", () => {
+  assert.equal(stateHint({ state: "processing", elapsed: 3, doing: "pensando com a inteligência artificial" }).text,
+    "Pensando com a inteligência artificial… 3 s");
+  assert.equal(stateHint({ state: "processing", elapsed: 51, doing: "esperando o pedido anterior terminar" }).text,
+    "Está demorando (51 s): esperando o pedido anterior terminar. Pode cancelar e pedir de novo.");
+  assert.equal(stateHint({ state: "processing", elapsed: 51 }).text, "Está demorando (51 s). Pode cancelar e pedir de novo.");
+  assert.equal(stateHint({ state: "processing", elapsed: 0 }).text, "Pensando…");
+});

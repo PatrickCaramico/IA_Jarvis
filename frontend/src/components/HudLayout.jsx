@@ -897,6 +897,7 @@ export default function HudLayout({
   onUpdate = null,
   onCheckUpdate = null, // V8.12.1: ⟳ ATUALIZAR sempre no topo (confere e atualiza no PC; recarrega no site)
   onOpenPalette = null, // V9.0: botão COMANDOS (o mesmo do Ctrl+K)
+  doing = "", // V9.1.2: o que ele está fazendo agora
   userName = "", // V6.5.15: saudação da tela de espera
   onChatActivity = null, // V6.5.18: mexeu no chat (rolar, digitar): segura aberto na Área Limpa
   stateLabel,
@@ -1317,7 +1318,7 @@ export default function HudLayout({
         <div className={`hl-state ${jarvisState}`}>{stateLabel.toUpperCase()}</div>
         <div className="hl-ticks" aria-hidden="true"><i /></div>
         {/* V8.11.1: o que está acontecendo agora, com o tempo do "pensando" e o cancelar à mão */}
-        {!briefing && <StateHint jarvisState={jarvisState} listening={listening} interim={interim} micOk={micOk} onCancel={onCancel} />}
+        {!briefing && <StateHint jarvisState={jarvisState} listening={listening} interim={interim} micOk={micOk} onCancel={onCancel} doing={doing} />}
         <div className="hl-orb">
           {orbSlot}
           {!briefing && !zenMode && <OrbTelemetry api={api} connected={connected} />}

@@ -139,6 +139,7 @@ async def _handle_turn(message: str, routine: bool, force_deep: bool = False) ->
         if outcome != "ok":
             raise HTTPException(status_code=409, detail="O JARVIS já está ocupado com outra solicitação.")
     session.busy = True
+    session.doing = ""
     turn = session.turn_id
     name = face.get_name()
 
@@ -569,6 +570,7 @@ async def _handle_turn(message: str, routine: bool, force_deep: bool = False) ->
                 return {"status": "canceled"}
             return await finish_local(skill_result.speech or "Pronto, senhor.", extra_cards=skill_result.cards or None)
         try:
+            await runtime.doing("cuidando do pedido")
             tool_reply = await tools.run(message, name)
         except Exception as exc:  # noqa: BLE001
             session.busy = False
@@ -670,6 +672,9 @@ async def _handle_turn(message: str, routine: bool, force_deep: bool = False) ->
     stop = asyncio.Event()
     session.current_stop = stop
     early = EarlyVoice()
+    # V9.1.2: a central diz com o que está demorando
+    await runtime.doing("fazendo a pesquisa profunda" if force_deep else
+                        "pesquisando na internet com a IA" if web_search else "pensando com a inteligência artificial")
     runtime.track(speech.filler_loop(stop))
     started_ai = time.monotonic()
 

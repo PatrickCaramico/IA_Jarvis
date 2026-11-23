@@ -2,6 +2,18 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 9.1.2 — 23 de novembro de 2026
+
+**⏳ A central diz com o que está ocupada**
+- Embaixo de PROCESSANDO aparece o que o JARVIS está fazendo, por exemplo:
+  - "Pensando com a inteligência artificial… 12 s";
+  - "Pesquisando na internet com a IA";
+  - "Esperando o pedido anterior terminar", quando o pedido está na fila;
+  - o nome da habilidade que está rodando.
+- Se demorar, o aviso também diz o motivo: "Está demorando (51 s): pensando com a inteligência artificial. Pode cancelar e pedir de novo."
+  - Antes, só aparecia "Está demorando", sem dizer com o quê.
+- Ao abrir a central no meio de um pedido demorado, ela já mostra o que está acontecendo.
+
 ## 9.1.1 — 23 de novembro de 2026
 
 **🤖 Bloqueio do Modo Desk mais limpo**

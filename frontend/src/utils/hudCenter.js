@@ -18,14 +18,20 @@ export const SLOW_AFTER_S = 25;
  * O que a linha abaixo do estado diz: { text, tone, cancel }.
  * tone: "idle" | "listen" | "work" | "slow" | "talk"; cancel: mostra o botão de cancelar.
  */
-export function stateHint({ state = "idle", listening = false, interim = "", elapsed = 0, micOk = true } = {}) {
+export function stateHint({ state = "idle", listening = false, interim = "", elapsed = 0, micOk = true, doing = "" } = {}) {
   if (listening) {
     const said = String(interim || "").trim();
     return { text: said ? `“${said.length > 70 ? `${said.slice(0, 69)}…` : said}”` : "Pode falar, senhor. Estou ouvindo.", tone: "listen", cancel: false };
   }
   if (state === "processing") {
-    if (elapsed >= SLOW_AFTER_S) return { text: `Está demorando (${elapsedText(elapsed)}). Pode cancelar e pedir de novo.`, tone: "slow", cancel: true };
-    return { text: elapsed >= 1 ? `Pensando… ${elapsedText(elapsed)}` : "Pensando…", tone: "work", cancel: true };
+    // V9.1.2: diz COM O QUÊ está ocupado (vem do PC: "pensando com a inteligência artificial", "esperando o pedido
+    // anterior terminar", o nome da habilidade…). Antes era só "Pensando…" e "Está demorando", sem motivo.
+    const what = String(doing || "").trim();
+    const label = what ? what.charAt(0).toUpperCase() + what.slice(1) : "Pensando";
+    if (elapsed >= SLOW_AFTER_S) {
+      return { text: `Está demorando (${elapsedText(elapsed)})${what ? `: ${what}` : ""}. Pode cancelar e pedir de novo.`, tone: "slow", cancel: true };
+    }
+    return { text: elapsed >= 1 ? `${label}… ${elapsedText(elapsed)}` : `${label}…`, tone: "work", cancel: true };
   }
   if (state === "speaking") return { text: "Respondendo. Toque em parar para interromper.", tone: "talk", cancel: true };
   return {
