@@ -2,6 +2,22 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 8.16.0 — 23 de novembro de 2026
+
+**🤖 Bloqueio do Modo Desk renovado: só o JARVIS, com tudo do bloqueio clássico**
+- Saíram o Tamagotchi, o jogo das estrelas e as atividades automáticas do robô. A tela ficou com o avatar do JARVIS, mais leve e com menos animações rodando o tempo todo.
+- O avatar mostra o que está acontecendo de verdade, com um anel de luz em volta:
+  - ouvindo (verde), quando a Sentinela escuta;
+  - falando e pensando, enquanto reconhece o rosto;
+  - feliz quando libera e surpreso quando não reconhece;
+  - dormindo de madrugada.
+- O balão mostra a legenda do que ele ouviu ("abrir central"), como no bloqueio clássico.
+- Agora tem as mesmas funções do bloqueio clássico:
+  - os cartões: relógio, clima, música, jogo do time e água;
+  - o microfone (tecla P), as palmas e o painel do Modo Torcedor;
+  - o **⚙ GERENCIAR**, no canto de cima, com os atalhos de sempre: visitante, nova pessoa, atualizar (com a bolinha de versões novas), Modo Desk, app Windows, branding, otimizar, notas e diagnóstico;
+  - no mesmo painel: bloqueio clássico, foto do rosto, fundo, Modo Torcedor e papel de parede do robô.
+
 ## 8.15.1 — 23 de novembro de 2026
 
 **⏸ Briefing pausa a sua música**
