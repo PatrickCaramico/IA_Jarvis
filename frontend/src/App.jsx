@@ -550,6 +550,8 @@ export default function App() {
 
   const connectedRef = useRef(false);
   const busyRef = useRef(false);
+  // V8.11.1: conta os pedidos enviados; um "cancelado" que volta atrasado só solta a tela se nenhum pedido novo saiu
+  const sendSeqRef = useRef(0);
   const bootedRef = useRef(false);
   const enterMainRef = useRef(() => {}); // boot() vem antes de enterMain no arquivo
   // V5.5: fora do PC (app do celular, outro aparelho) a imagem precisa da chave: o <img> não manda cabeçalho
@@ -2107,10 +2109,19 @@ export default function App() {
     setResponseCards([]);
     setSteps({});
     setJarvisState("processing");
+    const mySeq = ++sendSeqRef.current;
 
     try {
       const data = await api(endpoint, { method: "POST", body: JSON.stringify({ message: text }) });
-      if (data.status === "canceled") return; // você cancelou: descarta a resposta
+      if (data.status === "canceled") {
+        // você cancelou: descarta a resposta. V8.11.1: e solta a tela; antes ela podia ficar em "PROCESSANDO"
+        // para sempre quando o "processando" do PC chegava depois do cancelar (sem nenhum "em espera" depois).
+        if (sendSeqRef.current === mySeq) {
+          setJarvisState("idle");
+          busyRef.current = false;
+        }
+        return;
+      }
       setResponse(data.response);
       // V7.14: pergunta rápida ganha um cartão animado no canto (placar, número com mini-gráfico, foto, lista)
       if (quickQuestion(text) && data.response) {

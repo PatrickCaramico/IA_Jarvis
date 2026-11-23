@@ -9,10 +9,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import MotivationWidget from "./MotivationWidget.jsx";
 import ReactiveCard from "./ReactiveCard.jsx";
 import BriefingStage, { VoiceHints } from "./BriefingStage.jsx";
+import { OrbTelemetry, StateHint } from "./HudCenter.jsx";
+import { micCaption } from "../utils/hudCenter.js";
 import FanNewsWidget from "./FanNewsWidget.jsx";
 import FanScoreWidget from "./FanScoreWidget.jsx";
 import FanMatchBanner from "./FanMatchBanner.jsx";
 import "../hud-layout.css";
+import "../hud-center.css"; // V8.11.1: centro renovado
 import { startPolling } from "../hooks/usePolling.js";
 import useNow from "../hooks/useNow.js";
 import lazyComponent from "../utils/lazyComponent.jsx";
@@ -1230,13 +1233,17 @@ export default function HudLayout({
       </aside>
 
       {/* ===== Centro ===== */}
-      <main className="hl-center">
+      {/* V8.11.1: data-state pinta o brilho atrás do reator (ciano em espera, mais forte pensando, âmbar falando) */}
+      <main className="hl-center" data-state={listening ? "listening" : jarvisState}>
         {/* V6.5.15: Área Limpa vira um "smart display": relógio, clima da semana, próximos, água, compras e manchetes */}
         {zenMode && !briefingRunning && <ZenGlance api={api} name={userName} onCommand={onCommand} />}
         <div className={`hl-state ${jarvisState}`}>{stateLabel.toUpperCase()}</div>
-        <div className="hl-ticks" aria-hidden="true" />
+        <div className="hl-ticks" aria-hidden="true"><i /></div>
+        {/* V8.11.1: o que está acontecendo agora, com o tempo do "pensando" e o cancelar à mão */}
+        {!briefing && <StateHint jarvisState={jarvisState} listening={listening} interim={interim} micOk={micOk} onCancel={onCancel} />}
         <div className="hl-orb">
           {orbSlot}
+          {!briefing && !zenMode && <OrbTelemetry api={api} connected={connected} />}
           {/* V4.3: identificação no orbe enquanto o JARVIS cumprimenta (início do briefing) */}
           {briefingRunning && briefing.index < 0 && photoUrl && (
             <span className="bf-identity" aria-hidden="true">
@@ -1246,7 +1253,7 @@ export default function HudLayout({
         </div>
         {/* V7.4.1: atalhos logo ABAIXO do orbe (antes ficavam por cima, no meio dele) */}
         {(onOpenGodsEye || onOpenAgents) && (
-          <div className="hl-orb-actions">
+          <nav className="hl-orb-actions" aria-label="Atalhos da central">
             {onOpenGodsEye && (
               <button type="button" className="hl-gods-eye-trigger" onClick={onOpenGodsEye} title="Abrir Olho de Deus (G)">
                 ◉ OLHO DE DEUS
@@ -1269,7 +1276,7 @@ export default function HudLayout({
             <button type="button" className="hl-agents-trigger" onClick={() => window.dispatchEvent(new CustomEvent("jarvis-open-diagnostic"))} title="Diagnóstico: testar IA, voz, internet, microfone e câmera">
               🩺 DIAGNÓSTICO
             </button>
-          </div>
+          </nav>
         )}
         {/* V5.6: contagens regressivas pedidas por voz, logo abaixo do orbe */}
         {!briefing && <CountdownWidget items={countdowns} onRemove={onRemoveCountdown} />}
@@ -1336,6 +1343,8 @@ export default function HudLayout({
           <button type="button" className="hl-btn" onClick={() => onOpenScreens ? onOpenScreens("command") : setScreensOpen(true)}>TELAS</button>
           <button type="button" className="hl-btn" onClick={() => setNewsOpen(true)}>NOTÍCIAS</button>
         </span>
+        {/* V8.11.1: o microfone só abre no toque; a legenda diz em que pé ele está */}
+        <span className={`hc-mic-wrap is-${listening ? "listening" : jarvisState}`}>
         <button
           type="button"
           className={`hl-mic ${listening ? "live" : ""}`}
@@ -1348,6 +1357,8 @@ export default function HudLayout({
             <path d="M5 11a7 7 0 0 0 14 0M12 18v3" />
           </svg>
         </button>
+          <small className="hc-mic-cap" aria-hidden="true">{micCaption({ listening, state: jarvisState })}</small>
+        </span>
         <span className="hl-muted">NUVEM · IA {services.ai === true ? "ONLINE" : "OFFLINE"}</span>
         {/* V6.5.5: no celular, o CONTROLES (que fica no topo do PC) mora aqui no rodapé */}
         <span className="hl-ctrl-mobile">

@@ -2,6 +2,23 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 8.11.1 — 23 de novembro de 2026
+
+**✨ Central com o centro renovado**
+- O reator, os atalhos e as dicas continuam; o acabamento em volta deles mudou:
+  - embaixo do estado, uma linha diz o que está acontecendo: "Pensando… 4 s", o que você está falando enquanto ouve, ou "Respondendo";
+  - pensando ou falando, aparece ali mesmo o botão ✕ CANCELAR / ✕ PARAR; se demorar mais de 25 s, ele avisa e sugere cancelar;
+  - em volta do reator: um anel de mira que gira mais rápido pensando e fica âmbar falando, e as leituras do PC (processador, memória, disco livre) e do próximo compromisso;
+  - os seis atalhos (Olho de Deus, Agentes, Modo Desk, App Windows, Branding, Diagnóstico) viraram uma doca só;
+  - o microfone ficou maior, com um anel que pulsa ouvindo e a legenda FALAR / OUVINDO / AGUARDE.
+
+**🖥 Modo Desk com mais funções**
+- Novas seções com botões: **Janelas** (organizar, mandar para o monitor 2, workspaces), **Meu PC ao vivo** (o que está pesando e fechar com confirmação), **Agenda** (próxima reunião, modo reunião e aviso antes) e **Ferramentas** (conversor, senha forte, resumir/traduzir o que você copiou e dossiês).
+- No bloqueio com o robô: botões ⟳ ATUALIZAR e 📘 BRANDING.
+
+**🔧 Correção**
+- A central não fica mais presa em "PROCESSANDO" / "OCUPADO" depois de "Ação cancelada." (acontecia quando o cancelar chegava logo no começo do pedido).
+
 ## 8.11.0 — 22 de novembro de 2026
 
 **🎙 Microfone só no botão (padrão)**
