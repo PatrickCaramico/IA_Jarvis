@@ -66,6 +66,7 @@ _DEFAULTS: dict[str, Any] = {
     "intro_song": "Back in Black AC/DC",  # V8.13: música de entrada (busca no Spotify do usuário; nada embutido)
     "intro_song_on_entry": True,          # V8.13: toca a música de entrada ao entrar na central (sem playlist)
     "intro_song_morning": True,           # V8.14.1: toca a música de entrada na inicialização do dia ("bom dia")
+    "screen_time_enabled": True,          # V9.0: mede o tempo de tela por programa (só o nome do programa, no PC)
     "music_volume": 60,                   # V8.15.1: volume da música (barra do painel VOZ; o fim do briefing sobe até ele)
     "briefing_pause_music": True,         # V8.15.1: pausa o Spotify enquanto o briefing é lido (e retoma no fim)
     "intro_song_morning_day": "",         # V8.14.1: dia (AAAA-MM-DD) em que já tocou de manhã (uma vez por dia)
@@ -140,6 +141,7 @@ def validate_patch(patch: dict[str, Any]) -> Optional[str]:
         "routine_suggestions_enabled", "notifications_enabled", "notifications_read_content",
         "always_on", "keep_awake",  # V8.12.3
         "intro_song_on_entry", "intro_song_morning", "briefing_pause_music",  # V8.13 / V8.14.1 / V8.15.1
+        "screen_time_enabled",  # V9.0
     )
     for key in bools:
         if key in patch and not isinstance(patch[key], bool):
