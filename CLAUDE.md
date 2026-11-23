@@ -158,8 +158,13 @@ Skills e as skills Workspace (`skills/workspace/`), System Guard (`skills/system
 "quais são suas habilidades" (`skills/habilidades.py`), Q5 a Q7 e a aba ⚡ HABILIDADES da Central de Agentes
 (`frontend/src/components/SkillsPanel.jsx` + `utils/skillsCatalog.js`).
 
+V9.0: memória pesquisável (`modules/memory_index.py`, SQLite + FTS5, e `skills/memoria_busca.py`), copiados por
+voz (`skills/copiados.py`), tempo de tela (`skills/tempo_de_tela.py`), OCR offline (`skills/ocr_tela.py`),
+navegador por CDP (`skills/navegador/`), voz que começa antes (`core/early_voice.py` + `speech.speak_after`),
+fila de pedidos (`core/turn_queue.py` no backend, `utils/turnQueue.js` na central), paleta Ctrl+K
+(`components/CommandPalette.jsx` + `utils/palette.js`) e o clima por hora (`utils/mood.js`, `v9.css`).
+
 Próximos, na ordem sugerida:
-- Skills: macros de navegador por CDP, Quick Capture com escrita no Google Agenda.
-- Estruturais: streaming da IA para a voz, fila de turnos no lugar de `session.busy`, memória em SQLite + FTS5,
-  logs estruturados com latência por etapa, desmontar `handle_turn` em skills, barramento de eventos.
+- Skills: Quick Capture com escrita no Google Agenda.
+- Estruturais: logs estruturados com latência por etapa, desmontar `handle_turn` em skills, barramento de eventos.
 - Migração gradual: ao mexer num handler de `tools.py` ou num bloco de `turns.py`, prefira movê-lo para uma Skill.

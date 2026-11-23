@@ -1,6 +1,6 @@
 # JARVIS — Comandos do dia a dia
 
-**Versão do projeto:** 8.16.0 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
+**Versão do projeto:** 9.0.0 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
 
 > Montado a partir do código do projeto. Se algum comando não responder como descrito, me avise que eu ajusto o guia.
 > Para a lista técnica de rotas, veja [API.md](API.md); para o `.env`, [CONFIGURACAO.md](CONFIGURACAO.md).
@@ -627,6 +627,66 @@ Para a varredura completa (temporários, lixeira, inicialização), continue usa
 | "Toca a música do Homem de Ferro" / "toca Back in Black" / "modo Homem de Ferro" (V8.13) | Toca a música de entrada (padrão: Back in Black, do AC/DC) no seu Spotify. Ela também toca ao entrar na central, ao abrir o botão **VOZ** do topo e na **inicialização do dia** (V8.14.1): no briefing de "bom dia" ela começa baixinho, como trilha, e sobe no fim (uma vez por dia; não interrompe música que já está tocando). Tudo desligável no próprio botão VOZ. Precisa do Spotify conectado. No painel VOZ há também a **barra de volume da música** (V8.15.1): muda o Spotify na hora e fica guardada (o Back in Black e o fim do briefing usam esse volume). |
 | Briefing com música tocando (V8.15.1) | O JARVIS **pausa o Spotify** enquanto lê o briefing (bom dia, boa tarde, boa noite ou por assunto) e **continua a música** no fim, de onde parou. Não retoma se você trocou de música no meio. Desligável no botão VOZ ("Pausar a minha música durante o briefing"). |
 | "Quais são suas habilidades?" | Diz o que está ligado e abre a aba **⚡ HABILIDADES** da Central de Agentes. |
+
+**Memória pesquisável (V9.0)**
+
+| Diga | O que acontece |
+|---|---|
+| "O que eu te falei sobre a viagem?" / "o que eu anotei sobre o dentista?" / "o que eu copiei sobre o hotel?" | Procura em TODAS as conversas com o JARVIS (não só as últimas), nas memórias ("lembre que…"), tarefas, lembretes e copiados. Na hora, sem internet e sem IA; ignora acentos e aceita o começo das palavras ("viag" acha "viagem"). |
+| "Procura na memória sobre o carro" / "busca nas minhas conversas a senha do wifi" / "quando eu falei do aniversário da minha mãe?" | O mesmo, com o trecho mais relevante falado e os outros num cartão **MEMÓRIA**. O índice fica em `data/memoria_busca.db` e não sai do PC. |
+
+**Copiar e colar por voz (V9.0, só no Windows)**
+
+| Diga | O que acontece |
+|---|---|
+| "O que eu copiei?" / "qual foi a última coisa que eu copiei?" / "mostra os copiados" | Fala o último e mostra os 5 mais recentes. |
+| "Copia de novo o último link" / "copia de novo o penúltimo" / "cola o e-mail que eu copiei" / "copia de novo o endereço" / "copia de novo o número" | Devolve o item à área de transferência: é só colar (Ctrl+V). |
+| "Fixa o último copiado" | ★ Fixa: não sai por limite nem no LIMPAR. Também dá para fixar com a ★ na lista de Copiados do Modo Desk. |
+| ⚠️ "Apaga os copiados" | Pergunta antes; os fixados ficam. |
+
+**Tempo de tela e resumo da semana (V9.0, só no Windows)**
+
+| Diga | O que acontece |
+|---|---|
+| "Quanto tempo eu fiquei no Chrome hoje?" / "quanto tempo passei no Discord ontem?" / "… essa semana?" | O tempo com o programa em primeiro plano. Só conta o NOME do programa (nunca o título da janela) e para de contar depois de 5 min sem mexer no teclado e no mouse. |
+| "Meu tempo de tela hoje" / "quais programas eu mais usei essa semana?" | O total e os programas mais usados, com cartão. |
+| "Resumo da semana" / "como foi minha semana?" | Tarefas feitas, dias com a meta de água, ofensiva, XP ganho e os programas mais usados nos últimos 7 dias. |
+| "Para de medir meu tempo de tela" / "volta a medir meu tempo de tela" | Liga e desliga a medição (60 dias ficam guardados em `data/tempo_de_tela.json`). |
+
+**Ler o texto da tela, offline (V9.0, só no Windows)**
+
+| Diga | O que acontece |
+|---|---|
+| "Copia o texto da tela" / "pega o texto dessa janela" / "o que está escrito na tela?" | Reconhece o texto da tela com o OCR do próprio Windows (sem internet nem IA), deixa copiado (é só colar) e mostra as primeiras linhas num cartão. A imagem usada é apagada na hora. |
+| "Copia o texto da imagem que eu copiei" / "lê o texto do print que eu copiei" | O mesmo, com a imagem que está na área de transferência (um print com Win+Shift+S, por exemplo). |
+
+Precisa do pacote de idioma português do Windows (Configurações > Hora e idioma). "Leia a tela" / "explica a tela" continuam com a IA olhando a tela.
+
+**Navegador (V9.0, Chrome ou Edge do PC)**
+
+| Diga | O que acontece |
+|---|---|
+| "Salva as abas como sessão trabalho" | Guarda os sites abertos no navegador do JARVIS com esse nome. |
+| "Abre a sessão trabalho" / "quais sessões do navegador eu tenho?" | Reabre todos os sites de uma vez (liga o navegador se precisar) ou lista as sessões. |
+| "Quantas abas estão abertas?" / "vai para a aba do gmail" | Conta as abas (e de quais sites) ou traz a aba do site para a frente. |
+| "Fecha as abas do youtube" / "reabre as abas que você fechou" | Fecha todas as abas daquele site e guarda os endereços para reabrir depois. |
+| "Roda a macro bater ponto" / "quais macros eu tenho?" | Roda uma macro de passos (abrir site, esperar, clicar, digitar), com o progresso na tela. |
+| "Resume essa página" | A IA lê a aba aberta e resume em poucas frases. |
+
+O JARVIS abre o navegador com um **perfil próprio** (`data/chrome_jarvis`) e a porta de depuração só no próprio PC (127.0.0.1): na primeira vez, entre nos seus sites nesse navegador e eles ficam guardados. As macros ficam em `data/navegador.json`, na chave `macros`; cada passo é um de `{"abrir": "https://..."}`, `{"esperar": 2}` (até 10 s), `{"clicar": "seletor CSS"}` ou `{"digitar": "seletor CSS", "texto": "..."}` (até 30 passos). Exemplo:
+
+```json
+{"macros": {"bater ponto": {"passos": [
+  {"abrir": "https://ponto.exemplo.com"}, {"esperar": 2},
+  {"digitar": "#usuario", "texto": "meu.usuario"}, {"clicar": "button[type=submit]"}]}}}
+```
+
+**Na central (V9.0)**
+
+- **Paleta de comandos: Ctrl+K** (ou o botão **⌕ COMANDOS** no rodapé). Procure qualquer coisa: telas (configurações, finanças, sistema, água, logs…), as frases das habilidades, o que você falou ou copiou (memória e copiados). Setas escolhem, **Enter** executa (memória e copiados: Enter copia o trecho) e **Esc** fecha. O que não bater com nada vira pergunta para o JARVIS.
+- **A voz começa antes**: numa resposta longa, o JARVIS já fala as primeiras frases enquanto a IA ainda escreve o resto (antes, esperava a resposta inteira).
+- **Fila de pedidos**: pedido feito enquanto ele pensa em outro não se perde mais (antes era ignorado ou "ocupado"). Ele espera a vez (até 3 na fila, aparece **NA FILA** embaixo) e é atendido na ordem, depois da resposta anterior. Vale para a voz do ouvido, o celular e a central. Cancelar (Esc, o botão ou "Jarvis, para") esvazia a fila.
+- **Visual 9.0**: a central muda de clima com a hora do dia (mais clara de manhã, mais funda à noite, quase apagada de madrugada), com transição suave das cores, e os painéis entram em sequência ao abrir (some com "reduzir movimento").
 
 **Aba ⚡ HABILIDADES (Central de Agentes)**: todas as skills por grupo, com o nível de permissão (LEITURA, AÇÃO, CRÍTICA), liga/desliga, quantas vezes foram usadas, falhas e tempo, e os exemplos: um toque manda a frase para o JARVIS. Também abre pelo botão da Central de Agentes.
 

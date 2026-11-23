@@ -12,6 +12,11 @@ export const GROUPS = {
   datas: { label: "Datas", icon: "🗓️", order: 7 }, // V8.13
   sorteio: { label: "Sorteios", icon: "🎲", order: 8 }, // V8.13
   musica_de_entrada: { label: "Música de entrada", icon: "🎸", order: 9 }, // V8.13
+  memoria_busca: { label: "Memória", icon: "🧠", order: 10 }, // V9.0
+  copiados: { label: "Copiados", icon: "📋", order: 11 }, // V9.0
+  tempo_de_tela: { label: "Tempo de tela", icon: "⏱", order: 12 }, // V9.0
+  ocr_tela: { label: "Texto da tela", icon: "🔤", order: 13 }, // V9.0
+  navegador: { label: "Navegador", icon: "🌐", order: 14 }, // V9.0
   inicializacao: { label: "Inicialização", icon: "🚀", order: 70 },
   microfone: { label: "Microfone", icon: "🎙", order: 65 },
   habilidades: { label: "Central", icon: "⚡", order: 80 },
