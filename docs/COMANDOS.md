@@ -1,6 +1,6 @@
 # JARVIS — Comandos do dia a dia
 
-**Versão do projeto:** 8.13.0 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
+**Versão do projeto:** 8.13.1 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
 
 > Montado a partir do código do projeto. Se algum comando não responder como descrito, me avise que eu ajusto o guia.
 > Para a lista técnica de rotas, veja [API.md](API.md); para o `.env`, [CONFIGURACAO.md](CONFIGURACAO.md).
@@ -291,7 +291,7 @@ ouvindo a palavra de ativação mesmo bloqueado.
 - **PIN:** se o rosto falhar, use o teclado na tela. 5 erros travam por 5 minutos.
 - **Esqueci o PIN (V5.1):** no teclado do PIN, "Esqueci o PIN" lê o seu rosto e, se for você, pede o PIN novo duas vezes. Também em Configurações > Bloqueio > ESQUECI O PIN. Sem câmera, rode o `Redefinir-PIN.bat` (apaga o PIN do dono, com cópia em `data\lock_pin.antigo.json`).
 - **Modo visitante** (se ligado em Configurações > Bloqueio): relógio, clima, música e perguntas públicas, sem acesso a nada pessoal. Sair exige rosto ou PIN.
-- **Bloqueio por ausência:** depois do tempo escolhido sem uso, avisa "Bloqueando em 30 s" e bloqueia (mexa o mouse para cancelar).
+- **Bloqueio por ausência:** depois do tempo escolhido sem uso (1, 2, 5, 10, 15 ou 30 minutos), avisa "Bloqueando em 10 s" e bloqueia (mexa o mouse para cancelar). O botão BLOQUEAR e o "Jarvis, bloquear" trocam a tela na hora (V8.13.1).
 
 ### Automação (4.2)
 

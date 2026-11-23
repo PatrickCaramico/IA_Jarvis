@@ -58,7 +58,7 @@ _DEFAULTS: dict[str, Any] = {
     "calendar_ics_url": "",               # V5.6: endereço secreto iCal do Google Agenda (alternativa ao OAuth)
     "countdowns": [],                     # V5.6: contagens regressivas na tela [{id, title, target, all_day}]                 # V5.4: briefing/pergunta do dia já feitos (vale para todos os aparelhos)
     "lock_cards": ["clock", "weather", "spotify"],   # cartões visíveis na tela de bloqueio
-    "lock_auto_relock_minutes": 0,        # 0 (desligado), 5, 10, 15 ou 30
+    "lock_auto_relock_minutes": 0,        # 0 (desligado), 1, 2 (V8.13.1), 5, 10, 15 ou 30
     "lock_presence_check": False,         # checagem rápida de rosto antes de bloquear
     "lock_save_failed_photo": False,      # miniatura de rosto não reconhecido (data/intruders)
     "lock_intro_sound": "default",        # "default" | "custom" | "off"
@@ -157,8 +157,9 @@ def validate_patch(patch: dict[str, Any]) -> Optional[str]:
         patch["lock_cards"] = list(dict.fromkeys(v))
     if "lock_auto_relock_minutes" in patch:
         v = patch["lock_auto_relock_minutes"]
-        if isinstance(v, bool) or v not in {0, 5, 10, 15, 30}:
-            return "lock_auto_relock_minutes deve ser 0, 5, 10, 15 ou 30."
+        # V8.13.1: 1 e 2 minutos para bloquear mais rápido quando você sai de perto
+        if isinstance(v, bool) or v not in {0, 1, 2, 5, 10, 15, 30}:
+            return "lock_auto_relock_minutes deve ser 0, 1, 2, 5, 10, 15 ou 30."
     if "lock_intro_sound" in patch and patch["lock_intro_sound"] not in {"default", "custom", "off"}:
         return "lock_intro_sound inválido. Use 'default', 'custom' ou 'off'."
     for key in ("lock_intro_playlist_uri", "fan_intro_playlist_uri"):

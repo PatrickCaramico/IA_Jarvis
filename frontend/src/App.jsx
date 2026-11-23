@@ -103,6 +103,8 @@ const DeepSearchModal = lazyComponent(() => import("./components/DeepSearchModal
 const SearchModePromptModal = lazyComponent(() => import("./components/SearchModePromptModal.jsx"));
 
 const STATE_LABEL = { idle: "Em espera", processing: "Processando", speaking: "Falando" };
+// V8.13.1: aviso "Bloqueando em N s" antes do bloqueio por ausência (antes 30 s; mexer o mouse ainda cancela)
+const RELOCK_WARNING_S = 10;
 
 export default function App() {
   // boot -> (enroll | lock) -> main
@@ -2369,13 +2371,15 @@ export default function App() {
     setSummaryActive(false);
     setAutoEntering(false);
     setPendingToRun(null);
-    try {
-      await api("/api/cancel", { method: "POST" });
-    } catch {
-      // A tela pode voltar ao estado de espera mesmo se o backend estiver indisponível.
-    }
+    // V8.13.1: a tela troca NA HORA. Antes ela esperava o PC responder o /api/cancel (pelo site, uma ida e volta
+    // inteira na rede) e só então mostrava o bloqueio. Bloqueio pedido pela tela: avisa o PC e cala a voz em
+    // paralelo. Bloqueio que veio do PC ("Jarvis, bloquear", reverificação): o PC já bloqueou e não precisa de
+    // cancelar (antes o cancelar cortava o "Até logo" no meio).
     if (notifyBackend) {
       api("/api/access/lock", { method: "POST" }).then(setAccessInfo).catch(() => {});
+      api("/api/cancel", { method: "POST" }).catch(() => {
+        // backend fora do ar: a tela volta ao bloqueio mesmo assim
+      });
     }
     loadPinStatus();
     setJarvisState("idle");
@@ -2741,8 +2745,8 @@ export default function App() {
           return;
         }
       }
-      setRelockWarning(30);
-    }, 5000);
+      setRelockWarning(RELOCK_WARNING_S);
+    }, 2000); // V8.13.1: confere a cada 2 s (antes 5 s: até 5 s a mais para começar o aviso)
     return () => {
       clearInterval(timer);
       events.forEach((ev) => window.removeEventListener(ev, bump));

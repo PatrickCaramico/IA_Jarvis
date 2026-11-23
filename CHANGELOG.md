@@ -2,6 +2,17 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 8.13.1 — 23 de novembro de 2026
+
+**🔒 Bloqueio mais rápido**
+- O botão BLOQUEAR e o "Jarvis, bloquear" trocam a tela na hora.
+  - Antes, a central esperava o PC responder antes de mostrar o bloqueio, e pelo site isso era uma ida e volta inteira na rede.
+- No "Jarvis, bloquear", o "Até logo, senhor" não é mais cortado no meio.
+- Bloqueio por ausência:
+  - novas opções de 1 e 2 minutos sem uso (antes, o mínimo era 5 minutos);
+  - o aviso "Bloqueando em…" caiu de 30 para 10 segundos (mexer o mouse ainda cancela);
+  - a central confere a ausência a cada 2 segundos (antes, a cada 5).
+
 ## 8.13.0 — 23 de novembro de 2026
 
 **⚡ A resposta aparece enquanto a IA escreve**

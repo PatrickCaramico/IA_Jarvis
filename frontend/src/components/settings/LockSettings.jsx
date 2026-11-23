@@ -180,7 +180,7 @@ export default function LockSettings({ api, prefs, onPatch }) {
           label="Bloquear após inatividade"
           value={String(prefs.lock_auto_relock_minutes ?? 0)}
           onChange={(v) => onPatch({ lock_auto_relock_minutes: Number(v) })}
-          options={[["0", "Desligado"], ["5", "5 minutos"], ["10", "10 minutos"], ["15", "15 minutos"], ["30", "30 minutos"]]}
+          options={[["0", "Desligado"], ["1", "1 minuto"], ["2", "2 minutos"], ["5", "5 minutos"], ["10", "10 minutos"], ["15", "15 minutos"], ["30", "30 minutos"]]}
         />
         <Toggle
           label="Checar presença pela câmera antes de bloquear"
