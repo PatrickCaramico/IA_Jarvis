@@ -336,8 +336,6 @@ export default function LockScreen({
         jarvisState={jarvisState}
         listening={listening}
         caption={sentinelOn && phase !== "scanning" ? sentinel.interim || sentinel.caption || "" : ""}
-        cards={cards}
-        cardsList={sentinelOn && sentinel.showClock ? cardsList.filter((c) => c !== "clock") : cardsList}
         fanPanelNode={fanPanel && phase !== "scanning" && phase !== "pin" ? <FanLockPanel api={cards.api} refreshKey={cards.fanRefresh} /> : null}
         mic={mic || (sentinelOn && !phoneApp ? { muted: sentinel.muted, onToggle: () => sentinel.onToggleMute?.() } : null)}
         clapNode={<ClapIndicator clap={clap} />}

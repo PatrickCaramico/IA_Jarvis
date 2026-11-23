@@ -2,6 +2,12 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 9.1.1 — 23 de novembro de 2026
+
+**🤖 Bloqueio do Modo Desk mais limpo**
+- Saiu a faixa de cartões que corria embaixo do robô: mercado, clima, manchete, sistemas, Spotify, hoje e água. A tela fica só com o relógio, o robô e o botão de desbloquear.
+- O bloqueio clássico continua com os cartões.
+
 ## 9.1.0 — 23 de novembro de 2026
 
 **🪟 Vidro (glassmorphism) em toda a interface**
