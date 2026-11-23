@@ -920,6 +920,11 @@ export default function DeskApp(props) {
     if (m && m.itens) setMissions(m);
     api("/api/desk/xp").then(setLevel).catch(() => {});
   }, [api]);
+  useEffect(() => { // V8.12.5: missão concluída em outro lugar (central, voz): atualiza na hora
+    const onPush = (e) => onMissions(e.detail);
+    window.addEventListener("jarvis-desk-missions", onPush);
+    return () => window.removeEventListener("jarvis-desk-missions", onPush);
+  }, [onMissions]);
   useEffect(() => { // V8.1: "Item novo liberado: capa de herói!"
     const novos = missions?.novos || [];
     if (!novos.length) return undefined;

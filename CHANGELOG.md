@@ -2,6 +2,16 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 8.12.5 — 23 de novembro de 2026
+
+**🎯 XP e missões do dia também na central**
+- Na coluna da direita da central, o painel PROGRESSO · MISSÕES mostra o seu nível, a barra de XP e a ofensiva 🔥.
+  - Antes, isso só aparecia no Modo Desk.
+- Logo abaixo ficam as 3 missões de hoje e o desafio da semana. As de bem-estar têm o botão FEITO, e as perguntas "sobre você" se respondem ali mesmo, no ✎.
+- Ganhou XP? Aparece "+15 XP" por uns segundos. Subiu de nível? Aparece "NÍVEL 3!". E também o aviso de item novo liberado para o robô.
+- É o mesmo progresso do Modo Desk: o que você faz em um conta no outro, e as missões concluídas atualizam na hora.
+- A setinha ▾ recolhe o painel até a linha do nível, para o chat ganhar espaço.
+
 ## 8.12.4 — 23 de novembro de 2026
 
 **⚡ Conversa mais rápida no chat**

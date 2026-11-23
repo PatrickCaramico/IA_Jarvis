@@ -1,5 +1,7 @@
 import NowPlaying from "./NowPlaying.jsx";
 import ShoppingList from "./ShoppingList.jsx";
+import HudMissions, { useDeskProgress } from "./HudMissions.jsx";
+import { missionsTag } from "../utils/hudProgress.js";
 import CountdownWidget from "./CountdownWidget.jsx";
 import { clearQueue, onSpeakingChange, speakHere, stopHere } from "../utils/speakHere.js";
 import { BACKEND_ON_THIS_PC, setVoiceHere, voiceHere } from "../utils/api.js";
@@ -962,6 +964,7 @@ export default function HudLayout({
 
   const bars = useSpectrum(jarvisState, listening);
   const log = useConversationLog(userText, response, error, responseCards);
+  const progress = useDeskProgress(api, response); // V8.12.5: XP e missões do dia (os mesmos do Modo Desk)
   // V5.7: a voz das respostas vem do PC para o aparelho que pediu (evento speak_on_device, App.jsx)
 
   // V4.2.2: a coluna direita (Clima e Canal Ativo) recolhe após 3 min sem conversa, como a esquerda.
@@ -1337,6 +1340,10 @@ export default function HudLayout({
         </div>
         <WeatherPanel api={api} onMoveToSecondary={handleMoveToSecondary} />
         <NowPlaying api={api} variant="hud" controls always onOpen={onOpenSpotify} /> {/* V8.12: sempre visível */}
+        {/* V8.12.5: nível, XP, ofensiva e missões do dia, como no Modo Desk */}
+        <Panel id="missoes" title="PROGRESSO · MISSÕES" tag={missionsTag(progress.missions)} className="hl-missions" onMoveToSecondary={handleMoveToSecondary}>
+          <HudMissions api={api} level={progress.level} missions={progress.missions} onMissions={progress.onMissions} />
+        </Panel>
         <Panel id="chat" title="JARVIS · CANAL ATIVO" tag={busy ? "OCUPADO" : "PRONTO"} className="hl-channel" onMoveToSecondary={handleMoveToSecondary}>
           <ChatTools api={api} onCommand={onCommand} />
           {log.length > 0 && <ChatClear api={api} />}

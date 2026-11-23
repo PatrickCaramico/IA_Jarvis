@@ -836,6 +836,9 @@ export default function App() {
       case "countdowns":
         setCountdowns(Array.isArray(msg.items) ? msg.items : []); // V5.6: widget de contagem regressiva
         break;
+      case "desk_missions": // V8.12.5: missão concluída no PC: o painel da central e o Modo Desk atualizam na hora
+        window.dispatchEvent(new CustomEvent("jarvis-desk-missions", { detail: msg.data || null }));
+        break;
       case "devices": {
         // V5.5: aparelhos conectados; avisa quando um celular acaba de entrar
         const items = Array.isArray(msg.items) ? msg.items : [];
