@@ -17,9 +17,6 @@ def test_lockface_is_public_and_has_no_personal_text():
     assert r.status_code == 200
     d = r.json()
     assert {"avatar", "cor", "nome", "hora", "tarefas", "lembretes_hoje", "proximo_lembrete", "ofensiva"} <= set(d)
-    # V8.15: o bichinho do bloqueio também recebe só números
-    assert isinstance(d["nivel"], int) and isinstance(d["missoes_feitas"], int) and isinstance(d["missoes_total"], int)
-    assert d["agua_pct"] is None or isinstance(d["agua_pct"], int)
     assert d["tarefas"] >= 1 and isinstance(d["tarefas"], int)
     body = r.text.lower()
     assert "médico" not in body and "medico" not in body and "secreta" not in body  # só contagens

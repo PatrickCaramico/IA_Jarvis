@@ -267,7 +267,7 @@ export default function LockScreen({
             title={deskOn ? "Desligar: entrar na central clássica" : "Entrar no Modo Desk (o JARVIS como app de assistente)"}>
             {deskOn ? "🖥 MODO DESK: LIGADO" : "🖥 ENTRAR NO MODO DESK"}
           </button>
-          {onDeskLock && ( /* V8.10.0: volta para o bloqueio com o robô (que agora vale em todas as versões) */
+          {onDeskLock && !deskLock && ( /* V8.10.0: volta para o bloqueio com o robô; V8.16: some dentro dele */
             <button type="button" className="ls-chip" onClick={(e) => { e.stopPropagation(); onDeskLock(true); }}>🤖 BLOQUEIO COM O ROBÔ</button>
           )}
           <button type="button" className="ls-chip" onClick={(e) => { e.stopPropagation(); window.dispatchEvent(new CustomEvent("jarvis-desktop-download")); }}
@@ -296,6 +296,20 @@ export default function LockScreen({
   // V8.8.1: também no celular (lá não tem a câmera do PC: entra pela digital ou pelo PIN, como no bloqueio do app).
   if (deskLock) {
     const autoEntering = Boolean(clap?.autoEntering || sentinel?.autoEntering);
+    // V8.16: as mesmas funções do bloqueio clássico (estilo Orbe): Sentinela ouvindo, legenda, microfone, palmas,
+    // cartões, painel do Torcedor e o GERENCIAR com os atalhos. Só a aparência é a do robô.
+    const st = sentinel?.state || "sleeping";
+    const listening = sentinelOn ? st === "awake" || st === "listening" : false;
+    const wake = sentinel?.wakeLabel || "Jarvis";
+    const deskHint = phoneEntry
+      ? (phase === "failed" && message ? message : phoneHint)
+      : phase === "verified"
+        ? (autoEntering ? "Abrindo a central…" : "Aperte espaço ou toque em ENTRAR")
+        : phase === "pin"
+          ? "Digite o PIN"
+          : sentinelOn && sentinel.micStatus === "listening" && !sentinel.muted
+            ? `Diga "abrir central" ou "${wake}, …"`
+            : clapHint ? "Aperte espaço, toque no botão ou bata palmas 2x" : "Aperte espaço ou toque no botão para entrar";
     const failedActions = phase === "failed" && !phoneApp ? (
       <div className="lo-quick">
         {showPinButton && <button type="button" className={`ls-chip ${failCount >= 2 ? "is-strong" : ""}`} onClick={onUsePin}>⌨ USAR PIN</button>}
@@ -317,8 +331,21 @@ export default function LockScreen({
         failedActions={failedActions}
         phoneButtons={phonePinButton}
         hint={phoneEntry ? (phase === "failed" && message ? message : phoneHint) : ""}
+        stateHint={deskHint}
         phone={phoneApp}
         jarvisState={jarvisState}
+        listening={listening}
+        caption={sentinelOn && phase !== "scanning" ? sentinel.interim || sentinel.caption || "" : ""}
+        cards={cards}
+        cardsList={sentinelOn && sentinel.showClock ? cardsList.filter((c) => c !== "clock") : cardsList}
+        fanPanelNode={fanPanel && phase !== "scanning" && phase !== "pin" ? <FanLockPanel api={cards.api} refreshKey={cards.fanRefresh} /> : null}
+        mic={mic || (sentinelOn && !phoneApp ? { muted: sentinel.muted, onToggle: () => sentinel.onToggleMute?.() } : null)}
+        clapNode={<ClapIndicator clap={clap} />}
+        clapPulse={clap?.pulse || 0}
+        stampNode={<BlueprintStamp sheet={sentinelOn ? "SENTINELA" : "BLOQUEIO"} fan={fanToggle} bg={bgToggle} audio={audioToggle} />}
+        hubActions={secondaryActions}
+        styleToggle={styleToggle}
+        onChangePhoto={onChangePhoto}
         onClassic={onDeskLock ? () => onDeskLock(false) : null}
         onUpdate={onUpdate}
         updateCount={updateCount}

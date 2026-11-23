@@ -1,78 +1,29 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import RoboAvatar from "./RoboAvatar.jsx";
 import ProgressBar from "./ProgressBar.jsx";
+import LockCards from "./LockCards.jsx";
 import { FaceCircle } from "./LockOrbe.jsx";
 import useNow from "../hooks/useNow.js";
 import { hexToRgb } from "../utils/desk.js";
 import { startPacman, usePoke } from "../utils/poke.js";
-import { isLite } from "../utils/lite.js";
+import { deskBubble, deskFace, haloTone } from "../utils/deskLockState.js";
 import DeskLockBg, { BG_EVENT, LOCK_BGS, readBg, saveBg } from "./DeskLockBg.jsx";
-import { NEEDS, act as petAct, ageOf, bugCount, lifeLines, loadPet, moodOf, savePet, tick as petTick } from "../utils/pet.js";
 import "../desk.css";
 
-// V8.8.0 (ideia 11): BLOQUEIO DO MODO DESK. Em vez da tela de bloqueio clássica, o robô JARVIS grande no centro,
-// fazendo coisas: brincadeiras sozinho, olhos que seguem o mouse, reage quando você clica (e às cutucadas: na 5ª,
-// o Pac-Man no app do Windows), um balão de fala que troca (hora, clima, contagens do dia e frases) e o mini-jogo
-// "Pegue as estrelas". O DESBLOQUEIO é o mesmo de sempre (rosto ou PIN): esta tela só recebe os botões prontos.
-// Com a tela bloqueada, ela só lê /api/desk/lockface (aparência e CONTAGENS, nada pessoal) e /api/weather.
-// V8.15: TAMAGOTCHI. O robô vira um bichinho que precisa de você (utils/pet.js): 5 necessidades que caem com o
-// tempo (bateria, energia, diversão, carinho, limpeza), ações de cuidado (alimentar, brincar = jogo das estrelas,
-// carinho, limpar os bugs, dormir/acordar), humor que muda com elas, idade que cresce e falas sobre o SEU dia.
+// V8.8.0 (ideia 11): BLOQUEIO DO MODO DESK, com o robô JARVIS no centro. O DESBLOQUEIO é o mesmo de sempre
+// (rosto ou PIN): esta tela só recebe os botões prontos do LockScreen.
+// V8.16: só o avatar do JARVIS — sem Tamagotchi, jogo das estrelas nem atividades automáticas (eram muitos timers e
+// animações) — e com as MESMAS FUNÇÕES do bloqueio clássico (estilo Orbe): cartões (relógio, clima, música, jogo do
+// time, água), microfone e Sentinela com a legenda do que ele ouviu, palmas, painel do Modo Torcedor e o ⚙ GERENCIAR
+// com os atalhos de sempre. A expressão e o anel de luz seguem o estado de verdade (ouvindo, falando, pensando,
+// liberado, falhou, dormindo à noite). Com a tela bloqueada, ela só lê /api/desk/lockface (aparência e CONTAGENS).
 
-// V8.15: onde os bugs aparecem em volta dele (porcentagens da área)
-const BUG_SPOTS = [[24, 62], [74, 30], [70, 70], [28, 30]];
-const NEXT_FX_MS = 1300;
-
-function usePet(react) {
-  const [pet, setPet] = useState(() => loadPet());
-  const petRef = useRef(pet);
-  petRef.current = pet;
-  const [say, setSay] = useState("");
-  const [fx, setFx] = useState(null); // { kind: "feed" | "heart" | "clean" | "sleep", at }
-  const sayTimer = useRef(0);
-  const fxTimer = useRef(0);
-  useEffect(() => { // o tempo passa (e fica guardado: fechou a tela, ele continua "vivendo" pelo relógio)
-    const t = setInterval(() => {
-      const next = petTick(petRef.current, Date.now());
-      savePet(next);
-      setPet(next);
-    }, 30000);
-    return () => {
-      clearInterval(t);
-      clearTimeout(sayTimer.current);
-      clearTimeout(fxTimer.current);
-    };
-  }, []);
-  const care = useCallback((action, opts) => {
-    const r = petAct(petRef.current, action, Date.now(), opts);
-    savePet(r.pet);
-    setPet(r.pet);
-    if (r.face) react(r.face, 2400);
-    if (r.say) {
-      clearTimeout(sayTimer.current);
-      setSay(r.say);
-      sayTimer.current = setTimeout(() => setSay(""), 4500);
-    }
-    const kind = { alimentar: "feed", carinho: "heart", limpar: "clean", bug: "clean", dormir: "sleep" }[action];
-    if (kind && r.pet !== petRef.current) {
-      clearTimeout(fxTimer.current);
-      setFx({ kind, at: Date.now() });
-      fxTimer.current = setTimeout(() => setFx(null), NEXT_FX_MS);
-    }
-  }, [react]);
-  return { pet, care, say, fx };
-}
-
-export const GAME_SECONDS = 30;
-export const STAR_LIFE_MS = 1700;
-const RECORD_KEY = "jarvis.deskLock.record";
 const PHRASES = [
   "Estou de olho em tudo por aqui, senhor. 👀",
   "Pode ir tranquilo: guardo o PC enquanto isso.",
   "Que tal uma pausa para um copo d'água? 💧",
   "Quando voltar, é só olhar para a câmera.",
   "Clique em mim… se tiver coragem. 😏",
-  "Quer jogar enquanto espera? Toque em ⭐ JOGAR.",
 ];
 
 /** As falas do balão, a partir do que a tela bloqueada pode mostrar (só contagens, nada pessoal). */
@@ -93,163 +44,17 @@ export function bubbleLines(face, weather, now = new Date()) {
   return [...lines, ...PHRASES];
 }
 
-/** Uma estrela nova num ponto aleatório em volta do robô (porcentagens da área do jogo, longe do centro). */
-export function randomStar(rnd = Math.random, id = 0) {
-  const angle = rnd() * Math.PI * 2;
-  const dist = 0.28 + rnd() * 0.18; // fora do robô, dentro da área
-  return { id, x: 50 + Math.cos(angle) * dist * 100, y: 50 + Math.sin(angle) * dist * 100 * 0.8, born: Date.now() };
-}
-
-// V8.9.0 (ideia 12): AS ATIVIDADES do robô. Ele vai alternando sozinho, uma de cada vez, com um descanso no
-// centro entre elas: andar de um lado pro outro, dormir de cobertinha (acorda quando você mexe), tomar café, ler,
-// dançar (mais animado com música tocando), embaixadinha e bolhas. Qualquer interação o traz de volta ao centro.
-export const ACTIVITIES = ["andar", "dormir", "cafe", "ler", "dancar", "bola", "bolhas"];
-export const CALM_ACTIVITIES = ["cafe", "ler", "dormir"]; // no modo leve: só as calmas
-export const WAKE_MOVE_PX = 40;
-const ACT_SAY = {
-  andar: "Vou dar uma voltinha… 🚶",
-  dormir: "Zzz… 😴 (mexa o mouse ou toque para me acordar)",
-  acordando: "Uaaah… acordei! 🥱",
-  cafe: "Hora do cafezinho. ☕",
-  ler: "Deixa eu ler um pouquinho… 📖",
-  dancar: "Um, dois, um, dois… 💃",
-  bola: "Olha a embaixadinha! ⚽",
-  bolhas: "Bolhas de sabão! 🫧",
-};
-const ACT_FACE = { dormir: "dormindo", acordando: "bocejo", dancar: "feliz", bolhas: "feliz", cafe: "repouso" };
-
-/** A próxima atividade: diferente da anterior; com música tocando, dançar fica bem mais provável. */
-export function nextActivity(prev, { music = false, lite = false, rnd = Math.random } = {}) {
-  let pool = lite ? CALM_ACTIVITIES : ACTIVITIES;
-  if (music && !lite) pool = [...pool, "dancar", "dancar", "dancar"];
-  const options = pool.filter((a) => a !== prev);
-  return options[Math.floor(rnd() * options.length)] || pool[0];
-}
-
-/** Quanto tempo cada atividade dura (ms). Dormir dura mais; andar dá duas voltas inteiras. */
-export function activityMs(act, rnd = Math.random) {
-  if (act === "dormir") return 35000 + rnd() * 20000;
-  if (act === "andar") return 24000;
-  return 15000 + rnd() * 9000;
-}
-
-/** A fala do balão para a atividade (e para a música, quando está dançando com ela). */
-export function activityLine(act, music = false) {
-  if (act === "dancar" && music) return "Essa música está boa demais! 🎶";
-  return ACT_SAY[act] || "";
-}
-
-function useActivity(enabled, musicRef) {
-  const [act, setAct] = useState(null); // { id, at } ou null (parado no centro)
-  const [cycle, setCycle] = useState(0);
-  const prev = useRef(null);
-  const waking = useRef(false);
-  useEffect(() => {
-    if (!enabled) return undefined;
-    let t = 0;
-    const rest = (ms) => {
-      setAct(null);
-      t = setTimeout(go, ms);
-    };
-    const go = () => {
-      const id = nextActivity(prev.current, { music: musicRef.current, lite: isLite() });
-      prev.current = id;
-      setAct({ id, at: Date.now() });
-      t = setTimeout(() => rest(9000 + Math.random() * 8000), activityMs(id));
-    };
-    if (waking.current) {
-      waking.current = false;
-      t = setTimeout(() => rest(9000 + Math.random() * 6000), 2000);
-    } else {
-      t = setTimeout(() => (act ? rest(9000) : go()), act ? 0 : 7000 + Math.random() * 5000);
-    }
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- recomeça só ao ligar/desligar ou ao interromper
-  }, [enabled, cycle]);
-  /** Interação: acorda (se dormindo) ou volta para o centro e recomeça o ciclo. */
-  const interrupt = useCallback(() => {
-    setAct((a) => {
-      if (a?.id === "dormir") {
-        waking.current = true;
-        return { id: "acordando", at: Date.now() };
-      }
-      return null;
-    });
-    setCycle((c) => c + 1);
-  }, []);
-  return [enabled ? act : null, interrupt];
-}
-
-function readRecord() {
-  try {
-    return Number(localStorage.getItem(RECORD_KEY)) || 0;
-  } catch {
-    return 0;
-  }
-}
-
-function useStarsGame(onCatch) {
-  const [playing, setPlaying] = useState(false);
-  const [left, setLeft] = useState(0);
-  const [score, setScore] = useState(0);
-  const [stars, setStars] = useState([]);
-  const [record, setRecord] = useState(readRecord);
-  const [result, setResult] = useState(null);
-  const idRef = useRef(0);
-  const scoreRef = useRef(0);
-  useEffect(() => {
-    if (!playing) return undefined;
-    const spawn = setInterval(() => setStars((s) => [...s.filter((x) => Date.now() - x.born < STAR_LIFE_MS), randomStar(Math.random, ++idRef.current)]), 650);
-    const clean = setInterval(() => setStars((s) => s.filter((x) => Date.now() - x.born < STAR_LIFE_MS)), 250);
-    const tick = setInterval(() => setLeft((t) => t - 1), 1000);
-    return () => {
-      clearInterval(spawn);
-      clearInterval(clean);
-      clearInterval(tick);
-    };
-  }, [playing]);
-  useEffect(() => {
-    if (!playing || left > 0) return;
-    setPlaying(false);
-    setStars([]);
-    const final = scoreRef.current;
-    const best = Math.max(final, readRecord());
-    try {
-      localStorage.setItem(RECORD_KEY, String(best));
-    } catch {
-      /* sem armazenamento */
-    }
-    setResult({ score: final, novo: final > record && final > 0 });
-    setRecord(best);
-  }, [left, playing, record]);
-  const start = () => {
-    scoreRef.current = 0;
-    setScore(0);
-    setResult(null);
-    setLeft(GAME_SECONDS);
-    setPlaying(true);
-  };
-  const stop = () => {
-    setPlaying(false);
-    setStars([]);
-  };
-  const catchStar = (id) => {
-    setStars((s) => s.filter((x) => x.id !== id));
-    scoreRef.current += 1;
-    setScore(scoreRef.current);
-    onCatch?.();
-  };
-  return { playing, left, score, stars, record, result, start, stop, catchStar };
-}
-
 export default function DeskLock({ api, phase, name, message, photoUrl, scan, pinBlock, mainLabel, onMain, mainVisible = true,
-  failedActions = null, phoneButtons = null, jarvisState = "idle", onClassic = null, hint = "", phone = false,
+  failedActions = null, phoneButtons = null, jarvisState = "idle", onClassic = null, hint = "", stateHint = "", phone = false,
+  listening = false, caption = "", cards = null, cardsList = [], fanPanelNode = null, mic = null, clapNode = null, clapPulse = 0,
+  stampNode = null, hubActions = null, styleToggle = null, onChangePhoto = null,
   onUpdate = null, updateCount = 0, updateNote = "", updateProgress = null }) {
   const now = useNow(true);
   const [face, setFace] = useState(null);
-  const [weather, setWeather] = useState(null);
   const [line, setLine] = useState(0);
   const [reaction, setReaction] = useState(null);
+  const [hub, setHub] = useState(false);
+  const [bg, setBg] = useState(readBg);
   const reactTimer = useRef(0);
   const react = useCallback((expr, ms = 1600) => {
     clearTimeout(reactTimer.current);
@@ -257,14 +62,7 @@ export default function DeskLock({ api, phase, name, message, photoUrl, scan, pi
     reactTimer.current = setTimeout(() => setReaction(null), ms);
   }, []);
   useEffect(() => () => clearTimeout(reactTimer.current), []);
-  const game = useStarsGame(() => react("conseguiu", 700));
   const { mood, poke } = usePoke(() => { if (!startPacman()) react("bravo", 2500); });
-  const { pet, care, say: petSay, fx } = usePet(react); // V8.15: o bichinho
-  const careRef = useRef(care);
-  careRef.current = care;
-  useEffect(() => { // terminou o jogo das estrelas: brincar conta para a diversão dele
-    if (game.result) careRef.current("brincar", { stars: game.result.score });
-  }, [game.result]);
   const [hintShown, setHintShown] = useState(Boolean(hint)); // V8.8.1: no celular, a 1ª fala explica como entrar
   useEffect(() => {
     if (!hint) return undefined;
@@ -273,256 +71,132 @@ export default function DeskLock({ api, phase, name, message, photoUrl, scan, pi
     return () => clearTimeout(t);
   }, [hint]);
 
+  // aparência do robô e as contagens do dia (a cada minuto; nada pessoal)
   useEffect(() => {
     if (!api) return undefined;
     let alive = true;
-    const load = () => api("/api/desk/lockface").then((d) => alive && setFace(d)).catch(() => {});
+    const load = () => { if (!document.hidden) api("/api/desk/lockface").then((d) => alive && setFace(d)).catch(() => {}); };
     load();
-    api("/api/weather").then((w) => alive && setWeather(w)).catch(() => {});
     const t = setInterval(load, 60000);
     return () => {
       alive = false;
       clearInterval(t);
     };
   }, [api]);
-  const [waving, setWaving] = useState(false); // o "aceno" (o robô não tem braços: uma mãozinha acena ao lado)
-  useEffect(() => {
-    let off = 0;
-    const t = setInterval(() => {
-      setWaving(true);
-      off = setTimeout(() => setWaving(false), 2200);
-    }, 21000);
-    return () => {
-      clearInterval(t);
-      clearTimeout(off);
-    };
-  }, []);
-  const [bg, setBg] = useState(readBg);
-  const [picking, setPicking] = useState(false);
   useEffect(() => {
     const on = (e) => setBg(e.detail || readBg());
     window.addEventListener(BG_EVENT, on);
     return () => window.removeEventListener(BG_EVENT, on);
   }, []);
-  const musicRef = useRef(false);
-  const [music, setMusic] = useState(false);
   useEffect(() => {
-    if (!api) return undefined;
-    let alive = true;
-    const check = () => {
-      if (isLite() || document.hidden) return;
-      api("/api/integrations/spotify/track")
-        .then((d) => { if (alive) { musicRef.current = d?.state === "playing"; setMusic(musicRef.current); } })
-        .catch(() => { musicRef.current = false; });
-    };
-    check();
-    const t = setInterval(check, 20000);
-    return () => {
-      alive = false;
-      clearInterval(t);
-    };
-  }, [api]);
-  const petMood = moodOf(pet, { hour: now.getHours() });
-  // V8.15: o que ele precisa aparece mais vezes; depois, o seu dia (água, missões) e as falas de sempre
-  const lines = [...(petMood.say ? [petMood.say, petMood.say] : []), ...lifeLines(face, now.getHours()), ...bubbleLines(face, weather, now)];
-  useEffect(() => {
-    const t = setInterval(() => setLine((n) => n + 1), 6500);
+    const t = setInterval(() => { if (!document.hidden) setLine((n) => n + 1); }, 7000);
     return () => clearInterval(t);
   }, []);
+  useEffect(() => { // Esc fecha o GERENCIAR (antes do Esc da tela)
+    if (!hub) return undefined;
+    const onKey = (e) => { if (e.key === "Escape") { e.stopPropagation(); setHub(false); } };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [hub]);
 
+  const hour = now.getHours();
   const scanning = phase === "scanning";
   const showFace = Boolean(scan) || scanning || (phase === "verified" && Boolean(photoUrl));
-  const calm = !showFace && !pinBlock && !game.playing && phase !== "verified" && phase !== "failed" && !mood && !pet.sleeping;
-  const [act, interrupt] = useActivity(calm, musicRef);
-  useEffect(() => { // dormindo: mexer o mouse (de verdade, não um tremidinho), tocar ou teclar acorda
-    if (act?.id !== "dormir") return undefined;
-    let start = null;
-    const wake = () => interrupt();
-    const move = (e) => {
-      if (!start) start = { x: e.clientX, y: e.clientY };
-      else if (Math.hypot(e.clientX - start.x, e.clientY - start.y) > WAKE_MOVE_PX) wake();
-    };
-    const t = setTimeout(() => { // um respiro: quem acabou de mexer não acorda ele na hora
-      window.addEventListener("mousemove", move);
-      window.addEventListener("pointerdown", wake);
-      window.addEventListener("keydown", wake);
-    }, 1500);
-    return () => {
-      clearTimeout(t);
-      window.removeEventListener("mousemove", move);
-      window.removeEventListener("pointerdown", wake);
-      window.removeEventListener("keydown", wake);
-    };
-  }, [act?.id, interrupt]);
+  const { expr, state } = deskFace({ phase, listening, jarvisState, hour, mood, reaction });
+  const tone = haloTone({ phase, listening, jarvisState, hour });
+  const lines = bubbleLines(face, null, now);
+  const say = deskBubble({ phase, name, message, caption, listening, hint, hintShown, hour, mood }) || lines[line % lines.length];
+  const showCards = !pinBlock && phase !== "scanning" && cardsList.length > 0;
   const accent = face?.cor || "#22d3ee";
   const clickRobot = (e) => {
     e.stopPropagation();
-    if (pet.sleeping) return care("carinho"); // V8.15: dormindo de verdade, ele só resmunga
-    if (act?.id === "dormir") return interrupt(); // a 1ª cutucada só acorda
-    if (act) interrupt();
     poke();
     if (!mood) react(Math.random() < 0.5 ? "feliz" : "rindo");
   };
-  const expr = mood || reaction || (pet.sleeping ? "dormindo" : null) || ACT_FACE[act?.id]
-    || (petMood.level === "urgente" || petMood.level === "pede" ? petMood.face : null) || null;
-  const shownAct = pet.sleeping ? "dormir" : act?.id; // V8.15: dormindo de verdade: cobertinha e "zzz" até acordar
-  const actSay = act && (act.id === "dormir" || act.id === "acordando" || now - act.at < 6000) ? activityLine(act.id, music) : "";
-  const state = scanning ? "processing" : jarvisState === "speaking" ? "speaking" : "idle";
-  const say = hint && (hintShown || phase === "failed") ? hint
-    : phase === "failed" && message ? message
-    : phase === "verified" ? `Bem-vindo de volta${name ? `, ${name}` : ""}! 💙`
-      : scanning ? "Olhe para a câmera… estou te reconhecendo."
-        : game.playing ? `⭐ ${game.score} · ${game.left}s`
-          : game.result ? (game.result.novo ? `Recorde novo: ${game.result.score} estrelas! 🏆` : `Você pegou ${game.result.score} ${game.result.score === 1 ? "estrela" : "estrelas"}. Recorde: ${game.record}.`)
-            : mood === "comendo" ? "Agora você me irritou! 😤" : mood ? "Ei! Pare de me cutucar! 😠"
-              : petSay || (pet.sleeping ? petMood.say : "") || actSay || lines[line % lines.length];
-  const age = ageOf(pet, now.getTime());
-  const bugs = showFace || game.playing ? 0 : bugCount(pet);
 
   return (
-    <div className={`dkl${phone ? " is-phone" : ""}${bg !== "escuro" ? ` has-bg bg-${bg}` : ""}${pet.sleeping ? " is-night" : ""}`} role="main" style={{ "--dk-accent": accent, "--dk-accent-rgb": hexToRgb(accent) }}>
+    <div className={`dkl dkl-v2${phone ? " is-phone" : ""}${bg !== "escuro" ? ` has-bg bg-${bg}` : ""} is-${tone}`} role="main"
+      style={{ "--dk-accent": accent, "--dk-accent-rgb": hexToRgb(accent) }}>
       <DeskLockBg bg={bg} />
       <div className="dkl-glow" aria-hidden="true" />
       <header className="dkl-top">
         <div className="dkl-clock">{now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</div>
         <div className="dkl-date">{now.toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}</div>
-        <div className="dkl-age" title={`Vocês convivem há ${age.days + 1} ${age.days ? "dias" : "dia"}`}>
-          {age.label}{face?.nivel ? ` · Nv ${face.nivel}` : ""}
-        </div>
       </header>
+      <button type="button" className={`dkl-hub-btn${hub ? " is-on" : ""}`} onClick={(e) => { e.stopPropagation(); setHub((v) => !v); }} aria-expanded={hub}>
+        ⚙ GERENCIAR{updateCount > 0 && <span className="upd-badge" aria-label={`${updateCount} atualizações disponíveis`}>{updateCount}</span>}
+      </button>
+
+      {fanPanelNode}
 
       {pinBlock ? <div className="dkl-pin">{pinBlock}</div> : (
         <div className="dkl-stage">
-          <div className="dkl-game" aria-hidden={!game.playing}>
-            {game.stars.map((s) => (
-              <button type="button" key={s.id} className="dkl-star" style={{ left: `${s.x}%`, top: `${s.y}%` }}
-                onClick={(e) => { e.stopPropagation(); game.catchStar(s.id); }} aria-label="Pegar a estrela">⭐</button>
-            ))}
-          </div>
           {showFace ? (
             <div className="dkl-face"><FaceCircle scan={scan} phase={phase} photoUrl={photoUrl} /></div>
           ) : (
-            <div className={`dkl-actor${shownAct ? ` is-${shownAct}` : ""}${music ? " is-music" : ""}`}>
+            <div className={`dkl-avatar${clapPulse ? " is-clap" : ""}`} key={`clap-${clapPulse}`}>
+              <i className="dkl-halo" aria-hidden="true" />
               <button type="button" className={`dkl-robot${mood ? " is-poked" : ""}`} onClick={clickRobot} aria-label={`${face?.nome || "JARVIS"}: clique para interagir`}>
                 <RoboAvatar avatar={expr ? { ...(face?.avatar || {}), expressao: expr } : face?.avatar} tema={face?.tema}
-                  state={expr ? "idle" : state} size={260} still={Boolean(expr)} />
+                  state={expr ? "idle" : state} size={phone ? 200 : 250} still={Boolean(expr)} />
               </button>
-              <ActivityProps act={shownAct} />
-              {fx && <PetFx key={fx.at} kind={fx.kind} />}
             </div>
           )}
-          {Array.from({ length: bugs }, (_, i) => (
-            <button type="button" key={`bug-${i}`} className="dkl-bug" style={{ left: `${BUG_SPOTS[i][0]}%`, top: `${BUG_SPOTS[i][1]}%`, animationDelay: `${i * 0.7}s` }}
-              onClick={(e) => { e.stopPropagation(); care("bug"); }} aria-label="Pegar o bug">🐛</button>
-          ))}
-          {waving && !act && !showFace && !game.playing && <span className="dkl-wave" aria-hidden="true">👋</span>}
           <p className="dkl-bubble" key={say} aria-live="polite">{say}</p>
         </div>
       )}
 
       <footer className="dkl-actions">
-        {mainVisible && !pinBlock && (
+        {showCards && <div className="dkl-cards"><LockCards api={cards?.api} cards={cardsList} fanModeEnabled={cards?.fanModeEnabled} layout="strip" /></div>}
+        {mainVisible && !pinBlock && phase !== "scanning" && !phoneButtons && (
           <button type="button" className="dkl-main" onClick={(e) => { e.stopPropagation(); onMain(); }}>
-            {phase === "verified" ? "➜" : "🙂"} {mainLabel}
-            {phase !== "verified" && <span className="dkl-key">ESPAÇO</span>}
+            {phase === "verified" ? "➜" : phase === "failed" ? "⟳" : "🙂"} {mainLabel}
+            {!phone && <span className="dkl-key">ESPAÇO</span>}
           </button>
         )}
         {phoneButtons}
         {failedActions}
-        {!pinBlock && !showFace && (
-          <>
-            {/* V8.15: as necessidades do bichinho (cai com o tempo; pisca quando está baixa) */}
-            <div className="dkl-needs" role="group" aria-label="Como ele está">
-              {NEEDS.map((n) => {
-                const v = Math.round(pet.stats[n.id]);
-                return (
-                  <span key={n.id} className={`dkl-need${v < 30 ? " is-low" : v >= 80 ? " is-full" : ""}`} title={`${n.label}: ${v}%`}>
-                    <i aria-hidden="true">{n.icon}</i>
-                    <b className="dkl-need-bar" role="meter" aria-label={n.label} aria-valuemin={0} aria-valuemax={100} aria-valuenow={v}>
-                      <b style={{ width: `${v}%` }} />
-                    </b>
-                  </span>
-                );
-              })}
-            </div>
-            <div className="dkl-row dkl-care">
-              {pet.sleeping ? (
-                <button type="button" className="dkl-chip is-care" onClick={(e) => { e.stopPropagation(); care("acordar"); }}>☀ ACORDAR</button>
-              ) : (
-                <>
-                  <button type="button" className="dkl-chip is-care" onClick={(e) => { e.stopPropagation(); care("alimentar"); }} title="Dar uma bateria para ele">🔋 ALIMENTAR</button>
-                  {game.playing ? <button type="button" className="dkl-chip is-care" onClick={(e) => { e.stopPropagation(); game.stop(); }}>⏹ PARAR O JOGO</button>
-                    : <button type="button" className="dkl-chip is-care" onClick={(e) => { e.stopPropagation(); game.start(); }} title="Pegue as estrelas: quanto mais, mais divertido">🎾 BRINCAR{game.record ? ` · recorde ${game.record}` : ""}</button>}
-                  <button type="button" className="dkl-chip is-care" onClick={(e) => { e.stopPropagation(); care("carinho"); }}>💙 CARINHO</button>
-                  <button type="button" className={`dkl-chip is-care${bugs ? " is-alert" : ""}`} onClick={(e) => { e.stopPropagation(); care("limpar"); }}>🧽 LIMPAR{bugs ? ` · ${bugs} 🐛` : ""}</button>
-                  <button type="button" className="dkl-chip is-care" onClick={(e) => { e.stopPropagation(); care("dormir"); }}>💤 DORMIR</button>
-                </>
-              )}
-            </div>
-          </>
-        )}
-        {!pinBlock && !showFace && (
-          <div className="dkl-row is-sub">
-            <button type="button" className={`dkl-chip${picking ? " is-on" : ""}`} aria-expanded={picking}
-              onClick={(e) => { e.stopPropagation(); setPicking((v) => !v); }}>🖼 FUNDO</button>
-            {/* V8.11: ATUALIZAR (com a bolinha de versões novas) e o Branding Book também no bloqueio do robô */}
-            {onUpdate && (
-              <button type="button" className="dkl-chip" onClick={(e) => { e.stopPropagation(); onUpdate(); }}
-                title={phone ? "Procurar e instalar a versão nova do app" : "Baixar a versão mais nova do JARVIS e reiniciar"}>
-                {phone ? "⟳ ATUALIZAR APP" : "⟳ ATUALIZAR"}
-                {!phone && updateCount > 0 && (
-                  <span className="upd-badge" aria-label={`${updateCount} ${updateCount === 1 ? "atualização disponível" : "atualizações disponíveis"}`}>{updateCount}</span>
-                )}
-              </button>
-            )}
-            {!phone && (
-              <button type="button" className="dkl-chip" title="Identidade visual do JARVIS"
-                onClick={(e) => { e.stopPropagation(); window.dispatchEvent(new CustomEvent("jarvis-open-branding")); }}>📘 BRANDING</button>
-            )}
-            {onClassic && !phone && <button type="button" className="dkl-chip is-ghost" onClick={(e) => { e.stopPropagation(); onClassic(); }}>◐ BLOQUEIO CLÁSSICO</button>}
-          </div>
-        )}
+        {stateHint && !pinBlock && <p className="dkl-hint">{stateHint}</p>}
         {updateProgress != null && <div className="dkl-update"><ProgressBar pct={updateProgress} label="Atualizando o app" /></div>}
         {updateNote && <p className="dkl-update-note" role="status">{updateNote}</p>}
-        {picking && !pinBlock && !showFace && (
+      </footer>
+
+      {(mic || clapNode) && (
+        <div className="dkl-side">
+          {mic && (
+            <button type="button" className={`lo-mic ${mic.muted ? "" : "on"}`} onClick={(e) => { e.stopPropagation(); mic.onToggle(); }} aria-pressed={!mic.muted}
+              title={mic.muted ? "Ligar o microfone (palmas e escuta)" : "Silenciar o microfone"}>
+              <i /> {mic.muted ? "MIC SILENCIADO" : "MIC LIGADO"} <kbd>P</kbd>
+            </button>
+          )}
+          {clapNode}
+        </div>
+      )}
+
+      {hub && (
+        <div className="dkl-hub" role="dialog" aria-label="Gerenciar" onClick={(e) => e.stopPropagation()}>
+          <header>
+            <strong>⚙ GERENCIAR</strong>
+            <button type="button" onClick={() => setHub(false)} aria-label="Fechar">✕</button>
+          </header>
+          {hubActions}
+          <div className="dkl-hub-row">
+            {onClassic && <button type="button" className="ls-chip" onClick={onClassic}>◐ BLOQUEIO CLÁSSICO</button>}
+            {styleToggle}
+            {!phone && onChangePhoto && <button type="button" className="ls-chip" onClick={onChangePhoto}>⚙ ALTERAR FOTO DO ROSTO</button>}
+            {!hubActions && onUpdate && <button type="button" className="ls-chip" onClick={onUpdate}>⟳ ATUALIZAR</button>}
+          </div>
           <div className="dkl-bgpick" role="radiogroup" aria-label="Papel de parede do bloqueio">
             {LOCK_BGS.map((b) => (
               <button type="button" key={b.id} role="radio" aria-checked={bg === b.id} className={`dkl-swatch sw-${b.id}${bg === b.id ? " is-on" : ""}`}
-                onClick={(e) => { e.stopPropagation(); setBg(saveBg(b.id)); }}>
+                onClick={() => setBg(saveBg(b.id))}>
                 <span aria-hidden="true">{b.emoji}</span>{b.label}
               </button>
             ))}
           </div>
-        )}
-      </footer>
+          {stampNode}
+        </div>
+      )}
     </div>
   );
-}
-
-/** V8.15: o efeito de cada cuidado: bateria voando até ele, coraçõezinhos, brilho do banho, lua ao dormir. */
-function PetFx({ kind }) {
-  if (kind === "feed") return <span className="dkl-fx is-feed" aria-hidden="true">🔋</span>;
-  if (kind === "heart") return <span className="dkl-fx is-heart" aria-hidden="true">{["💙", "💙", "💖"].map((h, i) => <i key={i}>{h}</i>)}</span>;
-  if (kind === "clean") return <span className="dkl-fx is-clean" aria-hidden="true">{["✨", "🫧", "✨", "🫧"].map((h, i) => <i key={i}>{h}</i>)}</span>;
-  if (kind === "sleep") return <span className="dkl-fx is-sleep" aria-hidden="true">🌙</span>;
-  return null;
-}
-
-/** Os objetos de cada atividade (cobertinha, xícara, livro, notas, bola, bolhas): só enfeite, sem clique. */
-function ActivityProps({ act }) {
-  if (!act) return null;
-  if (act === "dormir" || act === "acordando") {
-    return (
-      <span className="dkl-props" aria-hidden="true">
-        <i className="dkl-blanket" />
-        {act === "dormir" && <span className="dkl-zzz"><i>z</i><i>z</i><i>Z</i></span>}
-      </span>
-    );
-  }
-  if (act === "cafe") return <span className="dkl-props" aria-hidden="true"><span className="dkl-cup">☕<i className="dkl-steam" /><i className="dkl-steam" /><i className="dkl-steam" /></span></span>;
-  if (act === "ler") return <span className="dkl-props" aria-hidden="true"><span className="dkl-book"><i className="dkl-page" />📖</span></span>;
-  if (act === "dancar") return <span className="dkl-props" aria-hidden="true"><span className="dkl-notes">{["♪", "♫", "♬", "♪", "♫"].map((n, i) => <i key={i}>{n}</i>)}</span></span>;
-  if (act === "bola") return <span className="dkl-props" aria-hidden="true"><i className="dkl-ball">⚽</i></span>;
-  if (act === "bolhas") return <span className="dkl-props" aria-hidden="true"><span className="dkl-soap">{[0, 1, 2, 3, 4, 5].map((i) => <i key={i} />)}</span></span>;
-  return null;
 }

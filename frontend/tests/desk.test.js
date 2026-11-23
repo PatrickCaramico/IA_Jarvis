@@ -208,7 +208,7 @@ test("V8.7.1: no app do Windows não há escuta pelo navegador (o som subia e de
   assert.ok(src.includes("Boolean(appPrefs.clap_wake_enabled) && !IS_DESKTOP_APP"));
 });
 
-test("V8.8.0: bloqueio do Desk: falas do balão só com contagens, estrelas fora do robô e as peças no lugar", async () => {
+test("V8.8.0: bloqueio do Desk: falas do balão só com contagens e as peças no lugar", async () => {
   const src = await import("node:fs").then((fs) => fs.readFileSync(new URL("../src/components/DeskLock.jsx", import.meta.url), "utf8"));
   const phrases = new Function(`return ${src.match(/const PHRASES = (\[[\s\S]*?\]);/)[1]}`)();
   const bubble = new Function("face", "weather", "now", "PHRASES", src.match(/export function bubbleLines\(face, weather, now = new Date\(\)\) \{([\s\S]*?)\n\}/)[1]);
@@ -217,12 +217,6 @@ test("V8.8.0: bloqueio do Desk: falas do balão só com contagens, estrelas fora
   assert.ok(lines.some((l) => l.includes("21°")) && lines.some((l) => l.includes("09:00")) && lines.some((l) => l.includes("2 tarefas")));
   assert.ok(lines.some((l) => l.includes("3 dias")));
   assert.equal(bubble(null, null, new Date(2026, 10, 17, 2, 0), phrases)[0].startsWith("Boa noite"), true);
-  const star = new Function("rnd", "id", src.match(/export function randomStar\(rnd = Math.random, id = 0\) \{([\s\S]*?)\n\}/)[1]);
-  for (const r of [0, 0.25, 0.5, 0.75, 0.99]) {
-    const s = star(() => r, 1);
-    const d = Math.hypot(s.x - 50, (s.y - 50) / 0.8);
-    assert.ok(d >= 27 && d <= 47, `estrela longe do robô e dentro da área (${d})`);
-  }
   const lock = await import("node:fs").then((fs) => fs.readFileSync(new URL("../src/components/LockScreen.jsx", import.meta.url), "utf8"));
   assert.ok(lock.includes("if (deskLock) {") && lock.includes("onMain={handleBtnClick}") && lock.includes("pinBlock={pinBlock}"));
 });
@@ -235,7 +229,7 @@ test("V8.8.1: bloqueio do Desk também no celular (PIN/digital, sem o botão do 
   assert.ok(css.includes("V8.8.1: bloqueio do Modo Desk no celular") && css.includes("env(safe-area-inset-bottom)"));
 });
 
-test("V8.9.0: bloqueio do Desk: fundos animados com semente e atividades do robô que alternam", async () => {
+test("V8.9.0: bloqueio do Desk: fundos animados com semente (V8.16: sem as atividades)", async () => {
   const fs = await import("node:fs");
   const bgSrc = fs.readFileSync(new URL("../src/components/DeskLockBg.jsx", import.meta.url), "utf8");
   const fn = (src, name, args) => src.match(new RegExp(`export function ${name}\\(${args}\\) \\{([\\s\\S]*?)\\n\\}`))[1];
@@ -253,30 +247,12 @@ test("V8.9.0: bloqueio do Desk: fundos animados com semente e atividades do rob�
   assert.deepEqual(ids, ["escuro", "estrelas", "aurora", "cidade", "porsol"]);
   assert.ok(bgSrc.includes('export const BG_KEY = "jarvis.deskLock.bg";') && bgSrc.includes('return LOCK_BGS.some((b) => b.id === id) ? id : "escuro";'));
 
-  const src = fs.readFileSync(new URL("../src/components/DeskLock.jsx", import.meta.url), "utf8");
-  const ACTIVITIES = new Function(`return ${src.match(/export const ACTIVITIES = (\[[^\]]*\]);/)[1]}`)();
-  const CALM_ACTIVITIES = new Function(`return ${src.match(/export const CALM_ACTIVITIES = (\[[^\]]*\]);/)[1]}`)();
-  assert.deepEqual(ACTIVITIES, ["andar", "dormir", "cafe", "ler", "dancar", "bola", "bolhas"]);
-  const next = new Function("prev", "opts", "ACTIVITIES", "CALM_ACTIVITIES",
-    `const { music = false, lite = false, rnd = Math.random } = opts || {};${fn(src, "nextActivity", "prev, \\{ music = false, lite = false, rnd = Math.random \\} = \\{\\}")}`);
-  for (let i = 0; i < 40; i++) {
-    const r = i / 40;
-    const n = next("andar", { rnd: () => r }, ACTIVITIES, CALM_ACTIVITIES);
-    assert.notEqual(n, "andar", "nunca repete a mesma em seguida");
-    assert.ok(ACTIVITIES.includes(n));
-    assert.ok(CALM_ACTIVITIES.includes(next("cafe", { lite: true, rnd: () => r }, ACTIVITIES, CALM_ACTIVITIES)), "modo leve: só as calmas");
-  }
-  let dances = 0;
-  for (let i = 0; i < 100; i++) if (next("ler", { music: true, rnd: () => i / 100 }, ACTIVITIES, CALM_ACTIVITIES) === "dancar") dances++;
-  assert.ok(dances >= 40, `com música, dançar fica bem mais provável (${dances}%)`);
-  const ms = new Function("act", "rnd", fn(src, "activityMs", "act, rnd = Math.random"));
-  assert.ok(ms("dormir", () => 0) >= 35000 && ms("cafe", () => 1) <= 24000);
-  assert.ok(src.includes("WAKE_MOVE_PX = 40") && src.includes('if (act?.id === "dormir") return interrupt(); // a 1ª cutucada só acorda'));
-  assert.ok(src.includes('api("/api/integrations/spotify/track")') && src.includes('d?.state === "playing"'));
+  // V8.16: as atividades do robô e o jogo saíram (o bloqueio ficou só com o avatar); os fundos continuam leves
   const css = fs.readFileSync(new URL("../src/desk.css", import.meta.url), "utf8");
   const block = css.slice(css.indexOf("V8.9.0 (ideia 12)"));
   assert.ok(!/\bzoom\s*:/.test(block) && !/\b(width|height|left|top)\s*:[^;]*;\s*\}\s*(to|from|\d+%)/.test(block));
-  for (const k of ["dkl-walk", "dkl-blanket", "dkl-steam", "dkl-page", "dkl-notes", "dkl-ball", "dkl-soap", "html.is-lite .dkl-bg *"]) assert.ok(block.includes(k), k);
+  for (const k of ["html.is-lite .dkl-bg *", "dkl-halo", "dkl-hub", "dkl-cards", "dkl-side"]) assert.ok(block.includes(k), k);
+  for (const k of ["dkl-walk", "dkl-star", "dkl-need", "dkl-bug"]) assert.ok(!css.includes(k), `${k} saiu`);
 });
 
 test("V8.10.0: varredura do PC lento, bloqueio do robô em todas as versões e fala que não bloqueia pedidos", async () => {
