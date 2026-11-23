@@ -2,6 +2,20 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 8.12.3 — 23 de novembro de 2026
+
+**⏻ JARVIS sempre ligado**
+- Ligar junto com o Windows agora vem marcado: ao abrir a versão nova, o JARVIS cria sozinho o atalho da Inicialização e passa a ligar em segundo plano toda vez que você entra no Windows.
+  - Antes era opcional e vinha desmarcado; depois de reiniciar o PC, o site ficava em "Reconectando" até alguém ligar o JARVIS na mão.
+- Se o guardião (quem religa o JARVIS quando ele cai) parar, o JARVIS liga outro sozinho.
+- Na tomada, o PC não entra mais em suspensão por inatividade, então o JARVIS continua respondendo pelo site e pelo celular. A tela ainda apaga normalmente, e na bateria nada muda.
+- Dá para desligar em Configurações › Diagnóstico & Backup › Inicialização, ou dizendo "não liga mais com o Windows". Desligado, ele não volta a ligar sozinho.
+
+**📡 Tela de "Reconectando" mais clara**
+- Um painel mostra ao vivo: a central no ar, o JARVIS do PC sendo procurado (há quanto tempo e quantas tentativas) e se o PC está no "sempre ligado".
+- Uma barrinha mostra quando é a próxima conferência, e o tempo não zera ao tocar em TENTAR AGORA.
+- Procurando há mais de 5 minutos num PC sempre ligado, a tela avisa que o PC deve estar desligado ou sem internet.
+
 ## 8.12.2 — 23 de novembro de 2026
 
 **🔓 Atualizar sem pedir o rosto de novo**

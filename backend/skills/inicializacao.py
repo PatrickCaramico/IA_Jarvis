@@ -47,7 +47,7 @@ def _parse(norm: str, _original: str) -> Optional[dict]:
     examples=["liga o JARVIS junto com o Windows", "não liga mais com o Windows"],
 )
 def iniciar_com_windows(ctx: SkillContext, acao: str) -> SkillResult:
-    from modules import autostart
+    from modules import always_on, autostart
 
     st = autostart.status()
     if not st["available"]:
@@ -56,13 +56,13 @@ def iniciar_com_windows(ctx: SkillContext, acao: str) -> SkillResult:
         return SkillResult(speech="Sim, senhor: ligo sozinho quando o senhor entra no Windows." if st["enabled"]
                            else "Ainda não, senhor. Se quiser, diga: liga o JARVIS junto com o Windows.")
     if acao == "ligar":
-        res = autostart.enable()
+        res = always_on.set_autostart(True)  # V8.12.3: também religa o "sempre ligado"
         if not res.get("ok"):
             return SkillResult(ok=False, speech="Não consegui criar o atalho na inicialização do Windows, senhor. "
                                                 "Tente pelo Instalar-JARVIS-no-Windows.bat.")
         return SkillResult(speech="Feito, senhor: a partir de agora eu ligo sozinho, em segundo plano, quando o senhor "
                                   "entrar no Windows. E se eu cair, o guardião me liga de novo.")
-    res = autostart.disable()
+    res = always_on.set_autostart(False)  # V8.12.3: e não recria o atalho no próximo início
     if not res.get("ok"):
         return SkillResult(ok=False, speech="Não consegui tirar o atalho da inicialização, senhor.")
     return SkillResult(speech="Certo, senhor: não ligo mais sozinho com o Windows. Para me ligar, use o Iniciar-JARVIS.")

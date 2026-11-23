@@ -73,6 +73,9 @@ async def lifespan(app: FastAPI):
     from modules import auto_update
 
     runtime.track_service(auto_update.auto_update_loop())  # V8.5.0: atualiza sozinho com o JARVIS parado
+    from modules import always_on
+
+    runtime.track_service(always_on.always_on_loop())  # V8.12.3: liga com o Windows, PC acordado e guardião
 
     async def back_to_normal_priority() -> None:  # V8.7.2: depois de ligado, o JARVIS volta à prioridade normal
         await asyncio.sleep(60)

@@ -21,8 +21,10 @@ function StartupSettings({ api }) {
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
 
+  const [awake, setAwake] = useState(null); // V8.12.3: { keep_awake, on_ac } (não deixa o PC dormir na tomada)
   useEffect(() => {
     api("/api/system/autostart").then(setAuto).catch(() => setAuto({ available: false, enabled: false }));
+    api("/api/system/always-on").then(setAwake).catch(() => setAwake(null));
     api("/api/desk").then((d) => setOnOpen(d?.atualizacao?.ao_abrir !== false)).catch(() => setOnOpen(null));
   }, [api]);
 
@@ -32,11 +34,23 @@ function StartupSettings({ api }) {
     try {
       const r = await api("/api/system/autostart", { method: "POST", body: JSON.stringify({ enabled }), timeout: 30_000 });
       setAuto(r);
-      setMsg(r.ok === false ? r.message || "Não deu certo." : enabled ? "Pronto: o JARVIS liga sozinho quando você entrar no Windows." : "O JARVIS não liga mais sozinho com o Windows.");
+      setMsg(r.ok === false ? r.message || "Não deu certo." : enabled ? "Pronto: o JARVIS fica sempre ligado e liga sozinho quando você entrar no Windows." : "O JARVIS não liga mais sozinho com o Windows.");
+      api("/api/system/always-on").then(setAwake).catch(() => {});
     } catch (err) {
       setMsg(err.message);
     } finally {
       setBusy(false);
+    }
+  };
+
+  const toggleAwake = async (keepAwake) => {
+    setMsg("");
+    try {
+      const r = await api("/api/system/always-on", { method: "POST", body: JSON.stringify({ keep_awake: keepAwake }) });
+      setAwake(r);
+      setMsg(keepAwake ? "Pronto: na tomada, o PC não dorme mais por inatividade (a tela ainda apaga)." : "O PC volta a dormir normalmente.");
+    } catch (err) {
+      setMsg(err.message);
     }
   };
 
@@ -60,9 +74,19 @@ function StartupSettings({ api }) {
           <input type="checkbox" className={box} checked={!!auto?.enabled} disabled={!auto?.available || busy}
             onChange={(e) => toggleAuto(e.target.checked)} />
           <span>
-            <b>Ligar junto com o Windows.</b> Ao entrar no Windows, o JARVIS liga sozinho em segundo plano (sem janela e
-            sem abrir aba). Se ele cair, o guardião liga de novo.
+            <b>Sempre ligado.</b> Ao entrar no Windows, o JARVIS liga sozinho em segundo plano (sem janela e sem abrir
+            aba). Se ele cair, o guardião liga de novo; se o guardião cair, o JARVIS liga outro.
             {auto && !auto.available && <em className="block text-cyan-200/60">Só no PC com Windows onde o JARVIS roda.</em>}
+          </span>
+        </label>
+        <label className={`${row}${!awake || !auto?.enabled ? " opacity-50" : ""}`}>
+          <input type="checkbox" className={box} checked={!!awake?.keep_awake && !!auto?.enabled}
+            disabled={!awake || !auto?.enabled} onChange={(e) => toggleAwake(e.target.checked)} />
+          <span>
+            <b>Não deixar o PC dormir na tomada.</b> Com o carregador ligado, o PC não entra em suspensão por
+            inatividade, então o JARVIS continua respondendo pelo site e pelo celular. A tela ainda apaga normalmente;
+            na bateria nada muda.
+            {awake && awake.keep_awake && auto?.enabled && !awake.on_ac && <em className="block text-cyan-200/60">Agora na bateria: o PC pode dormir até voltar para a tomada.</em>}
           </span>
         </label>
         <label className={`${row}${onOpen === null ? " opacity-50" : ""}`}>
