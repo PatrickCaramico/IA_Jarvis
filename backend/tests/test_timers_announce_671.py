@@ -34,7 +34,9 @@ def test_named_timers():
         more = await timer("aumenta 5 minutos no timer do arroz")
         assert "mais 5 minutos" in more and "arroz" in more
         arroz = next(j for j in tools._timers.values() if j["label"].endswith("arroz"))
-        assert 19 * 60 < arroz["ends"] - time.monotonic() <= 20 * 60
+        # V9.1.1: folga de 0,5 s no limite de cima. No Windows o relógio monotônico anda em passos de ~15 ms: sem passo
+        # entre criar e conferir, a conta dava 1200.0000000000002 (arredondamento) e o teste falhava sem motivo.
+        assert 19 * 60 < arroz["ends"] - time.monotonic() <= 20 * 60 + 0.5
         assert "arroz" in await timer("cancela o timer do arroz")
         assert [j["label"] for j in tools._timers.values()] == ["o ovo"] or [j["label"] for j in tools._timers.values()] == ["ovo"]
         saved = json.loads(tools._TIMERS_PATH.read_text(encoding="utf-8"))

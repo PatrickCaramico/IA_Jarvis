@@ -251,7 +251,7 @@ test("V8.9.0: bloqueio do Desk: fundos animados com semente (V8.16: sem as ativi
   const css = fs.readFileSync(new URL("../src/desk.css", import.meta.url), "utf8");
   const block = css.slice(css.indexOf("V8.9.0 (ideia 12)"));
   assert.ok(!/\bzoom\s*:/.test(block) && !/\b(width|height|left|top)\s*:[^;]*;\s*\}\s*(to|from|\d+%)/.test(block));
-  for (const k of ["html.is-lite .dkl-bg *", "dkl-halo", "dkl-hub", "dkl-cards", "dkl-side"]) assert.ok(block.includes(k), k);
+  for (const k of ["html.is-lite .dkl-bg *", "dkl-halo", "dkl-hub", "dkl-side"]) assert.ok(block.includes(k), k);
   for (const k of ["dkl-walk", "dkl-star", "dkl-need", "dkl-bug"]) assert.ok(!css.includes(k), `${k} saiu`);
 });
 

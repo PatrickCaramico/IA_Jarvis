@@ -597,8 +597,6 @@ html.is-lite .dkl-bg *, html.is-lite .dkl-halo { animation: none !important; }
 .dkl-hub header button:hover { background: rgba(255, 255, 255, 0.1); }
 .dkl-hub .ls-secondary, .dkl-hub-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-start; }
 .dkl-hub .dkl-bgpick { max-width: none; justify-content: flex-start; }
-/* cartões (relógio, clima, música…) numa faixa acima do botão, como no estilo Orbe */
-.dkl-cards { width: min(900px, 94vw); }
 .dkl-hint { margin: 2px 0 0; color: #9aa3b8; font-size: 0.9rem; letter-spacing: 0.04em; text-align: center; }
 .dkl.has-bg .dkl-hint { color: #dbe1ec; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6); }
 /* microfone e palmas no canto (como no Orbe) */
@@ -606,7 +604,6 @@ html.is-lite .dkl-bg *, html.is-lite .dkl-halo { animation: none !important; }
 @media (max-width: 600px) {
   .dkl-hub-btn { top: max(10px, env(safe-area-inset-top)); right: 10px; padding: 6px 11px; }
   .dkl-side { position: static; justify-items: center; }
-  .dkl-cards { width: 100%; }
 }
 /* o carimbo e os botões FUNDO / MODO TORCEDOR ficam DENTRO do painel (como no Orbe), sem cobrir o microfone */
 .dkl-hub .bp-corner { position: static; display: flex; flex-wrap: wrap; gap: 8px; transform: none; }

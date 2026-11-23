@@ -41,12 +41,14 @@ test("V8.16: o balão: falha, entrada, legenda da Sentinela e ouvindo", () => {
 test("V8.16: o bloqueio do robô recebe as mesmas funções do clássico e não tem mais Tamagotchi nem jogo", () => {
   const lock = fs.readFileSync(new URL("../src/components/LockScreen.jsx", import.meta.url), "utf8");
   const desk = lock.slice(lock.indexOf("  if (deskLock) {"), lock.indexOf("// ---------------------------------------------------------------- V7.12: estilo ORBE"));
-  for (const k of ["cardsList={", "mic={", "clapNode={", "stampNode={", "hubActions={secondaryActions}", "fanPanelNode={", "caption={", "listening={listening}", "styleToggle={styleToggle}"]) {
+  for (const k of ["mic={", "clapNode={", "stampNode={", "hubActions={secondaryActions}", "fanPanelNode={", "caption={", "listening={listening}", "styleToggle={styleToggle}"]) {
     assert.ok(desk.includes(k), k);
   }
   assert.ok(lock.includes("{onDeskLock && !deskLock && ("), "dentro do robô não aparece o botão de ir para o robô");
   const src = fs.readFileSync(new URL("../src/components/DeskLock.jsx", import.meta.url), "utf8");
   for (const k of ["pet.js", "useStarsGame", "useActivity", "ALIMENTAR", "JOGAR"]) assert.ok(!src.includes(k), `${k} saiu`);
-  assert.ok(src.includes("<LockCards") && src.includes("⚙ GERENCIAR") && src.includes("lo-mic"));
+  assert.ok(src.includes("⚙ GERENCIAR") && src.includes("lo-mic"));
+  // V9.1.1: sem a faixa de cartões no bloqueio do robô
+  assert.ok(!src.includes("<LockCards") && !desk.includes("cardsList={"), "faixa de cartões saiu do robô");
   assert.ok(!fs.existsSync(new URL("../src/utils/pet.js", import.meta.url)));
 });

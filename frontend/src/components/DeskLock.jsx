@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import RoboAvatar from "./RoboAvatar.jsx";
 import ProgressBar from "./ProgressBar.jsx";
-import LockCards from "./LockCards.jsx";
 import { FaceCircle } from "./LockOrbe.jsx";
 import useNow from "../hooks/useNow.js";
 import { hexToRgb } from "../utils/desk.js";
@@ -46,7 +45,7 @@ export function bubbleLines(face, weather, now = new Date()) {
 
 export default function DeskLock({ api, phase, name, message, photoUrl, scan, pinBlock, mainLabel, onMain, mainVisible = true,
   failedActions = null, phoneButtons = null, jarvisState = "idle", onClassic = null, hint = "", stateHint = "", phone = false,
-  listening = false, caption = "", cards = null, cardsList = [], fanPanelNode = null, mic = null, clapNode = null, clapPulse = 0,
+  listening = false, caption = "", fanPanelNode = null, mic = null, clapNode = null, clapPulse = 0,
   stampNode = null, hubActions = null, styleToggle = null, onChangePhoto = null,
   onUpdate = null, updateCount = 0, updateNote = "", updateProgress = null }) {
   const now = useNow(true);
@@ -106,7 +105,6 @@ export default function DeskLock({ api, phase, name, message, photoUrl, scan, pi
   const tone = haloTone({ phase, listening, jarvisState, hour });
   const lines = bubbleLines(face, null, now);
   const say = deskBubble({ phase, name, message, caption, listening, hint, hintShown, hour, mood }) || lines[line % lines.length];
-  const showCards = !pinBlock && phase !== "scanning" && cardsList.length > 0;
   const accent = face?.cor || "#22d3ee";
   const clickRobot = (e) => {
     e.stopPropagation();
@@ -147,7 +145,8 @@ export default function DeskLock({ api, phase, name, message, photoUrl, scan, pi
       )}
 
       <footer className="dkl-actions">
-        {showCards && <div className="dkl-cards"><LockCards api={cards?.api} cards={cardsList} fanModeEnabled={cards?.fanModeEnabled} layout="strip" /></div>}
+        {/* V9.1.1: a faixa de cartões (mercado, clima, manchete, sistemas, Spotify, hoje, água) saiu do bloqueio do robô
+            a pedido do usuário: poluía a tela. O bloqueio clássico continua com os cartões. */}
         {mainVisible && !pinBlock && phase !== "scanning" && !phoneButtons && (
           <button type="button" className="dkl-main" onClick={(e) => { e.stopPropagation(); onMain(); }}>
             {phase === "verified" ? "➜" : phase === "failed" ? "⟳" : "🙂"} {mainLabel}
