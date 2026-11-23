@@ -6,6 +6,7 @@ import pytest
 # Modo Torcedor desligava o modo no data/jarvis_settings.json de verdade.)
 _WRITABLE = (
     ("access", "_RESUME_PATH", "retomar_apos_atualizar.json"),  # V8.12.2
+    ("memory_index", "_DB_PATH", "memoria_busca.db"),  # V9.0
     ("prefs", "_SETTINGS_PATH", "jarvis_settings.json"),
     ("sports_provider", "CACHE_FILE", "fan_cache.json"),
     ("fan_mode", "NEWS_CACHE_FILE", "fan_news_cache.json"),

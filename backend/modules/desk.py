@@ -423,7 +423,9 @@ def handle_voice(norm: str) -> str | None:
 # --------------------------------------------------------------------------- copiados
 _SECRET = [
     re.compile(r"\b(?:\d[ -]?){13,19}\b"),  # cartão
-    re.compile(r"^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^\w\s]).{8,40}$"),  # cara de senha (curta, mista, sem espaço)
+    # cara de senha (curta, mista, SEM espaço). V9.0: o "sem espaço" agora vale de verdade; antes endereços e frases
+    # ("Rua das Acácias, 123 - Maceió") eram tratados como senha e não entravam nos copiados.
+    re.compile(r"^(?!.*\s)(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^\w\s]).{8,40}$"),
     re.compile(r"\b(sk|pk|rk|ghp|gho|xox[abp]|AIza)[-_A-Za-z0-9]{16,}"),  # chaves de API
     re.compile(r"^[A-Za-z0-9+/=_-]{32,}$"),  # tokens longos
     re.compile(r"\b(senha|password|pin|cvv|token)\b\s*[:=]", re.I),

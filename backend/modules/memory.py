@@ -64,6 +64,9 @@ def add_conversation(user: str, assistant: str) -> None:
     data["conversation"].append({"user": user, "assistant": assistant, "at": datetime.now().isoformat(timespec="seconds")})
     data["conversation"] = data["conversation"][-20:]
     _save(data)
+    from modules import memory_index  # V9.0: e no arquivo pesquisável (todas as conversas, não só as 20 últimas)
+
+    memory_index.add_conversation(user, assistant)
 
 
 def clear_conversation(scope: str = "today") -> int:

@@ -299,6 +299,18 @@ async def chat(req: ChatRequest) -> dict:
     return await turns.handle_turn(req.message, routine=False)
 
 
+@router.get("/api/search/local")
+async def search_local(q: str = "", limit: int = 8) -> dict:
+    """V9.0: memória pesquisável (conversas, memórias, tarefas, lembretes, copiados), para a paleta Ctrl+K."""
+    from modules import memory_index
+
+    q = (q or "").strip()[:200]
+    if len(q) < 2:
+        return {"items": []}
+    items = await asyncio.to_thread(memory_index.search, q, limit)
+    return {"items": items}
+
+
 @router.post("/api/trigger-jarvis")
 async def trigger_jarvis(req: TriggerRequest) -> dict:
     """Rotina completa: câmera + notícias + IA."""
