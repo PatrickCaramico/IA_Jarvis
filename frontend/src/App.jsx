@@ -3304,7 +3304,7 @@ export default function App() {
           api={api}
           photo={photoWin.dataUrl}
           onClose={() => setPhotoWin(null)}
-          onSpeak={(t) => api("/api/speak", { method: "POST", body: JSON.stringify({ text: t }) }).catch(() => {})}
+          onSpeak={(t, speed) => api("/api/speak", { method: "POST", body: JSON.stringify({ text: t, speed }) }).catch(() => {})}
           onOpenHolo={(topic, photo) => {
             setPhotoWin(null);
             setResponseCards([]);
@@ -3349,9 +3349,9 @@ export default function App() {
           request={holo}
           onClose={() => setHolo(null)}
           onSend={(t) => send(t)}
-          onSpeak={(t) => api("/api/speak", { method: "POST", body: JSON.stringify({ text: t }) }).catch(() => {})}
+          onSpeak={(t, speed) => api("/api/speak", { method: "POST", body: JSON.stringify({ text: t, speed }) }).catch(() => {})}
           onStop={() => api("/api/cancel", { method: "POST" }).catch(() => {})}
-          onPrefetch={(texts) => api("/api/tts/prefetch", { method: "POST", body: JSON.stringify({ texts }) }).catch(() => {})}
+          onPrefetch={(texts, speed) => api("/api/tts/prefetch", { method: "POST", body: JSON.stringify({ texts, speed }) }).catch(() => {})}
         />
       )}
       {agentsOpen && (

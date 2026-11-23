@@ -5,6 +5,8 @@ import { speechSeconds, stepTimerText } from "../utils/holoIntent.js";
 import "../holo.css";
 import HoloVisual from "./HoloVisual.jsx";
 import { createAmbient, musicPreferred, rememberMusic } from "../utils/holoVisual.js";
+import { holoFileName, holoText, mergePartial, newReqId, nextSpeed, readSpeed, saveSpeed, speedLabel } from "../utils/holoExport.js";
+import { copyText } from "../utils/copyText.js";
 
 // V7.1: HOLOGRAMA. A pesquisa vira uma tela viva:
 // - APRESENTAÇÃO: cenas animadas (ícone, título, legenda palavra a palavra, tópicos, número que sobe) narradas
@@ -13,7 +15,8 @@ import { createAmbient, musicPreferred, rememberMusic } from "../utils/holoVisua
 //   ("próximo passo", "repete") e timer do passo com um toque. A tela não apaga enquanto está aberta.
 // Foto de fundo: a imagem do artigo da Wikipédia sobre o assunto (quando existe).
 
-const LOADING_LINES = ["Consultando a base de conhecimento…", "Organizando as cenas…", "Calibrando o holograma…", "Sincronizando a voz…"];
+// V8.14: a apresentação pesquisa na internet antes; as falas dizem isso
+const LOADING_LINES = ["Pesquisando na internet…", "Conferindo as fontes…", "Organizando as cenas…", "Calibrando o holograma…", "Sincronizando a voz…"];
 
 // V7.5: frases faladas exatamente como vão para a voz (para gerar o áudio ANTES e trocar de cena sem pausa)
 export const recipeIntro = (data) => `${data.fala || data.titulo}. Separe os ingredientes e diga "próximo passo" quando estiver pronto.`;
@@ -397,14 +400,19 @@ function SaveButton({ api, data, query, savedId }) {
   );
 }
 
-function Presentation({ data, image, speak, stop, onClose, speaking, api }) {
+function Presentation({ data, image, speak, stop, onClose, speaking, api, speed = 1, onSpeed = null }) {
   const [idx, setIdx] = useState(0);
   const [prev, setPrev] = useState(null); // cena que está saindo (se dissolve enquanto a nova entra)
   const [playing, setPlaying] = useState(true);
   const [ended, setEnded] = useState(false);
+  const [waitingMore, setWaitingMore] = useState(false); // V8.14: a próxima cena ainda está chegando
+  const [note, setNote] = useState(""); // V8.14: "Copiado" / "Arquivo baixado"
   const scenes = data.cenas;
   const scene = scenes[idx];
-  const seconds = speechSeconds(scene?.fala);
+  const seconds = speechSeconds(scene?.fala) / (speed || 1);
+  // V8.14: as cenas crescem enquanto a IA escreve; o "go" lê sempre o estado mais novo
+  const liveRef = useRef({ length: scenes.length, partial: Boolean(data.partial) });
+  liveRef.current = { length: scenes.length, partial: Boolean(data.partial) };
   const { say, halt } = useNarration({ speak, stop, enabled: true });
   const [bubble, setBubble] = useState(null); // V7.14: pergunta no meio { q, a }
   const [askOpen, setAskOpen] = useState(false);
@@ -432,18 +440,67 @@ function Presentation({ data, image, speak, stop, onClose, speaking, api }) {
   }, [api, data.titulo, halt, idx, say, scenes]);
 
   const go = useCallback((next) => {
-    if (next >= scenes.length) {
+    if (next >= liveRef.current.length) {
+      if (liveRef.current.partial) { // a próxima cena ainda não chegou: espera por ela (sem terminar)
+        setWaitingMore(true);
+        return;
+      }
       setEnded(true);
       setPlaying(false);
       return;
     }
+    setWaitingMore(false);
     setEnded(false);
     setIdx((cur) => {
       const n = Math.max(0, next);
       if (n !== cur) setPrev(cur);
       return n;
     });
-  }, [scenes.length]);
+  }, []);
+
+  // V8.14: chegou a cena que faltava (ou a versão final sem mais cenas): segue a apresentação
+  useEffect(() => {
+    if (!waitingMore) return;
+    if (scenes.length > idx + 1) go(idx + 1);
+    else if (!data.partial) go(scenes.length);
+  }, [waitingMore, scenes.length, data.partial, idx, go]);
+
+  // V8.14: teclado: ← → trocam de cena, espaço pausa/continua
+  const keyRef = useRef(null);
+  useEffect(() => {
+    const on = (e) => {
+      // digitando uma pergunta NO holograma: as teclas são do campo (o chat da central fica por trás e não conta)
+      const typing = ["INPUT", "TEXTAREA"].includes(e.target?.tagName) && e.target.closest?.(".holo-root");
+      if (typing || e.ctrlKey || e.altKey || e.metaKey) return;
+      if (e.key === "ArrowRight") { e.preventDefault(); keyRef.current?.("next"); }
+      else if (e.key === "ArrowLeft") { e.preventDefault(); keyRef.current?.("prev"); }
+      else if (e.key === " ") { e.preventDefault(); keyRef.current?.("toggle"); }
+    };
+    window.addEventListener("keydown", on);
+    return () => window.removeEventListener("keydown", on);
+  }, []);
+
+  const flash = useCallback((text) => {
+    setNote(text);
+    setTimeout(() => setNote(""), 2200);
+  }, []);
+  const copyAll = async () => flash(await copyText(holoText(data)) ? "Copiado ✓" : "Não consegui copiar");
+  const download = () => {
+    try {
+      const url = URL.createObjectURL(new Blob([holoText(data)], { type: "text/plain;charset=utf-8" }));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = holoFileName(data.titulo);
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      flash("Arquivo baixado ✓");
+    } catch {
+      flash("Não consegui baixar");
+    }
+  };
+  const jump = (i) => { halt(); setEnded(false); setWaitingMore(false); go(i); setPlaying(true); };
 
   useEffect(() => {
     if (prev === null) return undefined;
@@ -468,8 +525,10 @@ function Presentation({ data, image, speak, stop, onClose, speaking, api }) {
     else if (c === "pause") { halt(); setPlaying(false); }
     else if (c === "play") setPlaying(true);
     else if (c === "close") { halt(); onClose(); }
-  }, [ask, go, halt, idx, onClose, quiz]);
+    else if (c === "toggle") { if (playing) { halt(); setPlaying(false); } else setPlaying(true); }
+  }, [ask, go, halt, idx, onClose, playing, quiz]);
   useHoloCommands(cmd);
+  keyRef.current = cmd;
 
   if (quiz) return <Quiz api={api} data={data} say={(t) => say(t)} onDone={() => setQuiz(false)} />;
 
@@ -486,11 +545,24 @@ function Presentation({ data, image, speak, stop, onClose, speaking, api }) {
             </button>
           ))}
         </div>
+        {(data.fontes || []).length > 0 && (
+          <div className="holo-sources">
+            <small>🔎 FONTES DA PESQUISA</small>
+            <ol>
+              {data.fontes.map((f) => (
+                <li key={f.url}><a href={f.url} target="_blank" rel="noopener noreferrer">{f.titulo}</a></li>
+              ))}
+            </ol>
+          </div>
+        )}
         <div className="holo-controls">
           <button type="button" className="is-main" onClick={() => { halt(); setQuiz(true); }}>🧠 QUIZ: TESTAR O QUE APRENDI</button>
           <button type="button" onClick={() => { setIdx(0); setEnded(false); setPlaying(true); }}>↻ ASSISTIR DE NOVO</button>
+          <button type="button" onClick={copyAll} title="Copiar a apresentação em texto">📋 COPIAR</button>
+          <button type="button" onClick={download} title="Baixar a apresentação em .txt">⬇ BAIXAR</button>
           <button type="button" onClick={() => cmd("close")}>✕ FECHAR</button>
         </div>
+        {note && <p className="holo-note" role="status">{note}</p>}
       </div>
     );
   }
@@ -504,7 +576,7 @@ function Presentation({ data, image, speak, stop, onClose, speaking, api }) {
           <span>{s.icone}</span>
         </div>
       )}
-      <small className="holo-count">CENA {i + 1} DE {scenes.length}</small>
+      <small className="holo-count">CENA {i + 1} DE {scenes.length}{data.partial ? "+" : ""}</small>
       {s.titulo && <h2 className="holo-title">{leaving ? s.titulo : <Scramble text={s.titulo} />}</h2>}
       {leaving ? <p className="holo-caption is-static">{s.fala}</p> : <Caption text={s.fala} seconds={seconds} playing={playing} />}
       {!leaving && <VoiceWave active={speaking && playing} />}
@@ -535,12 +607,15 @@ function Presentation({ data, image, speak, stop, onClose, speaking, api }) {
 
   return (
     <>
-      <div className="holo-progress" aria-hidden="true">
-        {scenes.map((_, i) => (
-          <i key={i} className={i < idx ? "is-done" : i === idx ? "is-now" : ""}>
-            {i === idx && <b style={{ animationDuration: `${seconds}s`, animationPlayState: playing ? "running" : "paused" }} />}
-          </i>
+      {/* V8.14: um toque num pedaço da barra pula para a cena; o último pisca enquanto as cenas ainda chegam */}
+      <div className="holo-progress" role="group" aria-label="Cenas">
+        {scenes.map((s, i) => (
+          <button type="button" key={i} className={i < idx ? "is-done" : i === idx ? "is-now" : ""} onClick={() => jump(i)}
+            aria-label={`Cena ${i + 1}: ${s.titulo || ""}`} aria-current={i === idx || undefined}>
+            {i === idx && <b style={{ animationDuration: `${seconds}s`, animationPlayState: playing && !waitingMore ? "running" : "paused" }} />}
+          </button>
         ))}
+        {data.partial && <span className="is-coming" aria-hidden="true" />}
       </div>
       <div className="holo-stage-scenes">
         {prev !== null && scenes[prev] && renderScene(scenes[prev], prev, true)}
@@ -559,11 +634,16 @@ function Presentation({ data, image, speak, stop, onClose, speaking, api }) {
           <button type="submit" disabled={!askText.trim()}>PERGUNTAR</button>
         </form>
       )}
+      {waitingMore && <p className="holo-note" role="status">⟳ Montando a próxima cena…</p>}
       <div className="holo-controls">
         <button type="button" onClick={() => { setAskOpen((v) => !v); if (playing) cmd("pause"); }} aria-label="Fazer uma pergunta" title='Ou diga "espera, o que é…?"'>❓</button>
-        <button type="button" onClick={() => cmd("prev")} disabled={idx === 0} aria-label="Cena anterior">⟵</button>
-        <button type="button" className="is-main" onClick={() => cmd(playing ? "pause" : "play")} aria-label={playing ? "Pausar" : "Continuar"}>{playing ? "❚❚" : "▶"}</button>
-        <button type="button" onClick={() => cmd("next")} aria-label="Próxima cena">⟶</button>
+        <button type="button" onClick={() => cmd("prev")} disabled={idx === 0} aria-label="Cena anterior" title="Cena anterior (←)">⟵</button>
+        <button type="button" className="is-main" onClick={() => cmd(playing ? "pause" : "play")} aria-label={playing ? "Pausar" : "Continuar"} title="Pausar/continuar (espaço)">{playing ? "❚❚" : "▶"}</button>
+        <button type="button" onClick={() => cmd("next")} aria-label="Próxima cena" title="Próxima cena (→)">⟶</button>
+        {onSpeed && (
+          <button type="button" className="holo-speed" onClick={() => onSpeed(nextSpeed(speed))} title="Velocidade da narração (vale a partir da próxima fala)"
+            aria-label={`Velocidade da narração: ${speedLabel(speed)}`}>{speedLabel(speed)}</button>
+        )}
       </div>
       {image && !image.own && <span className="holo-credit">Imagem: Wikipédia</span>}
     </>
@@ -713,6 +793,30 @@ function useHoloCommands(handler) {
 
 export default function HoloStage({ api, request, onClose, onSend, onSpeak, onStop, onPrefetch = null }) {
   const [data, setData] = useState(null);
+  // V8.14: velocidade da narração (1x, 1,25x, 1,5x), lembrada neste navegador
+  const [speed, setSpeedState] = useState(readSpeed);
+  const speedRef = useRef(speed);
+  speedRef.current = speed;
+  const setSpeed = useCallback((v) => { saveSpeed(v); setSpeedState(v); }, []);
+  const speak = useCallback((t) => onSpeak(t, speedRef.current), [onSpeak]);
+  const prefetched = useRef(new Set());
+  const prefetch = useCallback((texts) => {
+    const fresh = texts.filter((t) => t && !prefetched.current.has(`${speedRef.current}|${t}`));
+    fresh.forEach((t) => prefetched.current.add(`${speedRef.current}|${t}`));
+    if (fresh.length) onPrefetch?.(fresh.slice(0, 10), speedRef.current);
+  }, [onPrefetch]);
+  const reqIdRef = useRef("");
+  // V8.14: as cenas chegam aos poucos (holo_partial): a apresentação começa na 1ª, sem esperar o resto
+  useEffect(() => {
+    const on = (e) => {
+      const m = e.detail || {};
+      if (m.type !== "holo_partial" || !reqIdRef.current || m.req_id !== reqIdRef.current) return;
+      setData((cur) => mergePartial(cur, m, request.query));
+      prefetch((m.cenas || []).map((c) => c.fala));
+    };
+    window.addEventListener("jarvis_ws_event", on);
+    return () => window.removeEventListener("jarvis_ws_event", on);
+  }, [prefetch, request.query]);
   const speaking = useSpeaking();
   const [error, setError] = useState("");
   const [line, setLine] = useState(0);
@@ -749,17 +853,27 @@ export default function HoloStage({ api, request, onClose, onSend, onSpeak, onSt
     let alive = true;
     setData(null);
     setError("");
-    api("/api/holo", { method: "POST", body: JSON.stringify({ query: request.query, kind: request.kind }), timeout: 60_000 })
+    const reqId = newReqId();
+    reqIdRef.current = reqId;
+    api("/api/holo", { method: "POST", body: JSON.stringify({ query: request.query, kind: request.kind, req_id: reqId }), timeout: 100_000 })
       .then((d) => {
         if (!alive) return;
+        reqIdRef.current = ""; // chegou a versão final: ignora pedaços atrasados
         setData(d);
         // V7.5: gera as falas antes (troca de cena sem esperar a voz ficar pronta)
         const texts = d.tipo === "receita" ? [recipeIntro(d), ...d.passos.map((_, i) => recipeStep(d, i))] : (d.cenas || []).map((c) => c.fala);
-        onPrefetch?.(texts.slice(0, 10));
+        prefetch(texts);
       })
-      .catch((err) => alive && setError(err.message || "Não consegui montar o holograma."));
+      .catch((err) => {
+        if (!alive) return;
+        reqIdRef.current = "";
+        // V8.14: se a apresentação já começou pelas cenas parciais, continua com elas (só some o "montando")
+        setData((cur) => (cur?.partial ? { ...cur, partial: false } : cur));
+        setError((prev) => prev || err.message || "Não consegui montar o holograma.");
+      });
     return () => {
       alive = false;
+      reqIdRef.current = "";
     };
   }, [api, request]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -798,13 +912,20 @@ export default function HoloStage({ api, request, onClose, onSend, onSpeak, onSt
       )}
       <div className="holo-scan" aria-hidden="true" />
       <button type="button" className="holo-close" onClick={close} aria-label="Fechar o holograma">✕</button>
+      {data?.tipo === "apresentacao" && (data.partial || data.fontes) && (
+        <div className={`holo-research${data.partial ? " is-building" : ""}`} role="status">
+          {data.partial ? "⟳ MONTANDO AS PRÓXIMAS CENAS…" : data.pesquisado || data.fontes?.length
+            ? `🔎 PESQUISADO NA INTERNET · ${data.fontes.length} ${data.fontes.length === 1 ? "FONTE" : "FONTES"}`
+            : "⚠ SEM PESQUISA NA INTERNET: PODE ESTAR DESATUALIZADO"}
+        </div>
+      )}
       {data?.tipo === "apresentacao" && (
         <button type="button" className="holo-music" onClick={music.toggle} aria-pressed={music.on} title={music.on ? "Desligar a trilha" : "Ligar a trilha"}>
           {music.on ? "🔈 TRILHA" : "🔇 TRILHA"}
         </button>
       )}
 
-      {data && (
+      {data && !data.partial && (
         <SaveButton api={api} data={data} query={request.query || ""} savedId={savedId} key={`${data.titulo}-${savedId}`} />
       )}
       {library !== undefined && !data && (
@@ -838,15 +959,15 @@ export default function HoloStage({ api, request, onClose, onSend, onSpeak, onSt
           <p key={line}>{LOADING_LINES[line]}</p>
         </div>
       )}
-      {error && (
+      {error && !data && (
         <div className="holo-loading" role="alert">
           <small>HOLOGRAMA INDISPONÍVEL</small>
           <p>{error}</p>
           <button type="button" className="holo-cta" onClick={close}>FECHAR</button>
         </div>
       )}
-      {data?.tipo === "apresentacao" && <Presentation data={data} image={image} speak={onSpeak} stop={onStop} onClose={close} speaking={speaking} api={api} />}
-      {data?.tipo === "receita" && <Recipe data={data} image={image} api={api} speak={onSpeak} stop={onStop} onSend={onSend} onClose={close} speaking={speaking} />}
+      {data?.tipo === "apresentacao" && <Presentation data={data} image={image} speak={speak} stop={onStop} onClose={close} speaking={speaking} api={api} speed={speed} onSpeed={setSpeed} />}
+      {data?.tipo === "receita" && <Recipe data={data} image={image} api={api} speak={speak} stop={onStop} onSend={onSend} onClose={close} speaking={speaking} />}
     </div>,
     document.body,
   );

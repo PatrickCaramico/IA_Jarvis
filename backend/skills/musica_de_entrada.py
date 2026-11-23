@@ -45,9 +45,14 @@ def musica_de_entrada(ctx: SkillContext) -> SkillResult:
     query = song_query()
     try:
         reply = spotify.search_and_play(query, False)
-    except RuntimeError:  # autorização expirou, sem Premium, sem aparelho ativo
+    except spotify.SpotifyError as exc:  # V8.13.2: sem aparelho (mesmo depois de abrir o app) ou sem Premium
+        log.warning("Spotify recusou a música de entrada: %s", exc.code)
+        if exc.code == "premium":
+            return SkillResult(ok=False, speech="O Spotify só deixa eu escolher a música com uma conta Premium, senhor.")
+        return SkillResult(ok=False, speech="Não achei o Spotify aberto em nenhum aparelho, senhor. Abra o Spotify e tente de novo.")
+    except RuntimeError:  # autorização expirou
         log.exception("Spotify recusou a música de entrada")
-        return SkillResult(ok=False, speech="O Spotify não deixou tocar agora, senhor. Abra o Spotify em algum aparelho e tente de novo.")
+        return SkillResult(ok=False, speech="A autorização do Spotify expirou, senhor. Conecte de novo em Configurações.")
     except Exception:  # noqa: BLE001
         log.exception("Falha ao tocar a música de entrada")
         return SkillResult(ok=False, speech="Não consegui tocar a música de entrada agora, senhor.")

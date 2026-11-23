@@ -1,5 +1,7 @@
 """Integração Spotify Web API via OAuth 2.0, com tokens armazenados localmente."""
 import json
+import logging
+import os
 import secrets
 import time
 from urllib.parse import urlencode
@@ -13,6 +15,20 @@ _states: set[str] = set()
 _AUTH_URL = "https://accounts.spotify.com/authorize"
 _TOKEN_URL = "https://accounts.spotify.com/api/token"
 _API_URL = "https://api.spotify.com/v1"
+log = logging.getLogger("jarvis.spotify")
+DEVICE_WAIT_S = 12  # V8.13.2: tempo para o app do Spotify aparecer depois de aberto pelo JARVIS
+
+
+class SpotifyError(RuntimeError):
+    """V8.13.2: falha de tocar com o motivo certo (a mensagem já é a frase para a tela)."""
+
+    def __init__(self, code: str, message: str) -> None:
+        super().__init__(message)
+        self.code = code
+
+
+NO_DEVICE_MSG = "Não achei o Spotify aberto em nenhum aparelho. Abra o Spotify (no PC ou no celular) e tente de novo."
+PREMIUM_MSG = "O Spotify só deixa o JARVIS escolher a música com uma conta Premium."
 _SCOPES = "user-modify-playback-state user-read-playback-state user-read-currently-playing"
 
 
@@ -86,8 +102,66 @@ def _request(method: str, path: str, **kwargs) -> requests.Response:
     return response
 
 
+def devices() -> list[dict]:
+    """V8.13.2: aparelhos com o Spotify aberto nesta conta (PC, celular, caixa de som)."""
+    return list(_request("GET", "/me/player/devices").json().get("devices") or [])
+
+
+def pick_device(items: list[dict]) -> dict | None:
+    """O que está tocando/ativo; senão o computador; senão o primeiro. Aparelho restrito não aceita controle."""
+    usable = [d for d in items if d.get("id") and not d.get("is_restricted")]
+    for test in (lambda d: d.get("is_active"), lambda d: (d.get("type") or "").lower() == "computer", lambda d: True):
+        found = next((d for d in usable if test(d)), None)
+        if found:
+            return found
+    return None
+
+
+def _launch_app() -> bool:
+    """Abre o app do Spotify no PC (Windows), sem esperar. Devolve se conseguiu pedir."""
+    if os.name != "nt":
+        return False
+    try:
+        os.startfile("spotify:")  # type: ignore[attr-defined]  # noqa: S606 - protocolo fixo, nada vindo de fora
+        return True
+    except OSError:
+        log.exception("Não consegui abrir o app do Spotify")
+        return False
+
+
+def ensure_device(launch: bool = True, wait_s: float = DEVICE_WAIT_S, sleep=time.sleep) -> str:
+    """V8.13.2: id do aparelho onde tocar. Antes o JARVIS mandava tocar "em lugar nenhum" e o Spotify recusava
+    (404, sem aparelho ativo) quando o app estava fechado ou parado havia um tempo. Agora escolhe um aparelho e,
+    sem nenhum, abre o Spotify do PC e espera ele aparecer."""
+    found = pick_device(devices())
+    if found:
+        return found["id"]
+    if launch and _launch_app():
+        deadline = time.monotonic() + wait_s
+        while time.monotonic() < deadline:
+            sleep(1.0)
+            found = pick_device(devices())
+            if found:
+                return found["id"]
+    raise SpotifyError("no_device", NO_DEVICE_MSG)
+
+
+def _play(body: dict | None = None, launch: bool = True) -> None:
+    """Toca no aparelho escolhido, com o motivo certo quando o Spotify recusa."""
+    device_id = ensure_device(launch=launch)
+    try:
+        _request("PUT", "/me/player/play", params={"device_id": device_id}, json=body or None)
+    except requests.HTTPError as exc:
+        status = exc.response.status_code if exc.response is not None else 0
+        if status == 403:
+            raise SpotifyError("premium", PREMIUM_MSG) from exc
+        if status == 404:
+            raise SpotifyError("no_device", NO_DEVICE_MSG) from exc
+        raise
+
+
 def play() -> None:
-    _request("PUT", "/me/player/play")
+    _play()
 
 
 def pause() -> None:
@@ -146,9 +220,9 @@ def search_and_play(query: str, playlist: bool = False) -> str:
         return f"Não encontrei {item_type} com o nome '{query}'."
     item = items[0]
     if playlist:
-        _request("PUT", "/me/player/play", json={"context_uri": item["uri"]})
+        _play({"context_uri": item["uri"]})  # V8.13.2: num aparelho de verdade (abre o Spotify se precisar)
         return f"Iniciando a playlist {item.get('name', query)}, senhor."
-    _request("PUT", "/me/player/play", json={"uris": [item["uri"]]})
+    _play({"uris": [item["uri"]]})
     artists = ", ".join(artist.get("name", "") for artist in item.get("artists", []))
     return f"Tocando {item.get('name', query)} de {artists}, senhor."
 
@@ -182,7 +256,7 @@ def play_playlist(uri: str, ramp: bool = True, target_volume: int = 60) -> str:
             set_volume(10)
         except Exception:  # noqa: BLE001 - alguns dispositivos não permitem volume remoto
             ramp = False
-    _request("PUT", "/me/player/play", json={"context_uri": context})
+    _play({"context_uri": context})
     if ramp:
         for vol in range(20, target_volume + 1, 10):
             time.sleep(0.8)

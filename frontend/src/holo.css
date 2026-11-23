@@ -1,7 +1,7 @@
 /* V7.1: HOLOGRAMA (components/HoloStage.jsx) */
 .holo-root { --holo: #67e8f9; --holo-2: #a78bfa; position: fixed; inset: 0; z-index: 96; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 56px 16px 24px; color: #e0fbff; background: radial-gradient(ellipse at 50% 40%, rgba(8, 47, 73, 0.95), #01040b 70%); animation: holo-in 420ms cubic-bezier(.2, .8, .2, 1); }
 @keyframes holo-in { from { opacity: 0; transform: scale(1.04); filter: blur(6px); } }
-.holo-bg { position: absolute; inset: -6%; background-size: cover; background-position: center; opacity: 0.22; filter: saturate(1.2) blur(2px); animation: holo-kenburns 28s ease-in-out infinite alternate; mask-image: radial-gradient(ellipse at center, #000 30%, transparent 75%); }
+.holo-bg { position: absolute; inset: -6%; background-size: cover; background-position: center; opacity: 0.34; filter: saturate(1.25) contrast(1.05) blur(0.5px); animation: holo-kenburns 28s ease-in-out infinite alternate; mask-image: radial-gradient(ellipse at center, #000 30%, transparent 75%); }
 @keyframes holo-kenburns { to { transform: scale(1.14) translate(-2%, -2%); } }
 .holo-grid { position: absolute; left: -50%; right: -50%; bottom: -10%; height: 55%; background-image: linear-gradient(rgba(103, 232, 249, 0.22) 1px, transparent 1px), linear-gradient(90deg, rgba(103, 232, 249, 0.22) 1px, transparent 1px); background-size: 60px 60px; transform: perspective(500px) rotateX(62deg); transform-origin: bottom; mask-image: linear-gradient(to top, #000, transparent 85%); animation: holo-floor 6s linear infinite; pointer-events: none; }
 @keyframes holo-floor { to { background-position: 0 60px, 0 0; } }
@@ -29,9 +29,15 @@
 
 /* apresentação */
 .holo-progress { position: absolute !important; top: max(18px, env(safe-area-inset-top)); left: 16px; right: 70px; display: flex; gap: 6px; }
-.holo-progress i { flex: 1; height: 3px; border-radius: 3px; background: rgba(224, 251, 255, 0.18); overflow: hidden; }
-.holo-progress i.is-done { background: var(--holo); }
-.holo-progress i b { display: block; height: 100%; background: var(--holo); box-shadow: 0 0 10px var(--holo); animation: holo-bar linear forwards; }
+.holo-progress > button, .holo-progress i { flex: 1; height: 3px; padding: 0; border: 0; border-radius: 3px; background: rgba(224, 251, 255, 0.18); overflow: hidden; cursor: pointer; }
+/* V8.14: a barra é clicável (pula para a cena): área de toque maior sem engrossar o traço */
+.holo-progress > button { position: relative; background-clip: content-box; padding: 8px 0; height: 19px; margin-top: -8px; }
+.holo-progress > button:hover { background-color: rgba(224, 251, 255, 0.35); }
+.holo-progress > button:focus-visible { outline: 2px solid var(--holo); outline-offset: 2px; }
+.holo-progress > .is-coming { flex: 1; height: 3px; border-radius: 3px; background: repeating-linear-gradient(90deg, rgba(103, 232, 249, 0.5) 0 6px, transparent 6px 12px); animation: holo-coming 1s linear infinite; }
+@keyframes holo-coming { to { background-position: 24px 0; } }
+.holo-progress i.is-done, .holo-progress > button.is-done { background-color: var(--holo); }
+.holo-progress i b, .holo-progress > button b { display: block; height: 100%; background: var(--holo); box-shadow: 0 0 10px var(--holo); animation: holo-bar linear forwards; }
 @keyframes holo-bar { from { width: 0; } to { width: 100%; } }
 .holo-scene { width: min(860px, 100%); display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; }
 .holo-icon { position: relative; width: 116px; height: 116px; display: grid; place-items: center; animation: holo-pop 700ms cubic-bezier(.2, 1.4, .3, 1); }
@@ -342,3 +348,17 @@
   .holo-quiz-opts { grid-template-columns: minmax(0, 1fr); }
   .holo-save { padding: 0 10px; }
 }
+
+/* ---------- V8.14: pesquisa na internet, fontes, velocidade e exportar ---------- */
+.holo-research { position: absolute !important; z-index: 3; top: max(34px, calc(env(safe-area-inset-top) + 20px)); left: 50%; transform: translateX(-50%); white-space: nowrap; max-width: calc(100vw - 32px); overflow: hidden; text-overflow: ellipsis; padding: 4px 10px; border-radius: 999px; border: 1px solid rgba(52, 211, 153, 0.6); background: rgba(2, 24, 20, 0.7); color: #a7f3d0; font: 600 10px "Orbitron", monospace; letter-spacing: 0.14em; animation: holo-chip-fade 500ms ease both; }
+.holo-research.is-building { border-color: rgba(103, 232, 249, 0.6); background: rgba(2, 12, 28, 0.7); color: #cffafe; animation: holo-pulse-chip 1.4s ease-in-out infinite; }
+.holo-sources { width: 100%; max-width: 640px; padding: 10px 14px; border-radius: 12px; border: 1px solid rgba(52, 211, 153, 0.35); background: rgba(2, 18, 20, 0.65); text-align: left; animation: holo-fade-up 600ms ease both; }
+.holo-sources small { color: #6ee7b7 !important; }
+.holo-sources ol { margin: 6px 0 0; padding-left: 20px; display: grid; gap: 3px; font-size: 0.9rem; }
+.holo-sources a { color: #e0fbff; text-decoration: underline; text-decoration-color: rgba(103, 232, 249, 0.5); text-underline-offset: 3px; word-break: break-word; }
+.holo-sources a:hover { color: #fff; text-decoration-color: var(--holo); }
+.holo-note { margin: 8px 0 0; font: 600 11px "Orbitron", monospace; letter-spacing: 0.14em; color: var(--holo); text-align: center; }
+.holo-controls button.holo-speed { min-width: 64px; font-variant-numeric: tabular-nums; }
+@media (prefers-reduced-motion: reduce) { .holo-progress > .is-coming, .holo-research.is-building { animation: none; } }
+@keyframes holo-pulse-chip { 50% { opacity: 0.55; } }
+@keyframes holo-chip-fade { from { opacity: 0; } }

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { DEFAULT_INTRO_SONG, VOICE_SAMPLE, VOICE_STYLES, shouldPlayOnOpen } from "../utils/voiceStyles.js";
+import { DEFAULT_INTRO_SONG, SILENT_MUSIC_TEXT, VOICE_SAMPLE, VOICE_STYLES, musicErrorText, shouldPlayOnOpen } from "../utils/voiceStyles.js";
 
 // V8.13: botão VOZ no topo da central, ao lado do ÁUDIO. Abre um painel para trocar a voz do JARVIS (toca um
 // exemplo com a voz nova) e, ao abrir, já solta a música de entrada: Back in Black, do AC/DC (a do Homem de Ferro).
@@ -19,17 +19,15 @@ export default function VoiceButton({ api }) {
   const song = prefs?.intro_song || DEFAULT_INTRO_SONG;
 
   const play = async (query) => {
-    setMusic({ state: "loading", text: "Chamando o Spotify…" });
+    setMusic({ state: "loading", text: "Chamando o Spotify… (se estiver fechado, eu abro)" });
     try {
-      await api("/api/integrations/spotify/play", { method: "POST", body: JSON.stringify({ query, playlist: false }), timeout: 20_000 });
+      // V8.13.2: o PC escolhe o aparelho e abre o Spotify se precisar (pode levar uns segundos)
+      await api("/api/integrations/spotify/play", { method: "POST", body: JSON.stringify({ query, playlist: false }), timeout: 40_000 });
+      playedThisPage = true; // só conta como "já tocou" quando tocou de verdade (antes uma falha travava as próximas)
       setMusic({ state: "playing", text: `🎸 Tocando ${query}` });
     } catch (err) {
-      const msg = /409|expirou|autoriz/i.test(err.message || "")
-        ? "O Spotify precisa ser reconectado (Configurações › Integrações)."
-        : /404|dispositivo|device|active/i.test(err.message || "")
-          ? "Abra o Spotify em algum aparelho e toque em TOCAR."
-          : "Não deu para tocar agora. Confira se o Spotify está conectado.";
-      setMusic({ state: "error", text: msg });
+      // V8.13.2: o motivo vem do PC (sem aparelho, sem Premium, não conectado); antes tudo virava "reconecte"
+      setMusic({ state: "error", text: musicErrorText(err.message) });
     }
   };
 
@@ -50,8 +48,9 @@ export default function VoiceButton({ api }) {
       setPrefs(p);
       const q = p?.intro_song || DEFAULT_INTRO_SONG;
       if (shouldPlayOnOpen({ alreadyPlayed: playedThisPage, silent: p?.silent_mode, song: q })) {
-        playedThisPage = true;
         play(q);
+      } else if (p?.silent_mode && !playedThisPage) {
+        setMusic({ state: "idle", text: SILENT_MUSIC_TEXT }); // antes ficava quieto sem dizer por quê
       }
     }).catch(() => setPrefs({}));
     // o painel fica fora da barra do topo (portal): a barra corta o que sai dela (overflow hidden)

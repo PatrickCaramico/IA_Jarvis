@@ -148,8 +148,11 @@ class SpotifyPlayRequest(BaseModel):
 @router.post("/api/integrations/spotify/play")
 async def spotify_play_search(req: SpotifyPlayRequest) -> dict:
     try:
-        response = await asyncio.to_thread(spotify.search_and_play, req.query, req.playlist)
+        # V8.13.2: pode abrir o app do Spotify e esperar ele aparecer (até ~12 s); teto de 35 s
+        response = await asyncio.wait_for(asyncio.to_thread(spotify.search_and_play, req.query, req.playlist), timeout=35)
         return {"response": response}
+    except asyncio.TimeoutError as exc:
+        raise HTTPException(status_code=504, detail="O Spotify demorou demais para responder. Tente de novo.") from exc
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except RuntimeError as exc:

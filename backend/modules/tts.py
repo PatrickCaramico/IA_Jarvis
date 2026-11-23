@@ -20,6 +20,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from contextvars import ContextVar
 from pathlib import Path
 from typing import Awaitable, Callable, Optional
 
@@ -130,6 +131,32 @@ VOICE_STYLES = {
 }
 
 
+# V8.14: velocidade da narração do holograma (1x, 1,25x, 1,5x). Vale só para a fala pedida com ela: vive numa
+# ContextVar, e a tarefa da fala (e da voz gerada antes) copia o valor de quem pediu.
+SPEEDS = (1.0, 1.25, 1.5)
+_speed_var: ContextVar[float] = ContextVar("jarvis_tts_speed", default=1.0)
+
+
+def use_speed(speed) -> object:
+    try:
+        value = float(speed) if speed is not None else 1.0
+    except (TypeError, ValueError):
+        value = 1.0
+    return _speed_var.set(value if value in SPEEDS else 1.0)
+
+
+def reset_speed(token) -> None:
+    _speed_var.reset(token)
+
+
+def combine_rate(base: str, speed: float) -> str:
+    """"-4%" a 1,25x vira "+21%" (o edge-tts aceita de -100% a +200%)."""
+    m = re.fullmatch(r"\s*([+-]?\d+)\s*%\s*", str(base or "+0%"))
+    pct = int(m.group(1)) if m else 0
+    total = max(-50, min(200, pct + round((speed - 1.0) * 100)))
+    return f"{total:+d}%"
+
+
 def voice_params() -> tuple[str, str, str]:
     """(voz, velocidade, tom) do estilo escolhido nas preferências."""
     try:
@@ -138,7 +165,11 @@ def voice_params() -> tuple[str, str, str]:
         style = VOICE_STYLES.get(prefs._load().get("voice_style") or "natural") or VOICE_STYLES["natural"]
     except Exception:  # noqa: BLE001
         style = VOICE_STYLES["natural"]
-    return (style["voice"] or settings.TTS_VOICE, style["rate"] or settings.TTS_RATE, style["pitch"])
+    rate = style["rate"] or settings.TTS_RATE
+    speed = _speed_var.get()
+    if speed != 1.0:
+        rate = combine_rate(rate, speed)
+    return (style["voice"] or settings.TTS_VOICE, rate, style["pitch"])
 
 
 def _cache_key(text: str, volume: str) -> str:

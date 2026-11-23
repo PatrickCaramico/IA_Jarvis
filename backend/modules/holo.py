@@ -7,6 +7,9 @@
 
 A tela é frontend/src/components/HoloStage.jsx; a nuvem tem a mesma montagem em netlify/nuvem/core.mjs.
 A IA devolve um JSON; aqui ele é conferido e encurtado (nada de texto gigante quebrando a tela).
+
+V8.14: a APRESENTAÇÃO pesquisa no Google antes (Gemini) e guarda as fontes (web_note + clean_sources), e as cenas
+chegam aos poucos (partial_scenes lê as cenas já completas do JSON que a IA ainda está escrevendo).
 """
 from __future__ import annotations
 
@@ -29,6 +32,34 @@ VISUAL_RULES = (
 )
 
 _RECIPE = re.compile(r"\breceitas?\b", re.I)
+
+
+MAX_SOURCES = 6
+
+
+def web_note() -> str:
+    """V8.14: regra de veracidade da apresentação pesquisada (a mesma da conversa: services/grounding.WEB_NOTE)."""
+    from services import grounding
+
+    return ("\n" + grounding.WEB_NOTE + " Nas falas, não cite links nem números de referência; as fontes aparecem "
+            "na tela no final.")
+
+
+def clean_sources(items) -> list[dict]:
+    """Fontes da pesquisa (do Gemini ou de uma apresentação salva): só https, sem repetir, no máximo 6."""
+    out, seen = [], set()
+    for item in items or []:
+        if not isinstance(item, dict):
+            continue
+        url = _short(item.get("url"), 500)
+        if not url.startswith("https://") or url in seen:
+            continue
+        seen.add(url)
+        title = _short(item.get("titulo") or item.get("name") or item.get("headline"), 90) or "Fonte"
+        out.append({"titulo": title, "url": url})
+        if len(out) >= MAX_SOURCES:
+            break
+    return out
 
 
 def guess_kind(query: str) -> str:
@@ -152,22 +183,84 @@ def parse(raw: str, kind: str) -> dict:
         return {**base, "fala": _short(data.get("fala"), 300), "rende": _short(data.get("rende"), 30),
                 "tempo": _short(data.get("tempo"), 30), "dificuldade": _short(data.get("dificuldade"), 15),
                 "ingredientes": ingredients[:14], "passos": steps[:10], "dica": _short(data.get("dica"), 240)}
-    scenes = []
-    for scene in data.get("cenas") or []:
-        if not isinstance(scene, dict) or not _short(scene.get("fala"), 400):
-            continue
-        num = scene.get("numero") if isinstance(scene.get("numero"), dict) else None
-        value = _number(num.get("valor")) if num else None
-        scenes.append({
-            "icone": _short(scene.get("icone"), 8) or "✦",
-            "titulo": _short(scene.get("titulo"), 70),
-            "fala": _short(scene.get("fala"), 400),
-            "pontos": [_short(p, 120) for p in scene.get("pontos") or [] if isinstance(p, str) and p.strip()][:3],
-            "numero": {"valor": value, "unidade": _short(num.get("unidade"), 30), "rotulo": _short(num.get("rotulo"), 60)}
-            if value is not None else None,
-            "visual": clean_visual(scene.get("visual")),
-            "foto": _short(scene.get("foto") if isinstance(scene.get("foto"), str) else "", 80),
-        })
+    scenes = [c for c in (clean_scene(scene) for scene in data.get("cenas") or []) if c]
     if len(scenes) < 2:
         raise ValueError("A apresentação veio vazia.")
-    return {**base, "cenas": scenes[:7]}
+    out = {**base, "cenas": scenes[:7]}
+    sources = clean_sources(data.get("fontes"))
+    if sources:
+        out["fontes"] = sources  # V8.14 (apresentação salva guarda as fontes também)
+    return out
+
+
+def clean_scene(scene) -> dict | None:
+    """Uma cena conferida e encurtada (ou None se não der para mostrar)."""
+    if not isinstance(scene, dict) or not _short(scene.get("fala"), 400):
+        return None
+    num = scene.get("numero") if isinstance(scene.get("numero"), dict) else None
+    value = _number(num.get("valor")) if num else None
+    return {
+        "icone": _short(scene.get("icone"), 8) or "✦",
+        "titulo": _short(scene.get("titulo"), 70),
+        "fala": _short(scene.get("fala"), 400),
+        "pontos": [_short(p, 120) for p in scene.get("pontos") or [] if isinstance(p, str) and p.strip()][:3],
+        "numero": {"valor": value, "unidade": _short(num.get("unidade"), 30), "rotulo": _short(num.get("rotulo"), 60)}
+        if value is not None else None,
+        "visual": clean_visual(scene.get("visual")),
+        "foto": _short(scene.get("foto") if isinstance(scene.get("foto"), str) else "", 80),
+    }
+
+
+def _objects_in_array(text: str, start: int) -> list[str]:
+    """Os objetos {...} JÁ FECHADOS dentro do array que começa em text[start] == "[" (respeita textos entre aspas)."""
+    out, depth, in_str, esc, obj_start = [], 0, False, False, -1
+    for i in range(start + 1, len(text)):
+        ch = text[i]
+        if in_str:
+            if esc:
+                esc = False
+            elif ch == "\\":
+                esc = True
+            elif ch == '"':
+                in_str = False
+            continue
+        if ch == '"':
+            in_str = True
+        elif ch == "{":
+            if depth == 0:
+                obj_start = i
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0 and obj_start >= 0:
+                out.append(text[obj_start:i + 1])
+                obj_start = -1
+        elif ch == "]" and depth == 0:
+            break
+    return out
+
+
+def partial_scenes(raw: str) -> list[dict]:
+    """V8.14: cenas completas do JSON que a IA ainda está escrevendo (a tela começa sem esperar o resto)."""
+    m = re.search(r'"cenas"\s*:\s*\[', raw or "")
+    if not m:
+        return []
+    scenes = []
+    for chunk in _objects_in_array(raw, m.end() - 1):
+        try:
+            scene = clean_scene(json.loads(chunk))
+        except ValueError:
+            continue
+        if scene:
+            scenes.append(scene)
+    return scenes[:7]
+
+
+def partial_title(raw: str) -> str:
+    m = re.search(r'"titulo"\s*:\s*"((?:[^"\\]|\\.)*)"', raw or "")
+    if not m:
+        return ""
+    try:
+        return _short(json.loads(f'"{m.group(1)}"'), 80)
+    except ValueError:
+        return _short(m.group(1), 80)
