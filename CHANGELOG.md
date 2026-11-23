@@ -2,6 +2,19 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 8.12.1 — 23 de novembro de 2026
+
+**⟳ Botão ATUALIZAR sempre no topo da central**
+- O botão fica sempre ao lado do ÁUDIO. Antes, só aparecia quando o PC já sabia de uma versão nova, e no site nunca aparecia.
+- O que ele faz depende de onde a central está aberta:
+  - **no PC**, confere a versão na hora: com versão nova, pergunta e atualiza; em dia, mostra "Tudo em dia: versão …";
+  - **no site ou em outro aparelho**, recarrega a central mais nova (por segurança, o PC só se atualiza com um pedido feito nele mesmo);
+  - **no app do celular**, procura o app novo.
+- Com versão nova, o botão fica âmbar e mostra uma bolinha com o número de versões.
+
+**🎵 Spotify à vista mesmo com a coluna direita recolhida**
+- Quando a coluna do clima e do canal se recolhe, o cartão do Spotify continua flutuando no canto direito, com os mesmos botões.
+
 ## 8.12.0 — 23 de novembro de 2026
 
 **🧠 IA com os pés no chão (menos invenção)**

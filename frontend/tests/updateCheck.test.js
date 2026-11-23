@@ -68,3 +68,14 @@ test("agenda a primeira verificação automática só depois de 24 horas", (cont
   assert.equal(scheduled[0].delay, AUTO_CHECK_INTERVAL_MS);
   stop();
 });
+
+test("V8.12.1: botão ATUALIZAR do topo", async () => {
+  const { updateButtonAction, checkOutcome } = await import("../src/utils/updateCheck.js");
+  assert.equal(updateButtonAction({ canSelfUpdate: true }), "check");
+  assert.equal(updateButtonAction({ isApp: true }), "app");
+  assert.equal(updateButtonAction({}), "reload"); // site: o PC não aceita atualização pedida de fora
+  assert.equal(checkOutcome({ available: true }), "update");
+  assert.equal(checkOutcome({ available: false }), "latest");
+  assert.equal(checkOutcome({ available: true, busy: true }), "busy");
+  assert.equal(checkOutcome(null), "error");
+});
