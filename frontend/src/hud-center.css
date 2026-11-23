@@ -1,0 +1,134 @@
+/* ==========================================================
+   V8.11.1 — centro da central renovado (components/HudCenter.jsx)
+   O reator, os atalhos e as dicas continuam; o que muda é o acabamento em volta deles.
+   ========================================================== */
+
+/* Brilho atrás do reator, na cor do estado (antes o reator ficava "solto" na grade) */
+.hl-center { isolation: isolate; }
+.hl-center::before {
+  content: ""; position: absolute; left: 50%; top: 46%; z-index: -1; pointer-events: none;
+  width: min(78vh, 92%); aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%;
+  background: radial-gradient(circle, rgba(79, 220, 255, 0.16) 0%, rgba(31, 194, 245, 0.07) 38%, transparent 68%);
+  transition: background 600ms ease, opacity 600ms ease;
+}
+.hl-center[data-state="processing"]::before { background: radial-gradient(circle, rgba(125, 235, 255, 0.24) 0%, rgba(31, 194, 245, 0.1) 40%, transparent 70%); }
+.hl-center[data-state="speaking"]::before { background: radial-gradient(circle, rgba(251, 191, 36, 0.16) 0%, rgba(245, 158, 11, 0.06) 40%, transparent 70%); }
+.hl-center[data-state="listening"]::before { background: radial-gradient(circle, rgba(167, 243, 255, 0.26) 0%, rgba(79, 220, 255, 0.1) 42%, transparent 72%); }
+
+/* Régua do estado: agora com um cursor que corre enquanto pensa e enche enquanto ouve */
+.hl-ticks { position: relative; overflow: hidden; border-radius: 2px; }
+.hl-ticks > i {
+  position: absolute; inset: 0 auto 0 0; width: 0; opacity: 0;
+  background: linear-gradient(90deg, transparent, rgba(167, 243, 255, 0.9), transparent);
+  transition: width 300ms ease, opacity 300ms ease;
+}
+.hl-center[data-state="processing"] .hl-ticks > i { width: 30%; opacity: 1; animation: hc-scan 1.4s ease-in-out infinite; }
+.hl-center[data-state="listening"] .hl-ticks > i { width: 100%; opacity: 0.6; background: linear-gradient(90deg, rgba(79, 220, 255, 0.15), rgba(167, 243, 255, 0.8), rgba(79, 220, 255, 0.15)); animation: hc-breathe 1.2s ease-in-out infinite; }
+.hl-center[data-state="speaking"] .hl-ticks > i { width: 100%; opacity: 0.5; background: linear-gradient(90deg, transparent, rgba(251, 191, 36, 0.8), transparent); animation: hc-breathe 0.9s ease-in-out infinite; }
+@keyframes hc-scan { 0% { transform: translateX(-100%); } 100% { transform: translateX(340%); } }
+@keyframes hc-breathe { 50% { opacity: 0.2; } }
+
+/* Linha de estado: diz o que está acontecendo (e quanto tempo faz) */
+.hc-hint {
+  margin: 8px 0 0; min-height: 24px; display: flex; align-items: center; justify-content: center; gap: 10px;
+  max-width: min(640px, 92%); text-align: center; font-size: 0.82rem; letter-spacing: 0.04em;
+  color: rgba(201, 246, 255, 0.62); position: relative; z-index: 2;
+}
+.hc-hint.is-listen { color: #e6fbff; font-size: 0.95rem; }
+.hc-hint.is-work { color: rgba(201, 246, 255, 0.85); font-variant-numeric: tabular-nums; }
+.hc-hint.is-slow { color: #fcd34d; }
+.hc-hint.is-talk { color: rgba(253, 230, 138, 0.85); }
+.hc-cancel {
+  flex: none; padding: 3px 10px; border-radius: 999px; cursor: pointer;
+  border: 1px solid rgba(248, 113, 113, 0.5); background: rgba(127, 29, 29, 0.25); color: #fecaca;
+  font: 600 9px "Orbitron", monospace; letter-spacing: 0.12em; transition: background 160ms ease, box-shadow 160ms ease;
+}
+.hc-cancel:hover { background: rgba(185, 28, 28, 0.45); box-shadow: 0 0 12px rgba(248, 113, 113, 0.45); color: #fff; }
+.hl-center:has(.zg-root) > .hc-hint { visibility: hidden; }
+
+/* Anel de mira em volta do reator (mesmo quadrado do reator, centrado) */
+.hl-orb > .hc-ring {
+  position: absolute; top: 50%; left: 50%; height: calc(100% - 8px); max-width: 100%; aspect-ratio: 1;
+  transform: translate(-50%, -50%); pointer-events: none; z-index: 0; overflow: visible;
+}
+.hc-ring circle { fill: none; }
+.hc-ring-ticks { stroke: rgba(79, 220, 255, 0.28); stroke-width: 2.2; stroke-dasharray: 0.6 4.6; }
+.hc-ring-arc { stroke: rgba(79, 220, 255, 0.32); stroke-width: 0.9; stroke-linecap: round; }
+.hc-ring-arc.is-thin { stroke: rgba(167, 243, 255, 0.45); stroke-width: 1.6; }
+.hc-ring-spin { transform-origin: 100px 100px; animation: hc-spin 60s linear infinite; }
+.hc-ring-spin.is-rev { animation-duration: 90s; animation-direction: reverse; }
+.hl-center[data-state="processing"] .hc-ring-spin { animation-duration: 6s; }
+.hl-center[data-state="processing"] .hc-ring-spin.is-rev { animation-duration: 9s; }
+.hl-center[data-state="processing"] .hc-ring-arc { stroke: rgba(167, 243, 255, 0.6); }
+.hl-center[data-state="speaking"] .hc-ring-arc { stroke: rgba(251, 191, 36, 0.5); }
+.hl-center[data-state="speaking"] .hc-ring-ticks { stroke: rgba(251, 191, 36, 0.3); }
+.hl-center[data-state="listening"] .hc-ring-arc { stroke: rgba(167, 243, 255, 0.7); }
+@keyframes hc-spin { to { transform: rotate(360deg); } }
+
+/* Telemetria: duas colunas discretas, uma de cada lado do reator */
+.hl-orb > .hc-telemetry {
+  position: absolute; top: 50%; transform: translateY(-50%); z-index: 1; list-style: none; margin: 0; padding: 0;
+  display: grid; gap: 18px; width: 150px; pointer-events: none;
+}
+/* Coladas no reator: 50cqh = metade da altura da área do orbe = o raio do reator */
+.hl-orb { container-type: size; }
+.hl-orb > .hc-telemetry[data-side="left"] { right: calc(50% + 50cqh + 18px); text-align: left; }
+.hl-orb > .hc-telemetry[data-side="right"] { left: calc(50% + 50cqh + 18px); text-align: right; }
+.hc-readout { display: grid; gap: 3px; padding: 0 10px; border-left: 2px solid rgba(79, 220, 255, 0.45); }
+.hc-readout[data-side="right"] { border-left: 0; border-right: 2px solid rgba(79, 220, 255, 0.45); }
+.hc-r-label { font: 600 8.5px "Orbitron", monospace; letter-spacing: 0.18em; color: rgba(103, 232, 249, 0.6); }
+.hc-r-value { font: 600 1.05rem "Orbitron", "Rajdhani", sans-serif; color: #e6fbff; font-variant-numeric: tabular-nums; text-shadow: 0 0 10px rgba(79, 220, 255, 0.45); }
+.hc-r-sub { font-size: 0.72rem; color: rgba(201, 246, 255, 0.7); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hc-r-bar { display: block; height: 3px; border-radius: 2px; background: rgba(79, 220, 255, 0.14); overflow: hidden; }
+.hc-r-bar > s { display: block; height: 100%; background: #4fdcff; box-shadow: 0 0 8px rgba(79, 220, 255, 0.7); transition: width 700ms ease; }
+.hc-readout.is-warn .hc-r-value { color: #fde68a; }
+.hc-readout.is-warn .hc-r-bar > s { background: #fbbf24; box-shadow: 0 0 8px rgba(251, 191, 36, 0.7); }
+.hc-readout.is-hot .hc-r-value { color: #fecaca; }
+.hc-readout.is-hot .hc-r-bar > s { background: #f87171; box-shadow: 0 0 8px rgba(248, 113, 113, 0.7); }
+/* Sem espaço dos lados do reator (janela estreita, painéis abertos), as leituras somem em vez de cobrir o orbe */
+@media (max-width: 1280px) { .hl-orb > .hc-telemetry { display: none; } }
+
+/* Atalhos: uma doca de vidro só, em vez de seis pílulas soltas */
+.hl-orb-actions {
+  gap: 0 !important; padding: 4px; border-radius: 18px; max-width: 96%;
+  border: 1px solid rgba(103, 232, 249, 0.22);
+  background: linear-gradient(180deg, rgba(8, 36, 60, 0.72), rgba(2, 12, 26, 0.82));
+  box-shadow: 0 8px 30px rgba(0, 10, 25, 0.45), inset 0 1px 0 rgba(167, 243, 255, 0.12);
+  backdrop-filter: blur(6px);
+}
+.hl-orb-actions > button,
+.hl-orb-actions > .hl-gods-eye-trigger,
+.hl-orb-actions > .hl-agents-trigger { border-color: transparent !important; background: transparent !important; padding: 7px 13px !important; }
+.hl-orb-actions > button + button { position: relative; }
+.hl-orb-actions > button + button::before {
+  content: ""; position: absolute; left: -1px; top: 25%; bottom: 25%; width: 1px; background: rgba(103, 232, 249, 0.18);
+}
+.hl-orb-actions > button:hover { background: rgba(34, 211, 238, 0.16) !important; box-shadow: inset 0 0 0 1px rgba(103, 232, 249, 0.45) !important; }
+.hl-orb-actions > button:focus-visible { outline: 2px solid #67e8f9; outline-offset: 2px; }
+/* Notebook (centro mais estreito): botões mais justos para a doca caber numa linha só */
+@media (max-width: 1600px) {
+  .hl-orb-actions > button, .hl-orb-actions > .hl-gods-eye-trigger, .hl-orb-actions > .hl-agents-trigger {
+    padding: 6px 7px !important; font-size: 8.5px !important; letter-spacing: 0.04em !important;
+  }
+}
+
+/* Microfone: maior, com anel e legenda; pulsa ouvindo, gira pensando, âmbar falando */
+.hc-mic-wrap { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; justify-self: center; }
+.hc-mic-wrap .hl-mic { width: 58px; height: 58px; position: relative; }
+.hc-mic-wrap .hl-mic::after {
+  content: ""; position: absolute; inset: -7px; border-radius: 50%; pointer-events: none;
+  border: 1px dashed rgba(79, 220, 255, 0.35);
+}
+.hc-mic-wrap.is-listening .hl-mic::after { border-style: solid; border-color: rgba(167, 243, 255, 0.8); animation: hc-ripple 1.2s ease-out infinite; }
+.hc-mic-wrap.is-processing .hl-mic { opacity: 0.75; }
+.hc-mic-wrap.is-processing .hl-mic::after { border-color: rgba(167, 243, 255, 0.65); border-style: dashed; animation: hc-spin 3s linear infinite; }
+.hc-mic-wrap.is-speaking .hl-mic { color: #fde68a; border-color: #fbbf24; box-shadow: 0 0 20px rgba(251, 191, 36, 0.35); }
+.hc-mic-cap { font: 600 8px "Orbitron", monospace; letter-spacing: 0.2em; color: rgba(103, 232, 249, 0.6); white-space: nowrap; }
+.hc-mic-wrap.is-listening .hc-mic-cap { color: #e6fbff; }
+/* Celular: o rodapé é baixo; a legenda sairia cortada embaixo do botão */
+@media (max-width: 640px) { .hc-mic-cap { display: none; } }
+@keyframes hc-ripple { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(1.35); opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .hc-ring-spin, .hl-ticks > i, .hc-mic-wrap .hl-mic::after { animation: none !important; }
+}

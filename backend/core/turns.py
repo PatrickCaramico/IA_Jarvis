@@ -102,6 +102,16 @@ async def handle_restricted_turn(message: str) -> dict:
 
 
 async def handle_turn(message: str, routine: bool, force_deep: bool = False) -> dict:
+    result = await _handle_turn(message, routine, force_deep)
+    # V8.11.1: pedido cancelado no meio devolve a tela para "em espera". Antes, se o cancelar chegava logo no
+    # começo do turno, o "processando" do turno saía DEPOIS do "em espera" do /api/cancel e a central ficava
+    # presa em PROCESSANDO/OCUPADO. Só quando nenhum pedido novo começou nesse meio tempo (session.busy).
+    if isinstance(result, dict) and result.get("status") == "canceled" and not session.busy:
+        await runtime.manager.broadcast({"type": "state", "state": "idle"})
+    return result
+
+
+async def _handle_turn(message: str, routine: bool, force_deep: bool = False) -> dict:
     message = message.strip()
     if not message:
         raise HTTPException(status_code=400, detail="Mensagem vazia.")

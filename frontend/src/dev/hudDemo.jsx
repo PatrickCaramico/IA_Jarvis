@@ -49,6 +49,7 @@ const DATA = {
     { label: "Hoje 21:00", title: "Ligar para a mãe", kind: "lembrete" },
     { label: "Amanhã 09:30", title: "Reunião de planejamento", kind: "agenda" },
   ] },
+  "/api/system": { cpu_percent: 23, ram_percent: 74, disk_free_gb: 412.6, processes: 231 }, // V8.11.1: telemetria do centro
   "/api/water": { total_ml: 1250, goal_ml: 2500, percentage: 50 },
   "/api/lock/status": { devices: 2, phones: 1, next_alarm: "amanhã às 07:00" },
   "/api/briefing/news-themes": { items: [
@@ -68,6 +69,9 @@ const DATA = {
     { id: 1, title: "Viagem a Maceió", target: new Date(Date.now() + (3 * 86400 + 4 * 3600 + 125) * 1000).toISOString().slice(0, 19), all_day: false },
   ] },
 };
+
+// ?upd=0: sem atualização pendente (com ela, a atualização ao abrir roda e a demo para no bloqueio)
+if (q.get("upd") === "0") DATA["/api/system/update/status"] = { available: false, count: 0 };
 
 const realFetch = window.fetch.bind(window);
 window.fetch = async (input, init) => {
