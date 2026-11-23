@@ -759,70 +759,50 @@ def _find_start_menu_app(name: str, index: dict[str, str] | None = None) -> tupl
     return None
 
 
-def _try_open_smart(target_name: str) -> tuple[bool, str, str]:
-    """Tenta abrir de forma inteligente e segura:
-    1. Se for serviço de streaming/web conhecido com limites de palavra (\b), abre direto no navegador.
-    2. Se tiver extensão de domínio explícita (.com, .br, etc), abre URL.
-    3. Se existir aplicativo local no Windows ou comando executável, abre na máquina com proteção contra injeção.
-    4. Não tenta adivinhar sites desconhecidos com .com para evitar abrir páginas indesejadas sem confirmação.
-    Retorna (sucesso, tipo_execucao, label).
+def _try_open_smart(target_name: str) -> tuple[bool, str, str, str]:
+    """Tenta abrir de forma inteligente e segura. Devolve (abriu, tipo, nome, caminho):
+    1. serviço web/streaming conhecido (limites de palavra) ou domínio explícito (.com, .br...): abre no navegador;
+    2. atalho do Menu Iniciar (os programas instalados do usuário): abre direto;
+    3. V8.11 (Q8): programa só achado no PATH/registro, ou terminal/Registro mesmo no Menu Iniciar: NÃO abre;
+       devolve tipo "ask" e o caminho, e quem chamou pergunta "Abro? Diga sim" (skills/abrir_programa.py);
+    4. não tenta adivinhar sites desconhecidos com .com sem confirmação.
     """
+    from skills import abrir_programa
+
     clean = _deaccent(target_name).strip()
     if not clean:
-        return False, "", ""
+        return False, "", "", ""
 
     # 1. Checa serviços web / streamings com limites de palavra exatos (\b)
     for key, url in _SMART_WEB_SERVICES.items():
         if clean == key or bool(re.search(rf"\b{re.escape(key)}\b", clean, flags=re.I)):
             _open_target(url)
-            return True, "web", key.title()
+            return True, "web", key.title(), url
 
-    # 2. Se for link ou domínio explicitamente digitado (.com, .br, etc)
+    # Se for link ou domínio explicitamente digitado (.com, .br, etc)
     if re.search(r"\.(com|br|org|net|io|ai|tv|gov)\b", clean, flags=re.I) or clean.startswith("http"):
         url = clean if clean.startswith("http") else f"https://{clean}"
         _open_target(url)
-        return True, "web", clean
+        return True, "web", clean, url
 
-    # 3. Tenta localizar executável local no sistema
-    import shutil
-    cmd_name = clean.replace(" ", "")
-    if shutil.which(cmd_name) or shutil.which(clean):
-        try:
-            _open_target(clean)
-            return True, "app", clean.title()
-        except Exception:
-            pass
-
-    # V8.10.0: Menu Iniciar (rápido, sem PowerShell)
+    # 2. V8.10.0: Menu Iniciar (rápido, sem PowerShell)
     if os.name == "nt":
         hit = _find_start_menu_app(clean)
         if hit:
+            if abrir_programa.is_dangerous(clean, hit[1]) or abrir_programa.is_dangerous(hit[0]):
+                return False, "ask", hit[0].title(), hit[1]
             try:
                 os.startfile(hit[1])  # type: ignore[attr-defined]
-                return True, "app", hit[0].title()
+                return True, "app", hit[0].title(), hit[1]
             except OSError:
                 log.info("Atalho do Menu Iniciar não abriu: %s", hit[1])
 
-    # No Windows, tenta Start-Process direto de forma segura sem injeção de comandos
-    if os.name == "nt":
-        # Bloqueia caracteres de controle perigosos
-        if not re.search(r"[;&|`$<>\"'\n\r]", clean):
-            try:
-                env = os.environ.copy()
-                env["JARVIS_TARGET"] = clean
-                res = subprocess.run(
-                    ["powershell", "-NoProfile", "-NonInteractive", "-WindowStyle", "Hidden", "-Command", "Start-Process -FilePath $env:JARVIS_TARGET -ErrorAction Stop"],
-                    capture_output=True,
-                    timeout=6.0,  # V8.10.0: o PowerShell leva até uns 3 s só para ligar no Windows com antivírus
-                    env=env
-                )
-                if res.returncode == 0:
-                    return True, "app", clean.title()
-            except Exception:
-                pass
+    # 3. V8.11 (Q8): executável do PATH ou do registro: só com o "sim"
+    found = abrir_programa.resolve(clean)
+    if found:
+        return False, "ask", clean.title(), found
 
-    # 4. Não tenta adivinhar abrindo .com arbitrário no navegador sem confirmação
-    return False, "", ""
+    return False, "", "", ""
 
 
 def _open_spotify_desktop() -> None:
@@ -935,7 +915,12 @@ async def _h_open(message: str, norm: str, words: int, name: str) -> Optional[st
             return f"Não consegui abrir {label}."
 
     # Roteador inteligente: se não estava na lista de atalhos, analisa automaticamente
-    ok, mode, final_label = await asyncio.to_thread(_try_open_smart, wanted)
+    ok, mode, final_label, found_path = await asyncio.to_thread(_try_open_smart, wanted)
+    if mode == "ask":  # V8.11 (Q8): programa desconhecido ou de sistema: pergunta antes
+        from core import voice_route
+        from skills import abrir_programa
+
+        return abrir_programa.offer(final_label, found_path, voice_route.is_remote())
     if ok:
         _remember_open(final_label, wanted)
         if mode == "web":
@@ -1096,32 +1081,38 @@ def _search_duckduckgo(query: str) -> tuple[list[str], list[dict]]:
     return snippets, sources
 
 
-def _fetch_web_results(query: str) -> tuple[list[str], list[dict]]:
-    """Tenta Google, Bing e DuckDuckGo HTML até achar resultados legíveis."""
-    # 1. Google
-    try:
-        snips, srcs = _search_google(query)
-        if snips:
-            return snips, srcs
-    except Exception as exc:
-        log.warning("Busca Google falhou (%s), tentando Bing...", exc)
+WEB_RACE_TIMEOUT_S = 7.0  # V8.11 (Q5): teto da corrida entre os buscadores
 
-    # 2. Bing
-    try:
-        snips, srcs = _search_bing(query)
-        if snips:
-            return snips, srcs
-    except Exception as exc:
-        log.warning("Busca Bing falhou (%s), tentando DuckDuckGo...", exc)
 
-    # 3. DuckDuckGo HTML
-    try:
-        snips, srcs = _search_duckduckgo(query)
-        if snips:
-            return snips, srcs
-    except Exception as exc:
-        log.warning("Busca DuckDuckGo falhou (%s).", exc)
+def _fetch_web_results(query: str, timeout: float | None = None) -> tuple[list[str], list[dict]]:
+    """Google, Bing e DuckDuckGo AO MESMO TEMPO; vale o primeiro que trouxer resultado legível.
 
+    V8.11 (Q5): antes era um depois do outro (6 s de espera cada): com o Google bloqueando, a resposta levava até
+    18 s. Agora o pior caso é o teto da corrida (os que chegarem depois são descartados).
+    """
+    import concurrent.futures as cf
+
+    engines = (("Google", _search_google), ("Bing", _search_bing), ("DuckDuckGo", _search_duckduckgo))
+    pool = cf.ThreadPoolExecutor(max_workers=len(engines), thread_name_prefix="busca")
+    futures = {pool.submit(fn, query): name for name, fn in engines}
+    done_results: dict[str, tuple[list[str], list[dict]]] = {}
+    try:
+        for fut in cf.as_completed(futures, timeout=timeout or WEB_RACE_TIMEOUT_S):
+            name = futures[fut]
+            try:
+                snips, srcs = fut.result()
+            except Exception as exc:  # noqa: BLE001 - um buscador fora do ar não para os outros
+                log.warning("Busca %s falhou (%s).", name, exc)
+                continue
+            if snips:
+                done_results[name] = (snips, srcs)
+                break
+    except cf.TimeoutError:
+        log.warning("Nenhum buscador respondeu em %.0f s para: %s", timeout or WEB_RACE_TIMEOUT_S, query)
+    finally:
+        pool.shutdown(wait=False, cancel_futures=True)
+    if done_results:
+        return next(iter(done_results.values()))
     return [], []
 
 
@@ -1555,58 +1546,46 @@ async def _h_custom_shortcut(message: str, norm: str, words: int, name: str) -> 
 
 
 # ===================================================================== controle do sistema (Fase 1)
-def _activate_browser() -> bool:
-    if os.name != "nt":
-        return False
-    script = r"""
-$shell = New-Object -ComObject WScript.Shell
-$browser = Get-Process -Name chrome,msedge,firefox -ErrorAction SilentlyContinue |
-    Where-Object { $_.MainWindowHandle -ne 0 } |
-    Select-Object -First 1
-if ($null -eq $browser) { exit 1 }
-if (-not $shell.AppActivate($browser.Id)) { exit 1 }
-"""
-    try:
-        subprocess.run(
-            ["powershell", "-NoProfile", "-NonInteractive", "-WindowStyle", "Hidden", "-Command", script],
-            check=True,
-            capture_output=True,
-            text=True,
-            timeout=10,
-        )
-    except (OSError, subprocess.SubprocessError):
-        return False
-    return True
+_BROWSER_PROCS = {"chrome.exe", "msedge.exe", "firefox.exe", "brave.exe", "opera.exe", "vivaldi.exe"}
+_TAB_KEYS = {"next": ("ctrl", "tab"), "previous": ("ctrl", "shift", "tab"), "close": ("ctrl", "w"),
+             "new": ("ctrl", "t"), "reopen": ("ctrl", "shift", "t")}
 
 
-def _send_browser_key(command: str) -> bool:
-    if not _activate_browser():
-        return False
-    keys = {
-        "next": "^{TAB}",
-        "previous": "^+{TAB}",
-        "close": "^w",
-        "new": "^t",
-        "reopen": "^+t",
-    }
-    key = keys[command]
-    script = f"""
-$shell = New-Object -ComObject WScript.Shell
-Start-Sleep -Milliseconds 120
-$shell.SendKeys('{key}')
-"""
-    try:
-        subprocess.run(
-            ["powershell", "-NoProfile", "-NonInteractive", "-WindowStyle", "Hidden", "-Command", script],
-            check=True,
-            capture_output=True,
-            text=True,
-            timeout=10,
-        )
-        return True
-    except (OSError, subprocess.SubprocessError):
-        log.exception("Falha ao enviar comando para a aba do navegador")
-        return False
+def _browser_window(dk):
+    """A janela de navegador para receber o comando: a da frente, se for navegador; senão a mais acima na tela.
+    Janelas da própria central do JARVIS ficam por último (o comando quase nunca é para ela)."""
+    browsers = [w for w in dk.windows() if w.process.lower() in _BROWSER_PROCS and not w.minimized]
+    if not browsers:
+        return None
+    fg = dk.foreground()
+    front = next((w for w in browsers if w.hwnd == fg and "jarvis" not in w.title.lower()), None)
+    if front:
+        return front
+    others = [w for w in browsers if "jarvis" not in w.title.lower()]
+    return (others or browsers)[0]
+
+
+def _send_browser_key(command: str) -> str:
+    """V8.11 (Q6): manda o atalho de aba para o navegador sem PowerShell (antes eram 2 PowerShell: 1 a 4 s).
+
+    Confere que o navegador ficou na frente ANTES de apertar as teclas (antes um Ctrl+W podia ir para outra
+    janela) e não fecha a aba da central do JARVIS. Devolve "ok", "no_browser", "no_focus" ou "jarvis_tab"."""
+    from skills.workspace.desktop import get_desktop
+
+    dk = get_desktop()
+    if dk is None:
+        return "no_browser"
+    win = _browser_window(dk)
+    if win is None:
+        return "no_browser"
+    if command == "close" and "jarvis" in win.title.lower():
+        return "jarvis_tab"
+    if not dk.focus_checked(win.hwnd):
+        log.warning("O navegador não veio para a frente; atalho de aba não enviado.")
+        return "no_focus"
+    time.sleep(0.05)
+    dk.send_combo(*_TAB_KEYS[command])
+    return "ok"
 
 
 async def _h_browser(message: str, norm: str, words: int, name: str) -> Optional[str]:
@@ -1627,12 +1606,17 @@ async def _h_browser(message: str, norm: str, words: int, name: str) -> Optional
         command, reply = "close", "Fechei a aba atual, senhor."
     elif re.search(r"\b(?:reabrir|reabra|recuperar)\b", norm):
         command, reply = "reopen", "Reabri a última aba fechada, senhor."
-    elif re.search(r"\b(?:abrir|abra|criar|crie)\b", norm):
+    elif re.search(r"\b(?:abrir|abra|abre|criar|crie|cria)\b", norm):  # V8.11: "abre uma nova aba" também
         command, reply = "new", "Abri uma nova aba, senhor."
     else:
         return None
-    if await asyncio.to_thread(_send_browser_key, command):
+    status = await asyncio.to_thread(_send_browser_key, command)
+    if status == "ok":
         return reply
+    if status == "jarvis_tab":
+        return "A aba da frente é a da central do JARVIS; essa eu não fecho por comando, senhor."
+    if status == "no_focus":
+        return "O Windows não deixou trazer o navegador para a frente, senhor. Clique nele e peça de novo."
     return "Não encontrei uma janela do navegador disponível para controlar, senhor."
 
 

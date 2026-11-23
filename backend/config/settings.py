@@ -37,6 +37,10 @@ GEMINI_SEARCH_GROUNDING = os.getenv("GEMINI_SEARCH_GROUNDING", "true").strip().l
 # "none" desliga o "raciocínio" do Gemini (respostas bem mais rápidas). Deixe vazio para desativar.
 GEMINI_REASONING = os.getenv("GEMINI_REASONING", "none").strip()
 LLM_MAX_TOKENS = int(os.getenv("LLM_MAX_TOKENS", "1000"))
+# V8.11: limite de espera de CADA chamada à IA (antes a OpenAI esperava até 10 min) e do turno inteiro
+# (somando as reservas do modo automático). Passou disso, o JARVIS avisa e libera para o próximo pedido.
+LLM_TIMEOUT_S = float(os.getenv("LLM_TIMEOUT_S", "25"))
+LLM_TURN_BUDGET_S = float(os.getenv("LLM_TURN_BUDGET_S", "50"))
 
 # --- Voz ---
 TTS_VOICE = os.getenv("TTS_VOICE", "pt-BR-AntonioNeural")

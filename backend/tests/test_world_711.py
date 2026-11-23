@@ -78,9 +78,12 @@ def test_summary_parts():
                      "sem queimadas por perto", "ISS passa visível hoje às 19:42"]
 
 
-def test_alerts_once_and_switchable():
+def test_alerts_once_and_switchable(monkeypatch):
     where = {"lat": -23.55, "lon": -46.63, "nome": "São Paulo"}
     now = datetime(2026, 11, 15, 20, tzinfo=timezone.utc)
+    # V8.11: o relógio do teste fica parado. _save_prefs descarta avisos com mais de 7 dias pelo relógio REAL;
+    # a partir de 22/11/2026 20:00 os avisos "de hoje" do teste viravam antigos e o teste quebrava sozinho.
+    monkeypatch.setattr(world_data, "_now", lambda: now + timedelta(hours=3))
     src = {"chuva": {"forte": True, "minutos": 30},
            "queimadas": {"perto": 3},
            "terremotos": [{"id": "q1", "mag": 5.6, "lat": -30, "lon": -71, "lugar": "Chile"},

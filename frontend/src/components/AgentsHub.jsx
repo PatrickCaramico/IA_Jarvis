@@ -3,6 +3,9 @@ import { createPortal } from "react-dom";
 import useEscape from "../hooks/useEscape.js";
 import { CHAT_AGENTS } from "../utils/agentMention.js";
 import FinancePanel from "./FinancePanel.jsx";
+import SkillsPanel from "./SkillsPanel.jsx";
+
+const SKILLS_TAB = "habilidades"; // V8.11: aba das Skills (não é um agente de conversa)
 
 // V6.8.3: Central de Agentes. V7.9: UMA ABA POR AGENTE, cada uma com a própria conversa (salva no PC, últimas 30
 // mensagens) — fala direto com o agente, sem passar pelo JARVIS principal. Ações simples acontecem na hora; as
@@ -83,7 +86,7 @@ function Places({ api, onSend }) {
   );
 }
 
-export default function AgentsHub({ api, onClose, onOpenHolo, initialAgent = "mercado" }) {
+export default function AgentsHub({ api, onClose, onOpenHolo, onSend, initialAgent = "mercado" }) {
   const [agents, setAgents] = useState(CHAT_AGENTS);
   const [tab, setTab] = useState(initialAgent);
   const [messages, setMessages] = useState([]);
@@ -103,7 +106,7 @@ export default function AgentsHub({ api, onClose, onOpenHolo, initialAgent = "me
   }, [api]);
   useEffect(() => {
     setError("");
-    load(tab);
+    if (tab !== SKILLS_TAB) load(tab);
   }, [tab, load]);
 
   // uma resposta de agente pedida pelo campo de conversa (@) ou por voz atualiza a aba aberta
@@ -160,8 +163,12 @@ export default function AgentsHub({ api, onClose, onOpenHolo, initialAgent = "me
               <span aria-hidden="true">{a.icon}</span>{a.label.replace(/^Agente (de |do |da )?/i, "")}
             </button>
           ))}
+          <button type="button" role="tab" aria-selected={tab === SKILLS_TAB} className={`agh-tab-skills${tab === SKILLS_TAB ? " is-on" : ""}`} onClick={() => setTab(SKILLS_TAB)}>
+            <span aria-hidden="true">⚡</span>Habilidades
+          </button>
         </nav>
 
+        {tab === SKILLS_TAB ? <SkillsPanel api={api} onSend={onSend} /> : (
         <div className={`agh-grid${tab === "financas" ? " is-fin" : ""}`} key={tab}>
           <section className="agh-col">
             <article className="agh-card">
@@ -204,6 +211,7 @@ export default function AgentsHub({ api, onClose, onOpenHolo, initialAgent = "me
             </form>
           </section>
         </div>
+        )}
       </div>
     </div>,
     document.body,

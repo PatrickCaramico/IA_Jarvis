@@ -26,8 +26,12 @@ from services.llm_orchestrator import (
     get_quota_cooldown,
     set_quota_cooldown,
     is_quota_error,
+    LLMTimeout,
+    friendly_error,
+    take_skill_cards,
 )
 from core import briefing_flow, confirm, runtime, session, speech, reactive_cards
+from core.skills import router as skills_router
 
 log = logging.getLogger("jarvis.turns")
 
@@ -514,6 +518,12 @@ async def handle_turn(message: str, routine: bool, force_deep: bool = False) -> 
     web_search = False  # modo automático: a IA pesquisa no Google antes de responder
     # 3) Funções locais (só executa se não for force_deep)
     if not force_deep:
+        # V8.11: Skills plug-and-play (backend/skills/): gatilho reconhecido = resposta na hora, sem IA
+        skill_result = await skills_router.try_fast_path(message, name)
+        if skill_result is not None:
+            if speech.canceled(turn):
+                return {"status": "canceled"}
+            return await finish_local(skill_result.speech or "Pronto, senhor.", extra_cards=skill_result.cards or None)
         try:
             tool_reply = await tools.run(message, name)
         except Exception as exc:  # noqa: BLE001
@@ -647,16 +657,22 @@ async def handle_turn(message: str, routine: bool, force_deep: bool = False) -> 
             )
             return await finish_local(quota_msg)
 
+        if isinstance(exc, LLMTimeout):  # V8.11: a IA travou; avisa e libera (antes o turno ficava preso)
+            event_log.add("warning", "A IA demorou demais", str(exc))
+            return await finish_local(
+                "Senhor, a inteligência artificial demorou demais para responder. Tente de novo em instantes; "
+                "os comandos locais continuam funcionando."
+            )
+
         log.exception("Falha ao gerar resposta")
         event_log.add(
             "error",
             "Falha ao processar solicitação",
             f"Comando: {message}\nDetalhes: {exc}",
         )
-        await runtime.manager.broadcast({"type": "error", "message": str(exc)})
-        await runtime.manager.broadcast({"type": "state", "state": "idle"})
-        runtime.track(speech.say_quietly("Desculpe, tive um problema ao processar seu pedido."))
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        # V8.11 (Q7): frase honesta do motivo (sem chave, sem internet, recusa...), falada e na conversa.
+        # Antes: o texto técnico da biblioteca na tela, "tive um problema" falado e erro 500.
+        return await finish_local(friendly_error(exc))
 
     stop.set()
     if speech.canceled(turn):  # o usuário cancelou enquanto a IA respondia: descarta a resposta
@@ -685,6 +701,7 @@ async def handle_turn(message: str, routine: bool, force_deep: bool = False) -> 
     except Exception:  # noqa: BLE001
         log.debug("Cartões da resposta falharam", exc_info=True)
         cards = []
+    cards = list(cards) + take_skill_cards()  # V8.11: cartões das Skills que a IA chamou
     session.history.extend([{"role": "user", "content": message}, {"role": "assistant", "content": text}])
     memory.add_conversation(message, text)
     del session.history[:-MAX_HISTORY]

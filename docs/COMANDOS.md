@@ -1,6 +1,6 @@
 # JARVIS — Comandos do dia a dia
 
-**Versão do projeto:** 8.10.0 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
+**Versão do projeto:** 8.11.0 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
 
 > Montado a partir do código do projeto. Se algum comando não responder como descrito, me avise que eu ajusto o guia.
 > Para a lista técnica de rotas, veja [API.md](API.md); para o `.env`, [CONFIGURACAO.md](CONFIGURACAO.md).
@@ -12,7 +12,11 @@
 | **Ligar o JARVIS** | Duplo clique em `Iniciar-JARVIS.bat` (sobe backend e frontend em segundo plano e abre o navegador). |
 | **Ligar em modo desenvolvimento** | Duplo clique em `Iniciar-JARVIS-Dev.bat` (ativa `--reload` para recarregar o backend automaticamente ao editar código). |
 | **Abrir o painel** | Navegador em `http://127.0.0.1:5173` (também funciona `http://localhost:5173`). |
-| **Desligar o JARVIS** | Duplo clique em `Parar-JARVIS.bat` (encerra as portas 8000 e 5173). |
+| **Ligar sozinho com o Windows (V8.11)** | Configurações › **Inicialização** › "Ligar junto com o Windows", ou diga "liga o JARVIS junto com o Windows", ou duplo clique em `Instalar-JARVIS-no-Windows.bat`. Ao entrar no Windows ele liga em segundo plano, sem janela e sem abrir aba. Para desfazer: desmarque, diga "não liga mais com o Windows" ou use `Remover-JARVIS-do-Windows.bat`. |
+| **Ficar sempre ligado (V8.11)** | O **guardião** (liga junto com o JARVIS) confere a cada 10 s: se o JARVIS cair sozinho, liga de novo em ~45 s (no máximo 4 vezes por hora). Não interfere em atualizações nem no `Parar-JARVIS.bat`. Registro em `logs\guardiao.log`. |
+| **Atualizar ao abrir (V8.11)** | Ao abrir a central no PC (pelo site ou aqui), se tiver versão nova o JARVIS atualiza na hora, com a barra de progresso, e já abre na versão nova. Desligar: Configurações › Inicialização › "Atualizar ao abrir a central". Se a atualização falhar, ele não tenta de novo pelos próximos 15 min. |
+| **Microfone só no botão (V8.11, padrão)** | Nada fica ouvindo sozinho: o microfone abre no 🎙 (ou na tecla do app do Windows) e fecha ao terminar a frase; no bloqueio, o botão do microfone vale para um pedido (desliga sozinho em 20 s). A escuta contínua ("Jarvis, …"), as palmas, o ouvido offline e o Ouvinte de Palmas **fecham o microfone**. Motivo: com o microfone aberto o tempo todo, o Windows trata o PC como "em chamada" e a música no fone Bluetooth fica abafada/distorcida. Para voltar a ouvir sempre: Configurações › Bloqueio › Modo Sentinela › desligue "Microfone só quando eu apertar o botão", ou diga "pode ficar me ouvindo o tempo todo" (e "microfone só no botão" para voltar). |
+| **Desligar o JARVIS** | Duplo clique em `Parar-JARVIS.bat` (encerra as portas 8000 e 5173 e o guardião, para ele não religar). |
 | **Reiniciar** | `Parar-JARVIS.bat`, esperar 3 segundos, depois `Iniciar-JARVIS.bat`. |
 | **Ver o erro quando não abre** | Parar primeiro; depois duplo clique em `Diagnostico-Backend.bat`. Ele roda o backend com a janela visível e mostra o erro. |
 | **Usar no celular (V5)** | Baixe o APK da [Release mais recente](https://github.com/PatrickCaramico/IA_Jarvis/releases/latest) ou inicie o JARVIS em modo de rede. No bloqueio do PC, toque em **CELULAR** e escaneie o QR; toque em **ABRIR O JARVIS** e digite o PIN principal. PC e celular precisam estar na mesma Wi-Fi. Para ficar só no PC: `set JARVIS_LOCAL=1` antes de rodar. |
@@ -531,6 +535,82 @@ O JARVIS como um mordomo atento, **não um psicólogo**: ele acolhe, sugere téc
 | Frases de crise ("quero morrer", "penso em me machucar") | Resposta fixa e acolhedora com **CVV 188** (24 h, gratuito, chat em cvv.org.br) e **SAMU 192**, sem passar pela IA, até com a central bloqueada. Expressões comuns ("me matar de rir", "morrer de vergonha") não disparam. |
 
 Ao entrar na central: na primeira vez do dia o JARVIS já começa o **briefing**. Nas próximas, pergunta se repete ou pula (botões, Enter/Esc ou "repetir"/"pular").
+
+### Skills: janelas, sistema e agenda (V8.11)
+
+Habilidades plug-and-play (pasta `backend/skills/`). Funcionam pela frase exata **e** pela IA: dá para pedir do seu jeito ("joga o Chrome lá na tela da direita") que a IA chama a skill certa. Ações marcadas com ⚠️ sempre pedem um "sim" antes e só valem no próprio PC.
+
+**Workspace (janelas e monitores, só no Windows)**
+
+| Diga | O que acontece |
+|---|---|
+| "Quais janelas estão abertas?" | Lista os programas abertos, separados por monitor. |
+| "Manda o Chrome pro monitor 2" / "leva o Spotify para a outra tela" / "manda isso pro monitor principal" | Move a janela (mantém maximizada, se estava). "Isso" = a janela da frente. Monitor 1 é o principal. |
+| "Organiza as janelas" / "organiza as janelas do monitor 2" | Põe as janelas em grade em cada monitor. |
+| "Coloca o Chrome e o VS Code lado a lado" | Divide a tela entre os dois. |
+| "Deixa só o Word na tela" | Maximiza o Word e minimiza as outras janelas daquele monitor. |
+| "Salva esse layout como estudo" | Guarda onde está cada janela (programa, monitor e tamanho). |
+| "Abre o workspace estudo" | Remonta: põe cada janela no lugar e abre os programas que faltam. |
+| "Quais são meus workspaces?" / ⚠️ "Apaga o workspace estudo" | Lista ou apaga os salvos. |
+
+**System Guard (o PC)**
+
+| Diga | O que acontece |
+|---|---|
+| "O que está pesando no PC?" / "quais programas estão usando mais memória?" | Os programas que mais gastam memória e processador agora, com um cartão. |
+| "Como está o uso do processador?" / "quanto de memória está usando?" | Processador, memória, disco e bateria. Vale com a central bloqueada. |
+| ⚠️ "Fecha o Discord" / "encerra o Spotify" | Pergunta antes e fecha todas as janelas do programa. Programas do Windows, antivírus e o próprio JARVIS nunca são fechados. |
+| Sozinho (vigia) | Processador acima de 90% por 2 minutos ou memória acima de 92% por 1 minuto: avisa uma vez (no máximo a cada 30 min), diz o programa que mais gasta e oferece fechar ("sim"). "Desliga o vigia do sistema" / "liga o vigia do sistema". |
+
+Para a varredura completa (temporários, lixeira, inicialização), continue usando "meu PC está lento".
+
+**Context Autopilot (agenda)**
+
+| Diga | O que acontece |
+|---|---|
+| Sozinho, 5 min antes de cada compromisso com horário | "Senhor, Daily do time começa em 5 minutos. Quer que eu ative o modo reunião e abra o link da chamada?" Com a central bloqueada, o aviso vai só para o celular. |
+| "Sim" (ao aviso) / "ativa o modo reunião" / "vou entrar em reunião" | Pausa o Spotify, abre o link (Meet, Zoom, Teams, Webex, Jitsi), monta o workspace "reuniao" se você tiver salvo um e o JARVIS fica em silêncio. |
+| "Terminei a reunião" / "sai do modo reunião" | Volta a falar. Também sai sozinho quando o evento acaba. |
+| "Qual minha próxima reunião?" | O próximo compromisso com horário e se tem link de chamada. |
+| "Me avise 10 minutos antes das reuniões" / "desliga o piloto automático da agenda" | Ajusta a antecedência (1 a 30 min) ou liga/desliga os avisos. |
+
+**Deep Brief (dossiê com pesquisa a fundo)**
+
+| Diga | O que acontece |
+|---|---|
+| "Faz um dossiê sobre carros elétricos no Brasil" / "monta um relatório sobre a reforma tributária" / "prepara um resumo completo sobre o James Webb" | Divide o tema em até 4 ângulos, pesquisa todos no Google ao mesmo tempo, fala um resumo de 3 a 5 frases e abre o cartão **DOSSIÊ** (painel com tópicos e fontes). Leva de 20 s a 1 min; o progresso aparece na tela. O dossiê completo fica em `data/dossies/` (Markdown). Usa 1 da cota diária da pesquisa profunda; se ela estiver desligada, pergunta se libera só desta vez. |
+| "Quais são meus dossiês?" | Os salvos, do mais recente para o mais antigo. |
+| "Lê o dossiê sobre carros elétricos" / "abre o dossiê da reforma tributária" | Fala o resumo de novo e mostra o painel. |
+
+**Abrir programas desconhecidos (Q8)**
+
+| Diga | O que acontece |
+|---|---|
+| "Abre o Discord" (está no Menu Iniciar) | Abre direto, como antes. |
+| "Abre o winword" (só no PATH ou no registro do Windows) | ⚠️ "O Winword não está nos seus atalhos. Abro o programa WINWORD.EXE?" e só abre depois do "sim". |
+| "Abre o prompt de comando" / "abre o PowerShell" / "abre o regedit" | ⚠️ Sempre pede o "sim" ("executa comandos no sistema"), mesmo vindo do Menu Iniciar. Pedido feito pelo celular: recusado. |
+
+**Texto copiado (Clipboard AI, só no Windows)**
+
+| Diga | O que acontece |
+|---|---|
+| "Resume o que eu copiei" / "explica o texto copiado" | Fala o resumo (ou a explicação) do que está na área de transferência e mostra um cartão. |
+| "Traduz o que eu copiei" / "traduz o que copiei para o espanhol" | Traduz (português ↔ inglês por padrão) e deixa a tradução copiada: é só colar com Ctrl+V. |
+| "Corrige o texto que eu copiei" / "revisa o que copiei" | Corrige ortografia e gramática e deixa o texto corrigido copiado. |
+
+**Dia a dia**
+
+| Diga | O que acontece |
+|---|---|
+| "Quanto é 5 milhas em km" / "converte 350 Fahrenheit para Celsius" / "2 xícaras em ml" / "1,5 GB em MB" / "100 km/h em mph" | Conversão na hora, sem internet e sem IA (vale com a central bloqueada): comprimento, peso, volume de cozinha, temperatura, velocidade e dados. |
+| "Gera uma senha forte" / "cria uma senha de 16 caracteres" | Copia uma senha aleatória (maiúsculas, minúsculas, números e símbolos, sem O/0/I/l/1) para a área de transferência do PC. A senha nunca é falada nem mostrada. |
+| "Quais são suas habilidades?" | Diz o que está ligado e abre a aba **⚡ HABILIDADES** da Central de Agentes. |
+
+**Aba ⚡ HABILIDADES (Central de Agentes)**: todas as skills por grupo, com o nível de permissão (LEITURA, AÇÃO, CRÍTICA), liga/desliga, quantas vezes foram usadas, falhas e tempo, e os exemplos: um toque manda a frase para o JARVIS. Também abre pelo botão da Central de Agentes.
+
+**Melhorias de velocidade e honestidade (V8.11)**: a pesquisa no navegador consulta Google, Bing e DuckDuckGo ao mesmo tempo (no máximo 7 s); "próxima aba", "fecha a aba", "nova aba" e "reabre a aba" respondem na hora, conferem que o navegador veio para a frente e nunca fecham a aba da central; e quando a IA falha, o JARVIS diz o motivo (sem chave, sem internet, recusa) em vez de um erro técnico.
+
+Para desligar uma skill inteira: na aba ⚡ HABILIDADES, ou `POST /api/skills/<nome>/toggle` com `{"enabled": false}` (a lista com os nomes está em `GET /api/skills`).
 
 ## 5. Onde mudar as coisas
 

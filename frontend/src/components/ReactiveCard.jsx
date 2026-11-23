@@ -360,6 +360,28 @@ export default function ReactiveCard({ card, api }) {
     );
   }
 
+  // V8.11: CARD GENÉRICO DAS SKILLS (backend/skills/): etiqueta, origem e linhas "rótulo — valor".
+  // Qualquer skill nova aparece na tela com ele, sem precisar de componente próprio.
+  if (type === "skill") {
+    const rows = Array.isArray(data.rows) ? data.rows.slice(0, 20) : [];
+    return (
+      <div className="rc-card rc-calendar">
+        <div className="rc-head">
+          <span className="rc-tag">{String(data.tag || "JARVIS").slice(0, 40)}</span>
+          {data.source ? <span className="rc-source">{String(data.source).slice(0, 60)}</span> : null}
+        </div>
+        <div className="rc-event-list">
+          {rows.map((r, idx) => (
+            <div key={idx} className="rc-event-item">
+              <span className="rc-event-time">{String(r.label ?? "")}</span>
+              <span className="rc-event-summary">{String(r.value ?? "")}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   // 4. CARD DE AGENDA / CALENDÁRIO
   if (type === "calendar") {
     const events = data.events || [];

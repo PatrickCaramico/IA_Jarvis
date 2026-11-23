@@ -104,11 +104,15 @@ def upcoming_events(days: int = 14, limit: int = 10) -> list[dict]:
     events = []
     for item in response.json().get("items", []):
         start = item.get("start", {})
+        end = item.get("end", {})
         events.append({
             "id": item.get("id"),
             "title": item.get("summary", "Sem título"),
             "start": start.get("dateTime") or start.get("date"),
+            "end": end.get("dateTime") or "",  # V8.11: fim e link da chamada (piloto automático da agenda)
             "location": item.get("location", ""),
             "link": item.get("htmlLink", ""),
+            "meet": item.get("hangoutLink", ""),
+            "description": (item.get("description") or "")[:1000],
         })
     return events

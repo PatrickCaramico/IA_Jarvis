@@ -30,8 +30,10 @@ import os
 import queue
 import re
 import sys
+import threading
 import time
 import unicodedata
+import urllib.error
 import urllib.request
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
@@ -46,6 +48,13 @@ SAMPLE_RATE = 16000
 WAKE_WORDS = ("jarvis", "jarbas")
 FOLLOW_UP_SECONDS = 8.0
 STATE_EVERY_SECONDS = 2.0
+# V8.11: "Jarvis, para" corta a fala/resposta na hora, mesmo com o ouvido "fechado" porque o JARVIS fala.
+# Só frases inteiras desta lista (gramática fechada do Vosk): a voz do próprio JARVIS não dispara à toa.
+STOP_PHRASES = (
+    "jarvis para", "jarvis pare", "jarvis parar", "jarvis cancela", "jarvis cancelar", "jarvis silencio",
+    "jarvis chega", "jarvis cala a boca", "jarbas para", "jarbas pare", "jarbas cancela", "jarbas chega",
+)
+SEND_TIMEOUT_S = 120
 
 log = logging.getLogger("jarvis.ouvido")
 
@@ -102,6 +111,30 @@ def should_listen(health: Optional[dict], status: Optional[dict], enabled: bool)
     return True
 
 
+def can_barge_in(health: Optional[dict], status: Optional[dict], enabled: bool) -> bool:
+    """V8.11: vale ouvir só o "Jarvis, para"? Quando o JARVIS está falando ou pensando (o ouvido normal fica
+    fechado para não ouvir a própria voz), com a preferência ligada e nenhuma aba da central aberta no PC."""
+    if not enabled or not health or health.get("status") not in ("ok", "online"):
+        return False
+    if not (health.get("speaking") or health.get("busy")):
+        return False
+    if status is not None and int(status.get("devices", 0)) - int(status.get("phones", 0)) > 0:
+        return False
+    return True
+
+
+def is_stop_phrase(text: str) -> bool:
+    return " ".join(_norm(w) for w in (text or "").split()) in STOP_PHRASES
+
+
+def next_backoff(previous: float, ran_for: float, first: float = 2.0, cap: float = 30.0) -> float:
+    """V8.11: espera antes de reabrir o microfone. Começa em 2 s e dobra até 30 s; se o ouvido tinha
+    funcionado por mais de 1 min, a falha é nova e volta para 2 s (antes: sempre 30 s parado)."""
+    if ran_for >= 60 or previous <= 0:
+        return first
+    return min(cap, previous * 2)
+
+
 def match_input(wanted: str, devices: list[dict]) -> Optional[int]:
     """V6.5.8: índice do microfone escolhido no botão de áudio (nome do Windows) entre os do sounddevice.
     Prefere o MME (hostapi 0, que converte para 16 kHz sozinho); o MME corta o nome em 31 letras."""
@@ -127,6 +160,20 @@ class DeviceChanged(Exception):
     """O microfone escolhido mudou: reabre o ouvido no novo."""
 
 
+class MicReleased(Exception):
+    """V8.11: o usuário escolheu "microfone só no botão": fecha o microfone (não só ignora o áudio)."""
+
+
+def push_to_talk(prefs: Optional[dict], last: bool = True) -> bool:
+    """V8.11: "microfone só no botão" está ligado? Sem resposta do JARVIS, vale o último valor conhecido
+    (começa como ligado: na dúvida, o microfone fica fechado e a música do senhor não é atrapalhada)."""
+    if not isinstance(prefs, dict):
+        return last
+    data = prefs.get("prefs", prefs)
+    value = data.get("mic_push_to_talk") if isinstance(data, dict) else None
+    return bool(value) if isinstance(value, bool) else last
+
+
 # ------------------------------------------------------------------ backend
 def _get(path: str) -> Optional[dict]:
     try:
@@ -136,19 +183,69 @@ def _get(path: str) -> Optional[dict]:
         return None
 
 
-def send_command(text: str) -> None:
-    body = json.dumps({"message": text}).encode("utf-8")
+def _post(path: str, payload: dict, timeout: float) -> int:
+    """POST no backend. Devolve o código HTTP (0 = backend fora do ar)."""
     req = urllib.request.Request(
-        BACKEND + "/api/chat",
-        data=body,
+        BACKEND + path,
+        data=json.dumps(payload).encode("utf-8"),
         headers={"Content-Type": "application/json", "X-Jarvis-Client": "ouvido"},
         method="POST",
     )
     try:
-        with urllib.request.urlopen(req, timeout=120) as resp:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
             resp.read()
+            return int(resp.status)
+    except urllib.error.HTTPError as exc:
+        return int(exc.code)
     except Exception as exc:  # noqa: BLE001
-        log.warning("Pedido não entregue: %s", exc)
+        log.warning("Backend não respondeu a %s: %s", path, exc)
+        return 0
+
+
+def send_command(text: str) -> bool:
+    """Entrega o pedido (bloqueia até a resposta). Falhou ou o JARVIS estava ocupado: bipe de erro."""
+    code = _post("/api/chat", {"message": text}, SEND_TIMEOUT_S)
+    if 200 <= code < 300:
+        return True
+    log.warning("Pedido não entregue (HTTP %s): %s", code or "sem resposta", text)
+    beep_error()
+    return False
+
+
+def cancel_current() -> bool:
+    """V8.11: "Jarvis, para": corta a voz e descarta a resposta a caminho (o mesmo do botão Cancelar)."""
+    return 200 <= _post("/api/cancel", {}, 5) < 300
+
+
+class CommandSender:
+    """V8.11: entrega os pedidos numa thread própria. Antes o envio rodava no laço do áudio e o microfone
+    ficava surdo até a resposta terminar (até 120 s): o áudio acumulado era jogado fora e não dava para
+    interromper. A fila é curta: pedido velho demais não serve mais."""
+
+    def __init__(self, send=send_command) -> None:
+        self._send = send
+        self._queue: "queue.Queue[str]" = queue.Queue(maxsize=3)
+        self._thread = threading.Thread(target=self._loop, name="ouvido-envio", daemon=True)
+        self._thread.start()
+
+    def submit(self, text: str) -> bool:
+        try:
+            self._queue.put_nowait(text)
+            return True
+        except queue.Full:
+            log.warning("Fila de pedidos cheia; descartando: %s", text)
+            beep_error()
+            return False
+
+    def _loop(self) -> None:
+        while True:
+            text = self._queue.get()
+            try:
+                self._send(text)
+            except Exception:  # noqa: BLE001
+                log.exception("Falha ao entregar o pedido")
+            finally:
+                self._queue.task_done()
 
 
 def beep() -> None:
@@ -156,6 +253,17 @@ def beep() -> None:
         import winsound
 
         winsound.Beep(880, 120)
+    except Exception:  # noqa: BLE001
+        pass
+
+
+def beep_error() -> None:
+    """V8.11: dois bipes graves = o pedido NÃO chegou (antes ficava só o bipe de "entendi" e silêncio)."""
+    try:
+        import winsound
+
+        winsound.Beep(330, 150)
+        winsound.Beep(262, 220)
     except Exception:  # noqa: BLE001
         pass
 
@@ -191,18 +299,60 @@ def revive_backend() -> None:
     subprocess.Popen(command, cwd=str(ROOT), creationflags=flags, close_fds=True)  # noqa: S603
 
 
+def guardian_alive() -> bool:
+    try:
+        return time.time() - (ROOT / "logs" / "guardiao.beat").stat().st_mtime < 60
+    except OSError:
+        return False
+
+
 class Gate:
-    """Consulta o backend a cada 2 s (não a cada quadro de áudio)."""
+    """Consulta o backend a cada 2 s (não a cada quadro de áudio).
+
+    V8.11: as consultas rodam numa thread própria (`start()`); o laço do áudio só lê o último estado.
+    Antes eram até 3 pedidos HTTP de 3 s cada DENTRO do laço do áudio: com o backend lento, o microfone
+    ficava até 9 s sem ser lido.
+    """
 
     def __init__(self) -> None:
         self.at = 0.0
         self.open = False
+        self.barge_in = False  # V8.11: só o "Jarvis, para" vale agora
+        self.busy = False  # V8.11: o JARVIS está respondendo outro pedido
+        self.push_to_talk = True  # V8.11: "microfone só no botão" (fecha o microfone)
         self.device = None  # V6.5.8: microfone escolhido ("" = padrão); None = ainda não leu
         self.seen_up = False
         self.down_since: Optional[float] = None
         self.last_revive = 0.0
 
+    def start(self) -> "Gate":
+        self._stopped = threading.Event()
+        self._thread = threading.Thread(target=self._loop, name="ouvido-estado", daemon=True)
+        self._thread.start()
+        return self
+
+    def _loop(self) -> None:
+        while not self._stopped.is_set():
+            try:
+                self.poll()
+            except Exception:  # noqa: BLE001
+                log.exception("Falha ao consultar o estado do JARVIS")
+            self._stopped.wait(0.25)
+
+    def stop(self) -> None:
+        stopped = getattr(self, "_stopped", None)
+        if stopped is not None:
+            stopped.set()
+
+    def refresh_soon(self) -> None:
+        """Reconsulta já (o JARVIS vai começar a responder)."""
+        self.at = 0.0
+
     def check(self) -> bool:
+        """Último estado conhecido, sem esperar a rede (o laço do áudio nunca bloqueia aqui)."""
+        return self.open
+
+    def poll(self) -> bool:
         now = time.monotonic()
         if now - self.at >= STATE_EVERY_SECONDS:
             self.at = now
@@ -211,7 +361,8 @@ class Gate:
                 self.seen_up, self.down_since = True, None
             else:
                 self.down_since = self.down_since or now
-                if should_revive(self.down_since, now, self.last_revive, self.seen_up):
+                # V8.11: com o guardião vivo (scripts/guardiao.py), é ele quem religa (os dois juntos brigavam)
+                if should_revive(self.down_since, now, self.last_revive, self.seen_up) and not guardian_alive():
                     self.last_revive = now
                     try:
                         revive_backend()
@@ -219,12 +370,15 @@ class Gate:
                         log.warning("Não consegui religar o JARVIS: %s", exc)
             status = _get("/api/lock/status") if health else None
             prefs = _get("/api/prefs") if health else None
+            self.push_to_talk = push_to_talk(prefs, self.push_to_talk)
             enabled = True
             if isinstance(prefs, dict):
                 data = prefs.get("prefs", prefs)
                 enabled = bool(data.get("voice_listener_enabled", True))
                 self.device = str(data.get("voice_input_device") or "")
             self.open = should_listen(health, status, enabled)
+            self.barge_in = (not self.open) and can_barge_in(health, status, enabled)
+            self.busy = bool(health and health.get("busy"))
         return self.open
 
 
@@ -249,9 +403,40 @@ def run(test: bool) -> int:
         full.SetWords(True)
         return wake, full
 
-    wake_rec, full_rec = new_recognizers()
+    def new_stop_recognizer():
+        return KaldiRecognizer(model, SAMPLE_RATE, json.dumps(list(STOP_PHRASES) + ["[unk]"]))
+
     audio: "queue.Queue[bytes]" = queue.Queue(maxsize=200)
     gate = Gate()
+    gate.poll()  # o primeiro estado antes de abrir o microfone (microfone escolhido)
+    gate.start()
+    sender = _sender()
+    if not test and gate.push_to_talk:  # V8.11: microfone fechado até o modo mudar (sem abrir o dispositivo)
+        log.info("Microfone só no botão: o ouvido fica com o microfone FECHADO.")
+        while gate.push_to_talk:
+            time.sleep(2)
+        log.info("Escuta contínua ligada: abrindo o microfone.")
+    try:
+        return _listen(test, sd, model, gate, sender, new_recognizers, new_stop_recognizer, audio)
+    finally:
+        gate.stop()  # a thread de estado deste microfone não sobra ao reabrir o ouvido
+
+
+_SENDER: Optional[CommandSender] = None
+
+
+def _sender() -> CommandSender:
+    """Uma thread de envio só, mesmo quando o ouvido reabre (troca de microfone)."""
+    global _SENDER
+    if _SENDER is None:
+        _SENDER = CommandSender()
+    return _SENDER
+
+
+def _listen(test, sd, model, gate, sender, new_recognizers, new_stop_recognizer, audio) -> int:  # noqa: ARG001
+    wake_rec, full_rec = new_recognizers()
+    stop_rec = new_stop_recognizer()
+    last_stop = 0.0
     awaiting_until = 0.0  # disse só "Jarvis": a próxima frase é o pedido
     pending_wake: Optional[float] = None  # a gramática fechou a frase antes do reconhecedor completo
 
@@ -261,7 +446,6 @@ def run(test: bool) -> int:
         except queue.Full:
             pass
 
-    gate.check()
     chosen = gate.device or ""
     index = match_input(chosen, list(sd.query_devices())) if chosen else None
     log.info("Ouvido offline ligado (modelo %s, microfone %s).", MODEL_DIR.name, chosen or "padrão do Windows")
@@ -274,16 +458,30 @@ def run(test: bool) -> int:
             is_open = test or gate.check()
             if gate.device is not None and gate.device != chosen:
                 raise DeviceChanged
+            if not test and gate.push_to_talk:
+                raise MicReleased  # sai do "with": o microfone é fechado de verdade
             if is_open != was_open:
                 log.info("Ouvindo." if is_open else "Em espera (central aberta, JARVIS falando ou desligado).")
                 was_open = is_open
             if not is_open:
                 closed = True
                 awaiting_until, pending_wake = 0.0, None
+                # V8.11: JARVIS falando/pensando: só a gramática do "Jarvis, para" escuta
+                if gate.barge_in and stop_rec.AcceptWaveform(chunk):
+                    heard_stop = json.loads(stop_rec.Result()).get("text", "")
+                    if is_stop_phrase(heard_stop) and time.monotonic() - last_stop > 2.0:
+                        last_stop = time.monotonic()
+                        log.info("Interrupção por voz: %s", heard_stop)
+                        if test:
+                            print(f"PARAR: {heard_stop}")
+                        else:
+                            threading.Thread(target=cancel_current, name="ouvido-parar", daemon=True).start()
+                            gate.refresh_soon()
                 continue
             if closed:
                 # descarta o que ficou pela metade enquanto estava fechado (mesma base de tempo nos dois)
                 wake_rec, full_rec = new_recognizers()
+                stop_rec = new_stop_recognizer()
                 closed = False
             # os dois recebem o mesmo áudio desde a criação: os horários das palavras são comparáveis
             if wake_rec.AcceptWaveform(chunk):
@@ -319,9 +517,13 @@ def run(test: bool) -> int:
             if test:
                 print(f"PEDIDO: {command}")
                 continue
+            if gate.busy and is_stop_phrase(f"jarvis {command}"):  # V8.11: "Jarvis, para" com ele pensando
+                threading.Thread(target=cancel_current, name="ouvido-parar", daemon=True).start()
+                gate.refresh_soon()
+                continue
             beep()
-            send_command(command)
-            gate.at = 0.0  # reconsulta já (o JARVIS vai falar a resposta)
+            sender.submit(command)  # V8.11: em outra thread; o microfone continua sendo lido
+            gate.refresh_soon()  # reconsulta já (o JARVIS vai falar a resposta)
 
 
 def setup_logging(to_console: bool) -> None:
@@ -342,17 +544,25 @@ def main() -> int:
             PID_PATH.write_text(str(os.getpid()), encoding="ascii")
         except OSError:
             pass
+    wait = 0.0
     while True:
+        started = time.monotonic()
         try:
             return run(args.test)
         except KeyboardInterrupt:
             return 0
         except DeviceChanged:
             log.info("Microfone trocado; reabrindo o ouvido.")
+            wait = 0.0
             continue
-        except Exception as exc:  # noqa: BLE001 - microfone sumiu etc.: tenta de novo em 30 s
-            log.warning("Ouvido parou (%s); tentando de novo em 30 s.", exc)
-            time.sleep(30)
+        except MicReleased:
+            log.info("Microfone só no botão: microfone fechado.")
+            wait = 0.0
+            continue
+        except Exception as exc:  # noqa: BLE001 - microfone sumiu etc.: tenta de novo (2 s, 4 s ... até 30 s)
+            wait = next_backoff(wait, time.monotonic() - started)
+            log.warning("Ouvido parou (%s); tentando de novo em %.0f s.", exc, wait)
+            time.sleep(wait)
 
 
 if __name__ == "__main__":

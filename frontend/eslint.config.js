@@ -10,6 +10,8 @@ const browserGlobals = Object.fromEntries(
     "console", "Event", "alert", "confirm", "atob", "btoa", "HTMLElement", "HTMLInputElement", "HTMLTextAreaElement", "MediaRecorder", "FileReader", "Image",
     "location", "history", "getComputedStyle", "matchMedia", "ResizeObserver", "queueMicrotask",
     "structuredClone", "AbortController", "TextDecoder", "TextEncoder", "SpeechSynthesisUtterance", "speechSynthesis",
+    // V8.11: usados por photoPrep.js e traffic.test.js (o lint do CI parava com "não definido")
+    "createImageBitmap", "Response",
   ].map((name) => [name, "readonly"]),
 );
 

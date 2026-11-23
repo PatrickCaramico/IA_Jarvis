@@ -2,11 +2,11 @@
 
 Armazenado em data/jarvis_settings.json.
 """
-import json
 import logging
 from typing import Any, Optional
 
 from config import settings
+from core import safe_io
 
 log = logging.getLogger("jarvis.prefs")
 
@@ -45,6 +45,7 @@ _DEFAULTS: dict[str, Any] = {
     "voice_style": "natural",             # V6.1: natural | grave | classica | thalita | andrew
     "briefing_news_themes": [],           # V6.2: temas de notícias do "bom dia" ([] = padrões, com Marvel)
     "voice_listener_enabled": True,       # V6.3: ouvido offline ("Jarvis, ..." sem o navegador)
+    "skills_disabled": [],                # V8.11: Skills desligadas pelo usuário (nomes)
     "news_notify_enabled": True,          # V6.5: manchetes novas dos temas viram aviso no celular
     "audio_output_device": "",            # V6.5.8: caixa de som da voz no PC ("" = padrão do Windows)
     "voice_input_device": "",             # V6.5.8: microfone do ouvido offline ("" = padrão do Windows)
@@ -66,6 +67,10 @@ _DEFAULTS: dict[str, Any] = {
     # --- Modo Sentinela ---
     "sentinel_enabled": False,            # tela de bloqueio em modo sentinela (escuta palavra de ativação)
     "hands_free_enabled": True,           # como a Alexa: "Jarvis, ..." também com a central aberta
+    # V8.11: microfone SÓ no botão 🎙 (padrão). Com o microfone aberto o tempo todo, o Windows trata como chamada:
+    # fone Bluetooth vira "modo chamada" (música abafada/distorcida) e os outros sons abaixam. Ligado, nada fica
+    # ouvindo sozinho: central, bloqueio, palmas, ouvido offline e Ouvinte de Palmas soltam o microfone.
+    "mic_push_to_talk": True,
     "follow_up_enabled": True,            # conversa contínua: depois de responder, ouve a próxima pergunta
     "sentinel_wake_words": ["jarvis", "ei jarvis", "ta acordado"],
     "sentinel_show_clock": True,          # relógio e data discretos na tela bloqueada
@@ -105,6 +110,7 @@ PUBLIC_KEYS = {
     "voice_listener_enabled",  # V6.3: o ouvido offline lê sem a chave (nada pessoal)
     "audio_output_device", "voice_input_device",  # V6.5.8: botão de áudio do bloqueio
     "lock_mic_on",  # V6.5.20
+    "mic_push_to_talk",  # V8.11: o ouvido offline e o Ouvinte de Palmas leem sem a chave
 }
 
 LOCK_CARD_KEYS = ("clock", "weather", "spotify", "fan_match", "water")
@@ -121,7 +127,7 @@ def validate_patch(patch: dict[str, Any]) -> Optional[str]:
     bools = (
         "clap_wake_enabled", "clap_auto_enter", "clap_relock_on_fail", "lock_presence_check",
         "lock_save_failed_photo", "lock_backend_enforce", "lock_guest_enabled", "sentinel_enabled", "sentinel_show_clock",
-        "hands_free_enabled", "follow_up_enabled",
+        "hands_free_enabled", "follow_up_enabled", "mic_push_to_talk",
         "sentinel_night_dim", "water_sound", "water_pace_hint", "screen_assist_enabled",
         "routine_suggestions_enabled", "notifications_enabled", "notifications_read_content",
     )
@@ -208,7 +214,7 @@ def _load() -> dict[str, Any]:
         _save(_DEFAULTS.copy())
         return _DEFAULTS.copy()
     try:
-        data = json.loads(_SETTINGS_PATH.read_text(encoding="utf-8"))
+        data = safe_io.read_json(_SETTINGS_PATH)  # V8.11: cache enquanto o arquivo não muda
         if not isinstance(data, dict):
             return _DEFAULTS.copy()
         # garante que todas as chaves padrão existem
@@ -234,7 +240,7 @@ def _load() -> dict[str, Any]:
 
 
 def _save(data: dict[str, Any]) -> None:
-    _SETTINGS_PATH.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    safe_io.write_json(_SETTINGS_PATH, data)  # V8.11: gravação atômica
 
 
 def get_all() -> dict[str, Any]:

@@ -2,6 +2,36 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 8.11.0 — 22 de novembro de 2026
+
+**🎙 Microfone só no botão (padrão)**
+- Nada fica mais ouvindo sozinho: o microfone abre quando você toca no 🎙 e fecha quando você termina a frase. No bloqueio, o botão do microfone vale para um pedido.
+- Antes, com o microfone aberto o tempo todo, o Windows achava que você estava numa chamada: a música no fone Bluetooth ficava abafada ou distorcida e os outros sons abaixavam.
+- Para voltar a ouvir "Jarvis, …" sem tocar em nada: Configurações › Bloqueio › Modo Sentinela, ou diga "pode ficar me ouvindo o tempo todo".
+
+**🚀 Sempre ligado e sempre atualizado**
+- **Liga junto com o Windows**, em segundo plano, sem janela e sem abrir aba: Configurações › Inicialização, "liga o JARVIS junto com o Windows" ou `Instalar-JARVIS-no-Windows.bat`.
+- **Guardião**: se o JARVIS cair sozinho, ele liga de novo em menos de 1 minuto.
+- **Atualiza ao abrir a central**: tendo versão nova, atualiza na hora, com a barra de progresso, e já abre na versão nova.
+
+**⚡ Habilidades (Skills)**
+- Aba **⚡ HABILIDADES** na Central de Agentes: tudo o que o JARVIS sabe fazer, com liga/desliga e exemplos de um toque. Diga "quais são suas habilidades?".
+- **Janelas e monitores**: "manda o Chrome pro monitor 2", "organiza as janelas", "coloca o Chrome e o VS Code lado a lado", "salva esse layout como estudo" e "abre o workspace estudo".
+- **O PC**: "o que está pesando no PC?", "fecha o Discord" (pergunta antes) e um vigia que avisa quando o processador ou a memória ficam no limite.
+- **Agenda**: 5 minutos antes de cada reunião, o JARVIS oferece o **modo reunião** (pausa a música, abre o link do Meet/Zoom/Teams e fica em silêncio até "terminei a reunião").
+- **Dossiês**: "faz um dossiê sobre carros elétricos no Brasil" pesquisa a fundo, fala um resumo e guarda o dossiê com as fontes.
+- **Texto copiado**: "resume o que eu copiei", "traduz o que eu copiei" e "corrige o texto que eu copiei" (o resultado volta para a área de transferência).
+- **Dia a dia**: conversor de unidades na hora ("5 milhas em km", "350 Fahrenheit em Celsius", "2 xícaras em ml") e "gera uma senha forte" (copiada, nunca falada).
+- A IA também usa as habilidades sozinha: dá para pedir do seu jeito.
+
+**⚡ Mais rápido e mais confiável**
+- A IA tem prazo: se travar, o JARVIS avisa e fica livre para o próximo pedido (antes podia ficar minutos preso).
+- "Jarvis, para" interrompe a fala na hora pelo ouvido offline, que também não fica mais surdo enquanto responde.
+- Pesquisa no navegador mais rápida (Google, Bing e DuckDuckGo ao mesmo tempo) e troca de abas na hora, sem fechar a aba errada.
+- Quando algo dá errado, o JARVIS diz o motivo (sem chave, sem internet, recusa) em vez de um erro técnico.
+- Configurações não se perdem mais se o PC desligar no meio de uma gravação.
+- Abrir um programa que não está nos seus atalhos, ou um terminal/Registro, agora pede um "sim" antes.
+
 ## 8.10.0 — 17 de novembro de 2026
 
 **🔎 Varredura quando o PC está lento (ideia 13)**

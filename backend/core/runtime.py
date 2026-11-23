@@ -74,6 +74,17 @@ def describe_device(ip: str, user_agent: str, local: bool) -> dict:
     return {"kind": kind, "name": name, "ip": ip, "since": _time.time()}
 
 
+SEND_TIMEOUT_S = 2.0  # V8.11: prazo para cada aparelho receber um aviso pelo WebSocket
+
+
+async def _close_quietly(ws: WebSocket) -> None:
+    """Fecha a conexão travada para o aparelho perceber e reconectar (o frontend já faz isso sozinho)."""
+    try:
+        await asyncio.wait_for(ws.close(code=1011), timeout=SEND_TIMEOUT_S)
+    except Exception:  # noqa: BLE001
+        pass
+
+
 class ConnectionManager:
     """Mantém os WebSockets abertos e distribui eventos para todos."""
 
@@ -87,16 +98,9 @@ class ConnectionManager:
 
     async def send_local(self, event: dict) -> int:
         """Envia SOMENTE para conexões deste computador (câmera ao vivo nunca vai para a rede)."""
-        sent = 0
-        for ws in list(self.connections):
-            if not self.is_local(ws):
-                continue
-            try:
-                await ws.send_json(event)
-                sent += 1
-            except Exception:  # noqa: BLE001 - conexão morta
-                self.disconnect(ws)
-        return sent
+        targets = [ws for ws in list(self.connections) if self.is_local(ws)]
+        results = await asyncio.gather(*(self._send(ws, event) for ws in targets))
+        return sum(1 for ok in results if ok)
 
     async def connect(self, ws: WebSocket) -> None:
         await ws.accept()
@@ -127,11 +131,27 @@ class ConnectionManager:
 
     async def broadcast(self, event: dict) -> None:
         note_island(event)  # V8.0: a ilha do JARVIS.exe mostra o estado e a última resposta
-        for ws in list(self.connections):
-            try:
-                await ws.send_json(event)
-            except Exception:  # noqa: BLE001 - conexão morta
-                self.disconnect(ws)
+        targets = list(self.connections)
+        if len(targets) == 1:
+            await self._send(targets[0], event)
+        elif targets:
+            # V8.11: todos ao mesmo tempo. Antes um por vez: um celular lento no Wi-Fi atrasava a tela do PC.
+            await asyncio.gather(*(self._send(ws, event) for ws in targets))
+
+    async def _send(self, ws: WebSocket, event: dict) -> bool:
+        """V8.11: envia com prazo. Conexão morta ou travada sai da lista (o aparelho reconecta sozinho)."""
+        try:
+            await asyncio.wait_for(ws.send_json(event), timeout=SEND_TIMEOUT_S)
+            return True
+        except asyncio.TimeoutError:
+            log.warning("Aparelho %s não recebeu o aviso em %.1f s; desconectando.",
+                        (self.meta.get(id(ws)) or {}).get("name", "?"), SEND_TIMEOUT_S)
+            self.disconnect(ws)
+            track(_close_quietly(ws))
+            return False
+        except Exception:  # noqa: BLE001 - conexão morta
+            self.disconnect(ws)
+            return False
 
 
 # V8.0: o que a ilha do JARVIS.exe mostra (estado e última resposta), sem depender de WebSocket

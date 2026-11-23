@@ -26,7 +26,8 @@ def _fixture(tmp_path, crlf=False):
 def test_hash_same_in_python_and_node_and_ignores_crlf(tmp_path):
     fe = _fixture(tmp_path)
     py = prebuilt.source_hash(fe)
-    node = subprocess.run(["node", "-e", f"import('{(ROOT / 'scripts/netlify/manifest.mjs').as_posix()}').then(m => console.log(m.sourceHash({json.dumps(str(fe))})))"],
+    # V8.11: URL file:// (no Windows o Node recusa import('D:/...'): "protocolo d:" — o CI do Windows quebrava)
+    node = subprocess.run(["node", "-e", f"import('{(ROOT / 'scripts/netlify/manifest.mjs').as_uri()}').then(m => console.log(m.sourceHash({json.dumps(str(fe))})))"],
                           capture_output=True, text=True, check=True).stdout.strip()
     assert py == node
     assert prebuilt.source_hash(_fixture(tmp_path / "w", crlf=True)) == py  # Windows (CRLF) = Netlify (LF)
@@ -116,7 +117,7 @@ def test_v823_background_build_lock_and_log(tmp_path, monkeypatch):
     monkeypatch.setattr(bg, "try_prebuilt", lambda out, wait_s=0: False)  # V8.3.1: site sem a versão: monta no PC
     monkeypatch.setattr(bg.subprocess, "call", lambda cmd, **kw: (kw["stdout"].write("built\n"), 0)[1])
     assert bg.main() == 0
-    log = (tmp_path / "build.log").read_text()
+    log = (tmp_path / "build.log").read_text(encoding="utf-8")  # V8.11: no Windows o padrão é cp1252 ("código")
     assert "built" in log and "Fim: código 0" in log and not (tmp_path / "build.running").exists()
     bat = (ROOT / "Iniciar-JARVIS.bat").read_text(encoding="utf-8", errors="replace")
     assert "build_background.py" in bat and "'/c npm run build" not in bat
@@ -135,7 +136,7 @@ def test_v831_background_prefers_site_and_never_runs_npm_when_it_works(tmp_path,
     monkeypatch.setattr(bg, "try_prebuilt", lambda out, wait_s=0: True)
     monkeypatch.setattr(bg.subprocess, "call", lambda *a, **k: (_ for _ in ()).throw(AssertionError("não devia montar")))
     assert bg.main() == 0
-    assert "interface pronta do site instalada" in (tmp_path / "build.log").read_text()
+    assert "interface pronta do site instalada" in (tmp_path / "build.log").read_text(encoding="utf-8")
     assert bg.PREBUILT_WAIT >= 300
 
 

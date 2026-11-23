@@ -71,7 +71,7 @@ def _get_volume() -> int:
     """Retorna o volume master atual (0‑100)."""
     try:
         return round(_pycaw_endpoint().GetMasterVolumeLevelScalar() * 100)
-    except (ImportError, OSError, AttributeError, TypeError):
+    except Exception:  # noqa: BLE001 - V8.11: sem caixa de som o pycaw lança COMError (não é OSError) e /api/system dava 500
         log.debug("pycaw indisponível; usando fallback PowerShell.", exc_info=True)
     script = """
 Add-Type -TypeDefinition @'

@@ -69,8 +69,35 @@ async def system_update_progress() -> dict:
 
 @router.get("/api/system/update/status")
 async def system_update_status(force: bool = False) -> dict:
-    """V6.7.2: tem versão nova? (a central mostra a bolinha com o número no botão ATUALIZAR)"""
-    return await asyncio.to_thread(self_update.check, force)
+    """V6.7.2: tem versão nova? (a central mostra a bolinha com o número no botão ATUALIZAR)
+
+    V8.11: diz também se a central deve atualizar sozinha ao abrir (auto_on_open) e se o JARVIS está ocupado."""
+    from modules import auto_update
+
+    info = await asyncio.to_thread(self_update.check, force)
+    return {**info, "auto_on_open": await asyncio.to_thread(auto_update.on_open_enabled), "busy": session.busy}
+
+
+class AutostartRequest(BaseModel):
+    enabled: bool
+
+
+@router.get("/api/system/autostart")
+async def autostart_status() -> dict:
+    """V8.11: o JARVIS liga junto com o Windows?"""
+    from modules import autostart
+
+    return await asyncio.to_thread(autostart.status)
+
+
+@router.post("/api/system/autostart")
+async def autostart_set(req: AutostartRequest, request: Request) -> dict:
+    """V8.11: liga/desliga o início junto com o Windows (só pelo próprio PC)."""
+    from modules import autostart
+
+    if not runtime.is_local_conn(request):
+        raise HTTPException(status_code=403, detail="Isso só pode ser mudado no próprio PC.")
+    return await asyncio.to_thread(autostart.enable if req.enabled else autostart.disable)
 
 
 @router.post("/api/system/update")

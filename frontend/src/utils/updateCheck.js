@@ -103,3 +103,31 @@ export function scheduleDailyUpdateCheck(api) {
   timer = setTimeout(run, delay);
   return () => clearTimeout(timer);
 }
+
+// V8.11: ATUALIZAR AO ABRIR A CENTRAL. Abriu a central no PC e tem versão nova: atualiza na hora (com a tela de
+// progresso), sem esperar o clique no ATUALIZAR nem o PC ficar parado. Não insiste: se a mesma versão já foi
+// tentada há pouco (falhou, ou a página recarregou no meio), espera 15 min antes de tentar de novo.
+export const AUTO_OPEN_KEY = "jarvis.updateOnOpen.last";
+export const AUTO_OPEN_RETRY_MS = 15 * 60 * 1000;
+
+export function shouldAutoUpdateOnOpen(info, last, now = Date.now()) {
+  if (!info || info.available !== true || info.auto_on_open === false || info.busy) return false;
+  if (last && last.latest === (info.latest || "") && now - Number(last.at || 0) < AUTO_OPEN_RETRY_MS) return false;
+  return true;
+}
+
+export function readAutoUpdateAttempt() {
+  try {
+    return JSON.parse(localStorage.getItem(AUTO_OPEN_KEY) || "null");
+  } catch {
+    return null;
+  }
+}
+
+export function markAutoUpdateAttempt(info, now = Date.now()) {
+  try {
+    localStorage.setItem(AUTO_OPEN_KEY, JSON.stringify({ latest: info?.latest || "", at: now }));
+  } catch {
+    // sem armazenamento: o próprio backend (versão já igual depois de atualizar) evita repetir
+  }
+}

@@ -42,6 +42,14 @@ _WRITABLE = (
     ("desk_missions", "_PATH", "missoes.json"),  # V8.1
     ("world_data", "_PREFS_PATH", "olho_avisos.json"),
 )
+# V8.11: arquivos das Skills (módulo completo, em backend/skills/)
+_WRITABLE_SKILLS = (
+    ("skills.workspace", "_PATH", "workspaces.json"),
+    ("skills.system_guard", "_PATH", "vigia_sistema.json"),
+    ("skills.context_autopilot", "_PATH", "piloto_agenda.json"),
+    ("skills.deep_brief", "_PATH", "dossies.json"),
+    ("skills.deep_brief", "_DIR", "dossies"),
+)
 
 
 @pytest.fixture(autouse=True)
@@ -55,6 +63,10 @@ def _protect_real_data(tmp_path_factory, monkeypatch):
     monkeypatch.setattr(profiles, "PROFILES_DIR", base / "perfis")
     for module_name, attr, filename in _WRITABLE:
         module = importlib.import_module(f"modules.{module_name}")
+        if hasattr(module, attr):
+            monkeypatch.setattr(module, attr, base / filename)
+    for module_name, attr, filename in _WRITABLE_SKILLS:
+        module = importlib.import_module(module_name)
         if hasattr(module, attr):
             monkeypatch.setattr(module, attr, base / filename)
     from modules import device_access
@@ -98,3 +110,21 @@ def credentials(monkeypatch):
     from modules import access
 
     monkeypatch.setattr(access, "_has_credentials", lambda: True)
+
+
+@pytest.fixture
+def real_skills():
+    """V8.11: catálogo só com as Skills reais de backend/skills/, central liberada e sem pergunta pendente."""
+    from core import session
+    from core.skills import registry
+    from modules import access
+
+    registry.reset_for_tests()
+    names = registry.use_package_skills()
+    access.reset_for_tests(access.UNLOCKED)
+    session.pending_action = None
+    session.busy = False
+    yield names
+    registry.reset_for_tests()
+    session.pending_action = None
+    access.reset_for_tests(access.LOCKED)

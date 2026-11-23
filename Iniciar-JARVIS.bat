@@ -6,6 +6,9 @@ color 0B
 set "ROOT=%~dp0"
 set "BACKEND=%ROOT%backend"
 set "FRONTEND=%ROOT%frontend"
+rem V8.11: sinal de "ligando/atualizando" para o guardiao nao religar no meio (apagado no fim)
+if not exist "%ROOT%logs" mkdir "%ROOT%logs"
+> "%ROOT%logs\iniciando.flag" echo %date% %time%
 
 rem V5.4.1: a central abre pelo site do Netlify (o mesmo endereco do celular e de qualquer PC).
 rem O site conversa com o backend deste PC. No modo dev (Iniciar-JARVIS-Dev.bat) ou com
@@ -167,6 +170,12 @@ if exist "%USERPROFILE%\.jarvis-voice\vosk-model-small-pt-0.3" if exist "%BACKEN
   powershell -NoProfile -Command "$p=Start-Process -FilePath '%BACKEND%\venv\Scripts\pythonw.exe' -ArgumentList 'voice_listener.py' -WorkingDirectory '%ROOT%scripts' -WindowStyle Hidden -PassThru; try { $p.PriorityClass='BelowNormal' } catch {}"
 )
 
+rem V8.11: guardiao (mantem o JARVIS ligado: religa se ele cair sozinho). Troca o antigo, se houver.
+powershell -NoProfile -Command "$f=Join-Path '%ROOT%' 'logs\guardiao.pid'; if (Test-Path $f) { $i=Get-Content $f -ErrorAction SilentlyContinue; if ($i) { Stop-Process -Id $i -Force -ErrorAction SilentlyContinue }; Remove-Item $f -ErrorAction SilentlyContinue }"
+if exist "%BACKEND%\venv\Scripts\pythonw.exe" (
+  powershell -NoProfile -Command "$p=Start-Process -FilePath '%BACKEND%\venv\Scripts\pythonw.exe' -ArgumentList 'guardiao.py' -WorkingDirectory '%ROOT%scripts' -WindowStyle Hidden -PassThru; try { $p.PriorityClass='BelowNormal' } catch {}"
+)
+
 rem Abre o painel assim que backend e frontend responderem (ate 60 s), sem espera fixa.
 powershell -NoProfile -Command "$d=(Get-Date).AddSeconds(60); while((Get-Date) -lt $d){ try { $null=Invoke-WebRequest -UseBasicParsing -TimeoutSec 2 'http://127.0.0.1:8000/api/health'; $t=New-Object Net.Sockets.TcpClient('127.0.0.1',5173); $t.Close(); exit 0 } catch { Start-Sleep -Milliseconds 250 } }; exit 1"
 rem V5.6.2: se uma aba do JARVIS ja estava aberta, ela reconecta sozinha em poucos segundos; nesse caso
@@ -178,6 +187,8 @@ if not defined WAKE if not defined FROM_SITE (
 )
 if defined TAB_OPEN echo  [OK] A central ja estava aberta numa aba: ela reconectou sozinha.
 if not defined FROM_SITE if not defined TAB_OPEN start "" "%OPEN_URL%"
+
+del "%ROOT%logs\iniciando.flag" >nul 2>nul
 
 echo.
 echo  ==============================================

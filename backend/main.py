@@ -42,6 +42,7 @@ from routes import desk as desk_routes  # noqa: E402
 from routes import desktop as desktop_routes  # noqa: E402
 from routes import photo as photo_routes  # noqa: E402
 from routes import security as security_routes  # noqa: E402
+from routes import skills as skills_routes  # noqa: E402
 from version import VERSION  # noqa: E402
 
 
@@ -80,6 +81,10 @@ async def lifespan(app: FastAPI):
     from modules import tools
 
     runtime.track(tools.restore_timers())  # V6.7.1: timers que estavam correndo antes do reinício
+    from core.skills import registry as skills_registry
+
+    skills_registry.load()  # V8.11: Skills plug-and-play (backend/skills/)
+    skills_registry.start_services(runtime.track_service)
     yield
     for task in list(runtime.service_tasks):
         if not task.done():
@@ -155,9 +160,11 @@ async def security_middleware(request: Request, call_next):
 
     token_ctx = voice_route.set_target(voice_route.target_for(
         request.headers.get("X-Jarvis-Client", ""), request.headers.get("X-Jarvis-Device", ""), is_local))
+    remote_ctx = voice_route.set_remote(not is_local)  # V8.11: Skills críticas só no próprio PC
     try:
         return await call_next(request)
     finally:
+        voice_route.reset_remote(remote_ctx)
         voice_route.reset(token_ctx)
 
 
@@ -183,5 +190,5 @@ app.add_middleware(
 )
 
 
-for _module in (system, access_routes, profile, fan, water, search, productivity, info, integrations, health, mobile, profiles, security_routes, photo_routes, agent_chat_routes, world_routes, desk_routes, desktop_routes):
+for _module in (system, access_routes, profile, fan, water, search, productivity, info, integrations, health, mobile, profiles, security_routes, photo_routes, agent_chat_routes, world_routes, desk_routes, desktop_routes, skills_routes):
     app.include_router(_module.router)

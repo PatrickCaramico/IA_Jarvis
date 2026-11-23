@@ -74,6 +74,8 @@ def test_is_quiet(monkeypatch):
     import time
 
     monkeypatch.setattr(session, "busy", False)
+    # V8.11: o PC "livre" (mouse parado/madrugada) fica fixo: no Windows do CI o mouse real nunca está parado há 30 min
+    monkeypatch.setattr(auto_update, "pc_free", lambda: True)
     runtime.note_island({"type": "state", "state": "idle"})
     runtime.ISLAND["resposta_em"] = time.time()
     assert not auto_update.is_quiet()
@@ -214,4 +216,4 @@ def test_v872_update_does_not_choke_the_pc():
     assert "_lower_priority(0x00000040)" in (ROOT / "scripts" / "build_background.py").read_text(encoding="utf-8")
     assert "_lower_priority()" in (ROOT / "scripts" / "prebuilt.py").read_text(encoding="utf-8")
     bat = (ROOT / "Iniciar-JARVIS.bat").read_text(encoding="utf-8", errors="replace")
-    assert bat.count("PriorityClass='BelowNormal'") == 2
+    assert bat.count("PriorityClass='BelowNormal'") == 3  # interface, ouvido e (V8.11) guardião
