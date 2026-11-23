@@ -62,6 +62,7 @@ import { rememberAlwaysOn } from "./utils/bootStatus.js";
 import { EMPTY_STREAM, applyStream, markStreamed } from "./utils/streamState.js";
 import BootReconnect from "./components/BootReconnect.jsx";
 import { canResumeSession, hasLoggedBefore, launcherWorks, markLauncherWorks, rememberLogin } from "./utils/session.js";
+import { enqueue, canDrain } from "./utils/turnQueue.js";
 
 // Carregados sob demanda (otimização 4.2: pacote inicial menor)
 // V7: telas e janelas que nem sempre aparecem também saem do pacote inicial
@@ -134,6 +135,8 @@ export default function App() {
   const [saving, setSaving] = useState(false);
 
   const [jarvisState, setJarvisState] = useState("idle"); // idle | processing | speaking
+  const pendingRef = useRef([]); // V9.0: fila de pedidos feitos enquanto ele pensava
+  const [queued, setQueued] = useState([]);
   // V8.13: resposta da IA chegando em pedaços (streaming) — { seq, text }
   const [stream, setStream] = useState(EMPTY_STREAM);
   const streamRef = useRef(EMPTY_STREAM);
@@ -1750,7 +1753,11 @@ export default function App() {
 
   // ---- Enviar mensagem (digitada ou falada) ----
   const send = useCallback(async (text, endpoint = "/api/chat") => {
-    if (busyRef.current) return;
+    if (busyRef.current) { // V9.0: pensando em outro pedido: espera a vez na fila (antes era ignorado)
+      pendingRef.current = enqueue(pendingRef.current, { text, endpoint });
+      setQueued(pendingRef.current.map((p) => p.text));
+      return;
+    }
     const normalized = text
       .toLowerCase()
       .normalize("NFD")
@@ -2410,6 +2417,8 @@ export default function App() {
 
   // ---- Cancelar: corta a voz, descarta a resposta e para de ouvir ----
   const handleCancel = useCallback(async () => {
+    pendingRef.current = []; // V9.0: cancelar esvazia a fila
+    setQueued([]);
     setSummaryActive(false);
     cancelMic();
     busyRef.current = false;
@@ -2805,6 +2814,17 @@ export default function App() {
   const queuedAppCmd = useRef(null); // { listen } | { say } esperando entrar na central
   const sendRef = useRef(send);
   sendRef.current = send;
+  // V9.0: voltou a "em espera": manda o próximo da fila
+  useEffect(() => {
+    if (!canDrain(jarvisState, busyRef.current, pendingRef.current)) return undefined;
+    const t = setTimeout(() => {
+      if (!canDrain(jarvisState, busyRef.current, pendingRef.current)) return;
+      const next = pendingRef.current.shift();
+      setQueued(pendingRef.current.map((p) => p.text));
+      sendRef.current(next.text, next.endpoint);
+    }, 250);
+    return () => clearTimeout(t);
+  }, [jarvisState, queued]);
   const toggleMicRef = useRef(toggleMic);
   toggleMicRef.current = toggleMic;
   const listeningRef = useRef(listening);
@@ -3338,6 +3358,14 @@ export default function App() {
           onRename={(n) => api("/api/prefs", { method: "PATCH", body: JSON.stringify({ ai_name: n.trim() }) })
             .then((d) => setAiName(d.ai_name ? d.ai_name.toUpperCase() : "J.A.R.V.I.S.")).catch(() => {})}
         />
+      )}
+      {queued.length > 0 && (
+        <div className="turn-queue" role="status" aria-live="polite">
+          <span className="turn-queue-tag">NA FILA</span>
+          {queued.map((q, i) => <span key={q} className="turn-queue-item">{i + 1}. {q.length > 60 ? `${q.slice(0, 57)}…` : q}</span>)}
+          <button type="button" className="turn-queue-clear" title="Esvaziar a fila"
+            onClick={() => { pendingRef.current = []; setQueued([]); }}>×</button>
+        </div>
       )}
             {quickCard && !holo && (
         <QuickCard key={quickCard.at} card={quickCard} onClose={() => setQuickCard(null)}

@@ -275,6 +275,9 @@ async def cancel_operation() -> dict:
     Timers e lembretes já programados NÃO são cancelados (para isso: "cancele os timers").
     """
     session.turn_id += 1  # invalida qualquer resposta que ainda esteja sendo gerada
+    from core import turn_queue
+
+    turn_queue.cancel_all()  # V9.0: quem esperava na fila também desiste
     if session.current_stop is not None:
         session.current_stop.set()
     tts_module.stop_playback()  # corta o som que está tocando
