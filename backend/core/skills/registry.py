@@ -203,22 +203,25 @@ def record(name: str, ok: bool, ms: int, error: str = "") -> None:
                         BREAKER_PAUSE_S // 60)
 
 
+def parse_with(sk: Skill, norm: str, message: str) -> Optional[dict]:
+    """Os parâmetros que a frase dá para ESTA skill (pelo parse ou pelos gatilhos), ou None."""
+    if sk.parse is not None:
+        try:
+            return sk.parse(norm, message)
+        except Exception:  # noqa: BLE001
+            log.exception("parse da skill %s falhou", sk.name)
+            return None
+    for rx in sk.triggers:
+        m = rx.search(norm)
+        if m:
+            return {k: v.strip() for k, v in m.groupdict().items() if v is not None}
+    return None
+
+
 def match(norm: str, message: str, public_only: bool = False) -> Optional[tuple[Skill, dict]]:
     """Caminho rápido (sem IA): a primeira skill cujo gatilho (ou parse) reconhece a frase."""
     for sk in available(public_only=public_only):
-        args: Optional[dict] = None
-        if sk.parse is not None:
-            try:
-                args = sk.parse(norm, message)
-            except Exception:  # noqa: BLE001
-                log.exception("parse da skill %s falhou", sk.name)
-                args = None
-        else:
-            for rx in sk.triggers:
-                m = rx.search(norm)
-                if m:
-                    args = {k: v.strip() for k, v in m.groupdict().items() if v is not None}
-                    break
+        args = parse_with(sk, norm, message)
         if args is None:
             continue
         missing = [k for k in sk.params.get("required", []) or [] if k not in args]

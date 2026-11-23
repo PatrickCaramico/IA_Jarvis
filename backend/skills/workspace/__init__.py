@@ -390,10 +390,13 @@ def has_workspace(nome: str) -> bool:
 def listar_workspaces(ctx: SkillContext) -> SkillResult:
     data = _load()
     if not data:
-        return SkillResult(speech="Ainda não há workspaces salvos, senhor. Arrume as janelas e diga: salva esse layout como trabalho.")
+        return SkillResult(speech="Ainda não há workspaces salvos, senhor. Arrume as janelas e diga: salva esse layout como trabalho.",
+                           data={"workspaces": []})
     rows = [{"label": k, "value": f"{len(v.get('windows') or [])} janelas · {v.get('saved_at', '')}"} for k, v in sorted(data.items())]
     return SkillResult(speech=f"Workspaces salvos: {spoken_list(sorted(data))}.",
-                       cards=[_card("WORKSPACES", f"{len(data)} salvo(s)", rows)])
+                       cards=[_card("WORKSPACES", f"{len(data)} salvo(s)", rows)],
+                       data={"workspaces": [{"nome": k, "janelas": len(v.get("windows") or []), "salvo": v.get("saved_at", "")}
+                                            for k, v in sorted(data.items())]})
 
 
 @skill(

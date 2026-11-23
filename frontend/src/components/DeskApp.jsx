@@ -11,6 +11,7 @@ import { watchNewBuild } from "../utils/newBuild.js";
 import { useLiteMode } from "../utils/lite.js";
 import { useGroqVoice } from "../utils/voiceRecord.js";
 import { startPacman, usePoke } from "../utils/poke.js";
+import { AgendaPanel, PcBars, PcLive, ToolsPanel, WindowsPanel } from "./DeskTools.jsx";
 import "../desk.css";
 
 // V8.0: MODO DESK (ideia 6): o JARVIS como app de assistente pessoal. Barra lateral com o avatar robô, Início,
@@ -22,7 +23,9 @@ const MemoryMap = lazy(() => import("./DeskMemoryMap.jsx"));
 const NAV = [
   ["inicio", "⌂", "Início"], ["conversa", "💬", "Conversa"], ["memoria", "✳", "Memória"], ["tarefas", "☰", "Tarefas"],
   ["lembretes", "🔔", "Lembretes"], ["missoes", "🎯", "Missões"], ["habitos", "◆", "Hábitos"], ["timers", "⏱", "Timers"], ["musica", "♫", "Música"],
-  ["copiados", "⧉", "Copiados"], ["rotinas", "⚡", "Rotinas"], ["meupc", "🖥", "Meu PC"],
+  ["copiados", "⧉", "Copiados"], ["rotinas", "⚡", "Rotinas"],
+  // V8.11: as Habilidades com botões
+  ["janelas", "🪟", "Janelas"], ["agenda", "📅", "Agenda"], ["ferramentas", "🧰", "Ferramentas"], ["meupc", "🖥", "Meu PC"],
 ];
 const SETTINGS = [
   ["Assistente", [["personalizar", "🎨", "Personalizar"], ["cerebro", "🧠", "Cérebro (IA)"], ["funcoes", "🧩", "Funções"], ["voz", "🎙", "Voz"], ["ilha", "▭", "Ilha"], ["atualizar", "⬆", "Atualizações"]]],
@@ -115,6 +118,9 @@ function Home({ api, ctx, avatar, tema, setSection }) {
           <button type="button" className="dk-link" onClick={() => setSection("missoes")}>Ver missões e desafio da semana →</button>
         </Card>
         <Card title="Música" icon="♫"><MusicNow api={api} send={ctx.send} /></Card>
+        <Card title="Agora no PC" icon="📈" right={<button type="button" className="dk-link" onClick={() => setSection("meupc")}>detalhes →</button>}>
+          <PcBars api={api} compact />
+        </Card>
         <button type="button" className="dk-stat" onClick={() => setSection("lembretes")}><b>{(rems?.reminders || []).length}</b><span>lembretes</span></button>
         <button type="button" className="dk-stat" onClick={() => setSection("tarefas")}><b>{pend}</b><span>tarefas</span></button>
         <button type="button" className="dk-stat" onClick={() => setSection("habitos")}><b>{habits ? `${habits.feitos_hoje}/${habits.total}` : "—"}</b><span>hábitos hoje</span></button>
@@ -960,7 +966,10 @@ export default function DeskApp(props) {
     case "musica": body = <Music api={api} send={send} />; break;
     case "copiados": body = <Clips api={api} />; break;
     case "rotinas": body = <Routines api={api} />; break;
-    case "meupc": body = <MyPc avatar={cfg?.avatar} />; break;
+    case "meupc": body = <div className="dkt-grid"><PcLive api={api} /><MyPc avatar={cfg?.avatar} /></div>; break;
+    case "janelas": body = <WindowsPanel api={api} />; break;
+    case "agenda": body = <AgendaPanel api={api} />; break;
+    case "ferramentas": body = <ToolsPanel api={api} />; break;
     case "personalizar": body = <Personalize api={api} cfg={cfg} setCfg={setCfg} aiName={aiName} onRename={onRename} />; break;
     case "cerebro": body = <Brain api={api} />; break;
     case "funcoes": case "atalhos": body = <Functions api={api} send={send} />; break;

@@ -26,6 +26,11 @@ class ToggleRequest(BaseModel):
 
 class RunRequest(BaseModel):
     args: Optional[dict[str, Any]] = None
+    # V8.11: a tela do Modo Desk já perguntou "Fechar o Discord?" (botão + confirmação na própria tela).
+    # Só vale para pedido do próprio PC (a rota recusa os outros) e continua passando pelas outras regras.
+    confirm: bool = False
+    # V8.11: texto livre ("5 milhas em km"): os parâmetros saem do reconhecedor da própria skill
+    text: Optional[str] = None
 
 
 @router.get("/api/skills")
@@ -44,8 +49,19 @@ async def toggle_skill(name: str, req: ToggleRequest) -> dict:
 async def run_skill(name: str, req: RunRequest, request: Request) -> dict:
     if not runtime.is_local_conn(request):
         raise HTTPException(status_code=403, detail="Testar habilidades só pelo próprio computador.")
-    if registry.get(name) is None:
+    sk = registry.get(name)
+    if sk is None:
         raise HTTPException(status_code=404, detail="Habilidade não encontrada.")
-    result = await executor.execute(name, req.args or {}, SkillContext(origin="api"))
+    args = dict(req.args or {})
+    if req.text and not args:
+        from modules.quick_replies import _norm
+
+        parsed = registry.parse_with(sk, _norm(req.text), req.text)
+        if parsed is None:
+            return {"ok": False, "pending": False, "speech": "Não entendi esse pedido para essa função.", "cards": [],
+                    "data": None, "url": ""}
+        args = parsed
+    result = await executor.execute(name, args, SkillContext(origin="api", message=req.text or "",
+                                                               confirmed=bool(req.confirm)))
     return {"ok": result.ok, "pending": result.pending, "speech": result.speech, "cards": result.cards,
             "data": result.data, "url": result.url}

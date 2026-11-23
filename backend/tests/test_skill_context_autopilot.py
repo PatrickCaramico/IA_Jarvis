@@ -171,3 +171,8 @@ def test_calendar_events_now_bring_end_and_call_link():
     (item,) = calendar_hub._ics_events(2, 5, now=NOW, raw=raw)
     assert item["end"] == "2026-11-23T15:15:00"
     assert ap.meeting_link(item) == "https://meet.google.com/abc-defg-hij"
+
+
+def test_status_data_for_the_desk_screen(pilot):
+    data = asyncio.run(executor.execute("piloto_agenda", {})).data
+    assert data == {"ativo": True, "minutos": 5, "reuniao_ativa": False, "reuniao": ""}
