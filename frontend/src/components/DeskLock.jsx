@@ -7,6 +7,7 @@ import { hexToRgb } from "../utils/desk.js";
 import { startPacman, usePoke } from "../utils/poke.js";
 import { isLite } from "../utils/lite.js";
 import DeskLockBg, { BG_EVENT, LOCK_BGS, readBg, saveBg } from "./DeskLockBg.jsx";
+import { NEEDS, act as petAct, ageOf, bugCount, lifeLines, loadPet, moodOf, savePet, tick as petTick } from "../utils/pet.js";
 import "../desk.css";
 
 // V8.8.0 (ideia 11): BLOQUEIO DO MODO DESK. Em vez da tela de bloqueio clássica, o robô JARVIS grande no centro,
@@ -14,6 +15,53 @@ import "../desk.css";
 // o Pac-Man no app do Windows), um balão de fala que troca (hora, clima, contagens do dia e frases) e o mini-jogo
 // "Pegue as estrelas". O DESBLOQUEIO é o mesmo de sempre (rosto ou PIN): esta tela só recebe os botões prontos.
 // Com a tela bloqueada, ela só lê /api/desk/lockface (aparência e CONTAGENS, nada pessoal) e /api/weather.
+// V8.15: TAMAGOTCHI. O robô vira um bichinho que precisa de você (utils/pet.js): 5 necessidades que caem com o
+// tempo (bateria, energia, diversão, carinho, limpeza), ações de cuidado (alimentar, brincar = jogo das estrelas,
+// carinho, limpar os bugs, dormir/acordar), humor que muda com elas, idade que cresce e falas sobre o SEU dia.
+
+// V8.15: onde os bugs aparecem em volta dele (porcentagens da área)
+const BUG_SPOTS = [[24, 62], [74, 30], [70, 70], [28, 30]];
+const NEXT_FX_MS = 1300;
+
+function usePet(react) {
+  const [pet, setPet] = useState(() => loadPet());
+  const petRef = useRef(pet);
+  petRef.current = pet;
+  const [say, setSay] = useState("");
+  const [fx, setFx] = useState(null); // { kind: "feed" | "heart" | "clean" | "sleep", at }
+  const sayTimer = useRef(0);
+  const fxTimer = useRef(0);
+  useEffect(() => { // o tempo passa (e fica guardado: fechou a tela, ele continua "vivendo" pelo relógio)
+    const t = setInterval(() => {
+      const next = petTick(petRef.current, Date.now());
+      savePet(next);
+      setPet(next);
+    }, 30000);
+    return () => {
+      clearInterval(t);
+      clearTimeout(sayTimer.current);
+      clearTimeout(fxTimer.current);
+    };
+  }, []);
+  const care = useCallback((action, opts) => {
+    const r = petAct(petRef.current, action, Date.now(), opts);
+    savePet(r.pet);
+    setPet(r.pet);
+    if (r.face) react(r.face, 2400);
+    if (r.say) {
+      clearTimeout(sayTimer.current);
+      setSay(r.say);
+      sayTimer.current = setTimeout(() => setSay(""), 4500);
+    }
+    const kind = { alimentar: "feed", carinho: "heart", limpar: "clean", bug: "clean", dormir: "sleep" }[action];
+    if (kind && r.pet !== petRef.current) {
+      clearTimeout(fxTimer.current);
+      setFx({ kind, at: Date.now() });
+      fxTimer.current = setTimeout(() => setFx(null), NEXT_FX_MS);
+    }
+  }, [react]);
+  return { pet, care, say, fx };
+}
 
 export const GAME_SECONDS = 30;
 export const STAR_LIFE_MS = 1700;
@@ -211,6 +259,12 @@ export default function DeskLock({ api, phase, name, message, photoUrl, scan, pi
   useEffect(() => () => clearTimeout(reactTimer.current), []);
   const game = useStarsGame(() => react("conseguiu", 700));
   const { mood, poke } = usePoke(() => { if (!startPacman()) react("bravo", 2500); });
+  const { pet, care, say: petSay, fx } = usePet(react); // V8.15: o bichinho
+  const careRef = useRef(care);
+  careRef.current = care;
+  useEffect(() => { // terminou o jogo das estrelas: brincar conta para a diversão dele
+    if (game.result) careRef.current("brincar", { stars: game.result.score });
+  }, [game.result]);
   const [hintShown, setHintShown] = useState(Boolean(hint)); // V8.8.1: no celular, a 1ª fala explica como entrar
   useEffect(() => {
     if (!hint) return undefined;
@@ -268,7 +322,9 @@ export default function DeskLock({ api, phase, name, message, photoUrl, scan, pi
       clearInterval(t);
     };
   }, [api]);
-  const lines = bubbleLines(face, weather, now);
+  const petMood = moodOf(pet, { hour: now.getHours() });
+  // V8.15: o que ele precisa aparece mais vezes; depois, o seu dia (água, missões) e as falas de sempre
+  const lines = [...(petMood.say ? [petMood.say, petMood.say] : []), ...lifeLines(face, now.getHours()), ...bubbleLines(face, weather, now)];
   useEffect(() => {
     const t = setInterval(() => setLine((n) => n + 1), 6500);
     return () => clearInterval(t);
@@ -276,7 +332,7 @@ export default function DeskLock({ api, phase, name, message, photoUrl, scan, pi
 
   const scanning = phase === "scanning";
   const showFace = Boolean(scan) || scanning || (phase === "verified" && Boolean(photoUrl));
-  const calm = !showFace && !pinBlock && !game.playing && phase !== "verified" && phase !== "failed" && !mood;
+  const calm = !showFace && !pinBlock && !game.playing && phase !== "verified" && phase !== "failed" && !mood && !pet.sleeping;
   const [act, interrupt] = useActivity(calm, musicRef);
   useEffect(() => { // dormindo: mexer o mouse (de verdade, não um tremidinho), tocar ou teclar acorda
     if (act?.id !== "dormir") return undefined;
@@ -301,12 +357,15 @@ export default function DeskLock({ api, phase, name, message, photoUrl, scan, pi
   const accent = face?.cor || "#22d3ee";
   const clickRobot = (e) => {
     e.stopPropagation();
+    if (pet.sleeping) return care("carinho"); // V8.15: dormindo de verdade, ele só resmunga
     if (act?.id === "dormir") return interrupt(); // a 1ª cutucada só acorda
     if (act) interrupt();
     poke();
     if (!mood) react(Math.random() < 0.5 ? "feliz" : "rindo");
   };
-  const expr = mood || reaction || ACT_FACE[act?.id] || null;
+  const expr = mood || reaction || (pet.sleeping ? "dormindo" : null) || ACT_FACE[act?.id]
+    || (petMood.level === "urgente" || petMood.level === "pede" ? petMood.face : null) || null;
+  const shownAct = pet.sleeping ? "dormir" : act?.id; // V8.15: dormindo de verdade: cobertinha e "zzz" até acordar
   const actSay = act && (act.id === "dormir" || act.id === "acordando" || now - act.at < 6000) ? activityLine(act.id, music) : "";
   const state = scanning ? "processing" : jarvisState === "speaking" ? "speaking" : "idle";
   const say = hint && (hintShown || phase === "failed") ? hint
@@ -316,15 +375,20 @@ export default function DeskLock({ api, phase, name, message, photoUrl, scan, pi
         : game.playing ? `⭐ ${game.score} · ${game.left}s`
           : game.result ? (game.result.novo ? `Recorde novo: ${game.result.score} estrelas! 🏆` : `Você pegou ${game.result.score} ${game.result.score === 1 ? "estrela" : "estrelas"}. Recorde: ${game.record}.`)
             : mood === "comendo" ? "Agora você me irritou! 😤" : mood ? "Ei! Pare de me cutucar! 😠"
-              : actSay || lines[line % lines.length];
+              : petSay || (pet.sleeping ? petMood.say : "") || actSay || lines[line % lines.length];
+  const age = ageOf(pet, now.getTime());
+  const bugs = showFace || game.playing ? 0 : bugCount(pet);
 
   return (
-    <div className={`dkl${phone ? " is-phone" : ""}${bg !== "escuro" ? ` has-bg bg-${bg}` : ""}`} role="main" style={{ "--dk-accent": accent, "--dk-accent-rgb": hexToRgb(accent) }}>
+    <div className={`dkl${phone ? " is-phone" : ""}${bg !== "escuro" ? ` has-bg bg-${bg}` : ""}${pet.sleeping ? " is-night" : ""}`} role="main" style={{ "--dk-accent": accent, "--dk-accent-rgb": hexToRgb(accent) }}>
       <DeskLockBg bg={bg} />
       <div className="dkl-glow" aria-hidden="true" />
       <header className="dkl-top">
         <div className="dkl-clock">{now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</div>
         <div className="dkl-date">{now.toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}</div>
+        <div className="dkl-age" title={`Vocês convivem há ${age.days + 1} ${age.days ? "dias" : "dia"}`}>
+          {age.label}{face?.nivel ? ` · Nv ${face.nivel}` : ""}
+        </div>
       </header>
 
       {pinBlock ? <div className="dkl-pin">{pinBlock}</div> : (
@@ -338,14 +402,19 @@ export default function DeskLock({ api, phase, name, message, photoUrl, scan, pi
           {showFace ? (
             <div className="dkl-face"><FaceCircle scan={scan} phase={phase} photoUrl={photoUrl} /></div>
           ) : (
-            <div className={`dkl-actor${act ? ` is-${act.id}` : ""}${music ? " is-music" : ""}`}>
+            <div className={`dkl-actor${shownAct ? ` is-${shownAct}` : ""}${music ? " is-music" : ""}`}>
               <button type="button" className={`dkl-robot${mood ? " is-poked" : ""}`} onClick={clickRobot} aria-label={`${face?.nome || "JARVIS"}: clique para interagir`}>
                 <RoboAvatar avatar={expr ? { ...(face?.avatar || {}), expressao: expr } : face?.avatar} tema={face?.tema}
                   state={expr ? "idle" : state} size={260} still={Boolean(expr)} />
               </button>
-              <ActivityProps act={act?.id} />
+              <ActivityProps act={shownAct} />
+              {fx && <PetFx key={fx.at} kind={fx.kind} />}
             </div>
           )}
+          {Array.from({ length: bugs }, (_, i) => (
+            <button type="button" key={`bug-${i}`} className="dkl-bug" style={{ left: `${BUG_SPOTS[i][0]}%`, top: `${BUG_SPOTS[i][1]}%`, animationDelay: `${i * 0.7}s` }}
+              onClick={(e) => { e.stopPropagation(); care("bug"); }} aria-label="Pegar o bug">🐛</button>
+          ))}
           {waving && !act && !showFace && !game.playing && <span className="dkl-wave" aria-hidden="true">👋</span>}
           <p className="dkl-bubble" key={say} aria-live="polite">{say}</p>
         </div>
@@ -361,9 +430,39 @@ export default function DeskLock({ api, phase, name, message, photoUrl, scan, pi
         {phoneButtons}
         {failedActions}
         {!pinBlock && !showFace && (
-          <div className="dkl-row">
-            {game.playing ? <button type="button" className="dkl-chip" onClick={(e) => { e.stopPropagation(); game.stop(); }}>⏹ PARAR O JOGO</button>
-              : <button type="button" className="dkl-chip" onClick={(e) => { e.stopPropagation(); game.start(); }}>⭐ JOGAR{game.record ? ` · recorde ${game.record}` : ""}</button>}
+          <>
+            {/* V8.15: as necessidades do bichinho (cai com o tempo; pisca quando está baixa) */}
+            <div className="dkl-needs" role="group" aria-label="Como ele está">
+              {NEEDS.map((n) => {
+                const v = Math.round(pet.stats[n.id]);
+                return (
+                  <span key={n.id} className={`dkl-need${v < 30 ? " is-low" : v >= 80 ? " is-full" : ""}`} title={`${n.label}: ${v}%`}>
+                    <i aria-hidden="true">{n.icon}</i>
+                    <b className="dkl-need-bar" role="meter" aria-label={n.label} aria-valuemin={0} aria-valuemax={100} aria-valuenow={v}>
+                      <b style={{ width: `${v}%` }} />
+                    </b>
+                  </span>
+                );
+              })}
+            </div>
+            <div className="dkl-row dkl-care">
+              {pet.sleeping ? (
+                <button type="button" className="dkl-chip is-care" onClick={(e) => { e.stopPropagation(); care("acordar"); }}>☀ ACORDAR</button>
+              ) : (
+                <>
+                  <button type="button" className="dkl-chip is-care" onClick={(e) => { e.stopPropagation(); care("alimentar"); }} title="Dar uma bateria para ele">🔋 ALIMENTAR</button>
+                  {game.playing ? <button type="button" className="dkl-chip is-care" onClick={(e) => { e.stopPropagation(); game.stop(); }}>⏹ PARAR O JOGO</button>
+                    : <button type="button" className="dkl-chip is-care" onClick={(e) => { e.stopPropagation(); game.start(); }} title="Pegue as estrelas: quanto mais, mais divertido">🎾 BRINCAR{game.record ? ` · recorde ${game.record}` : ""}</button>}
+                  <button type="button" className="dkl-chip is-care" onClick={(e) => { e.stopPropagation(); care("carinho"); }}>💙 CARINHO</button>
+                  <button type="button" className={`dkl-chip is-care${bugs ? " is-alert" : ""}`} onClick={(e) => { e.stopPropagation(); care("limpar"); }}>🧽 LIMPAR{bugs ? ` · ${bugs} 🐛` : ""}</button>
+                  <button type="button" className="dkl-chip is-care" onClick={(e) => { e.stopPropagation(); care("dormir"); }}>💤 DORMIR</button>
+                </>
+              )}
+            </div>
+          </>
+        )}
+        {!pinBlock && !showFace && (
+          <div className="dkl-row is-sub">
             <button type="button" className={`dkl-chip${picking ? " is-on" : ""}`} aria-expanded={picking}
               onClick={(e) => { e.stopPropagation(); setPicking((v) => !v); }}>🖼 FUNDO</button>
             {/* V8.11: ATUALIZAR (com a bolinha de versões novas) e o Branding Book também no bloqueio do robô */}
@@ -398,6 +497,15 @@ export default function DeskLock({ api, phase, name, message, photoUrl, scan, pi
       </footer>
     </div>
   );
+}
+
+/** V8.15: o efeito de cada cuidado: bateria voando até ele, coraçõezinhos, brilho do banho, lua ao dormir. */
+function PetFx({ kind }) {
+  if (kind === "feed") return <span className="dkl-fx is-feed" aria-hidden="true">🔋</span>;
+  if (kind === "heart") return <span className="dkl-fx is-heart" aria-hidden="true">{["💙", "💙", "💖"].map((h, i) => <i key={i}>{h}</i>)}</span>;
+  if (kind === "clean") return <span className="dkl-fx is-clean" aria-hidden="true">{["✨", "🫧", "✨", "🫧"].map((h, i) => <i key={i}>{h}</i>)}</span>;
+  if (kind === "sleep") return <span className="dkl-fx is-sleep" aria-hidden="true">🌙</span>;
+  return null;
 }
 
 /** Os objetos de cada atividade (cobertinha, xícara, livro, notas, bola, bolhas): só enfeite, sem clique. */

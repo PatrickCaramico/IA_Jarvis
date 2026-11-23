@@ -352,6 +352,23 @@ async def desk_lockface() -> dict:
     except Exception:  # noqa: BLE001
         ofensiva = 0
     ai = prefs.get_ai_name() or "JARVIS"
+    # V8.15: o bichinho (Tamagotchi) do bloqueio reage ao seu dia de verdade: só NÚMEROS (nível, % da água, missões)
+    try:
+        nivel = int(desk.level_info(desk._load()["xp"]["total"]).get("nivel", 1))
+    except Exception:  # noqa: BLE001
+        nivel = 1
+    try:
+        from modules import water
+
+        agua_pct = int(water.get_status().get("percentage", 0))
+    except Exception:  # noqa: BLE001
+        agua_pct = None
+    try:
+        missoes = desk_missions.view()
+        missoes_feitas, missoes_total = int(missoes.get("feitas", 0)), int(missoes.get("total", 0))
+    except Exception:  # noqa: BLE001
+        missoes_feitas, missoes_total = 0, 0
     return {"avatar": cfg["avatar"], "cor": cfg["cor"], "tema": cfg.get("tema"), "nome": str(ai)[:20],
             "hora": now.strftime("%H:%M"), "tarefas": len(pend), "lembretes_hoje": len(today),
-            "proximo_lembrete": min(today).strftime("%H:%M") if today else None, "ofensiva": int(ofensiva or 0)}
+            "proximo_lembrete": min(today).strftime("%H:%M") if today else None, "ofensiva": int(ofensiva or 0),
+            "nivel": nivel, "agua_pct": agua_pct, "missoes_feitas": missoes_feitas, "missoes_total": missoes_total}
