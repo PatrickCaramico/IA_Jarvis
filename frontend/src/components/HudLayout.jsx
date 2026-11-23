@@ -896,6 +896,7 @@ export default function HudLayout({
   updateInfo = null, // V6.7.2: { count, latest, notes } quando há versão nova (bolinha no ⟳ ATUALIZAR)
   onUpdate = null,
   onCheckUpdate = null, // V8.12.1: ⟳ ATUALIZAR sempre no topo (confere e atualiza no PC; recarrega no site)
+  onOpenPalette = null, // V9.0: botão COMANDOS (o mesmo do Ctrl+K)
   userName = "", // V6.5.15: saudação da tela de espera
   onChatActivity = null, // V6.5.18: mexeu no chat (rolar, digitar): segura aberto na Área Limpa
   stateLabel,
@@ -1431,6 +1432,11 @@ export default function HudLayout({
         <span className="hl-btns">
           <button type="button" className="hl-btn" onClick={() => onOpenScreens ? onOpenScreens("command") : setScreensOpen(true)}>TELAS</button>
           <button type="button" className="hl-btn" onClick={() => setNewsOpen(true)}>NOTÍCIAS</button>
+          {onOpenPalette && ( /* V9.0: paleta de comandos (o mesmo do Ctrl+K) */
+            <button type="button" className="hl-btn hl-btn-cmdk" onClick={onOpenPalette} title="Paleta de comandos (Ctrl+K)" data-testid="cmdk-btn">
+              ⌕ COMANDOS <kbd>Ctrl K</kbd>
+            </button>
+          )}
         </span>
         {/* V8.11.1: o microfone só abre no toque; a legenda diz em que pé ele está */}
         <span className={`hc-mic-wrap is-${listening ? "listening" : jarvisState}`}>

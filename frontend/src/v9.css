@@ -72,3 +72,55 @@
 @keyframes v9-fade { from { opacity: 0; } to { opacity: 1; } }
 @media (max-width: 520px) { .cmdk-backdrop { padding-top: 8vh; } .cmdk-kind { display: none; } }
 @media (prefers-reduced-motion: reduce) { .cmdk-backdrop { animation: none; } }
+
+/* ---- Visual 9.0: clima da hora do dia (data-mood) com transição suave das cores ---- */
+@property --bp-base-1 { syntax: "<color>"; inherits: true; initial-value: #2362b8; }
+@property --bp-base-2 { syntax: "<color>"; inherits: true; initial-value: #174a95; }
+@property --bp-base-3 { syntax: "<color>"; inherits: true; initial-value: #0d3170; }
+@property --v9-glow { syntax: "<color>"; inherits: true; initial-value: rgba(10, 124, 174, 0.22); }
+
+:root { --v9-glow: rgba(10, 124, 174, 0.22); }
+[data-bg="blueprint"] body,
+[data-bg="blueprint"] .hl-root,
+body {
+  transition: --bp-base-1 3s ease, --bp-base-2 3s ease, --bp-base-3 3s ease, --v9-glow 3s ease;
+}
+/* manhã: um pouco mais claro e com um toque de luz quente no centro */
+[data-bg="blueprint"][data-mood="manha"] { --bp-base-1: #2a6fc4; --bp-base-2: #1a539f; --bp-base-3: #10397a; }
+/* tarde: o azul de sempre (valores do blueprint.css) */
+/* noite: azul mais fundo, menos brilho para não cansar a vista */
+[data-bg="blueprint"][data-mood="noite"] { --bp-base-1: #1b4f9a; --bp-base-2: #123d7c; --bp-base-3: #0a2758; }
+/* madrugada: quase apagado */
+[data-bg="blueprint"][data-mood="madrugada"] { --bp-base-1: #153f7d; --bp-base-2: #0e3063; --bp-base-3: #071c42; }
+[data-bg="blueprint"][data-mode="fan"] { --bp-base-1: #2362b8; --bp-base-2: #174a95; --bp-base-3: #0d3170; }
+
+/* fundo clássico: só o brilho do centro muda de cor */
+[data-bg="classic"][data-mood="manha"] { --v9-glow: rgba(64, 160, 190, 0.26); }
+[data-bg="classic"][data-mood="noite"] { --v9-glow: rgba(18, 70, 150, 0.2); }
+[data-bg="classic"][data-mood="madrugada"] { --v9-glow: rgba(12, 40, 100, 0.16); }
+[data-bg="classic"]:not([data-mode="fan"]) body {
+  background-image:
+    radial-gradient(ellipse at 50% 40%, var(--v9-glow), transparent 60%),
+    linear-gradient(rgba(31, 194, 245, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(31, 194, 245, 0.05) 1px, transparent 1px);
+}
+
+/* ---- Visual 9.0: painéis entram em sequência (uma vez, ao abrir a central) ---- */
+.hl-root .hl-panel { animation: v9-panel-in 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.hl-root .hl-panel:nth-child(2) { animation-delay: 0.06s; }
+.hl-root .hl-panel:nth-child(3) { animation-delay: 0.12s; }
+.hl-root .hl-panel:nth-child(4) { animation-delay: 0.18s; }
+.hl-root .hl-panel:nth-child(n + 5) { animation-delay: 0.24s; }
+@keyframes v9-panel-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+[data-motion="reduce"] .hl-root .hl-panel { animation: none; }
+@media (prefers-reduced-motion: reduce) { .hl-root .hl-panel { animation: none; } }
+
+/* ---- botão COMANDOS no rodapé (abre a paleta) ---- */
+.hl-btn-cmdk kbd {
+  font-family: inherit; font-size: 10px; margin-left: 6px; padding: 0 4px; border-radius: 4px;
+  border: 1px solid rgba(201, 246, 255, 0.35); opacity: 0.75;
+}
+@media (hover: none) { .hl-btn-cmdk kbd { display: none; } }

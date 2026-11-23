@@ -64,6 +64,7 @@ import BootReconnect from "./components/BootReconnect.jsx";
 import { canResumeSession, hasLoggedBefore, launcherWorks, markLauncherWorks, rememberLogin } from "./utils/session.js";
 import { enqueue, canDrain } from "./utils/turnQueue.js";
 import CommandPalette from "./components/CommandPalette.jsx";
+import { startMood } from "./utils/mood.js";
 
 // Carregados sob demanda (otimização 4.2: pacote inicial menor)
 // V7: telas e janelas que nem sempre aparecem também saem do pacote inicial
@@ -2436,6 +2437,8 @@ export default function App() {
     }
   }, [cancelMic]);
 
+  useEffect(() => startMood(), []); // V9.0: clima da central pela hora do dia
+
   // ---- V9.0: paleta de comandos (Ctrl+K / ⌘K) ----
   const paletteActions = useMemo(() => [
     { id: "settings", icon: "⚙️", label: "Abrir configurações", keywords: "preferencias ajustes voz tema" },
@@ -3806,6 +3809,7 @@ export default function App() {
         userName={name}
         updateInfo={updateInfo?.available ? updateInfo : null}
         onUpdate={canSelfUpdate ? updateJarvis : null}
+        onOpenPalette={() => setPaletteOpen(true)}
         onCheckUpdate={checkAndUpdate}
         onChatActivity={pokeChat}
         devices={devices}
