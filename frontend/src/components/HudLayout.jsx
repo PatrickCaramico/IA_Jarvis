@@ -1298,7 +1298,7 @@ export default function HudLayout({
           </button>
         </div>
         <WeatherPanel api={api} onMoveToSecondary={handleMoveToSecondary} />
-        <NowPlaying api={api} variant="hud" controls />
+        <NowPlaying api={api} variant="hud" controls always onOpen={onOpenSpotify} /> {/* V8.12: sempre visível */}
         <Panel id="chat" title="JARVIS · CANAL ATIVO" tag={busy ? "OCUPADO" : "PRONTO"} className="hl-channel" onMoveToSecondary={handleMoveToSecondary}>
           <ChatTools api={api} onCommand={onCommand} />
           {log.length > 0 && <ChatClear api={api} />}

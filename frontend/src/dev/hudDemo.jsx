@@ -49,6 +49,7 @@ const DATA = {
     { label: "Hoje 21:00", title: "Ligar para a mãe", kind: "lembrete" },
     { label: "Amanhã 09:30", title: "Reunião de planejamento", kind: "agenda" },
   ] },
+  "/api/integrations/spotify/track": { state: "idle" }, // V8.12: o cartão do Spotify fica mesmo sem música
   "/api/system": { cpu_percent: 23, ram_percent: 74, disk_free_gb: 412.6, processes: 231 }, // V8.11.1: telemetria do centro
   "/api/water": { total_ml: 1250, goal_ml: 2500, percentage: 50 },
   "/api/lock/status": { devices: 2, phones: 1, next_alarm: "amanhã às 07:00" },

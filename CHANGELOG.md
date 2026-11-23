@@ -2,6 +2,23 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 8.12.0 — 23 de novembro de 2026
+
+**🧠 IA com os pés no chão (menos invenção)**
+- Pergunta sobre algo que muda com o tempo agora vai para a IA **com pesquisa no Google**, e ela responde só com o que as fontes dizem, citando de onde veio. Vale para notícias, placares, preços e cotações, quem ocupa um cargo, lançamentos, "hoje", "último" e "ainda".
+  - Antes, só algumas frases fixas pesquisavam. "Quais as notícias da DC", por exemplo, ia sem pesquisa e a IA podia inventar manchetes com cara de verdade.
+- **Regras de veracidade** para todas as IAs (Groq, Gemini, OpenAI e Claude):
+  - nunca inventar números, datas, nomes, placares, citações ou fontes;
+  - dizer quando não tem certeza;
+  - apontar uma premissa errada da pergunta em vez de seguir nela.
+- **Sem pesquisa disponível** (sem a chave do Gemini, ou com ele no limite), a IA avisa que pode estar desatualizada e oferece pesquisar, em vez de chutar.
+- **Menos "criatividade" em fatos**: a temperatura da IA caiu para 0,3 (antes era o padrão das bibliotecas, perto de 1). Dá para ajustar no `.env` com `LLM_TEMPERATURE`.
+- Pedidos de ação ("toca a última do Coldplay", "o que eu tenho hoje") continuam indo para as habilidades, sem pesquisa.
+
+**🎵 Spotify sempre na central**
+- A janela do Spotify não some mais quando nada está tocando: mostra "Nada tocando agora" com ▶ e ESCOLHER MÚSICA.
+- Desconectado, mostra CONECTAR. Sem resposta do Spotify, mostra TENTAR DE NOVO.
+
 ## 8.11.1 — 23 de novembro de 2026
 
 **✨ Central com o centro renovado**

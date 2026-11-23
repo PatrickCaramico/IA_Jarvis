@@ -37,6 +37,8 @@ GEMINI_SEARCH_GROUNDING = os.getenv("GEMINI_SEARCH_GROUNDING", "true").strip().l
 # "none" desliga o "raciocínio" do Gemini (respostas bem mais rápidas). Deixe vazio para desativar.
 GEMINI_REASONING = os.getenv("GEMINI_REASONING", "none").strip()
 LLM_MAX_TOKENS = int(os.getenv("LLM_MAX_TOKENS", "1000"))
+# V8.12: "criatividade" da IA. Baixa = menos invenção em fatos (o padrão das bibliotecas é ~1.0).
+LLM_TEMPERATURE = float(os.getenv("LLM_TEMPERATURE", "0.3"))
 # V8.11: limite de espera de CADA chamada à IA (antes a OpenAI esperava até 10 min) e do turno inteiro
 # (somando as reservas do modo automático). Passou disso, o JARVIS avisa e libera para o próximo pedido.
 LLM_TIMEOUT_S = float(os.getenv("LLM_TIMEOUT_S", "25"))

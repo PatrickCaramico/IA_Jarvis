@@ -32,6 +32,7 @@ from services.llm_orchestrator import (
 )
 from core import briefing_flow, confirm, runtime, session, speech, reactive_cards
 from core.skills import router as skills_router
+from services import grounding  # V8.12: IA com os pés no chão
 
 log = logging.getLogger("jarvis.turns")
 
@@ -565,7 +566,9 @@ async def _handle_turn(message: str, routine: bool, force_deep: bool = False) ->
 
         # 4a) Modo automático (como a Alexa): pergunta factual vai para a IA com busca no Google,
         # sem abrir o navegador, sem perguntar e sem gastar a cota da pesquisa profunda.
-        if current_search_mode == "auto" and tools.is_factual_query(message):
+        # V8.12: também o que depende de fato atual (notícias, preços, cargos, "hoje", "último"): antes só um
+        # punhado de frases fixas pesquisava e o resto a IA respondia de memória, às vezes inventando.
+        if current_search_mode == "auto" and (tools.is_factual_query(message) or grounding.needs_fresh_facts(message)):
             web_search = True
             session.last_search_query = re.sub(
                 r"^(?:jarvis[\s,]+)?(?:por favor[\s,]+)?", "", message, flags=re.I

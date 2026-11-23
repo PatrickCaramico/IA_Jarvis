@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { startPolling } from "../hooks/usePolling.js";
+import { hasTrack, standbyView } from "../utils/nowPlaying.js";
 
 // V4.2.2: "Tocando agora" do Spotify. Usado na tela de bloqueio (sem botões) e na coluna direita
-// da central (com voltar, tocar/pausar e avançar). Some quando o Spotify não está conectado ou
-// não há nada tocando; pausado mostra "Spotify · pausado".
+// da central (com voltar, tocar/pausar e avançar). No bloqueio, some quando o Spotify não está conectado ou
+// não há nada tocando; na central (V8.12) fica sempre. Pausado mostra "Spotify · pausado".
 const POLL_MS = 15000;
 
 function fmt(ms) {
@@ -43,25 +44,62 @@ export function useNowPlaying(api, enabled = true) {
   return { track, progress, refresh: () => load.current() };
 }
 
-export default function NowPlaying({ api, variant = "lock", controls = false }) {
+// V8.12: `always` (central): sem faixa, o cartão não some; mostra o estado e o próximo passo (conectar, tocar,
+// tentar de novo). `onOpen` abre o painel do Spotify (conectar e escolher o que tocar).
+export default function NowPlaying({ api, variant = "lock", controls = false, always = false, onOpen = null }) {
   const { track, progress, refresh } = useNowPlaying(api);
   const [busy, setBusy] = useState(false);
-
-  if (!track || (track.state !== "playing" && track.state !== "paused")) return null;
-  const playing = track.state === "playing";
-  const pct = track.duration_ms ? Math.min(100, (progress / track.duration_ms) * 100) : 0;
+  const [note, setNote] = useState("");
 
   const control = async (action) => {
     setBusy(true);
+    setNote("");
     try {
       await api("/api/integrations/spotify/control", { method: "POST", body: JSON.stringify({ action }) });
       setTimeout(refresh, 600);
     } catch {
-      /* Spotify sem dispositivo ativo: o próximo ciclo atualiza */
+      // Spotify sem aparelho ativo: diz o que fazer em vez de não acontecer nada
+      if (!hasTrack(track)) setNote("Abra o Spotify no PC ou no celular e tente de novo.");
     } finally {
       setBusy(false);
     }
   };
+
+  if (!hasTrack(track)) {
+    if (!always) return null;
+    const view = standbyView(track);
+    return (
+      <div className={`np np-${variant} is-standby`} aria-label="Spotify">
+        <div className="np-head">
+          <span className="np-dot" aria-hidden="true" />
+          <span>{view.head}</span>
+        </div>
+        <div className="np-body">
+          <span className="np-cover np-cover-empty" aria-hidden="true">♪</span>
+          <div className="np-text">
+            <strong>{view.title}</strong>
+            <span title={note || view.sub}>{note || view.sub}</span>
+          </div>
+        </div>
+        <div className="np-controls">
+          {view.action === "connect" && onOpen && (
+            <button type="button" className="np-wide" onClick={onOpen}>CONECTAR</button>
+          )}
+          {view.action === "play" && (
+            <>
+              <button type="button" onClick={() => control("play")} disabled={busy} aria-label="Tocar">▶</button>
+              {onOpen && <button type="button" className="np-wide" onClick={onOpen}>ESCOLHER MÚSICA</button>}
+            </>
+          )}
+          {view.action === "retry" && (
+            <button type="button" className="np-wide" onClick={refresh}>TENTAR DE NOVO</button>
+          )}
+        </div>
+      </div>
+    );
+  }
+  const playing = track.state === "playing";
+  const pct = track.duration_ms ? Math.min(100, (progress / track.duration_ms) * 100) : 0;
 
   return (
     <div
