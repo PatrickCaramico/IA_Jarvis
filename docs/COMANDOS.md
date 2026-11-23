@@ -452,6 +452,19 @@ Pedidos com YouTube, Google, Maps, música ou notícias continuam no caminho de 
 | Lugares salvos | Os lugares do agente de rotas viram atalhos no painel. |
 | 🧭 IR ATÉ AQUI NO WAZE | Abre a navegação no app do Waze. |
 
+### Modo Desk: Habilidades com botões (V8.11)
+
+No Modo Desk (e no app do Windows), as habilidades novas também funcionam com botões, sem precisar falar. Só no próprio PC do JARVIS.
+
+| Seção | O que dá para fazer |
+|---|---|
+| 🪟 **Janelas** | Ver o que está aberto em cada monitor; ▦ GRADE e ◫ LADO A LADO; mandar uma janela para o outro monitor (→ 2) ou deixar só ela (⤢ FOCO). **Workspaces**: digite um nome e Enter para guardar o arranjo atual; ▶ MONTAR remonta tudo (e abre o que estiver fechado); ✕ apaga (pergunta antes). |
+| 🖥 **Meu PC** | Processador e memória ao vivo (a barra fica âmbar a partir de 70% e vermelha a partir de 90%) e disco livre; 🔎 O QUE ESTÁ PESANDO? lista os programas que mais gastam, com ✕ FECHAR (pergunta antes; nunca fecha programas do Windows nem o JARVIS). Também aparece um resumo no Início. |
+| 📅 **Agenda** | A próxima reunião; 🎧 ATIVAR MODO REUNIÃO / ✓ TERMINEI A REUNIÃO; ligar/desligar o aviso antes das reuniões e escolher com quantos minutos (2, 5, 10 ou 15). |
+| 🧰 **Ferramentas** | Conversor (digite "5 milhas em km" e Enter); senha forte de 16, 20 ou 32 caracteres (vai direto para a área de transferência); texto copiado (📝 resumir, 💡 explicar, 🌐 traduzir, ✍ corrigir); dossiê (tema e Enter) e a lista dos salvos (▶ LER abre o painel com as fontes). |
+
+No bloqueio do robô também ficaram os botões ⟳ ATUALIZAR (com a bolinha de versões novas) e 📘 BRANDING.
+
 ### Modo Desk e app para Windows (V8.0)
 
 | Fale / toque | O que acontece |

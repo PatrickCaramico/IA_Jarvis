@@ -387,7 +387,11 @@ def piloto_agenda(ctx: SkillContext, ativo: Optional[bool] = None, minutos: Opti
         state["enabled"] = bool(ativo)
     if ativo is None and minutos is None:
         on = "ligado" if state.get("enabled", True) else "desligado"
-        return SkillResult(speech=f"O piloto da agenda está {on}, avisando {state.get('lead_min')} minutos antes, senhor.")
+        meeting = state.get("meeting") or {}
+        # V8.11: data = o estado para a tela do Modo Desk (aba Agenda)
+        return SkillResult(speech=f"O piloto da agenda está {on}, avisando {state.get('lead_min')} minutos antes, senhor.",
+                           data={"ativo": bool(state.get("enabled", True)), "minutos": int(state.get("lead_min") or DEFAULT_LEAD_MIN),
+                                 "reuniao_ativa": bool(meeting.get("active")), "reuniao": meeting.get("event", "")})
     save_state(state)
     if not state["enabled"]:
         return SkillResult(speech="Piloto da agenda desligado: não aviso mais antes das reuniões, senhor.")

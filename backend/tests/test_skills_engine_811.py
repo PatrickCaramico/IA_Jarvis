@@ -388,3 +388,28 @@ def test_real_skills_become_valid_llm_tools(real_skills):
     org = next(t for t in oa if t["function"]["name"] == "organizar_janelas")["function"]["parameters"]
     assert org["properties"]["apps"]["type"] == "array"
     assert registry.errors() == []
+
+
+def test_run_route_accepts_screen_confirmation(client):
+    """V8.11: a tela do Modo Desk já perguntou ("Fechar o Discord?"): a rota local executa a crítica com confirm."""
+    done = []
+
+    async def apagar_teste(ctx, alvo: str):
+        done.append(alvo)
+        return SkillResult(speech="apagado")
+
+    _add(apagar_teste, permission=Permission.CRITICAL,
+         params={"type": "object", "properties": {"alvo": {"type": "string"}}, "required": ["alvo"]})
+    first = client.post("/api/skills/apagar_teste/run", json={"args": {"alvo": "x"}}).json()
+    assert first["pending"] is True and done == []
+    second = client.post("/api/skills/apagar_teste/run", json={"args": {"alvo": "x"}, "confirm": True}).json()
+    assert second["ok"] and second["speech"] == "apagado" and done == ["x"]
+
+
+def test_run_route_understands_free_text(client):
+    """V8.11: o conversor da tela manda o texto como foi digitado; os parâmetros saem do reconhecedor da skill."""
+    registry.use_package_skills()
+    r = client.post("/api/skills/converter_unidades/run", json={"text": "5 milhas em km"}).json()
+    assert r["ok"] and r["speech"] == "5 milhas são 8,05 quilômetros."
+    r = client.post("/api/skills/converter_unidades/run", json={"text": "bom dia"}).json()
+    assert r["ok"] is False and "Não entendi" in r["speech"]

@@ -314,7 +314,9 @@ def listar_dossies(ctx: SkillContext) -> SkillResult:
     names = [e.get("tema", "") for e in index[:5]]
     rows = [{"label": str(e.get("criado", ""))[:10], "value": e.get("titulo") or e.get("tema")} for e in index[:15]]
     more = f" e mais {len(index) - 5}" if len(index) > 5 else ""
-    return SkillResult(speech=f"Dossiês salvos: {spoken_list(names)}{more}.",
+    return SkillResult(data={"dossies": [{"tema": e.get("tema"), "titulo": e.get("titulo"), "criado": e.get("criado"),
+                                          "fontes": len(e.get("fontes") or [])} for e in index[:20]]},
+                       speech=f"Dossiês salvos: {spoken_list(names)}{more}.",
                        cards=[{"type": "skill", "data": {"tag": "DOSSIÊS", "source": f"{len(index)} salvo(s)", "rows": rows}}])
 
 
