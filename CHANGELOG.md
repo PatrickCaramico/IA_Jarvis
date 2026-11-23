@@ -2,6 +2,33 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 8.14.0 — 23 de novembro de 2026
+
+**🎸 Back in Black toca de verdade**
+- O botão VOZ (e o "toca Back in Black") agora escolhe em qual aparelho tocar: o que já está tocando, senão o PC, senão o primeiro que aparecer.
+  - Antes, o JARVIS mandava tocar sem dizer o aparelho, e o Spotify recusava quando o app estava fechado ou parado havia um tempo.
+- Com o Spotify fechado no PC, o JARVIS abre o app sozinho e espera ele aparecer.
+- Quando não dá para tocar, a tela diz o motivo de verdade: nenhum aparelho com o Spotify aberto, conta sem Premium ou Spotify não conectado.
+- No modo silencioso, o painel avisa que a música não toca sozinha e que é só tocar em ▶ TOCAR.
+  - Antes, ele ficava quieto, sem explicar.
+
+**🔎 Holograma pesquisado na internet**
+- A apresentação pesquisa no Google antes de montar as cenas e mostra as FONTES DA PESQUISA, com link, no fim.
+  - Antes, ela usava só o que a IA já sabia, sem fonte nenhuma.
+- Um selo no topo diz "PESQUISADO NA INTERNET · N FONTES". Sem a pesquisa, ele avisa que pode estar desatualizado.
+- As fontes ficam guardadas quando você salva a apresentação.
+
+**⚡ Holograma abre mais rápido**
+- A primeira cena aparece e começa a ser narrada assim que fica pronta, enquanto as outras ainda chegam.
+  - Antes, a tela ficava em "montando o holograma" até a apresentação inteira ficar pronta.
+
+**🎛 Holograma com mais controles**
+- Setas ← → trocam de cena e o espaço pausa.
+- Um toque na barra do topo pula para qualquer cena.
+- O botão 1x / 1,25x / 1,5x muda a velocidade da narração e fica lembrado neste navegador.
+- No fim: 📋 COPIAR e ⬇ BAIXAR a apresentação em texto, com as fontes.
+- A foto de fundo ficou mais nítida e aparente.
+
 ## 8.13.1 — 23 de novembro de 2026
 
 **🔒 Bloqueio mais rápido**

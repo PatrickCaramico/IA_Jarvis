@@ -2,6 +2,7 @@
 
 import logging
 import asyncio
+import re
 import socket
 from fastapi import HTTPException, Request, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
@@ -487,6 +488,7 @@ async def tts_played(req: PlayedRequest) -> dict:
 
 class SpeakRequest(BaseModel):
     text: str
+    speed: float | None = None  # V8.14: narração do holograma mais rápida (1, 1.25 ou 1.5)
 
 
 @router.post("/api/speak")
@@ -494,7 +496,11 @@ async def speak_text(req: SpeakRequest) -> dict:
     """Fala um texto com o TTS do assistente (feedback de opções selecionadas)."""
     text = req.text.strip()
     if text:
-        runtime.track(speech.speak(text, release_busy=True))
+        token = tts_module.use_speed(req.speed)  # a tarefa da fala copia a velocidade daqui
+        try:
+            runtime.track(speech.speak(text, release_busy=True))
+        finally:
+            tts_module.reset_speed(token)
     return {"status": "ok"}
 
 
@@ -568,6 +574,7 @@ async def system_optimize(request: Request) -> dict:
 
 class PrefetchRequest(BaseModel):
     texts: list[str] = []
+    speed: float | None = None  # V8.14
 
 
 @router.post("/api/tts/prefetch")
@@ -580,33 +587,87 @@ async def tts_prefetch(req: PrefetchRequest) -> dict:
     from modules import tts as tts_module
 
     texts = [t[:600] for t in (req.texts or [])[:10] if isinstance(t, str) and t.strip()]
-    started = tts_module.prefetch(texts, whole=bool(voice_route.current()))
+    token = tts_module.use_speed(req.speed)  # V8.14: gera já na velocidade da narração (senão o cache não bate)
+    try:
+        started = tts_module.prefetch(texts, whole=bool(voice_route.current()))
+    finally:
+        tts_module.reset_speed(token)
     return {"started": started}
 
 
 class HoloRequest(BaseModel):
     query: str
     kind: str = "auto"
+    req_id: str = ""  # V8.14: a tela que pediu reconhece as cenas que chegam aos poucos (holo_partial)
+
+
+def _holo_partial_sender(req_id: str, loop):
+    """V8.14: a cada pedaço da IA, manda as cenas JÁ completas para a tela (ela começa sem esperar o resto)."""
+    from modules import holo
+    from services import llm_stream
+
+    sent = {"n": 0}
+
+    def on_event(event: dict) -> None:
+        if event.get("reset"):
+            sent["n"] = 0
+            return
+        text = event.get("text") or ""
+        scenes = holo.partial_scenes(text)
+        if len(scenes) > sent["n"]:
+            sent["n"] = len(scenes)
+            runtime.track(runtime.manager.broadcast({"type": "holo_partial", "req_id": req_id,
+                                                     "titulo": holo.partial_title(text), "cenas": scenes}))
+
+    return llm_stream.StreamSink(loop, on_event, min_interval=0.25)
 
 
 @router.post("/api/holo")
 async def holo_build(req: HoloRequest) -> dict:
-    """V7.1: HOLOGRAMA: a pesquisa vira uma apresentação narrada ou uma receita viva (tela HoloStage)."""
+    """V7.1: HOLOGRAMA: a pesquisa vira uma apresentação narrada ou uma receita viva (tela HoloStage).
+
+    V8.14: a apresentação pesquisa no Google antes (Gemini; as fontes voltam em "fontes") e as cenas vão para a
+    tela assim que ficam prontas (evento holo_partial). Antes: só o que a IA já sabia, e tudo de uma vez no final."""
     from modules import holo
-    from services import llm_orchestrator
+    from services import llm_orchestrator, llm_stream
 
     query = (req.query or "").strip()[:240]
     if not query:
         raise HTTPException(status_code=400, detail="Diga o assunto.")
     kind = req.kind if req.kind in holo.KINDS else holo.guess_kind(query)
+    web = kind == "apresentacao"
+    prompt = holo.build_prompt(query, kind) + (holo.web_note() if web else "")
+    req_id = re.sub(r"[^A-Za-z0-9_-]", "", req.req_id or "")[:40]
+    sink = _holo_partial_sender(req_id, asyncio.get_running_loop()) if web and req_id else None
+
+    def run() -> tuple[str, list]:
+        token = llm_stream.use(sink)
+        if sink is not None:
+            sink.claim()
+        try:
+            if web:
+                return llm_orchestrator.ask_web(prompt, max_tokens=2400)
+            return llm_orchestrator.ask_text(prompt, False, 2400), []
+        finally:
+            llm_stream.reset(token)
+
     try:
-        raw = await asyncio.to_thread(llm_orchestrator.ask_text, holo.build_prompt(query, kind), False, 2400)
-        return holo.parse(raw, kind)
+        raw, sources = await asyncio.wait_for(asyncio.to_thread(run), timeout=90)
+        data = holo.parse(raw, kind)
+        if web:
+            data["fontes"] = holo.clean_sources(sources)
+            data["pesquisado"] = bool(data["fontes"])
+        return data
+    except asyncio.TimeoutError as exc:
+        raise HTTPException(status_code=504, detail="O holograma demorou demais. Tente de novo, senhor.") from exc
     except ValueError as exc:
         raise HTTPException(status_code=502, detail=f"{exc} Tente de novo, senhor.") from exc
     except Exception as exc:  # noqa: BLE001
         log.warning("Holograma falhou: %s", exc)
         raise HTTPException(status_code=502, detail="Não consegui montar o holograma agora.") from exc
+    finally:
+        if sink is not None:
+            sink.close()
 
 
 class HoloAskRequest(BaseModel):

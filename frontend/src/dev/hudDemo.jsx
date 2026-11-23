@@ -70,6 +70,15 @@ const DATA = {
   "/api/shopping": { items: [
     { id: 1, texto: "Leite", comprado: false }, { id: 2, texto: "Pão", comprado: false }, { id: 3, texto: "Café", comprado: true },
   ] },
+  // V8.14: holograma pesquisado (com fontes) para ver a tela sem IA
+  "/api/holo": { tipo: "apresentacao", titulo: "Buracos negros", wiki: "", pesquisado: true,
+    fontes: [{ titulo: "NASA — Black Holes", url: "https://science.nasa.gov/universe/black-holes/" },
+      { titulo: "ESO — Event Horizon Telescope", url: "https://www.eso.org/public/brazil/news/eso1907/" }],
+    cenas: [
+      { icone: "🌌", titulo: "Onde a luz não escapa", fala: "Senhor, um buraco negro é uma região onde a gravidade é tão forte que nem a luz consegue sair.", pontos: ["Gravidade extrema", "Horizonte de eventos", "Nada volta"], numero: null, visual: null, foto: "" },
+      { icone: "📸", titulo: "A primeira foto", fala: "Em 2019, o telescópio Event Horizon mostrou a primeira imagem de um buraco negro, na galáxia M87.", pontos: ["M87*", "55 milhões de anos-luz"], numero: { valor: 6.5, unidade: "bilhões de sóis", rotulo: "massa do M87*" }, visual: null, foto: "" },
+      { icone: "⏳", titulo: "Eles evaporam", fala: "Stephen Hawking previu que eles perdem massa devagar, pela radiação que leva o seu nome.", pontos: ["Radiação Hawking"], numero: null, visual: null, foto: "" },
+    ] },
   // V8.12.5: XP e missões do dia na central
   "/api/desk/xp": { nivel: 2, xp: 234, no_nivel: 134, para_subir: 200, pct: 67 },
   "/api/desk/missions": { dia: "2026-11-23", feitas: 1, total: 3, novos: [], cloud: false,
