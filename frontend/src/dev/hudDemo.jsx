@@ -106,6 +106,14 @@ const DATA = {
   ] },
 };
 
+// V9.1: ?music=1 = Spotify conectado e tocando (janela de vidro do Spotify)
+if (q.get("music") === "1") {
+  DATA["/api/integrations/spotify/status"] = { configured: true, connected: true };
+  DATA["/api/integrations/spotify/track"] = { state: "playing", title: "Weightless", artist: "Marconi Union",
+    image: "/brand/avatar-512.png", progress_ms: 95000, duration_ms: 480000 };
+  DATA["/api/integrations/spotify/volume"] = { percent: 45, saved: 45, live: true };
+}
+
 // ?upd=0: sem atualização pendente (com ela, a atualização ao abrir roda e a demo para no bloqueio)
 if (q.get("upd") === "0") DATA["/api/system/update/status"] = { available: false, count: 0 };
 

@@ -1,140 +1,167 @@
-import { useCallback, useEffect, useState } from "react";
-import { startPolling } from "../hooks/usePolling.js";
-import { EmptyState, Skeleton } from "./ui/Skeleton.jsx";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useNowPlaying } from "./NowPlaying.jsx";
+import { hasTrack, standbyView } from "../utils/nowPlaying.js";
+import { MOODS, clampVolume, fmtTime } from "../utils/spotifyMoods.js";
 
+// V9.1: janela do Spotify em VIDRO (glassmorphism), mais calma e futurista. Antes era um formulário com bordas
+// retas e o nome da faixa num texto só. Agora: a capa do álbum desfocada vira o fundo (com uma aurora que se mexe
+// devagar), capa grande com halo, barra de progresso fina, controles redondos, volume e atalhos de clima
+// (lo-fi, relaxar, jazz, chuva). Os dados vêm das mesmas rotas de antes (track, control, volume, play).
 export default function SpotifyWidget({ api, onSend }) {
   const [status, setStatus] = useState(null); // null = ainda consultando
-  const [track, setTrack] = useState(null);     // null = nada tocando
-  const [loading, setLoading] = useState(false);
+  const { track, progress, refresh } = useNowPlaying(api, Boolean(status?.connected));
+  const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [query, setQuery] = useState("");
   const [playlist, setPlaylist] = useState(false);
+  const [volume, setVolume] = useState(null);
+  const volTimer = useRef(null);
 
   const loadStatus = useCallback(async () => {
     try {
-      const data = await api("/api/integrations/spotify/status");
-      setStatus(data);
+      setStatus(await api("/api/integrations/spotify/status"));
     } catch {
       setStatus({ configured: false, connected: false });
     }
   }, [api]);
 
-  const loadTrack = useCallback(async () => {
+  useEffect(() => { loadStatus(); }, [loadStatus]);
+  useEffect(() => {
     if (!status?.connected) return;
-    try {
-      const data = await api("/api/integrations/spotify/now-playing");
-      setTrack(data.track ?? null);
-    } catch (error) {
-      setTrack(error.message);
-    }
+    api("/api/integrations/spotify/volume", { timeout: 12000 })
+      .then((d) => setVolume(clampVolume(d.percent)))
+      .catch(() => setVolume(60));
   }, [api, status?.connected]);
+  useEffect(() => () => clearTimeout(volTimer.current), []);
 
-  useEffect(() => {
-    loadStatus();
-  }, [loadStatus]);
-
-  useEffect(() => {
-    if (!status?.connected) {
-      loadTrack();
-      return undefined;
-    }
-    return startPolling(loadTrack, 15000);
-  }, [loadTrack, status?.connected]);
-
-  const command = async (text, confirmation) => {
-    setLoading(true);
+  const control = async (action) => {
+    setBusy(true);
     setMessage("");
     try {
-      const result = await api("/api/chat", {
+      await api("/api/integrations/spotify/control", { method: "POST", body: JSON.stringify({ action }) });
+      setTimeout(refresh, 600);
+    } catch (error) {
+      setMessage(error.message || "Abra o Spotify no PC ou no celular e tente de novo.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const play = async (text, asPlaylist) => {
+    if (!text.trim()) return;
+    setBusy(true);
+    setMessage("");
+    try {
+      const result = await api("/api/integrations/spotify/play", {
         method: "POST",
-        body: JSON.stringify({ message: text }),
+        body: JSON.stringify({ query: text.trim(), playlist: asPlaylist }),
       });
-      setMessage(result.response ?? confirmation);
-      await loadTrack();
+      setMessage(result.response);
+      setTimeout(refresh, 1200);
     } catch (error) {
       setMessage(error.message);
     } finally {
-      setLoading(false);
+      setBusy(false);
     }
+  };
+
+  const changeVolume = (value) => {
+    const v = clampVolume(value);
+    setVolume(v);
+    clearTimeout(volTimer.current);
+    volTimer.current = setTimeout(() => {
+      api("/api/integrations/spotify/volume", { method: "POST", body: JSON.stringify({ percent: v }) })
+        .catch((error) => setMessage(error.message));
+    }, 350); // espera parar de arrastar
   };
 
   const connect = () => {
     window.open(`${api.baseUrl ?? "http://127.0.0.1:8000"}/api/integrations/spotify/authorize`, "_blank", "width=600,height=700");
   };
 
-  const searchAndPlay = async (event) => {
-    event.preventDefault();
-    if (!query.trim()) return;
-    setLoading(true);
-    setMessage("");
-    try {
-      const result = await api("/api/integrations/spotify/play", {
-        method: "POST",
-        body: JSON.stringify({ query: query.trim(), playlist }),
-      });
-      setMessage(result.response);
-      setQuery("");
-      await loadTrack();
-    } catch (error) {
-      setMessage(error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const playing = track?.state === "playing";
+  const withTrack = hasTrack(track);
+  const pct = withTrack && track.duration_ms ? Math.min(100, (progress / track.duration_ms) * 100) : 0;
+  const view = withTrack ? null : standbyView(track || { state: status?.connected ? "idle" : "off" });
 
   return (
-    <section className="hud-panel p-4" aria-label="Controles do Spotify">
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="font-display text-sm tracking-wide text-arc-200">Spotify</h2>
-        {status && (
-          <span className={`rounded border px-2 py-1 text-[10px] ${status.connected ? "border-emerald-400/50 text-emerald-300" : "border-amber-400/50 text-amber-300"}`}>
-            {status.connected ? "Conectado" : "Não conectado"}
-          </span>
-        )}
-      </div>
+    <section
+      className={`sg${playing ? " is-playing" : ""}${track?.image ? " has-art" : ""}`}
+      aria-label="Spotify"
+      style={track?.image ? { "--sg-art": `url("${track.image}")` } : undefined}
+    >
+      <div className="sg-bg" aria-hidden="true"><i /><i /><i /></div>
+
+      <header className="sg-head">
+        <span className="sg-dot" aria-hidden="true" />
+        <span>{withTrack ? (playing ? "TOCANDO AGORA" : "PAUSADO") : "SPOTIFY"}</span>
+        {status && <span className={`sg-pill${status.connected ? " is-on" : ""}`}>{status.connected ? "conectado" : "desconectado"}</span>}
+      </header>
 
       {!status ? (
-        <Skeleton lines={3} label="Consultando o Spotify" />
+        <p className="sg-note" role="status">Consultando o Spotify…</p>
       ) : !status.configured ? (
-        <p className="text-xs text-red-300">Configure o Client ID e o Client Secret no arquivo .env.</p>
+        <p className="sg-note is-warn">Configure o Client ID e o Client Secret do Spotify no arquivo .env.</p>
       ) : !status.connected ? (
-        <div className="space-y-3">
-          <p className="text-xs text-arc-300/70">Autorize sua conta para controlar a reprodução.</p>
-          <button type="button" onClick={connect} className="w-full rounded border border-arc-400/60 px-3 py-2 text-xs text-arc-200 hover:bg-arc-500/20">
-            Conectar Spotify
-          </button>
+        <div className="sg-empty">
+          <span className="sg-cover is-empty" aria-hidden="true">♪</span>
+          <p>Conecte sua conta para ver e controlar a música aqui.</p>
+          <button type="button" className="sg-cta" onClick={connect}>CONECTAR SPOTIFY</button>
         </div>
       ) : (
         <>
-          {track ? (
-            <p className="min-h-10 rounded border border-arc-700/70 px-3 py-2 text-xs leading-relaxed text-arc-200">{track}</p>
-          ) : (
-            <EmptyState icon="♪" title="Nada tocando agora" hint="Peça uma música abaixo ou diga “tocar Spotify”." />
-          )}
-          <form onSubmit={searchAndPlay} className="mt-3 space-y-2">
-            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={playlist ? "Nome da playlist" : "Nome da música ou artista"} className="w-full rounded border border-arc-700 bg-void/60 px-3 py-2 text-xs text-arc-100 outline-none focus:border-arc-300" />
-            <div className="flex items-center justify-between gap-2">
-              <label className="flex items-center gap-2 text-xs text-arc-300/80">
-                <input type="checkbox" checked={playlist} onChange={(event) => setPlaylist(event.target.checked)} className="accent-arc-300" />
-                Playlist
-              </label>
-              <button type="submit" disabled={loading || !query.trim()} className="rounded border border-arc-400/60 px-3 py-1.5 text-xs text-arc-200 hover:bg-arc-500/20 disabled:opacity-40">
-                Buscar e tocar
-              </button>
+          <div className="sg-now">
+            {track?.image ? <img className="sg-cover" src={track.image} alt="" /> : <span className="sg-cover is-empty" aria-hidden="true">♪</span>}
+            <div className="sg-meta">
+              <strong title={withTrack ? track.title : view.title}>{withTrack ? track.title : view.title}</strong>
+              <span title={withTrack ? track.artist : view.sub}>{withTrack ? track.artist : view.sub}</span>
             </div>
-          </form>
-          <div className="mt-3 grid grid-cols-4 gap-1.5">
-            <button type="button" onClick={() => command("voltar música no Spotify", "Faixa anterior.")} disabled={loading} className="rounded border border-arc-700 px-2 py-2 text-lg text-arc-200 hover:bg-arc-500/20 disabled:opacity-40" aria-label="Faixa anterior">⏮</button>
-            <button type="button" onClick={() => command("tocar Spotify", "Reprodução retomada.")} disabled={loading} className="rounded border border-arc-700 px-2 py-2 text-lg text-arc-200 hover:bg-arc-500/20 disabled:opacity-40" aria-label="Tocar Spotify">▶</button>
-            <button type="button" onClick={() => command("pausar Spotify", "Spotify pausado.")} disabled={loading} className="rounded border border-arc-700 px-2 py-2 text-lg text-arc-200 hover:bg-arc-500/20 disabled:opacity-40" aria-label="Pausar Spotify">⏸</button>
-            <button type="button" onClick={() => command("próxima música no Spotify", "Avançando a faixa.")} disabled={loading} className="rounded border border-arc-700 px-2 py-2 text-lg text-arc-200 hover:bg-arc-500/20 disabled:opacity-40" aria-label="Próxima música">⏭</button>
+            {playing && <span className="sg-eq" aria-hidden="true"><i /><i /><i /><i /></span>}
           </div>
-          <button type="button" onClick={() => onSend("abrir Spotify")} className="mt-2 w-full rounded border border-arc-400/60 px-3 py-2 text-xs text-arc-200 hover:bg-arc-500/20">
-            Abrir aplicativo
-          </button>
+
+          {withTrack && (
+            <div className="sg-progress">
+              <div className="sg-bar" role="progressbar" aria-label="Andamento da faixa" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(pct)}>
+                <span style={{ width: `${pct}%` }} />
+              </div>
+              <div className="sg-times"><span>{fmtTime(progress)}</span><span>{fmtTime(track.duration_ms)}</span></div>
+            </div>
+          )}
+
+          <div className="sg-controls">
+            <button type="button" onClick={() => control("previous")} disabled={busy} aria-label="Faixa anterior">⏮</button>
+            <button type="button" className="sg-main" onClick={() => control(playing ? "pause" : "play")} disabled={busy} aria-label={playing ? "Pausar" : "Tocar"}>
+              {playing ? "⏸" : "▶"}
+            </button>
+            <button type="button" onClick={() => control("next")} disabled={busy} aria-label="Próxima faixa">⏭</button>
+          </div>
+
+          {volume !== null && (
+            <label className="sg-volume">
+              <span aria-hidden="true">{volume === 0 ? "🔇" : volume < 50 ? "🔉" : "🔊"}</span>
+              <input type="range" min={0} max={100} step={1} value={volume} onChange={(e) => changeVolume(e.target.value)} aria-label="Volume da música" style={{ "--sg-vol": `${volume}%` }} />
+              <b>{volume}%</b>
+            </label>
+          )}
+
+          <div className="sg-moods" role="group" aria-label="Atalhos de clima">
+            {MOODS.map((m) => (
+              <button key={m.id} type="button" disabled={busy} onClick={() => play(m.query, m.playlist)} title={`Tocar uma playlist: ${m.label}`}>
+                <span aria-hidden="true">{m.icon}</span>{m.label}
+              </button>
+            ))}
+          </div>
+
+          <form className="sg-search" onSubmit={(e) => { e.preventDefault(); play(query, playlist).then(() => setQuery("")); }}>
+            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={playlist ? "Nome da playlist" : "Música ou artista"} aria-label="Buscar no Spotify" />
+            <button type="button" className={`sg-toggle${playlist ? " is-on" : ""}`} onClick={() => setPlaylist((p) => !p)} aria-pressed={playlist} title="Buscar playlist">≡</button>
+            <button type="submit" disabled={busy || !query.trim()} aria-label="Buscar e tocar">▶</button>
+          </form>
+
+          <button type="button" className="sg-link" onClick={() => onSend("abrir Spotify")}>Abrir o aplicativo ↗</button>
         </>
       )}
-      {message && <p className="mt-3 text-xs text-arc-300/80">{message}</p>}
+      {message && <p className="sg-note" role="status">{message}</p>}
     </section>
   );
 }

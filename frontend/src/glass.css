@@ -1,0 +1,341 @@
+/* ==========================================================================
+   V9.1: VIDRO (glassmorphism) em toda a interface.
+   Antes, cada parte tinha o seu "vidro": painéis com gradiente quase opaco, cantos táticos, menus pretos a 95%,
+   Configurações numa caixa estreita e o Modo Desk em cinza chapado. Agora tudo usa as mesmas variáveis:
+     --g-tint     cor do vidro (azul-noite translúcido)       --g-blur   desfoque + saturação do fundo
+     --g-edge     borda clara fina (a "aresta" do vidro)      --g-shine  reflexo no alto (luz de cima)
+     --g-shadow   sombra macia + brilho interno               --g-radius cantos arredondados
+   "Alto contraste" (Acessibilidade) desliga o vidro: tudo fica sólido e legível.
+   ========================================================================== */
+
+:root {
+  --g-tint: rgba(10, 26, 52, 0.42);
+  --g-tint-strong: rgba(8, 20, 42, 0.62);
+  --g-menu: rgba(6, 16, 34, 0.975);
+  --g-blur: blur(18px) saturate(150%);
+  --g-blur-strong: blur(26px) saturate(160%);
+  --g-edge: rgba(200, 236, 255, 0.16);
+  --g-edge-hi: rgba(200, 236, 255, 0.32);
+  --g-shine: linear-gradient(180deg, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0.02) 38%, rgba(255, 255, 255, 0) 60%);
+  --g-shadow: 0 10px 34px rgba(0, 8, 30, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.16), inset 0 -1px 0 rgba(255, 255, 255, 0.03);
+  --g-radius: 16px;
+  --g-radius-sm: 11px;
+  --g-accent: #22d3ee;
+  --g-accent-soft: rgba(34, 211, 238, 0.18);
+}
+[data-mode="fan"] {
+  --g-tint: rgba(4, 40, 24, 0.46);
+  --g-tint-strong: rgba(3, 30, 18, 0.66);
+  --g-menu: rgba(2, 22, 13, 0.975);
+  --g-edge: rgba(167, 243, 208, 0.18);
+  --g-edge-hi: rgba(167, 243, 208, 0.34);
+  --g-accent: #34d399;
+  --g-accent-soft: rgba(52, 211, 153, 0.18);
+}
+
+/* ---- superfícies da central ---- */
+html:root .hl-panel,
+html:root[data-bg="blueprint"] .hl-panel,
+html:root[data-mode="fan"] .hl-panel,
+html:root .hud-panel,
+html:root .hl-top,
+html:root[data-bg="blueprint"] .hl-top {
+  background: var(--g-shine), var(--g-tint);
+  -webkit-backdrop-filter: var(--g-blur);
+  backdrop-filter: var(--g-blur);
+  border: 1px solid var(--g-edge);
+  border-radius: var(--g-radius);
+  box-shadow: var(--g-shadow);
+}
+html:root .hl-panel::before,
+html:root .hl-panel::after { opacity: 0.35; } /* os cantos táticos ficam só como um eco */
+html:root .hud-panel:hover,
+html:root .hl-panel:hover { border-color: var(--g-edge-hi); }
+html:root .hl-top { border-radius: 18px; }
+
+/* botões do topo e do rodapé: pílulas de vidro */
+html:root .hl-act,
+html:root .hl-btn {
+  border-radius: 999px;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+html:root .hl-btn { background: var(--g-shine), var(--g-tint); border: 1px solid var(--g-edge); }
+html:root .hl-btn:hover,
+html:root .hl-act:hover { border-color: var(--g-edge-hi); box-shadow: 0 0 18px var(--g-accent-soft); }
+
+/* menus suspensos: CONTROLES, agentes, perfil, voz */
+html:root .hl-controls-panel,
+html:root .hl-controls-panel.border-cyan-400\/50,
+html:root .hl-controls-panel.border-emerald-400\/40 {
+  /* fica DENTRO do topo (que já tem desfoque): o navegador não desfoca de novo, então o vidro aqui é mais denso */
+  background: var(--g-shine), var(--g-menu) !important;
+  -webkit-backdrop-filter: var(--g-blur-strong);
+  backdrop-filter: var(--g-blur-strong);
+  border-color: var(--g-edge-hi) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 18px 50px rgba(0, 6, 24, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+  animation: g-pop 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+html:root .hl-controls-panel button { border-radius: 12px; }
+
+/* menu lateral (☰) */
+html:root .snav-root,
+html:root[data-mode="fan"] .snav-root {
+  background: var(--g-shine), var(--g-tint-strong);
+  -webkit-backdrop-filter: var(--g-blur-strong);
+  backdrop-filter: var(--g-blur-strong);
+  border-right: 1px solid var(--g-edge-hi);
+  border-radius: 0 22px 22px 0;
+  box-shadow: 12px 0 40px rgba(0, 6, 24, 0.5), inset -1px 0 0 rgba(255, 255, 255, 0.08);
+}
+html:root .snav-backdrop { -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
+
+/* janelas flutuantes (Spotify, clima, tarefas…) */
+html:root .jarvis-floating-window {
+  border-radius: 20px;
+  overflow: hidden;
+  background: var(--g-shine), var(--g-tint-strong);
+  -webkit-backdrop-filter: var(--g-blur-strong);
+  backdrop-filter: var(--g-blur-strong);
+  border: 1px solid var(--g-edge-hi);
+  box-shadow: 0 24px 60px rgba(0, 6, 24, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  animation: g-pop 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+html:root .jarvis-floating-window > .widget-workspace-toolbar {
+  border: 0;
+  border-bottom: 1px solid var(--g-edge);
+  border-radius: 0;
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: none;
+  transform: none;
+}
+html:root .jarvis-floating-window > .widget-workspace-toolbar button { border-radius: 8px; }
+html:root .jarvis-floating-window .hud-panel { background: transparent; border: 0; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; transform: none; }
+
+/* paleta Ctrl+K e fila (V9.0) no mesmo vidro */
+html:root .cmdk { background: var(--g-shine), var(--g-tint-strong); -webkit-backdrop-filter: var(--g-blur-strong); backdrop-filter: var(--g-blur-strong); border-color: var(--g-edge-hi); border-radius: 22px; }
+html:root .turn-queue { background: var(--g-shine), var(--g-tint-strong); -webkit-backdrop-filter: var(--g-blur); backdrop-filter: var(--g-blur); border-color: var(--g-edge-hi); }
+
+/* Branding Book (moldura) */
+html:root .bb { border-radius: 22px; border: 1px solid var(--g-edge-hi); background: var(--g-tint-strong); -webkit-backdrop-filter: var(--g-blur-strong); backdrop-filter: var(--g-blur-strong); overflow: hidden; }
+
+@keyframes g-pop {
+  from { opacity: 0; transform: translateY(6px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ==========================================================================
+   Configurações (V9.1): janela de vidro com menu lateral
+   ========================================================================== */
+html:root .sp-backdrop {
+  position: fixed; inset: 0; z-index: 62; display: flex; align-items: center; justify-content: center; padding: 16px;
+  background: rgba(1, 6, 16, 0.55); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  animation: g-fade 0.18s ease-out;
+}
+html:root .sp-glass {
+  width: min(920px, 100%); height: min(86vh, 760px); display: flex; flex-direction: column; overflow: hidden;
+  color: #dff6ff;
+  background: var(--g-shine), var(--g-tint-strong);
+  -webkit-backdrop-filter: var(--g-blur-strong); backdrop-filter: var(--g-blur-strong);
+  border: 1px solid var(--g-edge-hi); border-radius: 24px;
+  box-shadow: 0 30px 80px rgba(0, 4, 18, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  animation: g-pop 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+html:root .sp-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 22px 14px; border-bottom: 1px solid var(--g-edge); }
+html:root .sp-head h2 { margin: 0; font: 700 17px "Orbitron", sans-serif; letter-spacing: 0.18em; color: #eafcff; }
+html:root .sp-head span { font-size: 13px; color: rgba(201, 246, 255, 0.65); letter-spacing: 0.04em; }
+html:root .sp-close {
+  width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--g-edge); background: rgba(255, 255, 255, 0.06);
+  color: #dff6ff; font-size: 15px; transition: 0.15s;
+}
+html:root .sp-close:hover { background: rgba(255, 255, 255, 0.14); border-color: var(--g-edge-hi); }
+html:root .sp-body { flex: 1; min-height: 0; display: grid; grid-template-columns: 210px minmax(0, 1fr); }
+html:root .sp-nav { display: flex; flex-direction: column; gap: 3px; padding: 12px 10px; overflow-y: auto; border-right: 1px solid var(--g-edge); background: rgba(255, 255, 255, 0.025); }
+html:root .sp-tab {
+  display: flex; align-items: center; gap: 10px; padding: 9px 12px; border: 1px solid transparent; border-radius: 12px;
+  background: transparent; color: rgba(214, 242, 255, 0.72); font: 600 14px "Rajdhani", sans-serif; letter-spacing: 0.03em; text-align: left;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+}
+html:root .sp-tab span { width: 22px; text-align: center; }
+html:root .sp-tab:hover { background: rgba(255, 255, 255, 0.06); color: #fff; }
+html:root .sp-tab.is-on { background: var(--g-accent-soft); border-color: var(--g-edge-hi); color: #fff; box-shadow: inset 3px 0 0 var(--g-accent), 0 0 18px var(--g-accent-soft); }
+html:root .sp-content { min-width: 0; overflow-y: auto; padding: 18px 22px 26px; }
+
+/* os campos de dentro (Tailwind) ganham o mesmo vidro */
+html:root .sp-content :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]), select, textarea) {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid var(--g-edge) !important;
+  border-radius: 10px !important;
+  color: #eafcff !important;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+html:root .sp-content :is(input, select, textarea):focus { border-color: var(--g-accent) !important; box-shadow: 0 0 0 3px var(--g-accent-soft) !important; outline: none; }
+html:root .sp-content button.rounded,
+html:root .sp-content .rounded:not(input) { border-radius: 10px; }
+html:root .sp-content .bg-black\/30,
+html:root .sp-content .bg-black\/40,
+html:root .sp-content .bg-black\/50,
+html:root .sp-content .bg-black\/60 { background-color: rgba(255, 255, 255, 0.05) !important; }
+html:root .sp-content .border-cyan-500\/20,
+html:root .sp-content .border-cyan-500\/30 { border-color: var(--g-edge) !important; }
+
+@media (max-width: 720px) {
+  html:root .sp-glass { height: 92dvh; border-radius: 20px; }
+  html:root .sp-body { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); }
+  html:root .sp-nav { flex-direction: row; overflow-x: auto; overflow-y: hidden; border-right: 0; border-bottom: 1px solid var(--g-edge); padding: 8px; }
+  html:root .sp-tab { flex: none; padding: 7px 11px; }
+  html:root .sp-tab.is-on { box-shadow: inset 0 -2px 0 var(--g-accent); }
+  html:root .sp-content { padding: 14px; }
+}
+@keyframes g-fade { from { opacity: 0; } to { opacity: 1; } }
+
+/* ==========================================================================
+   Spotify (V9.1): relaxante e futurista — capa desfocada no fundo e aurora lenta
+   ========================================================================== */
+html:root .sg {
+  position: relative; isolation: isolate; overflow: hidden; display: flex; flex-direction: column; gap: 14px;
+  min-height: 100%; padding: 18px; color: #eafcff; font-family: "Rajdhani", system-ui, sans-serif;
+}
+html:root .sg-bg { position: absolute; inset: 0; z-index: -1; overflow: hidden; background: #071427; }
+html:root .sg-bg::before { /* a capa do álbum, bem desfocada */
+  content: ""; position: absolute; inset: -30%; background: var(--sg-art, none) center / cover no-repeat;
+  filter: blur(46px) saturate(150%); opacity: 0.55; transform: scale(1.1); transition: opacity 1.2s ease;
+}
+html:root .sg-bg::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(4, 12, 28, 0.25), rgba(4, 12, 28, 0.72)); }
+html:root .sg-bg i { position: absolute; width: 60%; aspect-ratio: 1; border-radius: 50%; filter: blur(50px); opacity: 0.38; animation: sg-drift 22s ease-in-out infinite alternate; }
+html:root .sg-bg i:nth-child(1) { left: -15%; top: -10%; background: #22d3ee; }
+html:root .sg-bg i:nth-child(2) { right: -20%; top: 25%; background: #818cf8; animation-duration: 28s; animation-delay: -6s; }
+html:root .sg-bg i:nth-child(3) { left: 15%; bottom: -25%; background: #2dd4bf; animation-duration: 32s; animation-delay: -12s; }
+html:root .sg.has-art .sg-bg i { opacity: 0.22; }
+html:root .sg:not(.is-playing) .sg-bg i { animation-play-state: paused; }
+@keyframes sg-drift {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(12%, 8%) scale(1.12); }
+  100% { transform: translate(-8%, 14%) scale(0.95); }
+}
+
+html:root .sg-head { display: flex; align-items: center; gap: 8px; font: 600 11px "Orbitron", sans-serif; letter-spacing: 0.22em; color: rgba(214, 242, 255, 0.75); }
+html:root .sg-dot { width: 7px; height: 7px; border-radius: 50%; background: #1ed760; box-shadow: 0 0 10px #1ed760; }
+html:root .sg:not(.is-playing) .sg-dot { background: #64748b; box-shadow: none; }
+html:root .sg-pill { margin-left: auto; padding: 2px 9px; border-radius: 999px; font: 600 10px "Rajdhani", sans-serif; letter-spacing: 0.08em; border: 1px solid rgba(251, 191, 36, 0.45); color: #fcd34d; background: rgba(251, 191, 36, 0.08); }
+html:root .sg-pill.is-on { border-color: rgba(30, 215, 96, 0.45); color: #86efac; background: rgba(30, 215, 96, 0.08); }
+
+html:root .sg-now { display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; }
+html:root .sg-cover {
+  width: min(190px, 56%); aspect-ratio: 1; border-radius: 20px; object-fit: cover;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.14), 0 0 46px rgba(34, 211, 238, 0.22);
+}
+html:root .sg.is-playing .sg-cover { animation: sg-breathe 6s ease-in-out infinite; }
+@keyframes sg-breathe { 50% { box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.18), 0 0 64px rgba(34, 211, 238, 0.36); } }
+html:root .sg-cover.is-empty { display: grid; place-items: center; font-size: 46px; color: rgba(214, 242, 255, 0.6); background: rgba(255, 255, 255, 0.06); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+html:root .sg-meta { display: flex; flex-direction: column; min-width: 0; max-width: 100%; }
+html:root .sg-meta strong { font: 600 21px "Rajdhani", sans-serif; letter-spacing: 0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html:root .sg-meta span { font-size: 14px; color: rgba(214, 242, 255, 0.68); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html:root .sg-eq { display: flex; gap: 3px; align-items: flex-end; height: 14px; }
+html:root .sg-eq i { width: 3px; border-radius: 2px; background: #1ed760; animation: sg-eq 1.1s ease-in-out infinite; }
+html:root .sg-eq i:nth-child(2) { animation-delay: -0.3s; } html:root .sg-eq i:nth-child(3) { animation-delay: -0.6s; } html:root .sg-eq i:nth-child(4) { animation-delay: -0.9s; }
+@keyframes sg-eq { 0%, 100% { height: 4px; } 50% { height: 14px; } }
+
+html:root .sg-bar { height: 4px; border-radius: 4px; background: rgba(255, 255, 255, 0.14); overflow: hidden; }
+html:root .sg-bar span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #22d3ee, #a5f3fc); box-shadow: 0 0 10px rgba(34, 211, 238, 0.6); transition: width 1s linear; }
+html:root .sg-times { display: flex; justify-content: space-between; margin-top: 4px; font: 500 11px "JetBrains Mono", monospace; color: rgba(214, 242, 255, 0.55); }
+
+html:root .sg-controls { display: flex; justify-content: center; align-items: center; gap: 18px; }
+html:root .sg-controls button {
+  width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, 0.16); background: rgba(255, 255, 255, 0.07);
+  color: #eafcff; font-size: 16px; -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); transition: 0.18s;
+}
+html:root .sg-controls button:hover:not(:disabled) { background: rgba(255, 255, 255, 0.15); transform: translateY(-1px); }
+html:root .sg-controls .sg-main { width: 60px; height: 60px; font-size: 22px; background: rgba(34, 211, 238, 0.22); border-color: rgba(165, 243, 252, 0.5); box-shadow: 0 0 26px rgba(34, 211, 238, 0.35); }
+html:root .sg-controls button:disabled { opacity: 0.45; }
+
+html:root .sg-volume { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+html:root .sg-volume b { width: 38px; text-align: right; font: 500 12px "JetBrains Mono", monospace; color: rgba(214, 242, 255, 0.7); }
+html:root .sg-volume input {
+  flex: 1; height: 4px; appearance: none; -webkit-appearance: none; border-radius: 4px; cursor: pointer;
+  background: linear-gradient(90deg, #22d3ee var(--sg-vol, 50%), rgba(255, 255, 255, 0.16) var(--sg-vol, 50%));
+}
+html:root .sg-volume input::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: #eafcff; box-shadow: 0 0 10px rgba(34, 211, 238, 0.7); }
+html:root .sg-volume input::-moz-range-thumb { width: 14px; height: 14px; border: 0; border-radius: 50%; background: #eafcff; box-shadow: 0 0 10px rgba(34, 211, 238, 0.7); }
+
+html:root .sg-moods { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+html:root .sg-moods button {
+  display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 12px; text-align: left;
+  border: 1px solid rgba(255, 255, 255, 0.12); background: rgba(255, 255, 255, 0.05); color: #dff6ff; font: 600 13px "Rajdhani", sans-serif;
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); transition: 0.18s;
+}
+html:root .sg-moods button:hover:not(:disabled) { background: rgba(255, 255, 255, 0.12); border-color: rgba(165, 243, 252, 0.4); }
+
+html:root .sg-search { display: flex; gap: 6px; padding: 4px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, 0.14); background: rgba(255, 255, 255, 0.05); }
+html:root .sg-search input { flex: 1; min-width: 0; padding: 6px 10px; border: 0; background: transparent; color: #eafcff; font: 500 14px "Rajdhani", sans-serif; outline: none; }
+html:root .sg-search input::placeholder { color: rgba(214, 242, 255, 0.45); }
+html:root .sg-search button { width: 34px; height: 34px; border-radius: 10px; border: 0; background: rgba(255, 255, 255, 0.08); color: #eafcff; }
+html:root .sg-search button[type="submit"] { background: rgba(34, 211, 238, 0.3); }
+html:root .sg-search button:disabled { opacity: 0.4; }
+html:root .sg-toggle.is-on { background: rgba(34, 211, 238, 0.3) !important; box-shadow: inset 0 0 0 1px rgba(165, 243, 252, 0.5); }
+html:root .sg-link { align-self: center; border: 0; background: none; color: rgba(165, 243, 252, 0.85); font: 600 13px "Rajdhani", sans-serif; letter-spacing: 0.04em; }
+html:root .sg-link:hover { color: #fff; }
+html:root .sg-note { margin: 0; font-size: 13px; color: rgba(214, 242, 255, 0.78); text-align: center; }
+html:root .sg-note.is-warn { color: #fda4af; }
+html:root .sg-empty { display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; padding: 10px 0; }
+html:root .sg-cta { padding: 10px 18px; border-radius: 999px; border: 1px solid rgba(30, 215, 96, 0.55); background: rgba(30, 215, 96, 0.16); color: #dcfce7; font: 700 12px "Orbitron", sans-serif; letter-spacing: 0.14em; }
+
+/* ==========================================================================
+   Modo Desk (V9.1): fundo com aurora suave e cartões de vidro
+   ========================================================================== */
+html:root .dk-root {
+  --dk-card: rgba(255, 255, 255, 0.055);
+  --dk-card-2: rgba(255, 255, 255, 0.08);
+  --dk-line: rgba(255, 255, 255, 0.11);
+  background:
+    radial-gradient(60% 55% at 12% 8%, rgba(var(--dk-accent-rgb), 0.16), transparent 70%),
+    radial-gradient(50% 50% at 92% 18%, rgba(129, 140, 248, 0.14), transparent 70%),
+    radial-gradient(60% 60% at 70% 100%, rgba(45, 212, 191, 0.1), transparent 70%),
+    var(--dk-bg);
+}
+html:root .dk-side {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
+  -webkit-backdrop-filter: var(--g-blur); backdrop-filter: var(--g-blur);
+  border-right: 1px solid var(--dk-line);
+}
+html:root .dk-card {
+  background: var(--g-shine), var(--dk-card);
+  -webkit-backdrop-filter: var(--g-blur); backdrop-filter: var(--g-blur);
+  border: 1px solid var(--dk-line);
+  border-radius: 20px;
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+html:root .dk-btn { -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+html:root .dk-nav button.is-on { background: rgba(var(--dk-accent-rgb), 0.18); box-shadow: inset 3px 0 0 var(--dk-accent), 0 0 18px rgba(var(--dk-accent-rgb), 0.15); }
+
+/* ---- acessibilidade: alto contraste = sem vidro; reduzir movimento = sem aurora ---- */
+html:root[data-contrast="high"] :is(.hl-panel, .hud-panel, .hl-top, .hl-controls-panel, .snav-root, .jarvis-floating-window, .cmdk, .sp-glass, .dk-card, .dk-side) {
+  -webkit-backdrop-filter: none !important; backdrop-filter: none !important; background: #020a16 !important; border-color: #9be7ff !important;
+}
+html:root[data-motion="reduce"] :is(.sg-bg i, .sg-cover, .sg-eq i),
+html:root[data-motion="reduce"] :is(.sp-glass, .jarvis-floating-window, .hl-controls-panel) { animation: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  html:root .sg-bg i,
+html:root .sg.is-playing .sg-cover,
+html:root .sg-eq i,
+html:root .sp-glass,
+html:root .jarvis-floating-window,
+html:root .hl-controls-panel { animation: none !important; }
+}
+
+/* Central de Widgets (V9.1) */
+html:root .ww-backdrop { background: rgba(1, 6, 16, 0.55) !important; }
+html:root .ww-glass {
+  background: var(--g-shine), var(--g-tint-strong) !important;
+  -webkit-backdrop-filter: var(--g-blur-strong); backdrop-filter: var(--g-blur-strong);
+  border-color: var(--g-edge-hi) !important; border-radius: 24px !important;
+  box-shadow: 0 30px 80px rgba(0, 4, 18, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+}
+html:root .ww-glass header, html:root .ww-glass footer { background: rgba(255, 255, 255, 0.03) !important; border-color: var(--g-edge) !important; }
+html:root .ww-corner { display: none; }
+html:root .ww-glass .rounded-lg, html:root .ww-glass .rounded-xl { border-radius: 16px; }
+
+/* no celular não há Ctrl+K e o rodapé fica apertado: o botão COMANDOS sai (a paleta é do PC) */
+@media (max-width: 900px) { html:root .hl-btn-cmdk { display: none; } }

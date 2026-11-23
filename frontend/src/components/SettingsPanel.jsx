@@ -14,6 +14,23 @@ import PeopleSettings from "./settings/PeopleSettings.jsx";
 import AccessibilitySettings from "./settings/AccessibilitySettings.jsx";
 import SitesSettings from "./settings/SitesSettings.jsx";
 
+// V9.1: seções do menu lateral das configurações: [chave, rótulo, ícone]
+const SETTINGS_TABS = [
+  ["geral", "Geral", "⚙️"],
+  ["multimidia", "Mídia & Foco", "🎵"],
+  ["camera", "Câmera", "📷"],
+  ["atalhos", "Atalhos", "⚡"],
+  ["sites", "Meus Sites", "🌐"],
+  ["palmas", "Palmas", "👏"],
+  ["bloqueio", "Bloqueio", "🔒"],
+  ["seguranca", "Segurança", "🛡️"],
+  ["agua", "Hidratação", "💧"],
+  ["automacao", "Automação", "🤖"],
+  ["pessoas", "Pessoas", "👥"],
+  ["torcedor", "Torcedor", "⚽"],
+  ["acessibilidade", "Acessível", "♿"],
+];
+
 const THEME_NAMES = {
   blue: "Azul (Núcleo)",
   green: "Verde Tático",
@@ -210,63 +227,33 @@ export default function SettingsPanel({ api, onClose, onPrefsChange, onOpenMicro
   };
 
   return (
-    <div className="fixed inset-0 z-[62] flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
-      <div className="relative w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-lg border border-cyan-500/40 bg-gradient-to-b from-[#082037]/90 to-[#020813]/95 p-6 shadow-[0_0_35px_rgba(31,194,245,0.2)]">
-        {/* Cantos Táticos */}
-        <div className="absolute top-2 left-2 w-3 h-3 border-t-2 border-l-2 border-cyan-400" />
-        <div className="absolute top-2 right-2 w-3 h-3 border-t-2 border-r-2 border-cyan-400" />
-        <div className="absolute bottom-2 left-2 w-3 h-3 border-b-2 border-l-2 border-cyan-400" />
-        <div className="absolute bottom-2 right-2 w-3 h-3 border-b-2 border-r-2 border-cyan-400" />
-
-        {/* Topo */}
-        <div className="mb-5 flex items-center justify-between border-b border-cyan-500/20 pb-3">
+    <div className="sp-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+      {/* V9.1: janela de vidro (glassmorphism) com as seções num menu lateral. Antes: caixa estreita com 13 abas
+          numa grade de 4 colunas e cantos táticos. */}
+      <div className="sp-glass" role="dialog" aria-modal="true" aria-label="Configurações">
+        <header className="sp-head">
           <div>
-            <h2 className="font-['Orbitron'] text-lg font-bold tracking-widest text-cyan-200">
-              PAINEL DE CONTROLE
-            </h2>
-            <span className="text-[10px] text-cyan-400/60 font-['Orbitron']">CONFIGURAÇÕES DE SISTEMA</span>
+            <h2>CONFIGURAÇÕES</h2>
+            <span>{SETTINGS_TABS.find(([key]) => key === tab)?.[2]} {SETTINGS_TABS.find(([key]) => key === tab)?.[1]}</span>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-cyan-400/60 hover:text-white px-2 py-1 rounded hover:bg-cyan-500/20 text-sm font-['Orbitron']"
-          >
-            ✕ FECHAR
-          </button>
-        </div>
+          <button type="button" className="sp-close" onClick={onClose} aria-label="Fechar as configurações">✕</button>
+        </header>
 
-        {/* Abas da central */}
-        <div className="mb-5 grid grid-cols-4 gap-1.5 p-1 bg-black/40 border border-cyan-500/20 rounded">
-          {[
-            ["geral", "Geral"],
-            ["torcedor", "Torcedor"],
-            ["multimidia", "Mídia & Foco"],
-            ["camera", "Câmera"],
-            ["atalhos", "Atalhos"],
-            ["sites", "Meus Sites"],
-            ["palmas", "Palmas"],
-            ["bloqueio", "Bloqueio"],
-            ["seguranca", "Segurança"],
-            ["agua", "Hidratação"],
-            ["automacao", "Automação"],
-            ["pessoas", "Pessoas"],
-            ["acessibilidade", "Acessível"],
-          ].map(([key, label]) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => setTab(key)}
-              className={`py-1.5 text-xs font-['Orbitron'] tracking-wider rounded transition ${
-                tab === key
-                  ? "bg-cyan-500/30 text-white border border-cyan-400/60 shadow-[0_0_10px_rgba(31,194,245,0.3)]"
-                  : "text-cyan-300/60 hover:text-cyan-200"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-
+        <div className="sp-body">
+          <nav className="sp-nav" aria-label="Seções das configurações">
+            {SETTINGS_TABS.map(([key, label, icon]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setTab(key)}
+                aria-current={tab === key ? "page" : undefined}
+                className={`sp-tab${tab === key ? " is-on" : ""}`}
+              >
+                <span aria-hidden="true">{icon}</span>{label}
+              </button>
+            ))}
+          </nav>
+          <div className="sp-content">
         {patchStatus && (
           <div className="mb-2 text-[11px] font-['Orbitron'] text-emerald-300" role="status">{patchStatus}</div>
         )}
@@ -669,6 +656,8 @@ export default function SettingsPanel({ api, onClose, onPrefsChange, onOpenMicro
         )}
 
         {tab === "sites" && <SitesSettings api={api} sites={sites} setSites={setSites} />}
+          </div>
+        </div>
       </div>
     </div>
   );

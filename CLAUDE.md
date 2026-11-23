@@ -164,6 +164,10 @@ navegador por CDP (`skills/navegador/`), voz que começa antes (`core/early_voic
 fila de pedidos (`core/turn_queue.py` no backend, `utils/turnQueue.js` na central), paleta Ctrl+K
 (`components/CommandPalette.jsx` + `utils/palette.js`) e o clima por hora (`utils/mood.js`, `v9.css`).
 
+V9.1: vidro em toda a interface (`frontend/src/glass.css`: use as variáveis `--g-*` em superfície nova, não
+um gradiente próprio), janela do Spotify (`SpotifyWidget.jsx`), Configurações com menu lateral e o Branding Book
+3.0 (`docs/branding-book.html`: atualize o capítulo e o histórico a cada lançamento visual).
+
 Próximos, na ordem sugerida:
 - Skills: Quick Capture com escrita no Google Agenda.
 - Estruturais: logs estruturados com latência por etapa, desmontar `handle_turn` em skills, barramento de eventos.

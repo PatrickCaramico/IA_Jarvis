@@ -1,6 +1,6 @@
 # JARVIS — Comandos do dia a dia
 
-**Versão do projeto:** 9.0.0 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
+**Versão do projeto:** 9.1.0 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
 
 > Montado a partir do código do projeto. Se algum comando não responder como descrito, me avise que eu ajusto o guia.
 > Para a lista técnica de rotas, veja [API.md](API.md); para o `.env`, [CONFIGURACAO.md](CONFIGURACAO.md).
@@ -687,6 +687,12 @@ O JARVIS abre o navegador com um **perfil próprio** (`data/chrome_jarvis`) e a 
 - **A voz começa antes**: numa resposta longa, o JARVIS já fala as primeiras frases enquanto a IA ainda escreve o resto (antes, esperava a resposta inteira).
 - **Fila de pedidos**: pedido feito enquanto ele pensa em outro não se perde mais (antes era ignorado ou "ocupado"). Ele espera a vez (até 3 na fila, aparece **NA FILA** embaixo) e é atendido na ordem, depois da resposta anterior. Vale para a voz do ouvido, o celular e a central. Cancelar (Esc, o botão ou "Jarvis, para") esvazia a fila.
 - **Visual 9.0**: a central muda de clima com a hora do dia (mais clara de manhã, mais funda à noite, quase apagada de madrugada), com transição suave das cores, e os painéis entram em sequência ao abrir (some com "reduzir movimento").
+
+**Visual 9.1: vidro**
+
+- Toda a interface usa o mesmo vidro (glassmorphism): painéis, menus, janelas, Modo Desk e Configurações. Com "alto contraste" (Configurações › Acessível) o vidro sai e tudo fica sólido.
+- **Janela do Spotify** (cartão do Spotify, botão SPOTIFY do topo ou "ESCOLHER MÚSICA"): capa desfocada no fundo, controles, volume, busca de música ou playlist (botão ≡) e os atalhos de clima 🎧 Lo-fi para focar, 🌙 Relaxar, 🎷 Jazz calmo e 🌧 Chuva (um toque toca uma playlist).
+- **Configurações**: seções no menu lateral (no celular, numa faixa que rola); clique fora ou ✕ fecha.
 
 **Aba ⚡ HABILIDADES (Central de Agentes)**: todas as skills por grupo, com o nível de permissão (LEITURA, AÇÃO, CRÍTICA), liga/desliga, quantas vezes foram usadas, falhas e tempo, e os exemplos: um toque manda a frase para o JARVIS. Também abre pelo botão da Central de Agentes.
 
