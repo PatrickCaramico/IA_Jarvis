@@ -9,6 +9,7 @@ import { CLOUD_URL, change, cloud, cloudToken } from "./cloudApi.js";
 import { APP_VERSION } from "./version.js";
 import { pcLine } from "./cloudStatus.js";
 import { cloudTrack } from "./nowPlaying.js";
+import { quickReply } from "./quickReply.js";
 
 const NEEDS_PC = "Isso precisa do notebook ligado, senhor. No modo nuvem eu cuido de conversa, listas, lembretes, alarmes, água, notícias e clima.";
 const DAYS = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
@@ -198,6 +199,15 @@ function playMusic(command, search = "") {
 }
 
 async function chat(message) {
+  // V8.12.4: "olá", "tudo bem?", "obrigado", hora e data respondem na hora, sem ir à nuvem nem à IA
+  // (antes até um cumprimento esperava o Netlify e o Gemini). Vale a mesma regra do PC.
+  const quick = quickReply(message, { name: status.nome || "" });
+  if (quick) {
+    emit({ type: "response", text: quick, cards: [], local: true });
+    emit({ type: "state", state: "speaking" });
+    speak(quick, () => emit({ type: "state", state: "idle" }));
+    return { status: "ok", response: quick, cards: [], source: "local" };
+  }
   emit({ type: "state", state: "processing" });
   try {
     const res = await cloud("/chat", { method: "POST", body: { message, pode_musica: canMusic() }, timeout: 45000 });

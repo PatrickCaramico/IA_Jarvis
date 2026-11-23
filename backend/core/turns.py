@@ -136,11 +136,36 @@ async def _handle_turn(message: str, routine: bool, force_deep: bool = False) ->
 
     async def finish_local(reply: str, extra_cards: list | None = None) -> dict:
         """Resposta pronta (sem IA): mostra, guarda no histórico e fala."""
-        cards = await reactive_cards.detect_reactive_cards(message, reply)
-        if extra_cards:
+
+        def merge(found: list) -> list:
+            if not extra_cards:
+                return list(found)
             # O cartão explícito da ação (ex.: água com open_panel) substitui o detectado automaticamente
             extra_types = {c.get("type") for c in extra_cards}
-            cards = [c for c in cards if c.get("type") not in extra_types] + list(extra_cards)
+            return [c for c in found if c.get("type") not in extra_types] + list(extra_cards)
+
+        # V8.12.4: a resposta local não espera mais os cartões da internet. Antes, uma frase com "tempo" ou
+        # "notícia" buscava o clima/as manchetes ANTES de aparecer no chat. Agora espera no máximo
+        # CARDS_WAIT_SECONDS (como a resposta da IA) e o resto chega depois, em "response_cards".
+        cards_task = asyncio.create_task(reactive_cards.detect_reactive_cards(message, reply))
+        try:
+            cards = merge(await asyncio.wait_for(asyncio.shield(cards_task), timeout=CARDS_WAIT_SECONDS))
+        except asyncio.TimeoutError:
+            cards = merge([])
+
+            async def late_local_cards() -> None:
+                try:
+                    found = await cards_task
+                except Exception:  # noqa: BLE001
+                    log.debug("Cartões da resposta local falharam", exc_info=True)
+                    return
+                if found and not speech.canceled(turn):
+                    await runtime.manager.broadcast({"type": "response_cards", "text": reply, "cards": merge(found)})
+
+            runtime.track(late_local_cards())
+        except Exception:  # noqa: BLE001
+            log.debug("Cartões da resposta local falharam", exc_info=True)
+            cards = merge([])
         session.history.extend(
             [
                 {"role": "user", "content": message},

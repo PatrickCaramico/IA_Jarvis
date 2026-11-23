@@ -2,6 +2,15 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 8.12.4 — 23 de novembro de 2026
+
+**⚡ Conversa mais rápida no chat**
+- No modo nuvem (site ou celular com o PC fora de alcance), "olá", "tudo bem?", "obrigado", "tchau", "que horas são?" e "que dia é hoje?" respondem na hora, sem esperar a internet.
+  - Antes, até um cumprimento ia para o Netlify e para a IA, e levava alguns segundos. Pedidos de verdade continuam indo para a IA.
+- No PC, as respostas prontas não esperam mais os cartões da internet (clima, notícias). A frase aparece na hora e o cartão chega logo depois.
+  - Antes, uma resposta com a palavra "tempo" ou "notícia" só aparecia depois de buscar o clima ou as manchetes.
+- Na Conversa do Modo Desk, três pontinhos mostram que o JARVIS está pensando, assim que você envia a mensagem.
+
 ## 8.12.3 — 23 de novembro de 2026
 
 **⏻ JARVIS sempre ligado**

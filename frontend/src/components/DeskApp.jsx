@@ -51,11 +51,11 @@ function Card({ title, icon, right, children, className = "" }) {
   );
 }
 
-function ChatBox({ log, send, busy, onMic, listening, interim, compact = false }) {
+function ChatBox({ log, send, busy, thinking = false, onMic, listening, interim, compact = false }) {
   const [text, setText] = useState("");
   const endRef = useRef(null);
   const msgs = log.filter((m) => m.role === "user" || m.role === "jarvis" || m.role === "error").slice(compact ? -6 : -60);
-  useEffect(() => { endRef.current?.scrollIntoView({ block: "end" }); }, [msgs.length]);
+  useEffect(() => { endRef.current?.scrollIntoView({ block: "end" }); }, [msgs.length, thinking]);
   const submit = (e) => {
     e.preventDefault();
     const t = text.trim();
@@ -71,6 +71,12 @@ function ChatBox({ log, send, busy, onMic, listening, interim, compact = false }
           <p key={m.id} className={`dk-msg is-${m.role}`}>{m.text}</p>
         ))}
         {listening && <p className="dk-msg is-user is-live">{interim || "Ouvindo…"}</p>}
+        {/* V8.12.4: retorno na hora enquanto a IA pensa (antes a conversa ficava parada até a resposta chegar) */}
+        {thinking && !listening && (
+          <p className="dk-msg is-jarvis is-typing" role="status" aria-label="O JARVIS está pensando">
+            <span /><span /><span />
+          </p>
+        )}
         <div ref={endRef} />
       </div>
       {IS_DESKTOP_APP && <p className="dk-muted dk-hint">🎙 Toque no microfone e fale (a Groq entende), diga "Jarvis, …" ou escreva aqui.</p>}
@@ -111,7 +117,7 @@ function Home({ api, ctx, avatar, tema, setSection }) {
       </Card>
       <div className="dk-home-grid">
         <Card title="Conversa" icon="💬" className="dk-span2">
-          <ChatBox log={ctx.log} send={ctx.send} onMic={ctx.onToggleMic} listening={ctx.listening} interim={ctx.interim} compact />
+          <ChatBox log={ctx.log} send={ctx.send} thinking={ctx.orbState === "processing"} onMic={ctx.onToggleMic} listening={ctx.listening} interim={ctx.interim} compact />
         </Card>
         <Card title="Missões de hoje" icon="🎯" right={ctx.missions && <span className="dk-pill">🔥 {ctx.missions.ofensiva.atual}</span>} className="dk-span2">
           <MissionList api={api} data={ctx.missions} onChange={ctx.setMissions} compact />
@@ -956,7 +962,7 @@ export default function DeskApp(props) {
 
   let body;
   switch (section) {
-    case "conversa": body = <Card title="Conversa" icon="💬" className="dk-full"><ChatBox log={log} send={send} onMic={mic} listening={hearing} interim={heard} /></Card>; break;
+    case "conversa": body = <Card title="Conversa" icon="💬" className="dk-full"><ChatBox log={log} send={send} thinking={orbState === "processing"} onMic={mic} listening={hearing} interim={heard} /></Card>; break;
     case "memoria": body = <Suspense fallback={<Card title="Memória" icon="✳"><p className="dk-muted">Carregando…</p></Card>}><MemoryMap api={api} accent={accent} /></Suspense>; break;
     case "tarefas": body = <Tasks api={api} />; break;
     case "lembretes": body = <Reminders api={api} />; break;
