@@ -52,8 +52,12 @@ def test_without_spotify_or_with_errors(real_skills, fake_spotify):
     state["connected"] = False
     assert "conecte o Spotify" in asyncio.run(router.try_fast_path("toca back in black")).speech
     state["connected"] = True
-    state["error"] = RuntimeError("sem aparelho ativo")
+    state["error"] = spotify.SpotifyError("no_device", spotify.NO_DEVICE_MSG)
     assert "Abra o Spotify" in asyncio.run(router.try_fast_path("toca back in black")).speech
+    state["error"] = spotify.SpotifyError("premium", spotify.PREMIUM_MSG)
+    assert "Premium" in asyncio.run(router.try_fast_path("toca back in black")).speech
+    state["error"] = RuntimeError("A autorização do Spotify expirou.")
+    assert "Conecte de novo" in asyncio.run(router.try_fast_path("toca back in black")).speech
     state["error"] = None
     state["reply"] = "Não encontrei track com o nome 'x'."
     assert asyncio.run(router.try_fast_path("toca back in black")).ok is False
