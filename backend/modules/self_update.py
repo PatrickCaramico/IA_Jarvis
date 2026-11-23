@@ -199,6 +199,31 @@ def _current_version() -> str:
         return ""
 
 
+def changelog_highlights(text: str, version: str = "", limit: int = 5) -> list[str]:
+    """V8.12.2: os títulos em negrito (**…**) da seção da versão no CHANGELOG, para "O que há de novo" na tela de
+    atualização (antes ela mostrava assuntos de commit, em linguagem de programador). Função pura (testada)."""
+    import re
+
+    sections = re.split(r"^## ", text or "", flags=re.M)[1:]
+    section = next((sec for sec in sections if version and sec.startswith(version)), sections[0] if sections else "")
+    titles = []
+    for raw in re.findall(r"^\*\*(.+?)\*\*\s*$", section, flags=re.M):
+        title = raw.strip()
+        if title and title not in titles:
+            titles.append(title[:90])
+    return titles[:limit]
+
+
+def new_release_info() -> dict:
+    """Versão e destaques que acabaram de chegar no disco (chamado depois do pull)."""
+    version = _current_version()
+    try:
+        text = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
+    except OSError:
+        text = ""
+    return {"versao_nova": version, "destaques": changelog_highlights(text, version)}
+
+
 def check(force: bool = False) -> dict:
     """Quantas versões novas há na branch que o ATUALIZAR baixa (git fetch + comparação). Guarda por 15 min.
 

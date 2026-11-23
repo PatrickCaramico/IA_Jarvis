@@ -131,7 +131,12 @@ async def perform_update(announce: bool = True) -> dict:
         notes = (await asyncio.to_thread(self_update.check, False)).get("notes") or []
     except Exception:  # noqa: BLE001
         pass
-    self_update.set_progress("baixado", result.get("message", ""), antes=result.get("before", ""), depois=result.get("after", ""), notas=notes[:6])
+    try:  # V8.12.2: número da versão e destaques do CHANGELOG para a tela (no lugar do código do commit)
+        release = await asyncio.to_thread(self_update.new_release_info)
+    except Exception:  # noqa: BLE001 - sem isso a tela mostra o que já mostrava
+        log.warning("Não consegui ler a versão nova do disco", exc_info=True)
+        release = {}
+    self_update.set_progress("baixado", result.get("message", ""), antes=result.get("before", ""), depois=result.get("after", ""), notas=notes[:6], **release)
 
     async def speak_and_restart() -> None:
         # V8.1.7: a voz começa, mas não segura o reinício (no máximo 4 s de espera)
@@ -149,12 +154,14 @@ async def perform_update(announce: bool = True) -> dict:
         except Exception:  # noqa: BLE001 - sem voz ou sem build, reinicia do mesmo jeito
             log.warning("Preparação da atualização com problema", exc_info=True)
         self_update.set_progress("reiniciando", "Reiniciando os sistemas…")
+        access.remember_for_restart()  # V8.12.2: liberada antes, liberada depois (sem pedir o rosto de novo)
         if not self_update.restart():
+            access.forget_restart()
             self_update.set_progress("erro", "Não consegui reiniciar sozinho. Use o Iniciar-JARVIS.bat.")
             await runtime.manager.broadcast({"type": "error", "message": "Não consegui reiniciar sozinho. Use o Iniciar-JARVIS.bat."})
 
     runtime.track(speak_and_restart())
-    return {"status": "restarting", "boot_id": self_update.BOOT_ID, **result}
+    return {"status": "restarting", "boot_id": self_update.BOOT_ID, **result, **release}
 
 
 @router.get("/api/auth/token")

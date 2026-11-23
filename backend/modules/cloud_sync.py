@@ -254,8 +254,24 @@ def snapshot() -> dict:
         },
         "financas": _finance(),
         "holo_salvos": _holo_saved(),
+        "tocando": _now_playing(),  # V8.12.2: o cartão do Spotify da central no site (antes: sempre "sem sinal")
         "desk": _desk(),  # V8.0: Modo Desk fora de casa (aparência, nível e hábitos; os Copiados ficam no PC)  # V7.14: para rever as apresentações salvas fora de casa  # V7.10: só o resumo (os detalhes ficam no PC)
     }
+
+
+def _now_playing() -> dict:
+    """V8.12.2: a música do PC para a central aberta no site (título, artista, capa e se toca ou está pausada)."""
+    try:
+        from modules import spotify
+
+        if not spotify.configured() or not spotify.connected():
+            return {"state": "off", "at": int(time.time())}
+        data = spotify.now_playing()
+    except Exception:  # noqa: BLE001 - sem internet ou login expirado: a nuvem mostra "sem sinal"
+        log.debug("Spotify indisponível para a nuvem", exc_info=True)
+        return {"state": "error", "at": int(time.time())}
+    keep = ("state", "title", "artist", "album", "image", "progress_ms", "duration_ms")
+    return {**{k: data[k] for k in keep if k in data}, "at": int(time.time())}
 
 
 def _finance() -> dict:

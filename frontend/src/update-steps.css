@@ -30,3 +30,26 @@
 @keyframes us-blink { 50% { opacity: 0.25; } }
 @media (prefers-reduced-motion: reduce) { .us-spark, .us-dot, .us-live i { animation: none !important; } }
 .us-foot.is-warn { color: #fbbf24; }
+
+/* V8.12.2: anel com a porcentagem (no estilo do reator) no lugar do círculo girando */
+.us-head-text { min-width: 0; }
+.us-ring {
+  position: relative; flex: none; width: 58px; height: 58px; border-radius: 50%; display: grid; place-items: center;
+  background: conic-gradient(#5eead4 var(--us-pct, 0%), rgba(94, 234, 212, 0.12) 0);
+  box-shadow: 0 0 22px rgba(94, 234, 212, 0.35); transition: background 400ms ease;
+}
+.us-ring::before { content: ""; position: absolute; inset: 5px; border-radius: 50%; background: radial-gradient(circle, rgba(8, 30, 52, 0.98), rgba(3, 12, 26, 0.98)); }
+.us-ring::after { content: ""; position: absolute; inset: -5px; border-radius: 50%; border: 1px dashed rgba(94, 234, 212, 0.4); animation: us-spin 8s linear infinite; }
+.us-ring b { position: relative; font-family: "Orbitron", "Rajdhani", sans-serif; font-size: 0.95rem; color: #e6fffb; font-variant-numeric: tabular-nums; }
+.us-ring small { font-size: 0.6rem; opacity: 0.75; margin-left: 1px; }
+.us-notes ul { list-style: none; padding-left: 0; display: grid; gap: 5px; margin-top: 6px; }
+.us-notes li { padding: 6px 10px; border-radius: 10px; background: rgba(94, 234, 212, 0.07); border: 1px solid rgba(94, 234, 212, 0.16); color: #dffcf6; }
+.us.is-ready .us-title { color: #5eead4; text-shadow: 0 0 14px rgba(94, 234, 212, 0.5); }
+.us.is-ready .us-ring { box-shadow: 0 0 30px rgba(94, 234, 212, 0.65); }
+@media (prefers-reduced-motion: reduce) { .us-ring::after { animation: none; } }
+/* Compacto: a tela de início tem o logo grande em cima; a lista não pode passar do fim da tela */
+.us-steps { gap: 3px; margin: 10px 0 4px; }
+.us-steps li { padding: 5px 10px; }
+.us-notes ul { display: flex; flex-wrap: wrap; gap: 6px; }
+.us-notes li { padding: 4px 10px; border-radius: 999px; font-size: 0.78rem; }
+@media (max-height: 900px) { .ls-container:has(.us) .ls-orb-wrapper { zoom: 0.7; } }

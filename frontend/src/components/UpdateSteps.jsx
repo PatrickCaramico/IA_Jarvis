@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import ProgressBar from "./ProgressBar.jsx";
+import { footText, versionLine, whatsNew } from "../utils/updateScreen.js";
 import "../update-steps.css";
 
 // V8.1.7: tela de ATUALIZANDO O JARVIS com as etapas de verdade (o PC conta em /api/system/update/progress):
 // baixar -> montar a interface nova (com o JARVIS ainda ligado) -> reiniciar -> pronto.
-// Mostra de qual versão para qual, o tempo passando e o que mudou.
+// V8.12.2: anel com a porcentagem no lugar do círculo girando, "8.12.1 → 8.12.2" no lugar do código do commit,
+// "O que há de novo" com os destaques do CHANGELOG baixado e o fim sem falar em verificação do rosto.
 const STEPS = [
   ["baixado", "Baixar a versão nova", "⬇"],
   ["interface", "Montar a interface nova", "🧩"],
@@ -29,16 +31,22 @@ export default function UpdateSteps({ updating, pct, current }) {
   }, []);
   const info = updating.info || {};
   const etapa = updating.etapa || "baixado";
-  const notes = (info.notas || []).slice(0, 4);
+  const ver = versionLine(current, info);
+  const news = whatsNew(info);
+  const value = Math.max(0, Math.min(100, Math.round(pct || 0)));
+  const foot = footText(secs, updating.slow);
   return (
-    <div className="us">
+    <div className={`us${etapa === "pronto" ? " is-ready" : ""}`}>
       <div className="us-head">
-        <span className="us-spark" aria-hidden="true" />
-        <div>
-          <div className="us-title">ATUALIZANDO O JARVIS</div>
+        <span className="us-ring" style={{ "--us-pct": `${value}%` }} aria-hidden="true">
+          <b>{value}<small>%</small></b>
+        </span>
+        <div className="us-head-text">
+          <div className="us-title">{etapa === "pronto" ? "PRONTO!" : ver.to ? `ATUALIZANDO PARA A ${ver.to}` : "ATUALIZANDO O JARVIS"}</div>
           <div className="us-ver">
-            <span>v{current}</span><i>→</i><b>{info.changed === false ? "mesma versão" : "versão nova"}</b>
-            {info.depois && <code>{info.depois}</code>}
+            <span>v{ver.from}</span><i>→</i>
+            {ver.same ? <b>mesma versão</b> : ver.to ? <b>v{ver.to}</b> : <b>versão nova</b>}
+            {ver.code && <code>{ver.code}</code>}
           </div>
         </div>
         <span className="us-time" aria-label="Tempo">{Math.floor(secs / 60)}:{String(secs % 60).padStart(2, "0")}</span>
@@ -57,16 +65,13 @@ export default function UpdateSteps({ updating, pct, current }) {
       </ol>
       <ProgressBar pct={pct} label={updating.stage || "Atualizando"} />
       <p className="us-msg" role="status">{updating.message}</p>
-      {notes.length > 0 && (
+      {news.length > 0 && (
         <div className="us-notes">
-          <small>O QUE MUDOU</small>
-          <ul>{notes.map((n) => <li key={n}>{n.replace(/^JARVIS \d+\.\d+\.\d+:?\s*/, "")}</li>)}</ul>
+          <small>O QUE HÁ DE NOVO</small>
+          <ul>{news.map((n) => <li key={n}>{n}</li>)}</ul>
         </div>
       )}
-      {!updating.slow && secs < 150 && <p className="us-foot">Leva uns segundos. Depois eu volto e faço a verificação do seu rosto.</p>}
-      {!updating.slow && secs >= 150 && (
-        <p className="us-foot is-warn">Está demorando mais que o normal. Se passar de 5 minutos, dê dois cliques no <b>Iniciar-JARVIS.bat</b> do PC: ele termina a atualização.</p>
-      )}
+      {foot && <p className={`us-foot${secs >= 150 ? " is-warn" : ""}`}>{foot}</p>}
     </div>
   );
 }

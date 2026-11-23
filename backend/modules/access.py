@@ -17,6 +17,8 @@ import threading
 import time
 from typing import Optional
 
+from config import settings
+
 log = logging.getLogger("jarvis.access")
 
 LOCKED, UNLOCKED, GUEST = "locked", "unlocked", "guest"
@@ -94,7 +96,66 @@ def unlock(method: str) -> dict:
 
 
 def lock(reason: str = "manual") -> dict:
+    forget_restart()  # V8.12.2: bloqueou de propósito: um reinício logo depois não pode liberar
     return _set(LOCKED, reason)
+
+
+# ------------------------------------------------------------------ V8.12.2: atualizar sem pedir o rosto de novo
+# Antes, a atualização reiniciava o JARVIS e ele voltava BLOQUEADO (o estado vive na memória): a central pedia a
+# verificação do rosto logo depois de você mesmo ter apertado ATUALIZAR. Agora, logo antes do reinício da
+# atualização, guarda que estava liberado; ao ligar de novo (em até 5 min), volta liberado. Bloqueado continua
+# bloqueado, e qualquer bloqueio no meio do caminho apaga a marca.
+RESUME_TTL_S = 5 * 60
+
+
+_RESUME_PATH = settings.DATA_DIR / "retomar_apos_atualizar.json"
+
+
+def _resume_path():
+    return _RESUME_PATH
+
+
+def remember_for_restart(now: Optional[float] = None) -> bool:
+    """Chamado logo antes do reinício da atualização. True se a central estava liberada (e foi guardado)."""
+    if _state != UNLOCKED:
+        forget_restart()
+        return False
+    from core import safe_io
+
+    try:
+        safe_io.write_json(_resume_path(), {"at": now if now is not None else time.time(), "method": _method or ""})
+        return True
+    except OSError:
+        log.exception("Não consegui guardar o acesso para depois da atualização")
+        return False
+
+
+def forget_restart() -> None:
+    try:
+        _resume_path().unlink(missing_ok=True)
+    except OSError:
+        log.warning("Não consegui apagar a marca de retomada da atualização", exc_info=True)
+
+
+def resume_after_restart(now: Optional[float] = None) -> bool:
+    """Ao ligar: se a atualização acabou de reiniciar com a central liberada, volta liberado. Usa a marca uma vez."""
+    from core import safe_io
+
+    path = _resume_path()
+    if not path.exists():
+        return False
+    try:
+        data = safe_io.read_json(path)
+    except (OSError, ValueError):
+        data = None
+    forget_restart()
+    at = float((data or {}).get("at") or 0) if isinstance(data, dict) else 0.0
+    age = (now if now is not None else time.time()) - at
+    if not (0 <= age <= RESUME_TTL_S):
+        return False
+    _set(UNLOCKED, "atualizacao")
+    log.info("Atualização concluída: a central continua liberada (sem nova verificação).")
+    return True
 
 
 def enter_guest() -> dict:

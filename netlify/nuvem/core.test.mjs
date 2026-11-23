@@ -509,3 +509,20 @@ test("V8.1 nuvem: missões e ofensiva no resumo do Modo Desk", async () => {
   assert.equal(d.missoes.ofensiva.atual, 4);
   assert.equal(d.missoes.feitas, 0);
 });
+
+test("V8.12.2: a música do PC chega à central do site (só campos conhecidos, capa só do Spotify)", async () => {
+  const store = memStore();
+  const token = await login(store);
+  await receiveSnapshot(store, { ack: 0, snapshot: { tocando: {
+    state: "playing", title: "Yellow", artist: "Coldplay", image: "https://i.scdn.co/image/abc", progress_ms: 1000, duration_ms: 266000,
+    at: 1700000000, segredo: "não deveria ir",
+  } } }, spNow(NOW));
+  const st = (await call(store, "/state", { token })).data;
+  assert.equal(st.tocando.title, "Yellow");
+  assert.equal(st.tocando.state, "playing");
+  assert.equal(st.tocando.segredo, undefined);
+  await receiveSnapshot(store, { ack: 0, snapshot: { tocando: { state: "hackeado", image: "https://evil.example/x.png" } } }, spNow(NOW));
+  const st2 = (await call(store, "/state", { token })).data;
+  assert.equal(st2.tocando.state, "error"); // estado desconhecido não passa
+  assert.equal(st2.tocando.image, null); // capa de fora do Spotify não passa
+});

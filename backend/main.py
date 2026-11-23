@@ -48,6 +48,10 @@ from version import VERSION  # noqa: E402
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    try:  # V8.12.2: voltando de uma atualização com a central liberada: continua liberada
+        await asyncio.to_thread(access.resume_after_restart)
+    except Exception:  # noqa: BLE001 - na dúvida, liga bloqueado (como sempre)
+        log.exception("Falha ao retomar o acesso depois da atualização")
     runtime.track_service(reminders.reminder_worker_loop())
     runtime.track_service(alarms.worker_loop())  # V5.1: alarmes (despertador)
     runtime.track_service(watchers.fan_watcher_loop())
