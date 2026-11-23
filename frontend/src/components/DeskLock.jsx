@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import RoboAvatar from "./RoboAvatar.jsx";
+import ProgressBar from "./ProgressBar.jsx";
 import { FaceCircle } from "./LockOrbe.jsx";
 import useNow from "../hooks/useNow.js";
 import { hexToRgb } from "../utils/desk.js";
@@ -194,7 +195,8 @@ function useStarsGame(onCatch) {
 }
 
 export default function DeskLock({ api, phase, name, message, photoUrl, scan, pinBlock, mainLabel, onMain, mainVisible = true,
-  failedActions = null, phoneButtons = null, jarvisState = "idle", onClassic = null, hint = "", phone = false }) {
+  failedActions = null, phoneButtons = null, jarvisState = "idle", onClassic = null, hint = "", phone = false,
+  onUpdate = null, updateCount = 0, updateNote = "", updateProgress = null }) {
   const now = useNow(true);
   const [face, setFace] = useState(null);
   const [weather, setWeather] = useState(null);
@@ -364,9 +366,25 @@ export default function DeskLock({ api, phase, name, message, photoUrl, scan, pi
               : <button type="button" className="dkl-chip" onClick={(e) => { e.stopPropagation(); game.start(); }}>⭐ JOGAR{game.record ? ` · recorde ${game.record}` : ""}</button>}
             <button type="button" className={`dkl-chip${picking ? " is-on" : ""}`} aria-expanded={picking}
               onClick={(e) => { e.stopPropagation(); setPicking((v) => !v); }}>🖼 FUNDO</button>
+            {/* V8.11: ATUALIZAR (com a bolinha de versões novas) e o Branding Book também no bloqueio do robô */}
+            {onUpdate && (
+              <button type="button" className="dkl-chip" onClick={(e) => { e.stopPropagation(); onUpdate(); }}
+                title={phone ? "Procurar e instalar a versão nova do app" : "Baixar a versão mais nova do JARVIS e reiniciar"}>
+                {phone ? "⟳ ATUALIZAR APP" : "⟳ ATUALIZAR"}
+                {!phone && updateCount > 0 && (
+                  <span className="upd-badge" aria-label={`${updateCount} ${updateCount === 1 ? "atualização disponível" : "atualizações disponíveis"}`}>{updateCount}</span>
+                )}
+              </button>
+            )}
+            {!phone && (
+              <button type="button" className="dkl-chip" title="Identidade visual do JARVIS"
+                onClick={(e) => { e.stopPropagation(); window.dispatchEvent(new CustomEvent("jarvis-open-branding")); }}>📘 BRANDING</button>
+            )}
             {onClassic && !phone && <button type="button" className="dkl-chip is-ghost" onClick={(e) => { e.stopPropagation(); onClassic(); }}>◐ BLOQUEIO CLÁSSICO</button>}
           </div>
         )}
+        {updateProgress != null && <div className="dkl-update"><ProgressBar pct={updateProgress} label="Atualizando o app" /></div>}
+        {updateNote && <p className="dkl-update-note" role="status">{updateNote}</p>}
         {picking && !pinBlock && !showFace && (
           <div className="dkl-bgpick" role="radiogroup" aria-label="Papel de parede do bloqueio">
             {LOCK_BGS.map((b) => (
