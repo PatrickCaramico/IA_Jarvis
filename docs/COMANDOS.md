@@ -1,6 +1,6 @@
 # JARVIS — Comandos do dia a dia
 
-**Versão do projeto:** 8.15.0 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
+**Versão do projeto:** 8.15.1 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
 
 > Montado a partir do código do projeto. Se algum comando não responder como descrito, me avise que eu ajusto o guia.
 > Para a lista técnica de rotas, veja [API.md](API.md); para o `.env`, [CONFIGURACAO.md](CONFIGURACAO.md).
@@ -624,7 +624,8 @@ Para a varredura completa (temporários, lixeira, inicialização), continue usa
 | "Quantos dias se passaram desde 10 de março?" / "há quantos dias foi o carnaval?" (V8.13) | Dias (e semanas) desde a data. Entende 10/03, 10/03/2025, "10 de março de 2025", hoje, ontem, amanhã, Natal, Páscoa, Carnaval e outros feriados. "Quanto falta para…" continua com a contagem regressiva. |
 | "Que dia da semana cai o Natal?" / "7 de setembro de 2022 foi em que dia da semana?" / "quantos dias entre 10/03 e 25/12?" (V8.13) | Dia da semana de uma data e dias entre duas datas. |
 | "Cara ou coroa" / "joga dois dados" / "joga um dado de 20 lados" / "sorteia um número de 1 a 100" / "escolhe entre pizza, hambúrguer ou sushi" (V8.13) | Sorteio de verdade, na hora. |
-| "Toca a música do Homem de Ferro" / "toca Back in Black" / "modo Homem de Ferro" (V8.13) | Toca a música de entrada (padrão: Back in Black, do AC/DC) no seu Spotify. Ela também toca ao entrar na central, ao abrir o botão **VOZ** do topo e na **inicialização do dia** (V8.14.1): no briefing de "bom dia" ela começa baixinho, como trilha, e sobe no fim (uma vez por dia; não interrompe música que já está tocando). Tudo desligável no próprio botão VOZ. Precisa do Spotify conectado. |
+| "Toca a música do Homem de Ferro" / "toca Back in Black" / "modo Homem de Ferro" (V8.13) | Toca a música de entrada (padrão: Back in Black, do AC/DC) no seu Spotify. Ela também toca ao entrar na central, ao abrir o botão **VOZ** do topo e na **inicialização do dia** (V8.14.1): no briefing de "bom dia" ela começa baixinho, como trilha, e sobe no fim (uma vez por dia; não interrompe música que já está tocando). Tudo desligável no próprio botão VOZ. Precisa do Spotify conectado. No painel VOZ há também a **barra de volume da música** (V8.15.1): muda o Spotify na hora e fica guardada (o Back in Black e o fim do briefing usam esse volume). |
+| Briefing com música tocando (V8.15.1) | O JARVIS **pausa o Spotify** enquanto lê o briefing (bom dia, boa tarde, boa noite ou por assunto) e **continua a música** no fim, de onde parou. Não retoma se você trocou de música no meio. Desligável no botão VOZ ("Pausar a minha música durante o briefing"). |
 | "Quais são suas habilidades?" | Diz o que está ligado e abre a aba **⚡ HABILIDADES** da Central de Agentes. |
 
 **Aba ⚡ HABILIDADES (Central de Agentes)**: todas as skills por grupo, com o nível de permissão (LEITURA, AÇÃO, CRÍTICA), liga/desliga, quantas vezes foram usadas, falhas e tempo, e os exemplos: um toque manda a frase para o JARVIS. Também abre pelo botão da Central de Agentes.

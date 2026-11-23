@@ -117,6 +117,8 @@ class PrefsRequest(BaseModel):
     intro_song: str | None = None  # V8.13: música de entrada ("Back in Black AC/DC")
     intro_song_on_entry: bool | None = None  # V8.13
     intro_song_morning: bool | None = None  # V8.14.1: música na inicialização do dia
+    briefing_pause_music: bool | None = None  # V8.15.1: pausar o Spotify durante o briefing
+    music_volume: int | None = None  # V8.15.1: volume da música (barra do painel VOZ)
     lock_backend_enforce: bool | None = None
     lock_guest_enabled: bool | None = None
     # Modo Sentinela

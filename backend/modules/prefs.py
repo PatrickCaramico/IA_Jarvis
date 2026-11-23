@@ -66,6 +66,8 @@ _DEFAULTS: dict[str, Any] = {
     "intro_song": "Back in Black AC/DC",  # V8.13: música de entrada (busca no Spotify do usuário; nada embutido)
     "intro_song_on_entry": True,          # V8.13: toca a música de entrada ao entrar na central (sem playlist)
     "intro_song_morning": True,           # V8.14.1: toca a música de entrada na inicialização do dia ("bom dia")
+    "music_volume": 60,                   # V8.15.1: volume da música (barra do painel VOZ; o fim do briefing sobe até ele)
+    "briefing_pause_music": True,         # V8.15.1: pausa o Spotify enquanto o briefing é lido (e retoma no fim)
     "intro_song_morning_day": "",         # V8.14.1: dia (AAAA-MM-DD) em que já tocou de manhã (uma vez por dia)
     "fan_intro_playlist_uri": "",         # playlist própria com o Modo Torcedor ativo
     "lock_backend_enforce": True,         # bloqueio real: rotas pessoais respondem 403 bloqueado
@@ -137,7 +139,7 @@ def validate_patch(patch: dict[str, Any]) -> Optional[str]:
         "sentinel_night_dim", "water_sound", "water_pace_hint", "screen_assist_enabled",
         "routine_suggestions_enabled", "notifications_enabled", "notifications_read_content",
         "always_on", "keep_awake",  # V8.12.3
-        "intro_song_on_entry", "intro_song_morning",  # V8.13 / V8.14.1
+        "intro_song_on_entry", "intro_song_morning", "briefing_pause_music",  # V8.13 / V8.14.1 / V8.15.1
     )
     for key in bools:
         if key in patch and not isinstance(patch[key], bool):
@@ -193,6 +195,10 @@ def validate_patch(patch: dict[str, Any]) -> Optional[str]:
         err = protocols.validate(patch["protocols"])
         if err:
             return err
+    if "music_volume" in patch:  # V8.15.1
+        v = patch["music_volume"]
+        if isinstance(v, bool) or not isinstance(v, int) or not 0 <= v <= 100:
+            return "music_volume deve ser um número de 0 a 100."
     if "intro_song" in patch:  # V8.13: o nome da música (busca no Spotify)
         v = patch["intro_song"]
         if not isinstance(v, str) or len(v.strip()) > 120:

@@ -12,6 +12,21 @@ export default function VoiceButton({ api }) {
   const [prefs, setPrefs] = useState(null);
   const [busy, setBusy] = useState("");
   const [music, setMusic] = useState({ state: "idle", text: "" }); // idle | playing | paused | error
+  // V8.15.1: volume da música (barra). Guardado no PC: o Back in Black e o fim do briefing usam esse volume.
+  const [volume, setVolume] = useState(null);
+  const [volNote, setVolNote] = useState("");
+  const volTimer = useRef(0);
+  const volumeRef = useRef(null);
+  volumeRef.current = volume;
+  const sendVolume = (v) => api("/api/integrations/spotify/volume", { method: "POST", body: JSON.stringify({ percent: v }) })
+    .then(() => setVolNote(""))
+    .catch((err) => setVolNote(err.message || "Não deu para mudar o volume agora."));
+  const changeVolume = (v) => {
+    setVolume(v);
+    clearTimeout(volTimer.current); // arrastando: manda só quando parar um instante
+    volTimer.current = setTimeout(() => sendVolume(v), 250);
+  };
+  useEffect(() => () => clearTimeout(volTimer.current), []);
   const wrapRef = useRef(null);
   const panelRef = useRef(null);
   const [pos, setPos] = useState({ top: 64, right: 16 });
@@ -25,6 +40,7 @@ export default function VoiceButton({ api }) {
       await api("/api/integrations/spotify/play", { method: "POST", body: JSON.stringify({ query, playlist: false }), timeout: 40_000 });
       playedThisPage = true; // só conta como "já tocou" quando tocou de verdade (antes uma falha travava as próximas)
       setMusic({ state: "playing", text: `🎸 Tocando ${query}` });
+      if (volumeRef.current != null) sendVolume(volumeRef.current); // V8.15.1: no volume que você escolheu
     } catch (err) {
       // V8.13.2: o motivo vem do PC (sem aparelho, sem Premium, não conectado); antes tudo virava "reconecte"
       setMusic({ state: "error", text: musicErrorText(err.message) });
@@ -43,6 +59,7 @@ export default function VoiceButton({ api }) {
   useEffect(() => {
     if (!open) return undefined;
     let alive = true;
+    api("/api/integrations/spotify/volume").then((v) => alive && setVolume(Number(v?.percent) || 0)).catch(() => {});
     api("/api/prefs").then((p) => {
       if (!alive) return;
       setPrefs(p);
@@ -122,6 +139,13 @@ export default function VoiceButton({ api }) {
               <span className="hv-eq" aria-hidden="true"><i /><i /><i /></span>
               <span>{music.text || `🎸 Música de entrada: ${song}`}</span>
             </div>
+            <label className="hv-volume">
+              <span aria-hidden="true">{volume === 0 ? "🔇" : volume != null && volume < 40 ? "🔉" : "🔊"}</span>
+              <input type="range" min="0" max="100" step="5" value={volume ?? 60} disabled={volume == null}
+                onChange={(e) => changeVolume(Number(e.target.value))} aria-label="Volume da música" />
+              <b>{volume == null ? "…" : `${volume}%`}</b>
+            </label>
+            {volNote && <small className="hv-volnote" role="status">{volNote}</small>}
             <div className="hv-actions">
               {music.state === "playing"
                 ? <button type="button" className="hv-btn" onClick={pause}>⏸ PAUSAR</button>
@@ -135,6 +159,11 @@ export default function VoiceButton({ api }) {
                 <input type="checkbox" checked={prefs ? prefs.intro_song_on_entry !== false : true} disabled={!prefs}
                   onChange={(e) => togglePref("intro_song_on_entry", e.target.checked)} />
                 Tocar quando eu entrar na central
+              </label>
+              <label className="hv-check">
+                <input type="checkbox" checked={prefs ? prefs.briefing_pause_music !== false : true} disabled={!prefs}
+                  onChange={(e) => togglePref("briefing_pause_music", e.target.checked)} />
+                Pausar a minha música durante o briefing (e continuar no fim)
               </label>
             </div>
           </div>

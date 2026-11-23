@@ -40,6 +40,42 @@ async def spotify_control(req: SpotifyControlRequest) -> dict:
     return {"status": "ok"}
 
 
+class SpotifyVolumeRequest(BaseModel):
+    percent: int
+
+
+@router.get("/api/integrations/spotify/volume")
+async def spotify_volume_get() -> dict:
+    """V8.15.1: volume da música agora (a barra do painel VOZ começa nele)."""
+    from modules import prefs
+
+    saved = prefs.get_all().get("music_volume", 60)
+    try:
+        vol = await asyncio.wait_for(asyncio.to_thread(spotify.current_volume), timeout=10)
+    except Exception:  # noqa: BLE001 - sem Spotify agora: mostra o volume guardado
+        vol = None
+    return {"percent": vol if vol is not None else saved, "saved": saved, "live": vol is not None}
+
+
+@router.post("/api/integrations/spotify/volume")
+async def spotify_volume_set(req: SpotifyVolumeRequest) -> dict:
+    """V8.15.1: a barra de volume da música (painel VOZ). Guarda a escolha (o fim do briefing sobe até ela)."""
+    from modules import prefs
+
+    percent = max(0, min(100, int(req.percent)))
+    await asyncio.to_thread(prefs.update, music_volume=percent)
+    try:
+        await asyncio.wait_for(asyncio.to_thread(spotify.set_volume, percent), timeout=10)
+    except spotify.SpotifyError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001
+        log.warning("Volume do Spotify: %s", exc)
+        raise HTTPException(status_code=409, detail="Guardei o volume, mas o Spotify não deixou mudar agora (abra a música em algum aparelho).") from exc
+    return {"percent": percent}
+
+
 @router.get("/api/integrations/google-calendar/status")
 async def google_calendar_status() -> dict:
     return {
