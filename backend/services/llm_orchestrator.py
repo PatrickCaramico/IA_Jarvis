@@ -15,6 +15,7 @@ from modules.news import fetch_top_news
 from modules import prefs
 from modules import memory
 from modules.vision import capture_webcam_frame
+from services import grounding
 
 log = logging.getLogger("jarvis.llm")
 
@@ -153,7 +154,9 @@ SYSTEM_PROMPT = (
     "sentido, ofereça algo prático e curto (respiração guiada, uma pausa, dividir o problema em um primeiro passo, "
     "olhar o pensamento por outro ângulo). Nesses momentos, deixe o humor de lado. Nunca diagnostique, não "
     "rotule e não prometa resultados. Se o mal-estar parecer persistente, sugira com gentileza conversar com um "
-    "psicólogo. Se houver qualquer sinal de risco à vida, oriente a ligar para o CVV (188, 24 horas) ou o SAMU (192)."
+    "psicólogo. Se houver qualquer sinal de risco à vida, oriente a ligar para o CVV (188, 24 horas) ou o SAMU (192). "
+    # V8.12: regras de veracidade (services/grounding.py), contra respostas inventadas com cara de verdade
+    + grounding.RULES
 )
 
 PERSONALITY_PROMPTS = {
@@ -183,7 +186,7 @@ def _wants(text: str, hints: tuple) -> bool:
 
 
 def _build_prompt(user_text: str, *, routine: bool, frame: bool, camera_asked: bool,
-                  news: list[dict], news_asked: bool) -> str:
+                  news: list[dict], news_asked: bool, web: bool = False) -> str:
     now = datetime.now()
     lines = [f"Data e hora atuais: {_WEEKDAYS[now.weekday()]}, {now:%d/%m/%Y}, {now:%H:%M}."]
     user_name = get_name()
@@ -206,6 +209,10 @@ def _build_prompt(user_text: str, *, routine: bool, frame: bool, camera_asked: b
             lines += [f"- {n['title']} ({n['source']})" if n["source"] else f"- {n['title']}" for n in news]
         else:
             lines.append("Notícias do dia: indisponíveis no momento.")
+    # V8.12: com pesquisa, "só o que as fontes dizem"; pergunta de fato atual sem pesquisa, "avise e ofereça"
+    note = "" if routine or news_asked else grounding.turn_note(user_text, web)
+    if note:
+        lines.append(note)
     lines.append(f'Mensagem do usuário: "{user_text}"')
     context = memory.prompt_context()
     if context:
@@ -237,6 +244,25 @@ def _timeout_s() -> float:
         return 25.0
 
 
+def _temperature() -> float:
+    """V8.12: temperatura baixa = menos invenção (LLM_TEMPERATURE no .env; padrão 0.3)."""
+    try:
+        return min(1.0, max(0.0, float(getattr(settings, "LLM_TEMPERATURE", 0.3))))
+    except (TypeError, ValueError):
+        return 0.3
+
+
+def _with_temperature(create, **kwargs):
+    """Chama a IA com a temperatura baixa; modelo que não aceita o ajuste (alguns de raciocínio) vai sem ele."""
+    try:
+        return create(temperature=_temperature(), **kwargs)
+    except Exception as exc:  # noqa: BLE001
+        if "temperature" not in str(exc).lower() or is_quota_error(exc) or _is_timeout(exc):
+            raise
+        log.info("O modelo não aceita temperatura; seguindo sem ela.")
+        return create(**kwargs)
+
+
 def _image_part(frame_b64: str) -> dict:
     return {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{frame_b64}"}}
 
@@ -260,21 +286,21 @@ def _call_openai(prompt: str, frame_b64: Optional[str], history: list[dict]) -> 
 def _openai_style(client, model: str, messages: list[dict], ts: Optional[_ToolSession]) -> str:
     """V8.11: conversa no formato da OpenAI (OpenAI e Groq), com as Skills como funções quando houver."""
     if ts is None or not ts.skills:
-        response = client.chat.completions.create(model=model, max_tokens=_max_tokens(), messages=messages)
+        response = _with_temperature(client.chat.completions.create, model=model, max_tokens=_max_tokens(), messages=messages)
         return (response.choices[0].message.content or "").strip()
     import json
 
     from core.skills.llm_adapters import to_openai
 
     try:
-        response = client.chat.completions.create(model=model, max_tokens=_max_tokens(), messages=messages,
+        response = _with_temperature(client.chat.completions.create, model=model, max_tokens=_max_tokens(), messages=messages,
                                                   tools=to_openai(ts.skills), tool_choice="auto")
     except Exception as exc:  # noqa: BLE001 - modelo sem suporte a funções: responde sem elas
         if is_quota_error(exc) or _is_timeout(exc):
             raise
         log.warning("IA recusou as funções (%s); respondendo sem elas.", str(exc)[:160])
         plain = [m if m.get("role") != "system" else {"role": "system", "content": SYSTEM_PROMPT} for m in messages]
-        response = client.chat.completions.create(model=model, max_tokens=_max_tokens(), messages=plain)
+        response = _with_temperature(client.chat.completions.create, model=model, max_tokens=_max_tokens(), messages=plain)
         return (response.choices[0].message.content or "").strip()
     msg = response.choices[0].message
     calls = list(getattr(msg, "tool_calls", None) or [])[:MAX_TOOL_CALLS]
@@ -296,7 +322,7 @@ def _openai_style(client, model: str, messages: list[dict], ts: Optional[_ToolSe
     follow += [{"role": "tool", "tool_call_id": c.id, "content": json.dumps(_tool_payload(r), ensure_ascii=False)}
                for c, r in zip(calls, results)]
     try:
-        response = client.chat.completions.create(model=model, max_tokens=_max_tokens(), messages=follow)
+        response = _with_temperature(client.chat.completions.create, model=model, max_tokens=_max_tokens(), messages=follow)
         return (response.choices[0].message.content or "").strip() or _after_skills(results)
     except Exception:  # noqa: BLE001 - a ação já rodou: não pode falhar (nem repetir em outra IA)
         log.exception("A IA não montou a frase depois das Skills")
@@ -398,7 +424,7 @@ def _call_gemini(prompt: str, frame_b64: Optional[str], history: list[dict], dee
                 config=types.GenerateContentConfig(
                     system_instruction=system_text,
                     max_output_tokens=max_tokens,
-                    thinking_config=thinking_cfg,
+                    thinking_config=thinking_cfg, temperature=_temperature(),
                     tools=tools,
                     automatic_function_calling=afc,
                 ),
@@ -421,7 +447,7 @@ def _call_gemini(prompt: str, frame_b64: Optional[str], history: list[dict], dee
                     config=types.GenerateContentConfig(
                         system_instruction=SYSTEM_PROMPT,
                         max_output_tokens=max_tokens,
-                        thinking_config=thinking_cfg,
+                        thinking_config=thinking_cfg, temperature=_temperature(),
                     ),
                 )
                 ts = None  # respondeu sem as funções
@@ -452,7 +478,7 @@ def _call_gemini(prompt: str, frame_b64: Optional[str], history: list[dict], dee
             response = client.models.generate_content(
                 model=target_model, contents=follow,
                 config=types.GenerateContentConfig(system_instruction=SYSTEM_PROMPT, max_output_tokens=max_tokens,
-                                                   thinking_config=thinking_cfg),
+                                                   thinking_config=thinking_cfg, temperature=_temperature()),
             )
         except Exception:  # noqa: BLE001 - a ação já rodou: não pode falhar (nem repetir em outra IA)
             log.exception("A IA não montou a frase depois das Skills")
@@ -519,7 +545,8 @@ def _call_anthropic(prompt: str, frame_b64: Optional[str], history: list[dict]) 
         })
     content.append({"type": "text", "text": prompt})
 
-    response = client.messages.create(
+    response = _with_temperature(
+        client.messages.create,
         model=settings.ANTHROPIC_MODEL,
         max_tokens=_max_tokens(),
         system=SYSTEM_PROMPT,
@@ -581,6 +608,10 @@ def _auto_order(deep: bool, frame: bool) -> list[str]:
 
 def _call_one(provider: str, prompt: str, frame_b64: Optional[str], history: list[dict], deep: bool) -> str:
     global _last_provider
+    if deep and provider != "gemini":
+        # V8.12: só o Gemini pesquisa no Google. Pedido com pesquisa que caiu em outra IA (sem chave do Gemini,
+        # Gemini no limite) não pode dizer "segundo as fontes": avisa que pode estar desatualizado.
+        prompt = prompt.replace(grounding.WEB_NOTE, grounding.NO_SEARCH_NOTE)
     if provider == "groq":
         out = _call_groq(prompt, frame_b64, history)
     elif provider == "anthropic":
@@ -747,7 +778,7 @@ async def generate_jarvis_response(
 
     prompt = _build_prompt(
         user_text, routine=routine, frame=frame is not None, camera_asked=use_camera,
-        news=news, news_asked=use_news,
+        news=news, news_asked=use_news, web=deep or web,
     )
 
     ts = _tool_session(user_text, routine=routine, deep=deep or web, frame=frame is not None)

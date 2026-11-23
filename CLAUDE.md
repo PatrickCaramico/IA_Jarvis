@@ -33,7 +33,11 @@ de `data/` para uma pasta temporária: um módulo novo que grava em `data/` entr
 - `core/turns.py`: motor de conversa (`handle_turn`). Ordem: alarme → bloqueio/Sentinela → intents especiais
   → **Skills (caminho rápido)** → `modules/tools.py` (funções locais legadas) → IA.
 - `services/llm_orchestrator.py`: IA (Groq, Gemini, OpenAI, Anthropic; modo "auto" com reservas), prazo por
-  chamada (`LLM_TIMEOUT_S`) e por turno (`LLM_TURN_BUDGET_S`), function calling das Skills.
+  chamada (`LLM_TIMEOUT_S`) e por turno (`LLM_TURN_BUDGET_S`), function calling das Skills, temperatura baixa
+  (`LLM_TEMPERATURE`, V8.12).
+- `services/grounding.py` (V8.12): contra alucinação. `needs_fresh_facts` manda pergunta de fato atual para a IA
+  com pesquisa no Google; `RULES` (veracidade) entra no `SYSTEM_PROMPT`; a nota do pedido diz "só o que as fontes
+  dizem" ou, sem pesquisa, "avise que pode estar desatualizado". Ao mexer no prompt, não tire essas regras.
 - `core/speech.py` + `modules/tts.py`: voz (edge-tts em partes, pygame). `core/voice_route.py`: a voz sai no
   aparelho que pediu; também diz se o pedido é remoto (`is_remote()`).
 - `core/runtime.py`: WebSockets (`manager.broadcast`, em paralelo e com prazo por aparelho), `track`/`track_service`.

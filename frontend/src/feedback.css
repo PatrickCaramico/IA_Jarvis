@@ -94,6 +94,15 @@
 }
 .np-controls button:hover { background: rgba(34, 211, 238, 0.18); }
 .np-controls button:disabled { opacity: 0.4; }
+/* V8.12: a tela de perfil novo (profiles.css) usa os mesmos nomes .np-head/.np-body em coluna e com margem; aqui,
+   dentro do cartão do Spotify, eles voltam a ser uma linha (antes o cartão ficava alto e espremia a conversa) */
+.np .np-head { flex-direction: row; align-items: center; margin-bottom: 0; }
+.np .np-body { flex-direction: row; align-items: center; gap: 10px; font-size: inherit; }
+/* V8.12: cartão do Spotify sem faixa (central): continua no lugar, com o próximo passo */
+.np.is-standby .np-controls { justify-content: flex-start; }
+.np.is-standby .np-text strong { font-size: 0.95rem; color: rgba(230, 250, 255, 0.85); }
+.np.is-standby .np-text span { white-space: normal; font-size: 0.8rem; }
+.np-controls .np-wide { width: auto; padding: 0 12px; font-family: "Orbitron", sans-serif; font-size: 0.55rem; letter-spacing: 0.12em; }
 @media (prefers-reduced-motion: reduce) {
   .np-eq i { animation: none; height: 6px; }
   .np-bar span { transition: none; }
