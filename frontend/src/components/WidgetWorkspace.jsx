@@ -100,13 +100,13 @@ export default function WidgetWorkspace({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-6 select-none">
-      <div className="relative w-full max-w-6xl h-[88vh] rounded-xl border border-cyan-500/40 bg-gradient-to-b from-[#082037]/95 via-[#041224]/95 to-[#020813]/98 flex flex-col overflow-hidden shadow-[0_0_50px_rgba(31,194,245,0.25)]">
+    <div className="ww-backdrop fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-6 select-none">
+      <div className="ww-glass relative w-full max-w-6xl h-[88vh] rounded-xl border border-cyan-500/40 bg-gradient-to-b from-[#082037]/95 via-[#041224]/95 to-[#020813]/98 flex flex-col overflow-hidden shadow-[0_0_50px_rgba(31,194,245,0.25)]">
         {/* Cantos Táticos */}
-        <div className="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-cyan-400 pointer-events-none" />
-        <div className="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-cyan-400 pointer-events-none" />
-        <div className="absolute bottom-2 left-2 w-4 h-4 border-b-2 border-l-2 border-cyan-400 pointer-events-none" />
-        <div className="absolute bottom-2 right-2 w-4 h-4 border-b-2 border-r-2 border-cyan-400 pointer-events-none" />
+        <div className="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-cyan-400 pointer-events-none ww-corner" />
+        <div className="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-cyan-400 pointer-events-none ww-corner" />
+        <div className="absolute bottom-2 left-2 w-4 h-4 border-b-2 border-l-2 border-cyan-400 pointer-events-none ww-corner" />
+        <div className="absolute bottom-2 right-2 w-4 h-4 border-b-2 border-r-2 border-cyan-400 pointer-events-none ww-corner" />
 
         {/* Topo do Painel */}
         <header className="flex items-center justify-between px-6 py-4 border-b border-cyan-500/20 bg-black/40">

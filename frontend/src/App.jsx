@@ -541,7 +541,7 @@ export default function App() {
     setShowWidgetWorkspace(false);
     setFloatingWindows((current) => [
       ...current.filter((item) => item.type !== "spotify"),
-      { id: `spotify-${Date.now()}`, type: "spotify", monitor, minimized: false, maximized: false, left: 32, top: 96, width: 384, height: 260 },
+      { id: `spotify-${Date.now()}`, type: "spotify", monitor, minimized: false, maximized: false, left: 32, top: 96, width: 400, height: 560 }, // V9.1: janela de vidro maior
     ]);
   }, []);
 
@@ -664,13 +664,6 @@ export default function App() {
       body: JSON.stringify({ widgets }),
     }).catch(() => {});
   }, []);
-
-  const openSpotifyPanel = useCallback(() => {
-    if (!activeWidgets.includes("spotify")) {
-      handleWidgetsChange([...activeWidgets, "spotify"]);
-    }
-    setShowWidgetWorkspace(true);
-  }, [activeWidgets, handleWidgetsChange]);
 
   // Ao ativar o Modo Torcedor, sobe o widget de notícias imediatamente e, se for dia de jogo, o widget de placar
   useEffect(() => {
@@ -3839,7 +3832,7 @@ export default function App() {
         error={error}
         audioVisible={showAudioWidget}
         onToggleAudio={() => setShowAudioWidget((current) => !current)}
-        onOpenSpotify={openSpotifyPanel}
+        onOpenSpotify={() => openSpotifyWindow()} /* V9.1: abre a janela de vidro do Spotify (antes, a Central de Widgets) */
         onOpenWidgets={() => setShowWidgetWorkspace(true)}
         onOpenMonitors={() => setShowMonitorPanel(true)}
         onOpenSideNav={() => setShowSideNav((current) => !current)}
