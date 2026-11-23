@@ -70,10 +70,32 @@ async def _say_or_skip(text: str) -> None:
         await asyncio.gather(talk, skipped, return_exceptions=True)
 
 
+async def _morning_music_start():
+    """V8.14.1: Back in Black baixinho na inicialização do dia (em paralelo: o briefing não espera)."""
+    from modules import morning_music
+
+    try:
+        return await asyncio.wait_for(asyncio.to_thread(morning_music.start), timeout=25)
+    except Exception:  # noqa: BLE001 - a música nunca atrapalha o briefing
+        log.exception("Música da manhã não começou")
+        return None
+
+
+async def _morning_music_finish(task, canceled: bool) -> None:
+    from modules import morning_music
+
+    try:
+        plan = await asyncio.wait_for(task, timeout=30)
+        await asyncio.wait_for(asyncio.to_thread(morning_music.finish, plan, canceled), timeout=20)
+    except Exception:  # noqa: BLE001
+        log.exception("Música da manhã não terminou")
+
+
 async def run_sequence(message: str, turn: int, data: dict, max_history: int) -> None:
     """Fala o briefing parte a parte. Libera o JARVIS (busy) ao terminar ou cancelar."""
     global _skip
     _skip = asyncio.Event()
+    music = runtime.track(_morning_music_start()) if data.get("mode") == "morning" else None
     if data.get("mode") in ("morning", "afternoon", "evening"):
         try:  # V5.4: "bom dia" pedido por voz também conta: a próxima entrada não repete o briefing
             from modules import entry_greeting
@@ -148,6 +170,8 @@ async def run_sequence(message: str, turn: int, data: dict, max_history: int) ->
     finally:
         _skip = None
         tts_module.clear_prefetch()  # V6.5.1: sobras de um briefing cancelado não ficam gerando voz
+        if music is not None:  # V8.14.1: sobe o volume da música (ou toca agora a que esperou o briefing)
+            runtime.track(_morning_music_finish(music, speech.canceled(turn)))
         if not speech.canceled(turn):
             session.busy = False
             await runtime.manager.broadcast({"type": "state", "state": "idle"})

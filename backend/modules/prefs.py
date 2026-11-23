@@ -65,6 +65,8 @@ _DEFAULTS: dict[str, Any] = {
     "lock_intro_playlist_uri": "",        # playlist do Spotify após a saudação
     "intro_song": "Back in Black AC/DC",  # V8.13: música de entrada (busca no Spotify do usuário; nada embutido)
     "intro_song_on_entry": True,          # V8.13: toca a música de entrada ao entrar na central (sem playlist)
+    "intro_song_morning": True,           # V8.14.1: toca a música de entrada na inicialização do dia ("bom dia")
+    "intro_song_morning_day": "",         # V8.14.1: dia (AAAA-MM-DD) em que já tocou de manhã (uma vez por dia)
     "fan_intro_playlist_uri": "",         # playlist própria com o Modo Torcedor ativo
     "lock_backend_enforce": True,         # bloqueio real: rotas pessoais respondem 403 bloqueado
     "lock_guest_enabled": False,          # botão "Modo visitante" na tela de bloqueio
@@ -135,7 +137,7 @@ def validate_patch(patch: dict[str, Any]) -> Optional[str]:
         "sentinel_night_dim", "water_sound", "water_pace_hint", "screen_assist_enabled",
         "routine_suggestions_enabled", "notifications_enabled", "notifications_read_content",
         "always_on", "keep_awake",  # V8.12.3
-        "intro_song_on_entry",  # V8.13
+        "intro_song_on_entry", "intro_song_morning",  # V8.13 / V8.14.1
     )
     for key in bools:
         if key in patch and not isinstance(patch[key], bool):
