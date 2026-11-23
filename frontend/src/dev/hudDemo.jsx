@@ -89,6 +89,18 @@ const DATA = {
     ],
     semana: { id: "w1", tipo: "semana", texto: "Converse com o JARVIS em 5 dias da semana", xp: 100, meta: 5, progresso: 2, feita: false },
     ofensiva: { atual: 3, recorde: 7, protetores: 1, max_protetores: 2, feita_hoje: true } },
+  // V9.0: paleta Ctrl+K (habilidades e memória)
+  "/api/skills": { items: [
+    { name: "workspace_layout", title: "organizar janelas", module: "skills.workspace", enabled: true, examples: ["organiza as janelas lado a lado"] },
+    { name: "copiados", title: "usar os copiados", module: "skills.copiados", enabled: true, examples: ["o que eu copiei?", "copia de novo o último link"] },
+    { name: "tempo_de_tela", title: "tempo de tela", module: "skills.tempo_de_tela", enabled: true, examples: ["quanto tempo eu fiquei no PC hoje?"] },
+    { name: "ler_texto_da_tela", title: "ler o texto da tela", module: "skills.ocr_tela", enabled: true, examples: ["copia o texto da tela"] },
+    { name: "sessao_navegador", title: "usar as sessões do navegador", module: "skills.navegador", enabled: true, examples: ["abre a sessão trabalho"] },
+  ] },
+  "/api/search/local": { items: [
+    { kind: "conversa", label: "Conversa", title: "viagem", snippet: "Você: a [viagem] para Maceió é dia 12 …", at: "2026-11-18T09:12:00" },
+    { kind: "copiado", label: "Copiado", title: "Hotel Ponta Verde, Rua das Acácias, 123", snippet: "Hotel Ponta Verde, Rua das Acácias…", at: "20/11/2026 14:02" },
+  ] },
   "/api/countdowns": { items: [
     { id: 1, title: "Viagem a Maceió", target: new Date(Date.now() + (3 * 86400 + 4 * 3600 + 125) * 1000).toISOString().slice(0, 19), all_day: false },
   ] },

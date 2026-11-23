@@ -63,6 +63,7 @@ import { EMPTY_STREAM, applyStream, markStreamed } from "./utils/streamState.js"
 import BootReconnect from "./components/BootReconnect.jsx";
 import { canResumeSession, hasLoggedBefore, launcherWorks, markLauncherWorks, rememberLogin } from "./utils/session.js";
 import { enqueue, canDrain } from "./utils/turnQueue.js";
+import CommandPalette from "./components/CommandPalette.jsx";
 
 // Carregados sob demanda (otimização 4.2: pacote inicial menor)
 // V7: telas e janelas que nem sempre aparecem também saem do pacote inicial
@@ -136,6 +137,7 @@ export default function App() {
 
   const [jarvisState, setJarvisState] = useState("idle"); // idle | processing | speaking
   const pendingRef = useRef([]); // V9.0: fila de pedidos feitos enquanto ele pensava
+  const [paletteOpen, setPaletteOpen] = useState(false); // V9.0: paleta de comandos (Ctrl+K)
   const [queued, setQueued] = useState([]);
   // V8.13: resposta da IA chegando em pedaços (streaming) — { seq, text }
   const [stream, setStream] = useState(EMPTY_STREAM);
@@ -2434,9 +2436,56 @@ export default function App() {
     }
   }, [cancelMic]);
 
+  // ---- V9.0: paleta de comandos (Ctrl+K / ⌘K) ----
+  const paletteActions = useMemo(() => [
+    { id: "settings", icon: "⚙️", label: "Abrir configurações", keywords: "preferencias ajustes voz tema" },
+    { id: "skills", icon: "⚡", label: "Ver habilidades", keywords: "skills central de agentes o que voce faz" },
+    { id: "agents", icon: "🤖", label: "Central de Agentes", keywords: "agentes mercado" },
+    { id: "desk", icon: "🖥️", label: "Modo Desk", keywords: "mesa trabalho tela" },
+    { id: "briefing", icon: "☀️", label: "Briefing do dia", keywords: "bom dia resumo noticias" },
+    { id: "finance", icon: "💰", label: "Finanças", keywords: "dinheiro gastos cotacao" },
+    { id: "system", icon: "🛡️", label: "Sistema do PC", keywords: "cpu memoria disco processos" },
+    { id: "datasources", icon: "🔌", label: "Fontes de dados", keywords: "integracoes agenda" },
+    { id: "water", icon: "💧", label: "Água", keywords: "hidratacao beber" },
+    { id: "logs", icon: "📜", label: "Relatório de logs", keywords: "erros eventos diagnostico" },
+    { id: "qr", icon: "📱", label: "Parear celular (QR)", keywords: "celular rede qr code" },
+    { id: "zen", icon: "🧘", label: "Modo zen", keywords: "foco limpar tela" },
+    { id: "mic", icon: "🎙️", label: "Falar com o JARVIS", keywords: "microfone ouvir voz" },
+    { id: "lock", icon: "🔒", label: "Bloquear a central", keywords: "trancar sentinela sair" },
+  ].map((a) => ({ ...a, kind: "acao", run: { type: "action", id: a.id } })), []);
+
+  const runPaletteAction = useCallback((id) => {
+    const tabs = { briefing: "briefing", finance: "finance", system: "system", datasources: "datasources" };
+    if (tabs[id]) { setScreensTab(tabs[id]); return; }
+    ({
+      settings: () => setShowSettings(true),
+      skills: () => setAgentsOpen({ agent: "habilidades" }),
+      agents: () => setAgentsOpen({ agent: "mercado" }),
+      desk: () => window.dispatchEvent(new CustomEvent("jarvis-desk-toggle", { detail: true })),
+      water: () => openWaterPanelRef.current(),
+      logs: () => setShowLogReport(true),
+      qr: () => setShowNetworkQr(true),
+      zen: () => setZenMode((z) => !z),
+      mic: () => toggleMic(),
+      lock: () => returnToWaiting(),
+    }[id] || (() => {}))();
+  }, [toggleMic, returnToWaiting]);
+
+  useEffect(() => {
+    const onKey = (e) => {
+      if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && e.code === "KeyK" && screen === "main") {
+        e.preventDefault();
+        setPaletteOpen((o) => !o);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [screen]);
+
   // ---- Atalhos: barra de espaço (falar) e Esc (cancelar) ----
   useEffect(() => {
     const onKey = (e) => {
+      if (paletteOpen) return; // V9.0: a paleta cuida das próprias teclas
       if (e.code === "Escape") {
         if (showSettings) { setShowSettings(false); return; }
         if (screen === "main") handleCancel();
@@ -2467,7 +2516,7 @@ export default function App() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [screen, handleLockContinue, toggleMic, handleCancel, showSettings]);
+  }, [screen, handleLockContinue, toggleMic, handleCancel, showSettings, paletteOpen]);
 
   // V4.2.2: sons por estado (volume, modo e silêncio vêm das preferências)
   useEffect(() => {
@@ -3358,6 +3407,10 @@ export default function App() {
           onRename={(n) => api("/api/prefs", { method: "PATCH", body: JSON.stringify({ ai_name: n.trim() }) })
             .then((d) => setAiName(d.ai_name ? d.ai_name.toUpperCase() : "J.A.R.V.I.S.")).catch(() => {})}
         />
+      )}
+      {paletteOpen && screen === "main" && (
+        <CommandPalette api={api} actions={paletteActions} onClose={() => setPaletteOpen(false)}
+          onSend={(t) => send(t)} onAction={runPaletteAction} />
       )}
       {queued.length > 0 && (
         <div className="turn-queue" role="status" aria-live="polite">
