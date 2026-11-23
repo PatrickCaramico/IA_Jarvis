@@ -466,17 +466,50 @@ def clip_add(text: str) -> bool:
             return False
         if data["itens"] and data["itens"][0]["texto"] == t:
             return False
+        old = next((i for i in data["itens"] if i["texto"] == t), None)
         data["itens"] = [i for i in data["itens"] if i["texto"] != t]
-        data["itens"].insert(0, {"id": uuid.uuid4().hex[:8], "texto": t, "em": datetime.now().strftime("%Y-%m-%d %H:%M")})
-        data["itens"] = data["itens"][:MAX_CLIPS]
+        item = {"id": uuid.uuid4().hex[:8], "texto": t, "em": datetime.now().strftime("%Y-%m-%d %H:%M")}
+        if old and old.get("fixado"):
+            item["fixado"] = True  # V9.0: copiar de novo um fixado não tira a estrela
+        data["itens"].insert(0, item)
+        data["itens"] = _trim_clips(data["itens"])
         _clips_save(data)
         return True
 
 
-def clip_remove(item_id: str | None = None) -> dict:
+def _trim_clips(items: list[dict]) -> list[dict]:
+    """V9.0: os fixados (★) nunca saem por limite; os outros ficam nos MAX_CLIPS mais novos."""
+    free = 0
+    out = []
+    for i in items:
+        if i.get("fixado"):
+            out.append(i)
+        elif free < MAX_CLIPS:
+            free += 1
+            out.append(i)
+    return out
+
+
+def clip_pin(item_id: str, pinned: bool = True) -> dict:
+    """V9.0: fixa (★) ou solta um copiado. KeyError se não existir."""
     with _lock:
         data = _clips_load()
-        data["itens"] = [] if item_id is None else [i for i in data["itens"] if i["id"] != item_id]
+        item = next((i for i in data["itens"] if i["id"] == item_id), None)
+        if item is None:
+            raise KeyError(item_id)
+        if pinned:
+            item["fixado"] = True
+        else:
+            item.pop("fixado", None)
+        _clips_save(data)
+        return data
+
+
+def clip_remove(item_id: str | None = None) -> dict:
+    """Apaga um copiado, ou (item_id None) todos os NÃO fixados. V9.0: limpar não apaga os fixados (★)."""
+    with _lock:
+        data = _clips_load()
+        data["itens"] = [i for i in data["itens"] if i.get("fixado")] if item_id is None else [i for i in data["itens"] if i["id"] != item_id]
         _clips_save(data)
         return data
 

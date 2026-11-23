@@ -452,10 +452,11 @@ function Clips({ api }) {
     <Card title="Copiados" icon="⧉" right={(
       <div className="dk-row">
         <button type="button" className="dk-btn" onClick={async () => setData(await api("/api/desk/clips/pause", { method: "POST", body: JSON.stringify({ pausado: !data?.pausado }) }))}>{data?.pausado ? "▶ RETOMAR" : "❚❚ PAUSAR"}</button>
-        <button type="button" className="dk-btn is-danger" onClick={async () => { if (window.confirm("Apagar todo o histórico de copiados?")) setData(await api("/api/desk/clips", { method: "DELETE" })); }}>🗑 LIMPAR</button>
+        <button type="button" className="dk-btn is-danger" onClick={async () => { if (window.confirm("Apagar o histórico de copiados? Os fixados (★) ficam.")) setData(await api("/api/desk/clips", { method: "DELETE" })); }}>🗑 LIMPAR</button>
       </div>
     )}>
-      <p className="dk-muted">O que você copia no PC (Ctrl+C) aparece aqui. Fica só neste PC; o que parece senha, cartão ou código não é guardado.</p>
+      <p className="dk-muted">O que você copia no PC (Ctrl+C) aparece aqui. Fica só neste PC; o que parece senha, cartão ou código não é guardado.
+        ★ fixa um item. Por voz: "o que eu copiei?", "copia de novo o último link", "fixa o último copiado".</p>
       <ul className="dk-clips">
         {(data?.itens || []).map((c) => (
           <li key={c.id}>
@@ -463,6 +464,10 @@ function Clips({ api }) {
               <span>{c.texto.length > 220 ? `${c.texto.slice(0, 220)}…` : c.texto}</span>
               <small>{copied === c.id ? "✓ copiado" : c.em}</small>
             </button>
+            {/* V9.0: ★ fixa o item: não sai por limite nem no LIMPAR (por voz: "fixa o último copiado") */}
+            <button type="button" className={`dk-del dk-pin${c.fixado ? " is-on" : ""}`} aria-pressed={Boolean(c.fixado)}
+              onClick={async () => setData(await api(`/api/desk/clips/${c.id}/pin`, { method: "POST", body: JSON.stringify({ fixado: !c.fixado }) }))}
+              aria-label={c.fixado ? "Soltar" : "Fixar"} title={c.fixado ? "Fixado: toque para soltar" : "Fixar (não sai da lista)"}>{c.fixado ? "★" : "☆"}</button>
             <button type="button" className="dk-del" onClick={async () => setData(await api(`/api/desk/clips/${c.id}`, { method: "DELETE" }))} aria-label="Apagar">✕</button>
           </li>
         ))}

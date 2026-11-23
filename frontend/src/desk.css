@@ -612,3 +612,6 @@ html.is-lite .dkl-bg *, html.is-lite .dkl-halo { animation: none !important; }
 .dkl-hub .bp-corner { position: static; display: flex; flex-wrap: wrap; gap: 8px; transform: none; }
 .dkl-hub .bp-corner .bp-stamp { display: none !important; }
 .dkl-hub .bp-corner .bp-fan-btn { position: static !important; }
+/* V9.0: ★ fixar um copiado */
+.dk-pin { color: #fbbf24; }
+.dk-pin.is-on { text-shadow: 0 0 8px rgba(251, 191, 36, 0.7); }
