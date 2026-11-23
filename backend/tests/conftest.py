@@ -51,7 +51,8 @@ _WRITABLE_SKILLS = (
     ("skills.context_autopilot", "_PATH", "piloto_agenda.json"),
     ("skills.deep_brief", "_PATH", "dossies.json"),
     ("skills.deep_brief", "_DIR", "dossies"),
-    ("skills.tempo_de_tela", "_PATH", "tempo_de_tela.json"),  # V9.0
+    ("skills.tempo_de_tela", "_PATH", "tempo_de_tela.json"),
+    ("skills.navegador", "_PATH", "navegador.json"),  # V9.0
 )
 
 
