@@ -57,7 +57,7 @@ import WelcomeLogo from "./components/WelcomeLogo.jsx";
 import { APP_VERSION } from "./utils/version.js";
 import { PC_SCAN_EVENT, openPcScan, scanFromCards } from "./utils/pcScan.js";
 import { tabTitle } from "./utils/tabTitle.js";
-import { markAutoUpdateAttempt, readAutoUpdateAttempt, shouldAutoUpdateOnOpen } from "./utils/updateCheck.js";
+import { checkOutcome, markAutoUpdateAttempt, readAutoUpdateAttempt, shouldAutoUpdateOnOpen, updateButtonAction } from "./utils/updateCheck.js";
 import { canResumeSession, hasLoggedBefore, launcherWorks, markLauncherWorks, rememberLogin } from "./utils/session.js";
 
 // Carregados sob demanda (otimização 4.2: pacote inicial menor)
@@ -1316,6 +1316,36 @@ export default function App() {
     }
     window.location.href = "jarvis://open";
   }, []);
+
+  // V8.12.1: botão ⟳ ATUALIZAR do topo da central (sempre visível). Devolve a frase curta que o botão mostra.
+  const checkAndUpdate = useCallback(async () => {
+    const action = updateButtonAction({ canSelfUpdate, isApp: IS_JARVIS_APP });
+    if (action === "app") {
+      updateApp();
+      return "Procurando atualização no PC…";
+    }
+    if (action === "reload") {
+      // site/outro aparelho: a central mais nova vem do servidor do site; o PC só se atualiza pedido nele mesmo
+      setTimeout(() => window.location.reload(), 700);
+      return "Carregando a central mais nova…";
+    }
+    let info;
+    try {
+      info = await api("/api/system/update/status?force=true", { timeout: 60_000 });
+    } catch (err) {
+      console.warn("Não consegui conferir a versão:", err);
+      return "Não consegui conferir agora. Veja a internet e tente de novo.";
+    }
+    setUpdateInfo(info);
+    const outcome = checkOutcome(info);
+    if (outcome === "busy") return "Já está atualizando…";
+    if (outcome === "latest") return `Tudo em dia: versão ${info.current || APP_VERSION}.`;
+    if (window.confirm(`Atualizar o JARVIS para a versão ${info.latest || "nova"}? Ele baixa a versão nova e reinicia (cerca de 1 minuto).`)) {
+      updateJarvis();
+      return "";
+    }
+    return `Versão ${info.latest || "nova"} disponível.`;
+  }, [canSelfUpdate, updateApp, updateJarvis]);
 
   // V6.8.3: "Atualizar agora" do menu do perfil
   useEffect(() => {
@@ -3655,6 +3685,7 @@ export default function App() {
         userName={name}
         updateInfo={updateInfo?.available ? updateInfo : null}
         onUpdate={canSelfUpdate ? updateJarvis : null}
+        onCheckUpdate={checkAndUpdate}
         onChatActivity={pokeChat}
         devices={devices}
         countdowns={countdowns}

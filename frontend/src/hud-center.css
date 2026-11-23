@@ -132,3 +132,31 @@
 @media (prefers-reduced-motion: reduce) {
   .hc-ring-spin, .hl-ticks > i, .hc-mic-wrap .hl-mic::after { animation: none !important; }
 }
+
+/* ==========================================================
+   V8.12.1 — ⟳ ATUALIZAR no topo (ao lado do ÁUDIO) e Spotify flutuante com a coluna recolhida
+   ========================================================== */
+/* O grupo do topo corta o que passa da borda: a bolinha fica dentro do botão, não no canto */
+.hl-act-update .upd-badge { position: static; margin-left: 2px; min-width: 16px; height: 16px; font-size: 0.62rem; line-height: 16px; box-shadow: none; }
+.hl-act-update.has-update { background: rgba(120, 53, 15, 0.45); color: #fde68a; }
+.hl-act-update.has-update i { color: #fbbf24; }
+.hl-act-update:disabled { cursor: progress; opacity: 0.8; }
+.hl-act i.is-spinning { display: inline-block; animation: hc-spin 1s linear infinite; }
+.hl-actions { position: relative; }
+.hl-upd-note {
+  position: fixed; top: 70px; left: 50%; transform: translateX(-50%); z-index: 60; max-width: min(420px, 90vw);
+  padding: 8px 14px; border-radius: 8px; text-align: center;
+  background: rgba(3, 18, 36, 0.95); border: 1px solid rgba(79, 220, 255, 0.4); color: #e6fbff;
+  font-size: 0.8rem; letter-spacing: 0.02em; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+.hl-actions:has(.hl-upd-note) { overflow: visible; }
+
+/* Coluna direita recolhida: o cartão do Spotify fica no canto, acima do botão de reabrir a coluna */
+.hl-spotify-float {
+  position: fixed; right: 34px; top: 92px; z-index: 25; width: 300px; max-width: calc(100vw - 48px);
+  box-shadow: 0 12px 32px rgba(0, 8, 20, 0.5); border-radius: 8px; animation: hc-float-in 260ms ease-out;
+}
+@keyframes hc-float-in { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: none; } }
+/* Celular e telas estreitas: a coluna não recolhe (fica na rolagem), então nada de cartão flutuante */
+@media (max-width: 1100px) { .hl-spotify-float { display: none; } }
+@media (prefers-reduced-motion: reduce) { .hl-spotify-float, .hl-act i.is-spinning { animation: none; } }

@@ -131,3 +131,19 @@ export function markAutoUpdateAttempt(info, now = Date.now()) {
     // sem armazenamento: o próprio backend (versão já igual depois de atualizar) evita repetir
   }
 }
+
+// V8.12.1: botão ⟳ ATUALIZAR sempre no topo da central (ao lado do ÁUDIO). O que ele faz depende de onde a
+// central está aberta: no PC confere a versão na hora e atualiza; no app do celular procura o app novo; no site
+// (ou outro aparelho) traz a central mais nova recarregando (o PC só aceita atualizar pedido feito nele mesmo).
+export function updateButtonAction({ canSelfUpdate = false, isApp = false } = {}) {
+  if (canSelfUpdate) return "check";
+  if (isApp) return "app";
+  return "reload";
+}
+
+/** Resultado da conferência no PC: "update" (tem versão nova), "latest" (em dia) ou "busy" (já atualizando). */
+export function checkOutcome(info) {
+  if (!info) return "error";
+  if (info.busy) return "busy";
+  return info.available === true ? "update" : "latest";
+}

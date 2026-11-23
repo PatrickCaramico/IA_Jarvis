@@ -861,6 +861,7 @@ export default function HudLayout({
   aiName,
   updateInfo = null, // V6.7.2: { count, latest, notes } quando há versão nova (bolinha no ⟳ ATUALIZAR)
   onUpdate = null,
+  onCheckUpdate = null, // V8.12.1: ⟳ ATUALIZAR sempre no topo (confere e atualiza no PC; recarrega no site)
   userName = "", // V6.5.15: saudação da tela de espera
   onChatActivity = null, // V6.5.18: mexeu no chat (rolar, digitar): segura aberto na Área Limpa
   stateLabel,
@@ -967,6 +968,13 @@ export default function HudLayout({
   // V4.4: reabre só quando VOCÊ fala ou envia um pedido (não a cada fala do JARVIS) e nunca durante
   // o briefing; assim o modo em espera fica só com o orbe. Mexer nela (digitar, clicar) conta como uso.
   const [rightOpen, setRightOpen] = useState(true);
+  const [updChecking, setUpdChecking] = useState(false); // V8.12.1: ⟳ ATUALIZAR do topo
+  const [updNote, setUpdNote] = useState("");
+  useEffect(() => {
+    if (!updNote) return undefined;
+    const t = setTimeout(() => setUpdNote(""), 6000);
+    return () => clearTimeout(t);
+  }, [updNote]);
   const [rightActivity, setRightActivity] = useState(0);
   const touchRight = () => {
     setRightActivity((n) => n + 1);
@@ -1032,6 +1040,12 @@ export default function HudLayout({
         >
           <span>◀ CLIMA & CANAL ATIVO</span>
         </button>
+      )}
+      {/* V8.12.1: coluna direita recolhida: o Spotify continua à vista, flutuando no canto */}
+      {!rightOpen && !zenMode && !briefing && (
+        <aside className="hl-spotify-float" aria-label="Spotify">
+          <NowPlaying api={api} variant="hud" controls always onOpen={onOpenSpotify} />
+        </aside>
       )}
       {/* Botão de expansão lateral quando a coluna esquerda estiver recolhida */}
       {!leftOpen && !zenMode && (
@@ -1101,6 +1115,30 @@ export default function HudLayout({
             >
               <i aria-hidden="true">♫</i>ÁUDIO
             </button>
+            {/* V8.12.1: sempre aqui, ao lado do ÁUDIO; a bolinha diz quantas versões novas há (antes o botão só
+                aparecia quando o PC já sabia de versão nova, e no site nunca) */}
+            {onCheckUpdate && (
+              <button
+                type="button"
+                className={`hl-act hl-act-update${updateInfo ? " has-update" : ""}`}
+                disabled={updChecking}
+                onClick={async () => {
+                  setUpdChecking(true);
+                  try {
+                    setUpdNote(await onCheckUpdate());
+                  } finally {
+                    setUpdChecking(false);
+                  }
+                }}
+                title={updateInfo ? [`Versão ${updateInfo.latest} disponível`, ...(updateInfo.notes || [])].join("\n") : "Procurar e instalar a versão mais nova do JARVIS"}
+              >
+                <i aria-hidden="true" className={updChecking ? "is-spinning" : ""}>⟳</i>{updChecking ? "CONFERINDO" : "ATUALIZAR"}
+                {updateInfo && (
+                  <span className="upd-badge" aria-label={`${updateInfo.count} ${updateInfo.count === 1 ? "atualização disponível" : "atualizações disponíveis"}`}>{updateInfo.count}</span>
+                )}
+              </button>
+            )}
+            {updNote && <span className="hl-upd-note" role="status">{updNote}</span>}
             <button type="button" className="hl-act" onClick={onOpenSpotify} title="Spotify">
               <i aria-hidden="true">◉</i>SPOTIFY
             </button>
@@ -1125,7 +1163,7 @@ export default function HudLayout({
             </button>
           </span>
           {/* V6.7.2: só aparece quando há versão nova; o número diz quantas */}
-          {updateInfo && onUpdate && (
+          {updateInfo && onUpdate && !onCheckUpdate && (
             <button
               type="button"
               className="hl-btn hl-btn-update"
