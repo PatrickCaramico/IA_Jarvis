@@ -1419,3 +1419,48 @@ body:has(.dk-root:not(.is-embedded)) .hl-root { display: none !important; }
   .agh-tab-skills { order: -1; margin-left: 0; } /* no celular a aba fica à vista, antes dos agentes */
 }
 @media (prefers-reduced-motion: reduce) { .skp, .skp-switch, .skp-switch i { animation: none; transition: none; } }
+
+/* ---------- V8.12.5: PROGRESSO · MISSÕES (XP e missões do dia, como no Modo Desk) ---------- */
+.hl-missions { flex-shrink: 0; }
+.hl-right .hl-channel { min-height: 170px; } /* o chat nunca some, mesmo com o painel de missões */
+.hm-wrap { display: grid; gap: 7px; font-family: "Rajdhani", sans-serif; }
+.hm-muted { margin: 0; font-size: 0.8rem; color: rgba(201, 246, 255, 0.55); }
+.hm-level { position: relative; display: grid; grid-template-columns: auto 1fr auto auto auto; align-items: center; gap: 8px; }
+.hm-toggle { padding: 0 4px; border: 0; background: none; color: rgba(201, 246, 255, 0.7); font-size: 0.8rem; cursor: pointer; }
+.hm-toggle:hover { color: #fff; }
+.hm-lv { font-family: "Orbitron", sans-serif; font-size: 0.56rem; letter-spacing: 0.14em; color: #fbbf24; white-space: nowrap; }
+.hm-lv b { font-size: 0.8rem; color: #fde68a; }
+.hm-xpbar { display: block; height: 6px; border-radius: 6px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
+.hm-xpbar b { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #f59e0b, #fde047); box-shadow: 0 0 10px rgba(250, 204, 21, 0.6); transition: width 600ms ease; }
+.hm-num { font-size: 0.72rem; color: rgba(201, 246, 255, 0.7); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.hm-streak { padding: 1px 7px; border-radius: 999px; border: 1px solid rgba(251, 146, 60, 0.35); font-size: 0.78rem; color: rgba(254, 215, 170, 0.6); filter: grayscale(0.7); }
+.hm-streak.is-lit { color: #fed7aa; border-color: rgba(251, 146, 60, 0.8); box-shadow: 0 0 10px rgba(251, 146, 60, 0.45); filter: none; }
+.hm-burst { position: absolute; right: 0; top: -20px; padding: 1px 8px; border-radius: 999px; background: rgba(250, 204, 21, 0.18); border: 1px solid rgba(250, 204, 21, 0.7); font-family: "Orbitron", sans-serif; font-size: 0.6rem; letter-spacing: 0.1em; color: #fde68a; animation: hm-pop 3s ease-out forwards; pointer-events: none; }
+.hm-burst.is-level { background: rgba(52, 211, 153, 0.2); border-color: #34d399; color: #a7f3d0; animation-duration: 6s; }
+@keyframes hm-pop { 0% { opacity: 0; transform: translateY(6px) scale(0.9); } 12% { opacity: 1; transform: none; } 85% { opacity: 1; } 100% { opacity: 0; transform: translateY(-4px); } }
+.hm-new { margin: 0; padding: 5px 8px; border-radius: 6px; background: rgba(52, 211, 153, 0.12); border: 1px dashed rgba(52, 211, 153, 0.5); color: #a7f3d0; font-size: 0.8rem; }
+.hm-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; }
+.hm-mission { display: grid; grid-template-columns: 20px 1fr auto auto; align-items: center; gap: 7px; padding: 3px 6px; border-radius: 6px; border: 1px solid rgba(31, 194, 245, 0.14); background: rgba(2, 12, 28, 0.45); }
+.hm-mission:not(:has(.hm-btn)) { grid-template-columns: 20px 1fr auto; }
+.hm-ico { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: rgba(31, 194, 245, 0.12); font-size: 0.75rem; }
+.hm-body { min-width: 0; display: grid; gap: 2px; }
+.hm-body b { font-weight: 600; font-size: 0.84rem; color: #e6faff; line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hm-body small { font-size: 0.7rem; color: rgba(201, 246, 255, 0.6); }
+.hm-xp { font-size: 0.72rem; color: #fde68a; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.hm-bar { display: block; height: 3px; border-radius: 3px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
+.hm-bar b { display: block; height: 100%; background: var(--hl-cy2, #4fdcff); }
+.hm-mission.is-done { opacity: 0.55; }
+.hm-mission.is-done .hm-ico { background: rgba(52, 211, 153, 0.25); color: #6ee7b7; }
+.hm-mission.is-done .hm-body b { text-decoration: line-through; text-decoration-color: rgba(110, 231, 183, 0.6); }
+.hm-btn { padding: 2px 7px; border-radius: 999px; border: 1px solid rgba(79, 220, 255, 0.55); background: rgba(31, 194, 245, 0.12); color: #e6faff; font-family: "Orbitron", sans-serif; font-size: 0.52rem; letter-spacing: 0.12em; cursor: pointer; }
+.hm-btn:hover { background: rgba(31, 194, 245, 0.3); border-color: #fff; }
+.hm-answer { display: flex; gap: 4px; margin-top: 3px; }
+.hm-answer input { flex: 1; min-width: 0; padding: 4px 8px; border-radius: 6px; border: 1px solid rgba(31, 194, 245, 0.35); background: rgba(0, 0, 0, 0.35); color: #e6faff; font-size: 0.8rem; }
+.hm-answer button { padding: 0 8px; border-radius: 6px; border: 1px solid rgba(79, 220, 255, 0.5); background: rgba(31, 194, 245, 0.15); color: #e6faff; cursor: pointer; }
+.hm-err { color: #fca5a5; }
+.hm-week { display: grid; grid-template-columns: 22px 1fr auto; grid-template-rows: auto auto; column-gap: 8px; align-items: center; padding: 4px 7px; font-size: 0.74rem; color: rgba(201, 246, 255, 0.75); }
+.hm-week > span:first-child { grid-column: 1; grid-row: 1 / span 2; text-align: center; }
+.hm-week-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hm-week small { grid-column: 3; grid-row: 1 / span 2; color: rgba(201, 246, 255, 0.55); white-space: nowrap; }
+.hm-week .hm-bar { grid-column: 2; grid-row: 2; }
+@media (prefers-reduced-motion: reduce) { .hm-burst { animation: none; } .hm-xpbar b { transition: none; } }

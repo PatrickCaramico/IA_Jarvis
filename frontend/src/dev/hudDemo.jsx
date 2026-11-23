@@ -70,6 +70,16 @@ const DATA = {
   "/api/shopping": { items: [
     { id: 1, texto: "Leite", comprado: false }, { id: 2, texto: "Pão", comprado: false }, { id: 3, texto: "Café", comprado: true },
   ] },
+  // V8.12.5: XP e missões do dia na central
+  "/api/desk/xp": { nivel: 2, xp: 234, no_nivel: 134, para_subir: 200, pct: 67 },
+  "/api/desk/missions": { dia: "2026-11-23", feitas: 1, total: 3, novos: [], cloud: false,
+    itens: [
+      { id: "m1", tipo: "uso", texto: "Pergunte o clima ao JARVIS", xp: 15, meta: 1, progresso: 1, feita: true },
+      { id: "m2", tipo: "bem", texto: "Beba 2 copos d'água antes do almoço", xp: 20, meta: 1, progresso: 0, feita: false },
+      { id: "m3", tipo: "sobre", texto: "Qual é a sua comida favorita?", xp: 25, meta: 1, progresso: 0, feita: false },
+    ],
+    semana: { id: "w1", tipo: "semana", texto: "Converse com o JARVIS em 5 dias da semana", xp: 100, meta: 5, progresso: 2, feita: false },
+    ofensiva: { atual: 3, recorde: 7, protetores: 1, max_protetores: 2, feita_hoje: true } },
   "/api/countdowns": { items: [
     { id: 1, title: "Viagem a Maceió", target: new Date(Date.now() + (3 * 86400 + 4 * 3600 + 125) * 1000).toISOString().slice(0, 19), all_day: false },
   ] },

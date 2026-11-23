@@ -97,6 +97,13 @@
 .dk-msg.is-jarvis { align-self: flex-start; background: var(--dk-card-2); border-bottom-left-radius: 4px; }
 .dk-msg.is-error { align-self: flex-start; background: rgba(244, 63, 94, 0.15); color: #fecdd3; }
 .dk-msg.is-live { opacity: 0.7; font-style: italic; }
+/* V8.12.4: "digitando" enquanto a IA pensa */
+.dk-msg.is-typing { display: inline-flex; gap: 5px; align-items: center; padding: 12px 14px; }
+.dk-msg.is-typing span { width: 7px; height: 7px; border-radius: 50%; background: rgba(var(--dk-accent-rgb), 0.9); animation: dk-typing 1s ease-in-out infinite; }
+.dk-msg.is-typing span:nth-child(2) { animation-delay: 0.15s; }
+.dk-msg.is-typing span:nth-child(3) { animation-delay: 0.3s; }
+@keyframes dk-typing { 0%, 80%, 100% { opacity: 0.25; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-3px); } }
+@media (prefers-reduced-motion: reduce) { .dk-msg.is-typing span { animation: none; opacity: 0.7; } }
 .dk-input { display: flex; gap: 8px; }
 .dk-input input { flex: 1; min-width: 0; padding: 11px 16px; border: 1px solid var(--dk-line); border-radius: 14px; background: var(--dk-bg); outline: none; }
 .dk-input input:focus { border-color: var(--dk-accent); }

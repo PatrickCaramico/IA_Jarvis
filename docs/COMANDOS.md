@@ -1,6 +1,6 @@
 # JARVIS — Comandos do dia a dia
 
-**Versão do projeto:** 8.12.2 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
+**Versão do projeto:** 8.12.5 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
 
 > Montado a partir do código do projeto. Se algum comando não responder como descrito, me avise que eu ajusto o guia.
 > Para a lista técnica de rotas, veja [API.md](API.md); para o `.env`, [CONFIGURACAO.md](CONFIGURACAO.md).
@@ -12,7 +12,7 @@
 | **Ligar o JARVIS** | Duplo clique em `Iniciar-JARVIS.bat` (sobe backend e frontend em segundo plano e abre o navegador). |
 | **Ligar em modo desenvolvimento** | Duplo clique em `Iniciar-JARVIS-Dev.bat` (ativa `--reload` para recarregar o backend automaticamente ao editar código). |
 | **Abrir o painel** | Navegador em `http://127.0.0.1:5173` (também funciona `http://localhost:5173`). |
-| **Ligar sozinho com o Windows (V8.11)** | Configurações › **Inicialização** › "Ligar junto com o Windows", ou diga "liga o JARVIS junto com o Windows", ou duplo clique em `Instalar-JARVIS-no-Windows.bat`. Ao entrar no Windows ele liga em segundo plano, sem janela e sem abrir aba. Para desfazer: desmarque, diga "não liga mais com o Windows" ou use `Remover-JARVIS-do-Windows.bat`. |
+| **Sempre ligado (V8.12.3, padrão)** | O JARVIS liga sozinho em segundo plano ao entrar no Windows (sem janela e sem abrir aba), religa se cair (guardião) e, **na tomada**, não deixa o PC dormir por inatividade (a tela ainda apaga). Configurações › **Inicialização** › "Sempre ligado" e "Não deixar o PC dormir na tomada", ou diga "liga o JARVIS junto com o Windows" / "não liga mais com o Windows". Também dá pelo `Instalar-JARVIS-no-Windows.bat` / `Remover-JARVIS-do-Windows.bat`. Desligado, ele não volta a ligar sozinho. |
 | **Ficar sempre ligado (V8.11)** | O **guardião** (liga junto com o JARVIS) confere a cada 10 s: se o JARVIS cair sozinho, liga de novo em ~45 s (no máximo 4 vezes por hora). Não interfere em atualizações nem no `Parar-JARVIS.bat`. Registro em `logs\guardiao.log`. |
 | **Atualizar ao abrir (V8.11)** | Ao abrir a central no PC (pelo site ou aqui), se tiver versão nova o JARVIS atualiza na hora, com a barra de progresso, e já abre na versão nova. Desligar: Configurações › Inicialização › "Atualizar ao abrir a central". Se a atualização falhar, ele não tenta de novo pelos próximos 15 min. |
 | **Microfone só no botão (V8.11, padrão)** | Nada fica ouvindo sozinho: o microfone abre no 🎙 (ou na tecla do app do Windows) e fecha ao terminar a frase; no bloqueio, o botão do microfone vale para um pedido (desliga sozinho em 20 s). A escuta contínua ("Jarvis, …"), as palmas, o ouvido offline e o Ouvinte de Palmas **fecham o microfone**. Motivo: com o microfone aberto o tempo todo, o Windows trata o PC como "em chamada" e a música no fone Bluetooth fica abafada/distorcida. Para voltar a ouvir sempre: Configurações › Bloqueio › Modo Sentinela › desligue "Microfone só quando eu apertar o botão", ou diga "pode ficar me ouvindo o tempo todo" (e "microfone só no botão" para voltar). |

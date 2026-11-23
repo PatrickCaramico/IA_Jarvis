@@ -46,6 +46,8 @@ _DEFAULTS: dict[str, Any] = {
     "briefing_news_themes": [],           # V6.2: temas de notícias do "bom dia" ([] = padrões, com Marvel)
     "voice_listener_enabled": True,       # V6.3: ouvido offline ("Jarvis, ..." sem o navegador)
     "skills_disabled": [],                # V8.11: Skills desligadas pelo usuário (nomes)
+    "always_on": True,                    # V8.12.3: sempre ligado (liga com o Windows e religa o guardião)
+    "keep_awake": True,                   # V8.12.3: na tomada, o PC não suspende por inatividade (a tela apaga)
     "news_notify_enabled": True,          # V6.5: manchetes novas dos temas viram aviso no celular
     "audio_output_device": "",            # V6.5.8: caixa de som da voz no PC ("" = padrão do Windows)
     "voice_input_device": "",             # V6.5.8: microfone do ouvido offline ("" = padrão do Windows)
@@ -130,6 +132,7 @@ def validate_patch(patch: dict[str, Any]) -> Optional[str]:
         "hands_free_enabled", "follow_up_enabled", "mic_push_to_talk",
         "sentinel_night_dim", "water_sound", "water_pace_hint", "screen_assist_enabled",
         "routine_suggestions_enabled", "notifications_enabled", "notifications_read_content",
+        "always_on", "keep_awake",  # V8.12.3
     )
     for key in bools:
         if key in patch and not isinstance(patch[key], bool):

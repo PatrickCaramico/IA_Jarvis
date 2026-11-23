@@ -58,6 +58,8 @@ import { APP_VERSION } from "./utils/version.js";
 import { PC_SCAN_EVENT, openPcScan, scanFromCards } from "./utils/pcScan.js";
 import { tabTitle } from "./utils/tabTitle.js";
 import { checkOutcome, markAutoUpdateAttempt, readAutoUpdateAttempt, shouldAutoUpdateOnOpen, updateButtonAction } from "./utils/updateCheck.js";
+import { rememberAlwaysOn } from "./utils/bootStatus.js";
+import BootReconnect from "./components/BootReconnect.jsx";
 import { canResumeSession, hasLoggedBefore, launcherWorks, markLauncherWorks, rememberLogin } from "./utils/session.js";
 
 // Carregados sob demanda (otimização 4.2: pacote inicial menor)
@@ -111,6 +113,8 @@ export default function App() {
   const [cloudActive, setCloudActive] = useState(false); // V6.6.5: a central de sempre rodando pela nuvem
   // Botão LIGAR O JARVIS (atalho jarvis://): "" | "trying" | "opening" | "missing"
   const [launchState, setLaunchState] = useState("");
+  // V8.12.3: o que a tela de "reconectando" mostra ao vivo: desde quando procura, tentativas e a próxima conferência
+  const [probe, setProbe] = useState(null); // { since, attempts, lastAt, nextAt, checking }
   // V5.1: alarme tocando (evento "alarm" do backend): { id, hora, rotulo, snooze_minutes } ou null
   const [alarm, setAlarm] = useState(null);
   const alarmRef = useRef(null);
@@ -832,6 +836,9 @@ export default function App() {
       case "countdowns":
         setCountdowns(Array.isArray(msg.items) ? msg.items : []); // V5.6: widget de contagem regressiva
         break;
+      case "desk_missions": // V8.12.5: missão concluída no PC: o painel da central e o Modo Desk atualizam na hora
+        window.dispatchEvent(new CustomEvent("jarvis-desk-missions", { detail: msg.data || null }));
+        break;
       case "devices": {
         // V5.5: aparelhos conectados; avisa quando um celular acaba de entrar
         const items = Array.isArray(msg.items) ? msg.items : [];
@@ -1038,6 +1045,10 @@ export default function App() {
     }
     try {
       const profile = await api("/api/profile", { timeout: 10_000 });
+      // V8.12.3: guarda se este PC está no "sempre ligado" (a tela de reconectar mostra quando ele cair)
+      api("/api/health", { timeout: 5000 }).then((h) => {
+        if (typeof h?.always_on === "boolean") rememberAlwaysOn(h.always_on);
+      }).catch(() => {});
       setName(profile.name ?? "");
       setHasPhoto(Boolean(profile.has_photo));
       if (profile.access) setAccessInfo(profile.access);
@@ -1093,21 +1104,33 @@ export default function App() {
   // Backend do PC desligado: confere sozinho e, quando ele responder, continua (sem piscar a tela).
   // V5.2: a cada 2 s no começo e a cada 5 s depois de 2 min; confere NA HORA quando a aba volta ao foco,
   // quando a rede volta ou quando o celular/PC acorda (é quando o usuário acabou de ligar o JARVIS).
+  const offlineRef = useRef(null); // V8.12.3: { since, attempts } não zeram quando o usuário toca TENTAR AGORA
   useEffect(() => {
+    if (screen !== "boot") offlineRef.current = null;
     if (screen !== "boot" || !bootError || !bootOffline) return undefined;
     let alive = true;
     let timer;
     let checking = false;
-    const started = Date.now();
+    if (!offlineRef.current) offlineRef.current = { since: Date.now(), attempts: 0 };
+    const offline = offlineRef.current;
+    const started = offline.since;
     const check = async () => {
       if (!alive || checking) return;
       checking = true;
+      offline.attempts += 1;
+      setProbe((p) => ({ ...(p || { since: started }), attempts: offline.attempts, checking: true }));
       try {
         const ctrl = new AbortController();
         const abort = setTimeout(() => ctrl.abort(), 4000);
         const res = await fetch(`${API_URL}/api/health`, { cache: "no-store", signal: ctrl.signal });
         clearTimeout(abort);
         if (res.ok && alive) {
+          try {
+            const h = await res.json();
+            if (typeof h?.always_on === "boolean") rememberAlwaysOn(h.always_on);
+          } catch {
+            /* resposta sem JSON: entra mesmo assim */
+          }
           alive = false;
           clearTimeout(timer);
           setCloudMode(false);
@@ -1123,7 +1146,10 @@ export default function App() {
     };
     const schedule = () => {
       clearTimeout(timer);
-      timer = setTimeout(check, Date.now() - started > 120_000 ? 5000 : 2000);
+      const wait = Date.now() - started > 120_000 ? 5000 : 2000;
+      const lastAt = Date.now();
+      setProbe({ since: started, attempts: offline.attempts, lastAt, nextAt: lastAt + wait, checking: false });
+      timer = setTimeout(check, wait);
     };
     const now = () => {
       if (document.visibilityState === "visible") check();
@@ -2913,29 +2939,15 @@ export default function App() {
             </>
           ) : bootError && bootOffline && BACKEND_ON_THIS_PC && !IS_JARVIS_APP && returningUser ? (
             <>
-              {/* V5.2: quem já usa o JARVIS aqui não vê o manual: só "reconectando", e entra sozinho */}
-              <div className="ls-title">RECONECTANDO AO SEU JARVIS</div>
-              <p className="ls-hint ls-boot-wait" style={{ margin: "6px auto 0" }}>
-                {launchState === "opening" ? "Ligando o JARVIS do PC… pode levar 1 ou 2 minutos." : launchState === "asked" ? "O Chrome perguntou se pode abrir o programa? Clique em Abrir." : "Assim que o JARVIS do PC responder, eu entro sozinho."}
-              </p>
-              <div className="ls-boot-actions">
-                <button type="button" onClick={launchJarvis} disabled={launchState === "trying"} className="ls-btn-main">
-                  <span>{launchState === "trying" ? "ABRINDO…" : "LIGAR O JARVIS"}</span>
-                </button>
-                <button type="button" onClick={boot} className="ls-chip">TENTAR AGORA</button>
-                {CLOUD_AVAILABLE && <button type="button" onClick={() => setCloudMode(true)} className="ls-chip">USAR PELA NUVEM</button>}
-              </div>
-              {launchState === "missing" && (
-                <div className="ls-launch-missing" role="alert">
-                  <b>O JARVIS ainda não respondeu.</b>
-                  <span>Se o Chrome não perguntou nada ao tocar em LIGAR, dê duplo clique em <b>Instalar-Botao-Ligar.bat</b> (só uma vez). Ou ligue pelo <b>Iniciar-JARVIS.bat</b>: esta página entra sozinha.</span>
-                </div>
-              )}
-              <details className="ls-boot-help">
-                <summary>Não está entrando?</summary>
-                <p>Com o JARVIS ligado, o Chrome pode barrar este site de falar com o PC: clique no ícone ao lado do endereço › <b>Acesso à rede local</b> › Permitir, e recarregue.</p>
-                <p>O botão LIGAR precisa do <b>Instalar-Botao-Ligar.bat</b> rodado uma vez neste PC.</p>
-              </details>
+              {/* V5.2: quem já usa o JARVIS aqui não vê o manual: só "reconectando", e entra sozinho.
+                  V8.12.3: com o estado ao vivo (procurando há quanto tempo, tentativas, sempre ligado) */}
+              <BootReconnect
+                probe={probe}
+                launchState={launchState}
+                onLaunch={launchJarvis}
+                onRetry={boot}
+                onCloud={CLOUD_AVAILABLE ? () => setCloudMode(true) : null}
+              />
             </>
           ) : bootError && bootOffline && BACKEND_ON_THIS_PC && !IS_JARVIS_APP ? (
             <>

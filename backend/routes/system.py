@@ -41,6 +41,8 @@ async def health() -> dict:
         "speaking": session.speaking > 0,  # V6.3: o ouvido offline não escuta enquanto o JARVIS fala
         "has_profile": face.has_profile(),
         "timers": tools.active_timers(),
+        # V8.12.3: a tela de "reconectando" do site lembra se este PC liga sozinho (nada pessoal)
+        "always_on": bool(prefs.get_all().get("always_on", True)),
         "cooldown": {"active": in_cooldown, "remaining": remaining},
         "services": {
             "ai": bool(settings.OPENAI_API_KEY or settings.ANTHROPIC_API_KEY or settings.GEMINI_API_KEY),
@@ -93,11 +95,35 @@ async def autostart_status() -> dict:
 @router.post("/api/system/autostart")
 async def autostart_set(req: AutostartRequest, request: Request) -> dict:
     """V8.11: liga/desliga o início junto com o Windows (só pelo próprio PC)."""
-    from modules import autostart
+    if not runtime.is_local_conn(request):
+        raise HTTPException(status_code=403, detail="Isso só pode ser mudado no próprio PC.")
+    from modules import always_on
+
+    # V8.12.3: desligar aqui também desliga o "sempre ligado" (senão o backend recriaria o atalho)
+    return await asyncio.to_thread(always_on.set_autostart, req.enabled)
+
+
+class AlwaysOnRequest(BaseModel):
+    keep_awake: bool
+
+
+@router.get("/api/system/always-on")
+async def always_on_status() -> dict:
+    """V8.12.3: sempre ligado (início com o Windows, guardião e PC acordado na tomada)."""
+    from modules import always_on
+
+    return await asyncio.to_thread(always_on.status)
+
+
+@router.post("/api/system/always-on")
+async def always_on_set(req: AlwaysOnRequest, request: Request) -> dict:
+    """V8.12.3: liga/desliga "não deixar o PC dormir na tomada" (só pelo próprio PC)."""
+    from modules import always_on
 
     if not runtime.is_local_conn(request):
         raise HTTPException(status_code=403, detail="Isso só pode ser mudado no próprio PC.")
-    return await asyncio.to_thread(autostart.enable if req.enabled else autostart.disable)
+    await asyncio.to_thread(prefs.update, keep_awake=req.keep_awake)
+    return await asyncio.to_thread(always_on.status)
 
 
 @router.post("/api/system/update")
