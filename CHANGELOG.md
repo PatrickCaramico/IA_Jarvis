@@ -2,6 +2,25 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 8.12.2 — 23 de novembro de 2026
+
+**🔓 Atualizar sem pedir o rosto de novo**
+- Se a central estava liberada quando você mandou atualizar, ela volta liberada depois do reinício, direto onde você estava.
+  - Antes, o JARVIS reiniciava bloqueado e pedia a verificação do rosto logo depois de você mesmo apertar ATUALIZAR.
+- Se a central estava bloqueada, continua bloqueada. Se você bloquear no meio da atualização, também.
+- O "liberado" só vale por 5 minutos e para um reinício.
+
+**🎵 Spotify na central também pelo site**
+- Aberta pelo site (fora de casa), a central mostra a música que está tocando no PC, com capa, nome e artista. Antes, aparecia sempre "sem sinal".
+  - O PC manda a música a cada sincronização, mais ou menos a cada minuto.
+- Com o PC desligado, aparece "PC sem sinal".
+
+**✨ Tela de atualização melhor**
+- Um anel no estilo do reator mostra a porcentagem.
+- O título mostra a versão de verdade, por exemplo "v8.12.1 → v8.12.2" (antes era um código como "3c39a40").
+- "O que há de novo" traz os destaques desta lista de novidades, em vez de mensagens técnicas.
+- No fim: "a central abre sozinha, do jeito que estava", sem falar em verificação do rosto.
+
 ## 8.12.1 — 23 de novembro de 2026
 
 **⟳ Botão ATUALIZAR sempre no topo da central**

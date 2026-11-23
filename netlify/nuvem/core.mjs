@@ -438,6 +438,16 @@ export async function receiveSnapshot(store, { ack = 0, snapshot = {} }, now = s
       missoes: missionsSummary(dk.missoes, log.items.filter((x) => x.op === "mission_done")),
     });
   }
+  if (snapshot.tocando && typeof snapshot.tocando === "object") { // V8.12.2: a música do PC para a central no site
+    const t = snapshot.tocando;
+    const state = ["playing", "paused", "idle", "off", "error"].includes(t.state) ? t.state : "error";
+    const image = typeof t.image === "string" && /^https:\/\/[\w.-]+\.scdn\.co\//.test(t.image) ? t.image.slice(0, 300) : null;
+    await store.set("tocando", {
+      state, title: clean(t.title, 120), artist: clean(t.artist, 120), album: clean(t.album, 120), image,
+      progress_ms: Math.max(0, Number(t.progress_ms) || 0), duration_ms: Math.max(0, Number(t.duration_ms) || 0),
+      at: Number(t.at) || Math.floor(Date.now() / 1000),
+    });
+  }
   if (Array.isArray(snapshot.holo_salvos)) { // V7.14: apresentações salvas, para rever fora de casa
     const pending = log.items.filter((o) => o.op === "holo_save" || o.op === "holo_delete");
     let list = snapshot.holo_salvos.slice(0, 20).filter((i) => i && i.id && i.data && typeof i.data === "object")
@@ -1532,6 +1542,7 @@ export async function handle(req, { store, env, fetchFn = fetch, nowDate = new D
         conversa: ((await store.get("conversa")) || []).slice(-12),
         agenda: ((await store.get("perfil")) || {}).agenda || [],
         lugares: await allPlaces(store), // V6.8.3: Central de Agentes
+        tocando: (await store.get("tocando")) || null, // V8.12.2: cartão do Spotify da central
         agora: now.stamp,
       });
     }

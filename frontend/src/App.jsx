@@ -1236,7 +1236,8 @@ export default function App() {
     }
     const base = res.changed ? `Versão nova baixada (${res.after}).` : "Já estava na versão mais nova.";
     // V8.1.7: a tela mostra as etapas de verdade (o PC conta em /api/system/update/progress)
-    const info = { antes: res.before, depois: res.after, changed: res.changed, notas: [] };
+    // V8.12.2: versao_nova e destaques (do CHANGELOG baixado) para a tela mostrar "8.12.1 → 8.12.2" e o que há de novo
+    const info = { antes: res.before, depois: res.after, changed: res.changed, notas: [], versao: res.versao_nova || "", destaques: res.destaques || [] };
     setUpdating({ message: `${base} Preparando o reinício…`, stage: "Preparando", target: 45, etapa: "baixado", info });
     const oldBoot = res.boot_id;
     const started = Date.now();
@@ -1257,7 +1258,8 @@ export default function App() {
           if (p && STEP[p.etapa]) {
             const [stage, target] = STEP[p.etapa];
             setUpdating((u) => ({ ...u, message: p.detalhe || u.message, stage, target, etapa: p.etapa,
-              info: { ...u.info, notas: p.notas?.length ? p.notas : u.info?.notas || [] } }));
+              info: { ...u.info, notas: p.notas?.length ? p.notas : u.info?.notas || [],
+                versao: p.versao_nova || u.info?.versao || "", destaques: p.destaques?.length ? p.destaques : u.info?.destaques || [] } }));
           }
         }
       } catch {

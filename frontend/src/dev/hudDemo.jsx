@@ -49,6 +49,10 @@ const DATA = {
     { label: "Hoje 21:00", title: "Ligar para a mãe", kind: "lembrete" },
     { label: "Amanhã 09:30", title: "Reunião de planejamento", kind: "agenda" },
   ] },
+  // V8.12.2: tela de atualização (a demo sem ?upd=0 atualiza ao abrir e fica nela)
+  "/api/system/update": { status: "restarting", changed: true, before: "b9bc3ee", after: "3c39a40", boot_id: "demo",
+    versao_nova: "8.12.2", destaques: ["🔓 Atualizar sem pedir o rosto de novo", "🎵 Spotify na central também pelo site", "✨ Tela de atualização melhor"] },
+  "/api/system/update/progress": { etapa: "interface", detalhe: "Baixando a interface pronta…", versao_nova: "8.12.2" },
   "/api/integrations/spotify/track": { state: "idle" }, // V8.12: o cartão do Spotify fica mesmo sem música
   "/api/system": { cpu_percent: 23, ram_percent: 74, disk_free_gb: 412.6, processes: 231 }, // V8.11.1: telemetria do centro
   "/api/water": { total_ml: 1250, goal_ml: 2500, percentage: 50 },

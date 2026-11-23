@@ -8,6 +8,7 @@ import { API_URL, WS_URL, clientId } from "./api.js";
 import { CLOUD_URL, change, cloud, cloudToken } from "./cloudApi.js";
 import { APP_VERSION } from "./version.js";
 import { pcLine } from "./cloudStatus.js";
+import { cloudTrack } from "./nowPlaying.js";
 
 const NEEDS_PC = "Isso precisa do notebook ligado, senhor. No modo nuvem eu cuido de conversa, listas, lembretes, alarmes, água, notícias e clima.";
 const DAYS = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
@@ -102,6 +103,8 @@ function speak(text, onEnd) {
     .then(() => onEnd?.())
     .catch(() => deviceVoice(clean, onEnd));
 }
+
+let trackFetchedAt = 0; // V8.12.2: última busca da música do PC (cartão do Spotify)
 
 async function refresh() {
   state = await cloud("/state");
@@ -362,6 +365,14 @@ async function route(method, path, query, body) {
     case "POST /api/camera/ask":
       // V6.8.2: "o que é isso?" pela câmera do celular, fora de casa
       return ok(await cloud("/vision", { method: "POST", body: { image: body.image, question: body.question }, timeout: 45000 }));
+    case "GET /api/integrations/spotify/track": { // V8.12.2: a música do PC (antes o cartão ficava "sem sinal")
+      // o PC manda a música a cada ~1 min: buscar mais vezes que isso só gastaria chamadas da função da Netlify
+      if (Date.now() - trackFetchedAt > 60_000) {
+        trackFetchedAt = Date.now();
+        await refresh();
+      }
+      return ok(cloudTrack((state || {}).tocando));
+    }
     case "POST /api/integrations/spotify/control": {
       // botões de música da central: no app, viram os botões de mídia do celular
       const map = { play: "tocar", resume: "tocar", pause: "pausar", next: "proxima", previous: "anterior", prev: "anterior" };
