@@ -106,8 +106,12 @@ def test_briefing_flow_plays_only_in_the_morning(monkeypatch):
     async def run(mode):
         calls.clear()
         await briefing_flow.run_sequence("bom dia", session.turn_id, {**data, "mode": mode}, 10)
-        for _ in range(20):
-            await asyncio.sleep(0.01)
+        # espera de verdade as tarefas de fundo (pausar/retomar/música rodam em threads), sem tempo fixo
+        for _ in range(100):
+            pending = [t for t in runtime.background_tasks if not t.done()]
+            if not pending:
+                break
+            await asyncio.wait(pending, timeout=1)
 
     asyncio.run(run("morning"))
     assert calls[0] == "start" and calls[-1] == ("finish", "plano", False)

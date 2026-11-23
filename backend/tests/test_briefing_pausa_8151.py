@@ -84,8 +84,12 @@ def _briefing(monkeypatch, mode):
 
     async def run():
         await briefing_flow.run_sequence("bom dia", session.turn_id, data, 10)
-        for _ in range(20):
-            await asyncio.sleep(0.01)
+        # espera de verdade as tarefas de fundo (pausar/retomar/música rodam em threads), sem tempo fixo
+        for _ in range(100):
+            pending = [t for t in runtime.background_tasks if not t.done()]
+            if not pending:
+                break
+            await asyncio.wait(pending, timeout=1)
 
     asyncio.run(run())
 
