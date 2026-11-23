@@ -169,6 +169,9 @@ async def auth_verify(req: Optional[VerifyRequest] = None) -> dict:
             runtime.track(speech.speak(message, release_busy=True))
         else:  # V7.2: desbloqueio sem saudação (já cumprimentou há pouco): entra em silêncio
             session.busy = False
+            # V9.1.2: e devolve a tela para "em espera". Antes ninguém mandava: a central ficava no PROCESSANDO
+            # que a câmera ligou ("Está demorando 51 s") depois de toda entrada sem saudação.
+            await runtime.manager.broadcast({"type": "state", "state": "idle"})
             message = f"Acesso liberado{', ' + name if name else ''}."
         return {
             "verified": result["verified"],

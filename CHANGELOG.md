@@ -4,6 +4,10 @@ Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
 ## 9.1.2 — 23 de novembro de 2026
 
+**🔓 Entrar pelo rosto não deixa mais a central em PROCESSANDO**
+- Quando o JARVIS já tinha cumprimentado há pouco, ele entrava sem falar. Mas a tela ficava no PROCESSANDO que a câmera ligou, com "Está demorando (51 s)", depois de toda entrada sem saudação.
+- Agora ele volta para "em espera" na hora.
+
 **⏳ A central diz com o que está ocupada**
 - Embaixo de PROCESSANDO aparece o que o JARVIS está fazendo, por exemplo:
   - "Pensando com a inteligência artificial… 12 s";
