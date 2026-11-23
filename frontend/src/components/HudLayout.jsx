@@ -1,5 +1,6 @@
 import NowPlaying from "./NowPlaying.jsx";
 import ShoppingList from "./ShoppingList.jsx";
+import VoiceButton from "./VoiceButton.jsx";
 import HudMissions, { useDeskProgress } from "./HudMissions.jsx";
 import { missionsTag } from "../utils/hudProgress.js";
 import CountdownWidget from "./CountdownWidget.jsx";
@@ -13,6 +14,8 @@ import ReactiveCard from "./ReactiveCard.jsx";
 import BriefingStage, { VoiceHints } from "./BriefingStage.jsx";
 import { OrbTelemetry, StateHint } from "./HudCenter.jsx";
 import { micCaption } from "../utils/hudCenter.js";
+import { wasStreamed } from "../utils/streamState.js";
+import { copyText } from "../utils/copyText.js";
 import FanNewsWidget from "./FanNewsWidget.jsx";
 import FanScoreWidget from "./FanScoreWidget.jsx";
 import FanMatchBanner from "./FanMatchBanner.jsx";
@@ -145,15 +148,23 @@ export function useConversationLog(userText, response, error, responseCards = []
 }
 
 function Typed({ text }) {
-  const [count, setCount] = useState(0);
+  // V8.13: resposta que já apareceu pelo streaming não é "digitada" de novo; as outras terminam em ~1 s
+  // (antes: 22 ms por letra, quase 7 s numa resposta de 300 letras).
+  const instant = wasStreamed(text);
+  const [count, setCount] = useState(instant ? text.length : 0);
   useEffect(() => {
+    if (wasStreamed(text)) {
+      setCount(text.length);
+      return undefined;
+    }
     let i = 0;
     setCount(0);
+    const step = Math.max(1, Math.ceil(text.length / 50));
     const id = setInterval(() => {
-      i += 1;
-      setCount(i);
+      i += step;
+      setCount(Math.min(i, text.length));
       if (i >= text.length) clearInterval(id);
-    }, 22);
+    }, 20);
     return () => clearInterval(id);
   }, [text]);
   return (
@@ -190,6 +201,27 @@ function SpeakButton({ id, text }) {
       aria-label={speaking ? "Parar a leitura" : "Ouvir esta resposta"}
     >
       {speaking ? "■" : "🔊"}
+    </button>
+  );
+}
+
+// V8.13: 📋 copia a resposta (vira ✓ por um instante)
+function CopyButton({ text }) {
+  const [done, setDone] = useState(false);
+  return (
+    <button
+      type="button"
+      className={`hl-speak hl-copy${done ? " is-on" : ""}`}
+      onClick={async () => {
+        if (await copyText(text)) {
+          setDone(true);
+          setTimeout(() => setDone(false), 1500);
+        }
+      }}
+      title={done ? "Copiado" : "Copiar a resposta"}
+      aria-label={done ? "Copiado" : "Copiar a resposta"}
+    >
+      {done ? "✓" : "📋"}
     </button>
   );
 }
@@ -879,6 +911,8 @@ export default function HudLayout({
   response,
   responseCards = [],
   error,
+  streamText = "", // V8.13: resposta chegando em pedaços
+  onStop = null, // V8.13: botão PARAR do chat
   audioVisible,
   onToggleAudio,
   onOpenSpotify,
@@ -1004,7 +1038,7 @@ export default function HudLayout({
   useEffect(() => {
     const el = listRef.current;
     if (el) el.scrollTop = el.scrollHeight;
-  }, [log, listening, interim, waiting]);
+  }, [log, listening, interim, waiting, streamText]);
 
   const handleMoveToSecondary = (widgetId) => {
     let targetTab = "command";
@@ -1118,6 +1152,7 @@ export default function HudLayout({
             >
               <i aria-hidden="true">♫</i>ÁUDIO
             </button>
+            <VoiceButton api={api} /> {/* V8.13: trocar a voz (e a música de entrada) ao lado do ÁUDIO */}
             {/* V8.12.1: sempre aqui, ao lado do ÁUDIO; a bolinha diz quantas versões novas há (antes o botão só
                 aparecia quando o PC já sabia de versão nova, e no site nunca) */}
             {onCheckUpdate && (
@@ -1359,6 +1394,7 @@ export default function HudLayout({
                   <b>{WHO[m.role]}</b>{" "}
                   {m.role === "jarvis" && !m.old ? <Typed text={m.text} /> : m.text}
                   {m.role === "jarvis" && m.text && <SpeakButton id={m.id} text={m.text} />}
+                  {m.role === "jarvis" && m.text && <CopyButton text={m.text} />}
                 </p>
                 {m.cards && m.cards.length > 0 && (
                   <div className="hl-reactive-cards">
@@ -1372,7 +1408,15 @@ export default function HudLayout({
             {listening && (
               <p className="hl-msg user live"><b>VOCÊ ▸</b> Ouvindo… {interim}</p>
             )}
-            {waiting && <p className="hl-msg hl-muted">Preparando sua resposta…</p>}
+            {/* V8.13: a resposta aparece enquanto a IA escreve */}
+            {streamText ? (
+              <div className="hl-msg jarvis is-streaming" aria-live="off">
+                <p style={{ margin: 0 }}><b>{WHO.jarvis}</b> {streamText}<span className="hl-caret" /></p>
+              </div>
+            ) : waiting && <p className="hl-msg hl-muted">Preparando sua resposta…</p>}
+            {onStop && (busy || jarvisState === "speaking" || streamText) && (
+              <button type="button" className="hl-stop" onClick={onStop} title="Parar a resposta e a fala (Esc)">■ PARAR</button>
+            )}
           </div>
           <div className="hl-command">{commandSlot}</div>
         </Panel>

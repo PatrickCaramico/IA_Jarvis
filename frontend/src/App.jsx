@@ -59,6 +59,7 @@ import { PC_SCAN_EVENT, openPcScan, scanFromCards } from "./utils/pcScan.js";
 import { tabTitle } from "./utils/tabTitle.js";
 import { checkOutcome, markAutoUpdateAttempt, readAutoUpdateAttempt, shouldAutoUpdateOnOpen, updateButtonAction } from "./utils/updateCheck.js";
 import { rememberAlwaysOn } from "./utils/bootStatus.js";
+import { EMPTY_STREAM, applyStream, markStreamed } from "./utils/streamState.js";
 import BootReconnect from "./components/BootReconnect.jsx";
 import { canResumeSession, hasLoggedBefore, launcherWorks, markLauncherWorks, rememberLogin } from "./utils/session.js";
 
@@ -102,6 +103,8 @@ const DeepSearchModal = lazyComponent(() => import("./components/DeepSearchModal
 const SearchModePromptModal = lazyComponent(() => import("./components/SearchModePromptModal.jsx"));
 
 const STATE_LABEL = { idle: "Em espera", processing: "Processando", speaking: "Falando" };
+// V8.13.1: aviso "Bloqueando em N s" antes do bloqueio por ausência (antes 30 s; mexer o mouse ainda cancela)
+const RELOCK_WARNING_S = 10;
 
 export default function App() {
   // boot -> (enroll | lock) -> main
@@ -131,6 +134,14 @@ export default function App() {
   const [saving, setSaving] = useState(false);
 
   const [jarvisState, setJarvisState] = useState("idle"); // idle | processing | speaking
+  // V8.13: resposta da IA chegando em pedaços (streaming) — { seq, text }
+  const [stream, setStream] = useState(EMPTY_STREAM);
+  const streamRef = useRef(EMPTY_STREAM);
+  streamRef.current = stream;
+  const stopTurn = useCallback(() => { // V8.13: botão PARAR do chat (corta a IA e a fala)
+    setStream(EMPTY_STREAM);
+    api("/api/cancel", { method: "POST" }).catch(() => {});
+  }, []);
   const [steps, setSteps] = useState({});
   const [userText, setUserText] = useState("");
   const [response, setResponse] = useState("");
@@ -738,7 +749,11 @@ export default function App() {
   // ---- WebSocket com reconexão automática (hooks/useJarvisSocket.js) ----
   const handleSocketMessage = (msg) => {
     switch (msg.type) {
+      case "response_stream": // V8.13: o texto aparece enquanto a IA escreve
+        setStream((cur) => applyStream(cur, msg));
+        break;
       case "reset":
+        setStream(EMPTY_STREAM);
         setSteps({});
         setResponse("");
         setResponseCards([]);
@@ -746,6 +761,7 @@ export default function App() {
         break;
       case "state":
         setJarvisState(msg.state);
+        if (msg.state === "idle") setStream(EMPTY_STREAM);
         // V8.10.0: falando a resposta não é "ocupado": um pedido novo corta a fala e é atendido (antes era ignorado)
         busyRef.current = msg.state !== "idle" && msg.state !== "speaking";
         // Cancelado no meio do briefing: os cards já falados ficam na fileira
@@ -892,6 +908,9 @@ export default function App() {
         setSteps((prev) => ({ ...prev, [msg.step]: msg.status }));
         break;
       case "response":
+        // V8.13: a final substitui o texto ao vivo; se ele já estava todo na tela, não é "digitado" de novo
+        if (streamRef.current.text) markStreamed(streamRef.current.text);
+        setStream(EMPTY_STREAM);
         setResponse(msg.text);
         setResponseCards(msg.cards || []);
         if (msg.local) flashOrb("success"); // ação local concluída (timer, água, protocolo...)
@@ -918,6 +937,7 @@ export default function App() {
         });
         break;
       case "error":
+        setStream(EMPTY_STREAM);
         setError(msg.message);
         flashOrb("error");
         break;
@@ -2180,6 +2200,8 @@ export default function App() {
         }
         return;
       }
+      if (streamRef.current.text) markStreamed(streamRef.current.text); // V8.13
+      setStream(EMPTY_STREAM);
       setResponse(data.response);
       // V7.14: pergunta rápida ganha um cartão animado no canto (placar, número com mini-gráfico, foto, lista)
       if (quickQuestion(text) && data.response) {
@@ -2349,13 +2371,15 @@ export default function App() {
     setSummaryActive(false);
     setAutoEntering(false);
     setPendingToRun(null);
-    try {
-      await api("/api/cancel", { method: "POST" });
-    } catch {
-      // A tela pode voltar ao estado de espera mesmo se o backend estiver indisponível.
-    }
+    // V8.13.1: a tela troca NA HORA. Antes ela esperava o PC responder o /api/cancel (pelo site, uma ida e volta
+    // inteira na rede) e só então mostrava o bloqueio. Bloqueio pedido pela tela: avisa o PC e cala a voz em
+    // paralelo. Bloqueio que veio do PC ("Jarvis, bloquear", reverificação): o PC já bloqueou e não precisa de
+    // cancelar (antes o cancelar cortava o "Até logo" no meio).
     if (notifyBackend) {
       api("/api/access/lock", { method: "POST" }).then(setAccessInfo).catch(() => {});
+      api("/api/cancel", { method: "POST" }).catch(() => {
+        // backend fora do ar: a tela volta ao bloqueio mesmo assim
+      });
     }
     loadPinStatus();
     setJarvisState("idle");
@@ -2721,8 +2745,8 @@ export default function App() {
           return;
         }
       }
-      setRelockWarning(30);
-    }, 5000);
+      setRelockWarning(RELOCK_WARNING_S);
+    }, 2000); // V8.13.1: confere a cada 2 s (antes 5 s: até 5 s a mais para começar o aviso)
     return () => {
       clearInterval(timer);
       events.forEach((ev) => window.removeEventListener(ev, bump));
@@ -3301,6 +3325,8 @@ export default function App() {
           response={response}
           responseCards={responseCards}
           error={error}
+          streamText={stream.text}
+          onStop={stopTurn}
           send={(t) => send(t)}
           onToggleMic={toggleMic}
           onClassic={() => window.dispatchEvent(new CustomEvent("jarvis-desk-toggle", { detail: false }))}
@@ -3719,6 +3745,8 @@ export default function App() {
         userText={userText}
         response={response}
         responseCards={responseCards}
+        streamText={stream.text}
+        onStop={stopTurn}
         briefing={briefing}
         onCloseBriefing={() => setBriefing(null)}
         onSkipBriefing={() => api("/api/briefing/skip", { method: "POST" }).catch(() => {})}

@@ -16,6 +16,7 @@ from modules import prefs
 from modules import memory
 from modules.vision import capture_webcam_frame
 from services import grounding
+from services import llm_stream
 
 log = logging.getLogger("jarvis.llm")
 
@@ -283,29 +284,67 @@ def _call_openai(prompt: str, frame_b64: Optional[str], history: list[dict]) -> 
     return _openai_style(client, settings.OPENAI_MODEL, messages, _tools_var.get())
 
 
+def _openai_create(client, **kwargs) -> tuple[str, list]:
+    """V8.13: uma chamada no formato da OpenAI. Com o canal de streaming ativo, pede em pedaços (stream=True) e
+    manda cada pedaço para o chat; as chamadas de Skills chegam em pedaços também e são remontadas aqui.
+    Devolve (texto, chamadas de função)."""
+    sink = llm_stream.current()
+    if sink is None:
+        response = _with_temperature(client.chat.completions.create, **kwargs)
+        msg = response.choices[0].message
+        return (msg.content or ""), list(getattr(msg, "tool_calls", None) or [])
+    from types import SimpleNamespace
+
+    sink.begin()
+    stream = _with_temperature(client.chat.completions.create, stream=True, **kwargs)
+    parts: list[str] = []
+    calls: dict[int, dict] = {}
+    for chunk in stream:
+        choices = getattr(chunk, "choices", None) or []
+        delta = getattr(choices[0], "delta", None) if choices else None
+        if delta is None:
+            continue
+        piece = getattr(delta, "content", None)
+        if piece:
+            parts.append(piece)
+            sink.delta(piece)
+        for tc in getattr(delta, "tool_calls", None) or []:
+            slot = calls.setdefault(getattr(tc, "index", 0) or 0, {"id": "", "name": "", "arguments": ""})
+            if getattr(tc, "id", None):
+                slot["id"] = tc.id
+            fn = getattr(tc, "function", None)
+            if fn is not None:
+                slot["name"] += getattr(fn, "name", None) or ""
+                slot["arguments"] += getattr(fn, "arguments", None) or ""
+    tool_calls = [SimpleNamespace(id=slot["id"] or f"call_{i}",
+                                  function=SimpleNamespace(name=slot["name"], arguments=slot["arguments"] or "{}"))
+                  for i, slot in sorted(calls.items()) if slot["name"]]
+    return "".join(parts), tool_calls
+
+
 def _openai_style(client, model: str, messages: list[dict], ts: Optional[_ToolSession]) -> str:
-    """V8.11: conversa no formato da OpenAI (OpenAI e Groq), com as Skills como funções quando houver."""
+    """V8.11: conversa no formato da OpenAI (OpenAI e Groq), com as Skills como funções quando houver.
+    V8.13: em streaming quando o chat está esperando (_openai_create)."""
     if ts is None or not ts.skills:
-        response = _with_temperature(client.chat.completions.create, model=model, max_tokens=_max_tokens(), messages=messages)
-        return (response.choices[0].message.content or "").strip()
+        text, _ = _openai_create(client, model=model, max_tokens=_max_tokens(), messages=messages)
+        return text.strip()
     import json
 
     from core.skills.llm_adapters import to_openai
 
     try:
-        response = _with_temperature(client.chat.completions.create, model=model, max_tokens=_max_tokens(), messages=messages,
-                                                  tools=to_openai(ts.skills), tool_choice="auto")
+        content, calls = _openai_create(client, model=model, max_tokens=_max_tokens(), messages=messages,
+                                        tools=to_openai(ts.skills), tool_choice="auto")
     except Exception as exc:  # noqa: BLE001 - modelo sem suporte a funções: responde sem elas
         if is_quota_error(exc) or _is_timeout(exc):
             raise
         log.warning("IA recusou as funções (%s); respondendo sem elas.", str(exc)[:160])
         plain = [m if m.get("role") != "system" else {"role": "system", "content": SYSTEM_PROMPT} for m in messages]
-        response = _with_temperature(client.chat.completions.create, model=model, max_tokens=_max_tokens(), messages=plain)
-        return (response.choices[0].message.content or "").strip()
-    msg = response.choices[0].message
-    calls = list(getattr(msg, "tool_calls", None) or [])[:MAX_TOOL_CALLS]
+        text, _ = _openai_create(client, model=model, max_tokens=_max_tokens(), messages=plain)
+        return text.strip()
+    calls = calls[:MAX_TOOL_CALLS]
     if not calls:
-        return (msg.content or "").strip()
+        return content.strip()
     results = []
     for call in calls:
         try:
@@ -316,14 +355,14 @@ def _openai_style(client, model: str, messages: list[dict], ts: Optional[_ToolSe
     spoken = _spoken(results)
     if spoken:
         return spoken
-    follow = [*messages, {"role": "assistant", "content": msg.content or "", "tool_calls": [
+    follow = [*messages, {"role": "assistant", "content": content or "", "tool_calls": [
         {"id": c.id, "type": "function", "function": {"name": c.function.name, "arguments": c.function.arguments}}
         for c in calls]}]
     follow += [{"role": "tool", "tool_call_id": c.id, "content": json.dumps(_tool_payload(r), ensure_ascii=False)}
                for c, r in zip(calls, results)]
     try:
-        response = _with_temperature(client.chat.completions.create, model=model, max_tokens=_max_tokens(), messages=follow)
-        return (response.choices[0].message.content or "").strip() or _after_skills(results)
+        text, _ = _openai_create(client, model=model, max_tokens=_max_tokens(), messages=follow)
+        return text.strip() or _after_skills(results)
     except Exception:  # noqa: BLE001 - a ação já rodou: não pode falhar (nem repetir em outra IA)
         log.exception("A IA não montou a frase depois das Skills")
         return _after_skills(results)
@@ -348,6 +387,43 @@ def ask_web(prompt: str, max_tokens: int | None = None) -> tuple[str, list[dict]
 def get_last_grounding_data() -> dict:
     """Retorna os metadados e fontes da última pesquisa realizada via Google Search Grounding."""
     return dict(_last_grounding_data)
+
+
+def _gemini_generate(client, **kwargs):
+    """V8.13: uma chamada ao Gemini. Com o canal de streaming ativo, usa generate_content_stream, manda cada
+    pedaço de texto para o chat e remonta uma resposta com o mesmo formato da chamada comum (partes, chamadas
+    de Skills e fontes do Google), para o resto do _call_gemini seguir igual."""
+    sink = llm_stream.current()
+    if sink is None:
+        return client.models.generate_content(**kwargs)
+    from types import SimpleNamespace
+
+    from google.genai import types
+
+    sink.begin()
+    parts: list = []
+    calls: list = []
+    grounding_meta = None
+    for chunk in client.models.generate_content_stream(**kwargs):
+        cands = getattr(chunk, "candidates", None) or []
+        if not cands:
+            continue
+        cand = cands[0]
+        if getattr(cand, "grounding_metadata", None):
+            grounding_meta = cand.grounding_metadata
+        content = getattr(cand, "content", None)
+        for part in (getattr(content, "parts", None) or []) if content else []:
+            parts.append(part)
+            if getattr(part, "function_call", None):
+                calls.append(part.function_call)
+            elif getattr(part, "text", None) and not getattr(part, "thought", False):
+                sink.delta(part.text)
+    text = "".join(p.text for p in parts if getattr(p, "text", None) and not getattr(p, "thought", False))
+    if not parts and grounding_meta is None:
+        return SimpleNamespace(candidates=[], function_calls=None, text="")
+    merged = types.Content(role="model", parts=parts) if parts else None
+    return SimpleNamespace(candidates=[SimpleNamespace(content=merged, grounding_metadata=grounding_meta)],
+                           function_calls=calls or None, text=text)
 
 
 def _call_gemini(prompt: str, frame_b64: Optional[str], history: list[dict], deep: bool = False) -> str:
@@ -418,7 +494,7 @@ def _call_gemini(prompt: str, frame_b64: Optional[str], history: list[dict], dee
     last_exc = None
     for target_model in models_to_try:
         try:
-            response = client.models.generate_content(
+            response = _gemini_generate(client,
                 model=target_model,
                 contents=contents,
                 config=types.GenerateContentConfig(
@@ -441,7 +517,7 @@ def _call_gemini(prompt: str, frame_b64: Optional[str], history: list[dict], dee
                 continue
             log.warning("Modelo %s com ferramentas falhou (%s). Tentando sem ferramentas...", target_model, exc)
             try:
-                response = client.models.generate_content(
+                response = _gemini_generate(client,
                     model=target_model,
                     contents=contents,
                     config=types.GenerateContentConfig(
@@ -475,7 +551,7 @@ def _call_gemini(prompt: str, frame_b64: Optional[str], history: list[dict], dee
             types.Part.from_function_response(name=fc.name, response=_tool_payload(r)) for fc, r in zip(calls, results)
         ]))
         try:
-            response = client.models.generate_content(
+            response = _gemini_generate(client,
                 model=target_model, contents=follow,
                 config=types.GenerateContentConfig(system_instruction=SYSTEM_PROMPT, max_output_tokens=max_tokens,
                                                    thinking_config=thinking_cfg, temperature=_temperature()),
@@ -545,14 +621,32 @@ def _call_anthropic(prompt: str, frame_b64: Optional[str], history: list[dict]) 
         })
     content.append({"type": "text", "text": prompt})
 
-    response = _with_temperature(
-        client.messages.create,
-        model=settings.ANTHROPIC_MODEL,
-        max_tokens=_max_tokens(),
-        system=SYSTEM_PROMPT,
-        messages=[*history, {"role": "user", "content": content}],
-    )
+    kwargs = dict(model=settings.ANTHROPIC_MODEL, max_tokens=_max_tokens(), system=SYSTEM_PROMPT,
+                  messages=[*history, {"role": "user", "content": content}])
+    sink = llm_stream.current()
+    if sink is not None:  # V8.13: em pedaços para o chat
+        return _anthropic_stream(client, sink, kwargs)
+    response = _with_temperature(client.messages.create, **kwargs)
     return "".join(block.text for block in response.content if block.type == "text").strip()
+
+
+def _anthropic_stream(client, sink, kwargs: dict) -> str:
+    """V8.13: Claude em streaming. O erro de "temperatura não aceita" só aparece ao abrir o stream: tenta de novo
+    sem ela (como o _with_temperature faz nas chamadas comuns)."""
+    for attempt in ({"temperature": _temperature()}, {}):
+        sink.begin()
+        parts: list[str] = []
+        try:
+            with client.messages.stream(**attempt, **kwargs) as stream:
+                for piece in stream.text_stream:
+                    parts.append(piece)
+                    sink.delta(piece)
+            return "".join(parts).strip()
+        except Exception as exc:  # noqa: BLE001
+            if not attempt or parts or "temperature" not in str(exc).lower() or is_quota_error(exc) or _is_timeout(exc):
+                raise
+            log.info("O modelo não aceita temperatura; seguindo sem ela.")
+    return ""
 
 
 def _call_groq(prompt: str, frame_b64: Optional[str], history: list[dict]) -> str:
@@ -730,8 +824,12 @@ async def generate_jarvis_response(
     routine: bool = False,
     deep: bool = False,
     web: bool = False,
+    on_stream: Optional[Callable[[dict], None]] = None,
 ) -> str:
     """Executa o pipeline e devolve o texto do JARVIS.
+
+    - on_stream (V8.13): recebe os pedaços da resposta enquanto a IA escreve ({"type": "response_stream", ...});
+      é chamado no laço principal (pode criar tarefas). Sem ele, a IA responde de uma vez, como antes.
 
     - web=True (modo automático, como a Alexa): a IA pesquisa no Google antes de responder, sem gastar
       a cota da pesquisa profunda.
@@ -784,12 +882,20 @@ async def generate_jarvis_response(
     ts = _tool_session(user_text, routine=routine, deep=deep or web, frame=frame is not None)
     token = _tools_var.set(ts)
     _skill_cards_var.set([])
+    sink = llm_stream.StreamSink(asyncio.get_running_loop(), on_stream) if on_stream and not routine else None
+    stream_token = llm_stream.use(sink)
+
+    def run_llm() -> str:
+        if sink is not None:
+            sink.claim()  # esta thread é a dona do canal (Skills em outras threads não aparecem no chat)
+        return _call_llm(prompt, frame, history, deep or web)
+
     await notify("llm", "active")
     try:
         budget = max(1.0, float(getattr(settings, "LLM_TURN_BUDGET_S", 50) or 50))
         # V8.11: o turno inteiro tem um teto (somando as reservas do modo automático). A thread que ficou
         # esperando a IA termina sozinha depois; o JARVIS já fica livre para o próximo pedido.
-        text = await asyncio.wait_for(asyncio.to_thread(_call_llm, prompt, frame, history, deep or web), timeout=budget)
+        text = await asyncio.wait_for(asyncio.to_thread(run_llm), timeout=budget)
     except asyncio.TimeoutError as exc:
         await notify("llm", "error")
         log.warning("A IA passou de %.0f s sem responder; turno liberado.", budget)
@@ -799,6 +905,9 @@ async def generate_jarvis_response(
         raise
     finally:
         _tools_var.reset(token)
+        llm_stream.reset(stream_token)
+        if sink is not None:
+            sink.close()  # a thread que estourou o prazo não mexe mais na tela
     await notify("llm", "done")
     if ts is not None and ts.cards:
         _skill_cards_var.set(list(ts.cards))

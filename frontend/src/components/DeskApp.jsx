@@ -8,6 +8,7 @@ import { IS_DESKTOP_APP } from "../utils/device.js";
 import { checkForUpdate, saveUpdateResult } from "../utils/updateCheck.js";
 import { APP_VERSION } from "../utils/version.js";
 import { watchNewBuild } from "../utils/newBuild.js";
+import { copyText } from "../utils/copyText.js";
 import { useLiteMode } from "../utils/lite.js";
 import { useGroqVoice } from "../utils/voiceRecord.js";
 import { startPacman, usePoke } from "../utils/poke.js";
@@ -51,11 +52,22 @@ function Card({ title, icon, right, children, className = "" }) {
   );
 }
 
-function ChatBox({ log, send, busy, thinking = false, onMic, listening, interim, compact = false }) {
+// V8.13: 📋 copia a resposta
+function CopyMsg({ text }) {
+  const [done, setDone] = useState(false);
+  return (
+    <button type="button" className="dk-copy" title={done ? "Copiado" : "Copiar a resposta"} aria-label={done ? "Copiado" : "Copiar a resposta"}
+      onClick={async () => { if (await copyText(text)) { setDone(true); setTimeout(() => setDone(false), 1500); } }}>
+      {done ? "✓" : "📋"}
+    </button>
+  );
+}
+
+function ChatBox({ log, send, thinking = false, streamText = "", onStop = null, speaking = false, onMic, listening, interim, compact = false }) {
   const [text, setText] = useState("");
   const endRef = useRef(null);
   const msgs = log.filter((m) => m.role === "user" || m.role === "jarvis" || m.role === "error").slice(compact ? -6 : -60);
-  useEffect(() => { endRef.current?.scrollIntoView({ block: "end" }); }, [msgs.length, thinking]);
+  useEffect(() => { endRef.current?.scrollIntoView({ block: "end" }); }, [msgs.length, thinking, streamText]);
   const submit = (e) => {
     e.preventDefault();
     const t = text.trim();
@@ -63,25 +75,42 @@ function ChatBox({ log, send, busy, thinking = false, onMic, listening, interim,
     send(t);
     setText("");
   };
+  // V8.13: ↑ com o campo vazio traz a sua última mensagem (para corrigir e mandar de novo)
+  const onKeyDown = (e) => {
+    if (e.key !== "ArrowUp" || text) return;
+    const last = [...msgs].reverse().find((m) => m.role === "user");
+    if (last) {
+      e.preventDefault();
+      setText(last.text);
+    }
+  };
   return (
     <div className={`dk-chat${compact ? " is-compact" : ""}`}>
       <div className="dk-msgs" aria-live="polite">
         {msgs.length === 0 && <p className="dk-muted">Nenhuma conversa ainda. Escreva abaixo ou toque no microfone.</p>}
         {msgs.map((m) => (
-          <p key={m.id} className={`dk-msg is-${m.role}`}>{m.text}</p>
+          <p key={m.id} className={`dk-msg is-${m.role}`}>
+            {m.text}
+            {m.role === "jarvis" && m.text && <CopyMsg text={m.text} />}
+          </p>
         ))}
         {listening && <p className="dk-msg is-user is-live">{interim || "Ouvindo…"}</p>}
-        {/* V8.12.4: retorno na hora enquanto a IA pensa (antes a conversa ficava parada até a resposta chegar) */}
-        {thinking && !listening && (
+        {/* V8.13: a resposta aparece enquanto a IA escreve; antes disso, os três pontinhos */}
+        {streamText && !listening ? (
+          <p className="dk-msg is-jarvis is-streaming" aria-live="off">{streamText}<span className="dk-caret" aria-hidden="true" /></p>
+        ) : thinking && !listening && (
           <p className="dk-msg is-jarvis is-typing" role="status" aria-label="O JARVIS está pensando">
             <span /><span /><span />
           </p>
+        )}
+        {onStop && (thinking || speaking || streamText) && (
+          <button type="button" className="dk-stop" onClick={onStop} title="Parar a resposta e a fala">■ PARAR</button>
         )}
         <div ref={endRef} />
       </div>
       {IS_DESKTOP_APP && <p className="dk-muted dk-hint">🎙 Toque no microfone e fale (a Groq entende), diga "Jarvis, …" ou escreva aqui.</p>}
       <form className="dk-input" onSubmit={submit}>
-        <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Escreva ou fale com o JARVIS…" aria-label="Mensagem para o JARVIS" disabled={busy && false} />
+        <input value={text} onChange={(e) => setText(e.target.value)} onKeyDown={onKeyDown} placeholder="Escreva ou fale com o JARVIS… (↑ repete a última)" aria-label="Mensagem para o JARVIS" />
         <button type="submit" className="dk-icon-btn" disabled={!text.trim()} aria-label="Enviar">➤</button>
         <button type="button" className={`dk-mic${listening ? " is-on" : ""}`} onClick={onMic} aria-label={listening ? "Parar de ouvir" : "Falar"}>🎙</button>
       </form>
@@ -117,7 +146,7 @@ function Home({ api, ctx, avatar, tema, setSection }) {
       </Card>
       <div className="dk-home-grid">
         <Card title="Conversa" icon="💬" className="dk-span2">
-          <ChatBox log={ctx.log} send={ctx.send} thinking={ctx.orbState === "processing"} onMic={ctx.onToggleMic} listening={ctx.listening} interim={ctx.interim} compact />
+          <ChatBox log={ctx.log} send={ctx.send} thinking={ctx.orbState === "processing"} streamText={ctx.streamText} onStop={ctx.onStop} speaking={ctx.orbState === "speaking"} onMic={ctx.onToggleMic} listening={ctx.listening} interim={ctx.interim} compact />
         </Card>
         <Card title="Missões de hoje" icon="🎯" right={ctx.missions && <span className="dk-pill">🔥 {ctx.missions.ofensiva.atual}</span>} className="dk-span2">
           <MissionList api={api} data={ctx.missions} onChange={ctx.setMissions} compact />
@@ -866,7 +895,7 @@ function LinkCard({ title, icon, text, actions }) {
 // ------------------------------------------------------------------ app
 export default function DeskApp(props) {
   const { api, aiName = "JARVIS", userName = "", jarvisState = "idle", listening = false, interim = "", userText, response, responseCards, error,
-    send, onToggleMic, onClassic, onLock, onOpenSettings, onOpenQr, onRename, updateInfo = null, onUpdate = null, embedded = false } = props;
+    send, streamText = "", onStop = null, onToggleMic, onClassic, onLock, onOpenSettings, onOpenQr, onRename, updateInfo = null, onUpdate = null, embedded = false } = props;
   const [section, setSection] = useState(() => {
     try {
       return localStorage.getItem("jarvis.desk.section") || "inicio";
@@ -957,7 +986,7 @@ export default function DeskApp(props) {
   const accent = cfg?.cor || "#22d3ee";
   const style = useMemo(() => ({ "--dk-accent": accent, "--dk-accent-rgb": hexToRgb(accent), "--dk-on-accent": isLight(accent) ? "#06121f" : "#fff" }), [accent]);
   const orbState = hearing ? "listening" : groqVoice.busy ? "processing" : jarvisState;
-  const ctx = { log, send, onToggleMic: mic, listening: hearing, interim: heard, userName, aiName, orbState, level, missions, setMissions: onMissions, updateInfo };
+  const ctx = { log, send, streamText, onStop, onToggleMic: mic, listening: hearing, interim: heard, userName, aiName, orbState, level, missions, setMissions: onMissions, updateInfo };
   const go = (id) => {
     setSection(id);
     setMenu(false);
@@ -967,7 +996,7 @@ export default function DeskApp(props) {
 
   let body;
   switch (section) {
-    case "conversa": body = <Card title="Conversa" icon="💬" className="dk-full"><ChatBox log={log} send={send} thinking={orbState === "processing"} onMic={mic} listening={hearing} interim={heard} /></Card>; break;
+    case "conversa": body = <Card title="Conversa" icon="💬" className="dk-full"><ChatBox log={log} send={send} thinking={orbState === "processing"} streamText={streamText} onStop={onStop} speaking={orbState === "speaking"} onMic={mic} listening={hearing} interim={heard} /></Card>; break;
     case "memoria": body = <Suspense fallback={<Card title="Memória" icon="✳"><p className="dk-muted">Carregando…</p></Card>}><MemoryMap api={api} accent={accent} /></Suspense>; break;
     case "tarefas": body = <Tasks api={api} />; break;
     case "lembretes": body = <Reminders api={api} />; break;

@@ -2,6 +2,43 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 8.13.1 — 23 de novembro de 2026
+
+**🔒 Bloqueio mais rápido**
+- O botão BLOQUEAR e o "Jarvis, bloquear" trocam a tela na hora.
+  - Antes, a central esperava o PC responder antes de mostrar o bloqueio, e pelo site isso era uma ida e volta inteira na rede.
+- No "Jarvis, bloquear", o "Até logo, senhor" não é mais cortado no meio.
+- Bloqueio por ausência:
+  - novas opções de 1 e 2 minutos sem uso (antes, o mínimo era 5 minutos);
+  - o aviso "Bloqueando em…" caiu de 30 para 10 segundos (mexer o mouse ainda cancela);
+  - a central confere a ausência a cada 2 segundos (antes, a cada 5).
+
+## 8.13.0 — 23 de novembro de 2026
+
+**⚡ A resposta aparece enquanto a IA escreve**
+- No chat da central e do Modo Desk, o texto aparece aos poucos, assim que a IA começa a responder. Vale para Groq, Gemini, OpenAI e Claude.
+  - Antes, o chat ficava em "pensando…" até a IA terminar tudo.
+- Na central, a resposta não é mais "digitada" de novo no final.
+  - Antes eram 22 ms por letra: quase 7 segundos numa resposta longa.
+- O "só um minutinho" falado para assim que o primeiro pedaço da resposta chega.
+
+**🧰 Chat mais prático**
+- ■ PARAR aparece enquanto o JARVIS pensa ou fala, e corta a resposta e a voz. O Esc continua valendo.
+- 📋 em cada resposta copia o texto.
+- No Modo Desk, a seta ↑ com o campo vazio traz de volta a sua última mensagem, para corrigir e mandar de novo.
+
+**🎸 Botão VOZ e Back in Black**
+- Botão VOZ no topo da central, ao lado do ÁUDIO: troca a voz do JARVIS (Natural, Grave, Clássica, Thalita ou Andrew) e já fala um exemplo.
+- Ao abrir o painel, toca Back in Black, do AC/DC, a música do Homem de Ferro, pelo seu Spotify. Tem ▶ TOCAR e ⏸ PAUSAR.
+- A mesma música toca quando você entra na central (dá para desligar no próprio painel).
+- Também por voz: "toca a música do Homem de Ferro", "toca Back in Black" ou "modo Homem de Ferro".
+- A música não vem dentro do JARVIS: ela é buscada na sua conta do Spotify, que precisa estar conectada.
+
+**🗓️ Calculadora de datas e 🎲 sorteios (novas habilidades)**
+- "Que dia vai ser daqui a 45 dias?", "quantos dias se passaram desde 10 de março?", "que dia da semana cai o Natal?" e "quantos dias entre 10/03 e 25/12?". Entende Páscoa, Carnaval e outros feriados.
+- "Cara ou coroa", "joga dois dados", "sorteia um número de 1 a 100" e "escolhe entre pizza, hambúrguer ou sushi".
+- Tudo na hora, sem IA, e funciona até com a central bloqueada.
+
 ## 8.12.5 — 23 de novembro de 2026
 
 **🎯 XP e missões do dia também na central**

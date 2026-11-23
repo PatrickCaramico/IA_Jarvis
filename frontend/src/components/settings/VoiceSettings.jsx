@@ -1,15 +1,9 @@
 import { useState } from "react";
 import { Note, Section, Toggle } from "./SettingsControls.jsx";
+import { VOICE_SAMPLE, VOICE_STYLES as STYLES } from "../../utils/voiceStyles.js";
 
 // V6.1: estilo da voz do JARVIS (aba Mídia & Foco). Tocar num estilo salva e já fala um exemplo.
-const STYLES = [
-  ["natural", "Natural", "Antonio um pouco mais grave e calmo, como um mordomo (padrão)."],
-  ["grave", "Grave", "Mais grave e pausado."],
-  ["classica", "Clássica", "Como era antes."],
-  ["thalita", "Thalita", "Voz feminina, natural."],
-  ["andrew", "Andrew", "Multilíngue e muito natural, com um leve sotaque."],
-];
-
+// V8.13: a lista mora em utils/voiceStyles.js (o botão VOZ do topo usa a mesma).
 export default function VoiceSettings({ prefs, onPatch, api }) {
   const current = prefs.voice_style || "natural";
   const [busy, setBusy] = useState("");
@@ -20,7 +14,7 @@ export default function VoiceSettings({ prefs, onPatch, api }) {
       // salva primeiro (no PC) e só depois fala o exemplo, já com a voz nova
       await api("/api/prefs", { method: "PATCH", body: JSON.stringify({ voice_style: key }) });
       onPatch({ voice_style: key });
-      await api("/api/speak", { method: "POST", body: JSON.stringify({ text: "Olá, senhor. Assim fica a minha voz. Em que posso ajudar?" }) });
+      await api("/api/speak", { method: "POST", body: JSON.stringify({ text: VOICE_SAMPLE }) });
     } catch {
       /* a mensagem de erro aparece no salvar */
     } finally {

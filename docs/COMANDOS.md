@@ -1,6 +1,6 @@
 # JARVIS — Comandos do dia a dia
 
-**Versão do projeto:** 8.12.5 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
+**Versão do projeto:** 8.13.1 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
 
 > Montado a partir do código do projeto. Se algum comando não responder como descrito, me avise que eu ajusto o guia.
 > Para a lista técnica de rotas, veja [API.md](API.md); para o `.env`, [CONFIGURACAO.md](CONFIGURACAO.md).
@@ -291,7 +291,7 @@ ouvindo a palavra de ativação mesmo bloqueado.
 - **PIN:** se o rosto falhar, use o teclado na tela. 5 erros travam por 5 minutos.
 - **Esqueci o PIN (V5.1):** no teclado do PIN, "Esqueci o PIN" lê o seu rosto e, se for você, pede o PIN novo duas vezes. Também em Configurações > Bloqueio > ESQUECI O PIN. Sem câmera, rode o `Redefinir-PIN.bat` (apaga o PIN do dono, com cópia em `data\lock_pin.antigo.json`).
 - **Modo visitante** (se ligado em Configurações > Bloqueio): relógio, clima, música e perguntas públicas, sem acesso a nada pessoal. Sair exige rosto ou PIN.
-- **Bloqueio por ausência:** depois do tempo escolhido sem uso, avisa "Bloqueando em 30 s" e bloqueia (mexa o mouse para cancelar).
+- **Bloqueio por ausência:** depois do tempo escolhido sem uso (1, 2, 5, 10, 15 ou 30 minutos), avisa "Bloqueando em 10 s" e bloqueia (mexa o mouse para cancelar). O botão BLOQUEAR e o "Jarvis, bloquear" trocam a tela na hora (V8.13.1).
 
 ### Automação (4.2)
 
@@ -617,6 +617,11 @@ Para a varredura completa (temporários, lixeira, inicialização), continue usa
 |---|---|
 | "Quanto é 5 milhas em km" / "converte 350 Fahrenheit para Celsius" / "2 xícaras em ml" / "1,5 GB em MB" / "100 km/h em mph" | Conversão na hora, sem internet e sem IA (vale com a central bloqueada): comprimento, peso, volume de cozinha, temperatura, velocidade e dados. |
 | "Gera uma senha forte" / "cria uma senha de 16 caracteres" | Copia uma senha aleatória (maiúsculas, minúsculas, números e símbolos, sem O/0/I/l/1) para a área de transferência do PC. A senha nunca é falada nem mostrada. |
+| "Que dia vai ser daqui a 45 dias?" / "que dia foi há 10 dias?" / "daqui a 2 meses" (V8.13) | Calculadora de datas, na hora e sem IA: diz o dia da semana e a data. |
+| "Quantos dias se passaram desde 10 de março?" / "há quantos dias foi o carnaval?" (V8.13) | Dias (e semanas) desde a data. Entende 10/03, 10/03/2025, "10 de março de 2025", hoje, ontem, amanhã, Natal, Páscoa, Carnaval e outros feriados. "Quanto falta para…" continua com a contagem regressiva. |
+| "Que dia da semana cai o Natal?" / "7 de setembro de 2022 foi em que dia da semana?" / "quantos dias entre 10/03 e 25/12?" (V8.13) | Dia da semana de uma data e dias entre duas datas. |
+| "Cara ou coroa" / "joga dois dados" / "joga um dado de 20 lados" / "sorteia um número de 1 a 100" / "escolhe entre pizza, hambúrguer ou sushi" (V8.13) | Sorteio de verdade, na hora. |
+| "Toca a música do Homem de Ferro" / "toca Back in Black" / "modo Homem de Ferro" (V8.13) | Toca a música de entrada (padrão: Back in Black, do AC/DC) no seu Spotify. Ela também toca ao entrar na central e ao abrir o botão **VOZ** do topo (desligável no próprio botão). Precisa do Spotify conectado. |
 | "Quais são suas habilidades?" | Diz o que está ligado e abre a aba **⚡ HABILIDADES** da Central de Agentes. |
 
 **Aba ⚡ HABILIDADES (Central de Agentes)**: todas as skills por grupo, com o nível de permissão (LEITURA, AÇÃO, CRÍTICA), liga/desliga, quantas vezes foram usadas, falhas e tempo, e os exemplos: um toque manda a frase para o JARVIS. Também abre pelo botão da Central de Agentes.

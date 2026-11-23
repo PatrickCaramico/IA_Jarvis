@@ -665,6 +665,12 @@ async def _handle_turn(message: str, routine: bool, force_deep: bool = False) ->
     started_ai = time.monotonic()
 
     try:
+        def on_stream(event: dict) -> None:
+            # V8.13: o texto aparece no chat enquanto a IA escreve; o primeiro pedaço já cala o "só um minutinho"
+            stop.set()
+            if not speech.canceled(turn):
+                runtime.track(runtime.manager.broadcast(event))
+
         text = await generate_jarvis_response(
             message,
             on_step,
@@ -672,6 +678,7 @@ async def _handle_turn(message: str, routine: bool, force_deep: bool = False) ->
             routine=routine,
             deep=force_deep,
             web=web_search,
+            on_stream=on_stream,
         )
     except Exception as exc:  # noqa: BLE001
         stop.set()

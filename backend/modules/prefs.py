@@ -58,11 +58,13 @@ _DEFAULTS: dict[str, Any] = {
     "calendar_ics_url": "",               # V5.6: endereço secreto iCal do Google Agenda (alternativa ao OAuth)
     "countdowns": [],                     # V5.6: contagens regressivas na tela [{id, title, target, all_day}]                 # V5.4: briefing/pergunta do dia já feitos (vale para todos os aparelhos)
     "lock_cards": ["clock", "weather", "spotify"],   # cartões visíveis na tela de bloqueio
-    "lock_auto_relock_minutes": 0,        # 0 (desligado), 5, 10, 15 ou 30
+    "lock_auto_relock_minutes": 0,        # 0 (desligado), 1, 2 (V8.13.1), 5, 10, 15 ou 30
     "lock_presence_check": False,         # checagem rápida de rosto antes de bloquear
     "lock_save_failed_photo": False,      # miniatura de rosto não reconhecido (data/intruders)
     "lock_intro_sound": "default",        # "default" | "custom" | "off"
     "lock_intro_playlist_uri": "",        # playlist do Spotify após a saudação
+    "intro_song": "Back in Black AC/DC",  # V8.13: música de entrada (busca no Spotify do usuário; nada embutido)
+    "intro_song_on_entry": True,          # V8.13: toca a música de entrada ao entrar na central (sem playlist)
     "fan_intro_playlist_uri": "",         # playlist própria com o Modo Torcedor ativo
     "lock_backend_enforce": True,         # bloqueio real: rotas pessoais respondem 403 bloqueado
     "lock_guest_enabled": False,          # botão "Modo visitante" na tela de bloqueio
@@ -133,6 +135,7 @@ def validate_patch(patch: dict[str, Any]) -> Optional[str]:
         "sentinel_night_dim", "water_sound", "water_pace_hint", "screen_assist_enabled",
         "routine_suggestions_enabled", "notifications_enabled", "notifications_read_content",
         "always_on", "keep_awake",  # V8.12.3
+        "intro_song_on_entry",  # V8.13
     )
     for key in bools:
         if key in patch and not isinstance(patch[key], bool):
@@ -154,8 +157,9 @@ def validate_patch(patch: dict[str, Any]) -> Optional[str]:
         patch["lock_cards"] = list(dict.fromkeys(v))
     if "lock_auto_relock_minutes" in patch:
         v = patch["lock_auto_relock_minutes"]
-        if isinstance(v, bool) or v not in {0, 5, 10, 15, 30}:
-            return "lock_auto_relock_minutes deve ser 0, 5, 10, 15 ou 30."
+        # V8.13.1: 1 e 2 minutos para bloquear mais rápido quando você sai de perto
+        if isinstance(v, bool) or v not in {0, 1, 2, 5, 10, 15, 30}:
+            return "lock_auto_relock_minutes deve ser 0, 1, 2, 5, 10, 15 ou 30."
     if "lock_intro_sound" in patch and patch["lock_intro_sound"] not in {"default", "custom", "off"}:
         return "lock_intro_sound inválido. Use 'default', 'custom' ou 'off'."
     for key in ("lock_intro_playlist_uri", "fan_intro_playlist_uri"):
@@ -187,6 +191,11 @@ def validate_patch(patch: dict[str, Any]) -> Optional[str]:
         err = protocols.validate(patch["protocols"])
         if err:
             return err
+    if "intro_song" in patch:  # V8.13: o nome da música (busca no Spotify)
+        v = patch["intro_song"]
+        if not isinstance(v, str) or len(v.strip()) > 120:
+            return "intro_song deve ser o nome curto de uma música."
+        patch["intro_song"] = v.strip()
     if "sfx_volume" in patch:
         v = patch["sfx_volume"]
         if isinstance(v, bool) or not isinstance(v, int) or not 0 <= v <= 100:

@@ -116,6 +116,12 @@ class DemoSocket {
         { kind: "app", name: "Celular · SM-A546E", ip: "192.168.1.58", since: 2 },
       ] }), 300);
       setTimeout(() => send({ type: "response", text: "Em Maragogi, 27 graus e sol. Vale levar protetor solar hoje.", cards: [] }), 900);
+      // V8.13: ?stream=1 mostra uma resposta chegando em pedaços (streaming), parada no meio
+      if (q.get("stream") === "1") {
+        const full = "Back in Black saiu em 1980 e virou a trilha do Homem de Ferro em 2008, senhor. O riff de abertura";
+        setTimeout(() => send({ type: "state", state: "processing" }), 1200);
+        full.split(" ").forEach((_, i, words) => setTimeout(() => send({ type: "response_stream", seq: i + 1, text: words.slice(0, i + 1).join(" ") }), 1400 + i * 60));
+      }
     }, 200);
   }
   send(data) {

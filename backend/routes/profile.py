@@ -114,6 +114,8 @@ class PrefsRequest(BaseModel):
     lock_intro_sound: str | None = None
     lock_intro_playlist_uri: str | None = None
     fan_intro_playlist_uri: str | None = None
+    intro_song: str | None = None  # V8.13: música de entrada ("Back in Black AC/DC")
+    intro_song_on_entry: bool | None = None  # V8.13
     lock_backend_enforce: bool | None = None
     lock_guest_enabled: bool | None = None
     # Modo Sentinela
