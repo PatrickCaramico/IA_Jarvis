@@ -627,3 +627,12 @@ html.is-lite .dkl-bg *, html.is-lite .dkl-props *, html.is-lite .dkl-actor, html
 @media (max-width: 1100px) { .dkt-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 760px) { .dkt-grid { grid-template-columns: 1fr; } .dkt-grid > .dk-span2 { grid-column: auto; } }
 @media (prefers-reduced-motion: reduce) { .dkt-bar b { transition: none; } }
+/* V8.13: streaming, copiar e PARAR na Conversa */
+.dk-msg.is-streaming { opacity: 0.95; }
+.dk-caret { display: inline-block; width: 6px; height: 1em; margin-left: 3px; vertical-align: -2px; background: rgba(var(--dk-accent-rgb), 0.9); animation: dk-blink 1s steps(1) infinite; }
+@keyframes dk-blink { 50% { opacity: 0; } }
+.dk-copy { margin-left: 8px; padding: 0 4px; border: 0; background: none; font-size: 0.8rem; opacity: 0.45; cursor: pointer; vertical-align: middle; }
+.dk-copy:hover, .dk-copy:focus-visible { opacity: 1; }
+.dk-stop { align-self: flex-start; padding: 4px 12px; border-radius: 999px; border: 1px solid rgba(244, 63, 94, 0.55); background: rgba(244, 63, 94, 0.12); color: #fecdd3; font-size: 0.75rem; font-weight: 600; cursor: pointer; }
+.dk-stop:hover { background: rgba(244, 63, 94, 0.25); }
+@media (prefers-reduced-motion: reduce) { .dk-caret { animation: none; } }

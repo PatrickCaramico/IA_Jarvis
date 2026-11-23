@@ -63,6 +63,8 @@ _DEFAULTS: dict[str, Any] = {
     "lock_save_failed_photo": False,      # miniatura de rosto não reconhecido (data/intruders)
     "lock_intro_sound": "default",        # "default" | "custom" | "off"
     "lock_intro_playlist_uri": "",        # playlist do Spotify após a saudação
+    "intro_song": "Back in Black AC/DC",  # V8.13: música de entrada (busca no Spotify do usuário; nada embutido)
+    "intro_song_on_entry": True,          # V8.13: toca a música de entrada ao entrar na central (sem playlist)
     "fan_intro_playlist_uri": "",         # playlist própria com o Modo Torcedor ativo
     "lock_backend_enforce": True,         # bloqueio real: rotas pessoais respondem 403 bloqueado
     "lock_guest_enabled": False,          # botão "Modo visitante" na tela de bloqueio
@@ -133,6 +135,7 @@ def validate_patch(patch: dict[str, Any]) -> Optional[str]:
         "sentinel_night_dim", "water_sound", "water_pace_hint", "screen_assist_enabled",
         "routine_suggestions_enabled", "notifications_enabled", "notifications_read_content",
         "always_on", "keep_awake",  # V8.12.3
+        "intro_song_on_entry",  # V8.13
     )
     for key in bools:
         if key in patch and not isinstance(patch[key], bool):
@@ -187,6 +190,11 @@ def validate_patch(patch: dict[str, Any]) -> Optional[str]:
         err = protocols.validate(patch["protocols"])
         if err:
             return err
+    if "intro_song" in patch:  # V8.13: o nome da música (busca no Spotify)
+        v = patch["intro_song"]
+        if not isinstance(v, str) or len(v.strip()) > 120:
+            return "intro_song deve ser o nome curto de uma música."
+        patch["intro_song"] = v.strip()
     if "sfx_volume" in patch:
         v = patch["sfx_volume"]
         if isinstance(v, bool) or not isinstance(v, int) or not 0 <= v <= 100:

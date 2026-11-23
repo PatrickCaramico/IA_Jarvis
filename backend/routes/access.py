@@ -536,15 +536,20 @@ class IntroMusicRequest(BaseModel):
     wait_speech: bool = True
 
 
-async def _play_intro_music(uri: str, wait_speech: bool) -> None:
-    """Espera a saudação terminar e inicia a playlist com o volume subindo aos poucos."""
+async def _play_intro_music(uri: str, wait_speech: bool, song: str = "") -> None:
+    """Espera a saudação terminar e inicia a playlist com o volume subindo aos poucos.
+
+    V8.13: sem playlist, toca a música de entrada (song, ex.: "Back in Black AC/DC") buscando no Spotify."""
     if wait_speech:
         await asyncio.sleep(1.0)
         deadline = time.monotonic() + 40
         while (session.speaking or session.busy) and time.monotonic() < deadline:
             await asyncio.sleep(0.5)
     try:
-        await asyncio.to_thread(spotify.play_playlist, uri, True)
+        if uri:
+            await asyncio.to_thread(spotify.play_playlist, uri, True)
+        else:
+            await asyncio.wait_for(asyncio.to_thread(spotify.search_and_play, song, False), timeout=20)
     except Exception as exc:  # noqa: BLE001 - sem Premium, sem dispositivo ativo etc.: ignora em silêncio
         log.info("Música de abertura não iniciada: %s", exc)
         await runtime.manager.broadcast({"type": "notice", "text": "Música de abertura indisponível (Spotify)."})
@@ -561,9 +566,11 @@ async def lock_intro_music(req: Optional[IntroMusicRequest] = None) -> dict:
         or all_prefs.get("lock_intro_playlist_uri")
         or ""
     )
-    if not uri:
+    # V8.13: sem playlist, a música de entrada (padrão: Back in Black, a do Homem de Ferro)
+    song = (all_prefs.get("intro_song") or "").strip() if all_prefs.get("intro_song_on_entry", True) else ""
+    if not uri and not song:
         return {"status": "skipped", "reason": "no_playlist"}
     if not spotify.connected():
         return {"status": "skipped", "reason": "spotify_not_connected"}
-    runtime.track_service(_play_intro_music(uri, (req or IntroMusicRequest()).wait_speech))
-    return {"status": "scheduled"}
+    runtime.track_service(_play_intro_music(uri, (req or IntroMusicRequest()).wait_speech, song))
+    return {"status": "scheduled", "song": "" if uri else song}

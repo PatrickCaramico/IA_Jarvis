@@ -9,6 +9,9 @@ export const GROUPS = {
   deep_brief: { label: "Dossiês", icon: "🔎", order: 4 },
   clipboard_ai: { label: "Área de transferência", icon: "📋", order: 5 },
   dia_a_dia: { label: "Dia a dia", icon: "☀️", order: 6 },
+  datas: { label: "Datas", icon: "🗓️", order: 7 }, // V8.13
+  sorteio: { label: "Sorteios", icon: "🎲", order: 8 }, // V8.13
+  musica_de_entrada: { label: "Música de entrada", icon: "🎸", order: 9 }, // V8.13
   inicializacao: { label: "Inicialização", icon: "🚀", order: 70 },
   microfone: { label: "Microfone", icon: "🎙", order: 65 },
   habilidades: { label: "Central", icon: "⚡", order: 80 },
