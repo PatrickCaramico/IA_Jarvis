@@ -74,13 +74,15 @@ const lockExtras = (path) => (path === "/api/health"
       : path === "/api/lock/public-info"
         ? Promise.resolve({
           rates: [
-            { pair: "USDBRL", code: "USD", bid: 5.583, pctChange: 0.18 },
+            { pair: "USDBRL", code: "USD", bid: 5.583, pctChange: 0.18, high: 5.61, low: 5.54 },
             { pair: "EURBRL", code: "EUR", bid: 6.1806, pctChange: -0.21 },
             { pair: "BTCBRL", code: "BTC", bid: 413502, pctChange: 0.46 },
           ],
           headline: { title: "Governo anuncia novo pacote de investimentos em infraestrutura para 2027", source: "g1", category: "brasil",
             more: [{ title: "Chuvas devem continuar no Sudeste até o fim de semana", source: "CNN Brasil" }, { title: "Inflação desacelera pelo terceiro mês seguido", source: "Valor" }] },
         })
+      : path === "/api/water"
+        ? Promise.resolve({ total_ml: 1250, goal_ml: 2000, percentage: 62, goal_reached: false })
       : path === "/api/integrations/spotify/track"
         ? Promise.resolve(q.get("music") === "1"
           ? { state: "playing", title: "Back in Black", artist: "AC/DC", duration_ms: 255000, progress_ms: 61000 }
@@ -144,7 +146,7 @@ function Demo() {
     lockStyle={q.get("style") === "orbe" ? "orbe" : "classico"}
     hasPin={phoneApp}
     onBiometric={phoneApp && q.get("bio") === "1" ? () => setNote("Digital confirmada (demo).") : null}
-    cards={{ api: fan ? fanApi : baseApi, list: fan ? ["clock", "weather"] : ["clock", "weather", "spotify"], fanModeEnabled: fan }}
+    cards={{ api: fan ? fanApi : baseApi, list: fan ? ["clock", "weather"] : (q.get("cards") ? q.get("cards").split(",") : ["clock", "weather", "spotify"]) /* V9.4.5: ?cards=status,today,water,rates */, fanModeEnabled: fan }}
     mic={sentinelOn ? null : { muted: true, onToggle: () => {} }}
     sentinel={sentinelOn ? {
       enabled: true,

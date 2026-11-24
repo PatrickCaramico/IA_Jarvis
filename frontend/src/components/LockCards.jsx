@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { startPolling } from "../hooks/usePolling.js";
 import useNow from "../hooks/useNow.js";
 import NowPlaying, { useNowPlaying } from "./NowPlaying.jsx";
@@ -21,6 +21,11 @@ export default function LockCards({ api, cards = [], fanModeEnabled = false, hid
   const [info, setInfo] = useState(null);
   // V5.9: cartão tocado -> mini janela com mais detalhes (LockDetail)
   const [detail, setDetail] = useState(null);
+  const originRef = useRef(null); // V9.4.5: de onde a janela de detalhe "expande" (o cartão tocado)
+  const openDetail = (key, el) => {
+    originRef.current = el?.getBoundingClientRect?.() || null;
+    setDetail(key);
+  };
   const want = (key) => cards.includes(key);
 
   const now = useNow(want("clock"));
@@ -144,9 +149,9 @@ export default function LockCards({ api, cards = [], fanModeEnabled = false, hid
       role="button"
       tabIndex={copy ? -1 : 0}
       aria-label={copy ? undefined : `Ver detalhes: ${NAMES[el.key] || el.key}`}
-      onClick={(e) => { e.stopPropagation(); setDetail(el.key); }}
+      onClick={(e) => { e.stopPropagation(); openDetail(el.key, e.currentTarget); }}
       onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); setDetail(el.key); }
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); openDetail(el.key, e.currentTarget); }
       }}
     >
       {el}
@@ -161,17 +166,18 @@ export default function LockCards({ api, cards = [], fanModeEnabled = false, hid
           {all.map((el) => clickable(el, true))}
         </div>
         {detail && (
-          <LockDetail kind={detail} api={api} data={{ health, status, weather, info, water, match }} onClose={() => setDetail(null)} />
+          <LockDetail kind={detail} api={api} data={{ health, status, weather, info, water, match }} origin={originRef.current} onClose={() => setDetail(null)} />
         )}
       </div>
     );
   }
   return (
     <div className="lc-wrap" aria-label="Informações da tela de bloqueio">
-      {left.length > 0 && <div className="lc-row lc-left">{left.map(clickable)}</div>}
-      {right.length > 0 && <div className="lc-row lc-right">{right.map(clickable)}</div>}
+      {/* V9.4.5: map(clickable) passava o índice como "cópia": do 2º cartão em diante sumiam do teclado */}
+      {left.length > 0 && <div className="lc-row lc-left">{left.map((el) => clickable(el))}</div>}
+      {right.length > 0 && <div className="lc-row lc-right">{right.map((el) => clickable(el))}</div>}
       {detail && (
-        <LockDetail kind={detail} api={api} data={{ health, status, weather, info, water, match }} onClose={() => setDetail(null)} />
+        <LockDetail kind={detail} api={api} data={{ health, status, weather, info, water, match }} origin={originRef.current} onClose={() => setDetail(null)} />
       )}
     </div>
   );
