@@ -2,6 +2,17 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 9.4.3 — 25 de novembro de 2026
+
+**🔧 O que o log do PC mostrou, resolvido**
+- **"O que está pesando" e a auto-análise não estouram mais o tempo.** No Windows, ler os programas abertos processo por processo ficava lento ao quadrado.
+  - Para cada processo protegido do sistema, a biblioteca refazia a leitura de todos os outros. Com a memória alta, passava de 12 segundos.
+  - Agora a lista vem do próprio Windows numa leitura só, e o processador é medido só nos 12 programas que mais gastam memória.
+- **Log mais limpo.**
+  - O aviso "ConnectionResetError 10054" era o mais repetido do log, centenas de vezes. Ele aparecia toda vez que a central, o celular ou o navegador fechavam a conexão, e não quebrava nada. Saiu do log.
+  - Os avisos de "Retrying…" de cada nova tentativa de rede também saíram. A falha final continua registrada.
+- **Arquivo preso pelo OneDrive.** Ler os dados (como o cache do Modo Torcedor) dava "Permission denied" enquanto o OneDrive sincronizava. Agora tenta de novo por alguns instantes e, se continuar preso, usa a última versão lida.
+
 ## 9.4.2 — 25 de novembro de 2026
 
 **⬆ O JARVIS se atualiza sozinho e avisa**

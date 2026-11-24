@@ -134,38 +134,106 @@ def startup_count() -> int | None:
     return total
 
 
-def _processes(psutil) -> list[dict]:
-    """Os programas mais pesados, somando as janelas/abas do mesmo programa (ex.: chrome.exe)."""
-    groups: dict[str, dict] = {}
-    procs = list(psutil.process_iter(["name", "memory_info"]))
-    for p in procs:  # 1ª leitura de CPU (a 2ª, depois de uma pausa, dá a porcentagem)
-        try:
-            p.cpu_percent(None)
-        except Exception:  # noqa: BLE001
-            pass
-    time.sleep(0.5)
-    cores = psutil.cpu_count() or 1
-    me = os.getpid()
-    for p in procs:
-        try:
-            name = (p.info.get("name") or "").strip()
-            if not name or p.pid in (0, 4, me):
-                continue
-            mem = p.info["memory_info"].rss if p.info.get("memory_info") else 0
-            cpu = p.cpu_percent(None) / cores
-        except Exception:  # noqa: BLE001 - o programa fechou no meio da leitura
+TASKLIST_TIMEOUT_S = 8
+CPU_TOP_GROUPS = 12  # o processador só é medido nos programas que mais gastam memória
+_K_RE = re.compile(r"\D")
+
+
+def parse_tasklist(text: str) -> list[tuple[str, int, int]]:
+    """Saída do "tasklist /fo csv /nh" -> [(nome, pid, memória em bytes)]. A memória vem como "123.456 K" (o
+    separador de milhar muda com o idioma do Windows: só os dígitos importam)."""
+    import csv
+    import io
+
+    out = []
+    for row in csv.reader(io.StringIO(text)):
+        if len(row) < 5:
             continue
-        g = groups.setdefault(name.lower(), {"name": name, "mem": 0, "cpu": 0.0, "count": 0})
+        try:
+            pid = int(row[1])
+            kb = int(_K_RE.sub("", row[4]) or 0)
+        except ValueError:
+            continue
+        out.append((row[0].strip(), pid, kb * 1024))
+    return out
+
+
+def _tasklist() -> list[tuple[str, int, int]]:
+    import subprocess
+
+    res = subprocess.run(["tasklist", "/fo", "csv", "/nh"], capture_output=True, timeout=TASKLIST_TIMEOUT_S,  # noqa: S603,S607
+                         creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0), check=False)
+    if res.returncode != 0:
+        raise RuntimeError(f"tasklist saiu com {res.returncode}")
+    # o tasklist escreve na página de código do console (cp850 no Windows em português)
+    return parse_tasklist(res.stdout.decode("cp850", errors="replace"))
+
+
+def group(rows: list[tuple[str, int, int]], me: int) -> dict[str, dict]:
+    groups: dict[str, dict] = {}
+    for name, pid, mem in rows:
+        if not name or pid in (0, 4, me):
+            continue
+        g = groups.setdefault(name.lower(), {"name": name, "mem": 0, "cpu": 0.0, "count": 0, "pids": []})
         g["mem"] += mem
-        g["cpu"] += cpu
         g["count"] += 1
-    total_mem = psutil.virtual_memory().total or 1
+        g["pids"].append(pid)
+    return groups
+
+
+def _cpu_for(psutil, groups: list[dict], cores: int, wait: float = 0.5) -> None:
+    """Processador (%) só dos grupos pedidos: duas leituras com uma pausa. Processo sem acesso fica de fora."""
+    procs = []
+    for g in groups:
+        for pid in g["pids"]:
+            try:
+                p = psutil.Process(pid)
+                p.cpu_percent(None)
+                procs.append((g, p))
+            except Exception:  # noqa: BLE001 - fechou ou é protegido
+                continue
+    time.sleep(wait)
+    for g, p in procs:
+        try:
+            g["cpu"] += p.cpu_percent(None) / cores
+        except Exception:  # noqa: BLE001
+            continue
+
+
+def _as_list(groups: dict[str, dict], total_mem: int) -> list[dict]:
     out = []
     for key, g in groups.items():
         out.append({"name": g["name"], "label": friendly(g["name"]), "count": g["count"],
-                    "mem_mb": round(g["mem"] / 1024 ** 2), "mem_percent": round(g["mem"] * 100 / total_mem, 1),
+                    "mem_mb": round(g["mem"] / 1024 ** 2), "mem_percent": round(g["mem"] * 100 / (total_mem or 1), 1),
                     "cpu_percent": round(g["cpu"], 1), "protected": key in PROTECTED})
     return out
+
+
+def _processes(psutil) -> list[dict]:
+    """Os programas mais pesados, somando as janelas/abas do mesmo programa (ex.: chrome.exe).
+
+    V9.4.2: no Windows, a lista vem do "tasklist" numa leitura só. Antes era o psutil processo por processo: para
+    cada processo protegido do sistema (que ele não consegue abrir) o psutil refaz a foto de TODOS os processos,
+    então o custo crescia ao quadrado e, com a memória alta, passava de 12 s (a auto-análise e "o que está pesando"
+    estouravam o prazo). O processador é medido só nos programas que mais gastam memória."""
+    cores = psutil.cpu_count() or 1
+    me = os.getpid()
+    total_mem = psutil.virtual_memory().total or 1
+    if os.name == "nt":
+        try:
+            groups = group(_tasklist(), me)
+            top = sorted(groups.values(), key=lambda g: g["mem"], reverse=True)[:CPU_TOP_GROUPS]
+            _cpu_for(psutil, top, cores)
+            return _as_list(groups, total_mem)
+        except Exception:  # noqa: BLE001 - sem tasklist: o caminho antigo, pelo psutil
+            log.warning("tasklist falhou; lendo os programas pelo psutil", exc_info=True)
+    rows = []
+    for p in psutil.process_iter(["name", "memory_info"]):
+        mi = p.info.get("memory_info")
+        rows.append((p.info.get("name") or "", p.pid, mi.rss if mi else 0))
+    groups = group(rows, me)
+    _cpu_for(psutil, list(groups.values()), cores)
+    return _as_list(groups, total_mem)
 
 
 _FRIENDLY = {"chrome.exe": "Google Chrome", "msedge.exe": "Microsoft Edge", "firefox.exe": "Firefox", "opera.exe": "Opera",

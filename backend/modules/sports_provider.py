@@ -13,7 +13,6 @@ segundo plano e pelas rotas, sempre fora do laço de eventos). As funções de l
 """
 from __future__ import annotations
 
-import json
 import logging
 import re
 import threading
@@ -25,7 +24,6 @@ from typing import Any, Dict, Optional
 from urllib.parse import quote, quote_plus, urlparse
 
 from config import settings
-from core.safe_io import replace_file
 from services import http_client
 
 log = logging.getLogger("jarvis.sports")
@@ -134,9 +132,11 @@ def load_fan_cache() -> Dict[str, Any]:
     if not CACHE_FILE.exists():
         return {}
     try:
-        with open(CACHE_FILE, "r", encoding="utf-8") as f:
-            data = json.load(f)
-            return data if isinstance(data, dict) else {}
+        from core import safe_io
+
+        # V9.4.2: leitura com novas tentativas (o OneDrive prendia o arquivo e dava "Permission denied")
+        data = safe_io.read_json(CACHE_FILE)
+        return data if isinstance(data, dict) else {}
     except Exception as exc:  # noqa: BLE001
         log.warning("Falha ao ler cache de partidas: %s", exc)
         return {}
@@ -145,11 +145,13 @@ def load_fan_cache() -> Dict[str, Any]:
 def save_fan_cache(data: Dict[str, Any]) -> None:
     """Salva dados no cache persistido."""
     try:
+        from core import safe_io
+
         CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
-        tmp = CACHE_FILE.with_suffix(".tmp")
-        with open(tmp, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-        replace_file(tmp, CACHE_FILE)  # V8.3.2: o OneDrive prendia o arquivo ("Acesso negado")
+        # V9.4.3: pelo safe_io, que também atualiza a cópia lida em memória. Gravando por fora, duas gravações no
+        # mesmo instante e do mesmo tamanho (placar 0 -> 1) pareciam o mesmo arquivo e a leitura devolvia o placar
+        # antigo (o gol não era avisado). O safe_io continua resistindo ao OneDrive (V8.3.2).
+        safe_io.write_json(CACHE_FILE, data)
     except Exception as exc:  # noqa: BLE001
         log.warning("Falha ao salvar cache de partidas: %s", exc)
 

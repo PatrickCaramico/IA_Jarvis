@@ -78,6 +78,19 @@ def _keep_corrupt_copy(path: Path, key: tuple[int, int]) -> None:
         _log.exception("Não consegui guardar a cópia do arquivo inválido %s", path)
 
 
+def read_text_retry(path: Path, tries: int = TRIES, delay: float = DELAY_S, sleep=time.sleep) -> str:
+    """V9.4.2: lê o texto resistindo ao arquivo preso pelo OneDrive/antivírus por alguns instantes (antes, a leitura
+    falhava na hora com "Permission denied" e o JARVIS seguia sem os dados)."""
+    for attempt in range(tries):
+        try:
+            return path.read_text(encoding="utf-8")
+        except PermissionError:
+            if attempt == tries - 1:
+                raise
+            sleep(delay * (attempt + 1))
+    raise PermissionError(str(path))
+
+
 def read_json(path: Path | str) -> object:
     """Lê um JSON, reaproveitando a leitura anterior enquanto o arquivo não mudar (data e tamanho).
 
@@ -93,7 +106,14 @@ def read_json(path: Path | str) -> object:
         if hit and hit[0] == key:
             return copy.deepcopy(hit[1])
     try:
-        data = json.loads(path.read_text(encoding="utf-8"))
+        data = json.loads(read_text_retry(path))
+    except PermissionError:
+        with _json_lock:  # preso mesmo depois das novas tentativas: a última versão lida nesta execução
+            hit = _json_cache.get(name)
+        if hit is not None:
+            _log.warning("%s está preso por outro programa (OneDrive?); usando a última versão lida.", path.name)
+            return copy.deepcopy(hit[1])
+        raise
     except ValueError:
         _keep_corrupt_copy(path, key)
         with _json_lock:
