@@ -290,7 +290,12 @@
    V9.4.2 — 🎨 PERSONALIZAR O REATOR (ReactorOrb.jsx / ReactorStudio.jsx)
    Sem personalização, nada aqui vale (a classe rx-custom só entra quando algo mudou).
    ========================================================== */
-.rx-wrap { width: 100%; height: 100%; display: grid; place-items: center; }
+/* V9.4.4: position relative + o canvas do Emaranhado preso a ele. Antes o canvas (position: absolute; inset: 0, vindo
+   do lock-orbe.css) se esticava pela PÁGINA inteira: a prévia ficava vazia e a camada invisível engolia todos os
+   cliques (nem o VOLTAR AO PADRÃO funcionava). Agora fica no quadro do orbe e nunca recebe clique. */
+.rx-wrap { position: relative; width: 100%; height: 100%; display: grid; place-items: center; }
+.rx-wrap .to-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.rxs-stage { position: relative; overflow: hidden; }
 .rx-wrap > * { width: 100%; height: 100%; }
 .rx-custom .wo { --wo-c: var(--rx-color); }
 .rx-custom .wo:not(.wo-speaking) { --wo-node: var(--rx-color); }

@@ -2,7 +2,9 @@ import { useEffect, useState } from "react";
 import ArcReactorHUD from "./ArcReactorHUD.jsx";
 import TangleOrb from "./TangleOrb.jsx";
 import WireOrb from "./WireOrb.jsx";
-import { EVENT, cssVars, hexToRgb, isDefault, load } from "../utils/reactor.js";
+import { EVENT, cssVars, hexToRgb, isDefault, load, resetFromUrl } from "../utils/reactor.js";
+
+resetFromUrl(); // V9.4.4: ?reator=padrao no endereço volta ao padrão
 
 // V9.4.2: o orbe do centro da central na forma e na cor que o senhor escolheu (🎨 REATOR). Sem personalização,
 // é exatamente o orbe de fios de antes. Fica salvo neste aparelho.

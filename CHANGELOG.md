@@ -2,6 +2,14 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 9.4.4 — 25 de novembro de 2026
+
+**🎨 Personalizar o Reator: o Emaranhado não trava mais a tela**
+- **Escolher "Emaranhado" deixava a prévia em branco e a central sem responder a cliques**, nem o "VOLTAR AO PADRÃO".
+  - O desenho do Emaranhado se esticava pela página inteira, por cima de tudo, e engolia os cliques.
+  - Agora ele fica preso ao quadro do orbe, aparece na prévia e nunca bloqueia botão nenhum.
+- **Saída de emergência:** abrir a central com `?reator=padrao` no fim do endereço volta o reator ao padrão, sem precisar clicar em nada.
+
 ## 9.4.3 — 25 de novembro de 2026
 
 **🔧 O que o log do PC mostrou, resolvido**
