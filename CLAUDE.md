@@ -168,6 +168,12 @@ V9.1: vidro em toda a interface (`frontend/src/glass.css`: use as variáveis `--
 um gradiente próprio), janela do Spotify (`SpotifyWidget.jsx`), Configurações com menu lateral e o Branding Book
 3.0 (`docs/branding-book.html`: atualize o capítulo e o histórico a cada lançamento visual).
 
+V9.1.2/V9.2: desempenho da central (vidro pintado nas superfícies fixas — não ponha `backdrop-filter` em algo
+que fica sempre na tela; animações só com transform/opacity; `utils/frameWatch.js` + `utils/slowSpin.js` = modo
+econômico automático) e a auto-análise do PC (`skills/auto_analise.py`, aviso calmo no `system_guard`).
+V9.3: segurança (`skills/seguranca/`: vigia da câmera com `face.look_once`, pendrive, otimização do dia; relatório em
+`/api/security/report` + `components/SecurityReport.jsx`). A câmera é única: use `session.auth_lock` para usá-la.
+
 Próximos, na ordem sugerida:
 - Skills: Quick Capture com escrita no Google Agenda.
 - Estruturais: logs estruturados com latência por etapa, desmontar `handle_turn` em skills, barramento de eventos.

@@ -65,6 +65,7 @@ import { canResumeSession, hasLoggedBefore, launcherWorks, markLauncherWorks, re
 import { enqueue, canDrain } from "./utils/turnQueue.js";
 import CommandPalette from "./components/CommandPalette.jsx";
 import { startMood } from "./utils/mood.js";
+import { shouldAutoOpen } from "./utils/security.js";
 
 // Carregados sob demanda (otimização 4.2: pacote inicial menor)
 // V7: telas e janelas que nem sempre aparecem também saem do pacote inicial
@@ -98,6 +99,7 @@ const OptimizerPanel = lazyComponent(() => import("./components/OptimizerPanel.j
 const ReleaseNotes = lazyComponent(() => import("./components/ReleaseNotes.jsx")); // V7.3
 const DiagnosticPanel = lazyComponent(() => import("./components/DiagnosticPanel.jsx")); // V7.4
 const PcScanPanel = lazyComponent(() => import("./components/PcScanPanel.jsx")); // V8.10.0
+const SecurityReport = lazyComponent(() => import("./components/SecurityReport.jsx")); // V9.3
 const PhotoPanel = lazyComponent(() => import("./components/PhotoPanel.jsx")); // V7.8
 const LogReportWidget = lazyComponent(() => import("./components/LogReportWidget.jsx"));
 const Onboarding = lazyComponent(() => import("./components/Onboarding.jsx"));
@@ -393,6 +395,7 @@ export default function App() {
   // V7.4: 🩺 DIAGNÓSTICO
   const [diagOpen, setDiagOpen] = useState(false);
   const [pcScan, setPcScan] = useState(null); // V8.10.0: varredura do PC lento ({ data } ou null)
+  const [security, setSecurity] = useState(null); // V9.3: relatório de segurança aberto ({ initial } ou null)
   useEffect(() => {
     const on = (e) => setPcScan({ data: e.detail || null, at: Date.now() });
     window.addEventListener(PC_SCAN_EVENT, on);
@@ -836,6 +839,7 @@ export default function App() {
         if (msg.panel === "agents" && (!msg.client_id || msg.client_id === clientId())) {
           window.dispatchEvent(new CustomEvent("jarvis-open-agents", { detail: { agent: msg.agent || "mercado" } }));
         }
+        if (msg.panel === "security") setSecurity({ initial: null, at: Date.now() }); // V9.3
         break;
       case "agent":
         // V6.8: sub-agente trabalhando ("🧭 Agente de rotas: rota para o trabalho")
@@ -2437,6 +2441,18 @@ export default function App() {
 
   useEffect(() => startMood(), []); // V9.0: clima da central pela hora do dia
 
+  // V9.3: ao entrar na central, se alguém tentou entrar (ou houve pendrive/otimização), o relatório abre sozinho
+  useEffect(() => {
+    if (screen !== "main") return undefined;
+    let alive = true;
+    const t = setTimeout(() => {
+      api("/api/security/report", { timeout: 10000 })
+        .then((r) => { if (alive && shouldAutoOpen(r)) setSecurity({ initial: r, at: Date.now() }); })
+        .catch(() => {}); // PC antigo ou sem resposta: segue sem o relatório
+    }, 2500); // deixa a saudação/briefing começar
+    return () => { alive = false; clearTimeout(t); };
+  }, [screen]);
+
   // ---- V9.0: paleta de comandos (Ctrl+K / ⌘K) ----
   const paletteActions = useMemo(() => [
     { id: "settings", icon: "⚙️", label: "Abrir configurações", keywords: "preferencias ajustes voz tema" },
@@ -2449,6 +2465,7 @@ export default function App() {
     { id: "datasources", icon: "🔌", label: "Fontes de dados", keywords: "integracoes agenda" },
     { id: "water", icon: "💧", label: "Água", keywords: "hidratacao beber" },
     { id: "logs", icon: "📜", label: "Relatório de logs", keywords: "erros eventos diagnostico" },
+    { id: "security", icon: "🛡️", label: "Relatório de segurança", keywords: "intruso camera vigia pendrive quem tentou entrar" },
     { id: "qr", icon: "📱", label: "Parear celular (QR)", keywords: "celular rede qr code" },
     { id: "zen", icon: "🧘", label: "Modo zen", keywords: "foco limpar tela" },
     { id: "mic", icon: "🎙️", label: "Falar com o JARVIS", keywords: "microfone ouvir voz" },
@@ -2465,6 +2482,7 @@ export default function App() {
       desk: () => window.dispatchEvent(new CustomEvent("jarvis-desk-toggle", { detail: true })),
       water: () => openWaterPanelRef.current(),
       logs: () => setShowLogReport(true),
+      security: () => setSecurity({ initial: null, at: Date.now() }),
       qr: () => setShowNetworkQr(true),
       zen: () => setZenMode((z) => !z),
       mic: () => toggleMic(),
@@ -3408,6 +3426,9 @@ export default function App() {
           onRename={(n) => api("/api/prefs", { method: "PATCH", body: JSON.stringify({ ai_name: n.trim() }) })
             .then((d) => setAiName(d.ai_name ? d.ai_name.toUpperCase() : "J.A.R.V.I.S.")).catch(() => {})}
         />
+      )}
+      {security && screen === "main" && (
+        <SecurityReport key={security.at} api={api} initial={security.initial} onClose={() => setSecurity(null)} />
       )}
       {paletteOpen && screen === "main" && (
         <CommandPalette api={api} actions={paletteActions} onClose={() => setPaletteOpen(false)}

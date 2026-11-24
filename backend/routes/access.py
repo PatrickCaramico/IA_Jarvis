@@ -2,6 +2,7 @@
 
 import logging
 import asyncio
+import re
 import base64
 import time
 from typing import Any, Optional
@@ -55,6 +56,11 @@ async def auth_verify(req: Optional[VerifyRequest] = None) -> dict:
     if not face.has_profile():
         raise HTTPException(status_code=404, detail="Nenhuma foto de perfil cadastrada.")
 
+    # V9.3: o vigia da câmera usa a câmera por ~0,5 s a cada olhada: espera um pouco antes de dizer "ocupado"
+    for _ in range(12):
+        if not session.auth_lock.locked():
+            break
+        await asyncio.sleep(0.25)
     if session.auth_lock.locked():
         raise HTTPException(
             status_code=409,
@@ -151,8 +157,14 @@ async def auth_verify(req: Optional[VerifyRequest] = None) -> dict:
             else:
                 message = f"Identidade confirmada{', ' + name if name else ''}."
         else:
-            if prefs.get_all().get("lock_save_failed_photo") and result["saw_face"] and pending["last_jpeg"]:
-                lock_log.save_intruder(_thumbnail(pending["last_jpeg"]))
+            p_now = prefs.get_all()
+            photo = None
+            # V9.3: com o vigia da câmera ligado, a foto de quem falhou também vai para o relatório de segurança
+            if (p_now.get("lock_save_failed_photo") or p_now.get("camera_guard_enabled")) and result["saw_face"] and pending["last_jpeg"]:
+                saved = lock_log.save_intruder(_thumbnail(pending["last_jpeg"]))
+                photo = saved.name if saved else None
+            if mode == "login" and result["saw_face"]:
+                _security_event("tentativa", f"Tentativa de entrar pelo rosto não reconhecida às {time.strftime('%H:%M')}.", photo)
             if mode == "recheck":
                 message = "Rosto não reconhecido."
                 if prefs.get_all().get("clap_relock_on_fail") and access.enforcement_active():
@@ -412,6 +424,63 @@ async def clear_lock_log() -> dict:
     lock_log.clear()
     removed = lock_log.clear_intruders()
     return {"status": "ok", "intruder_photos_removed": removed}
+
+
+# ------------------------------------------------------------------ V9.3: relatório de segurança
+_PHOTO_RE = re.compile(r"^tentativa_\d{8}_\d{6}\.jpg$")
+
+
+def _security_event(kind: str, text: str, photo: Optional[str] = None) -> None:
+    try:
+        from skills import seguranca
+
+        seguranca.add_event(kind, text, photo)
+    except Exception:  # noqa: BLE001 - o relatório nunca atrapalha o desbloqueio
+        log.exception("Não consegui registrar o evento de segurança")
+
+
+def _photo_b64(name: Optional[str]) -> Optional[str]:
+    if not name or not _PHOTO_RE.match(name):
+        return None
+    path = lock_log.INTRUDERS_DIR / name
+    try:
+        return base64.b64encode(path.read_bytes()).decode("ascii")
+    except OSError:
+        return None  # a foto foi apagada pelo limite de 20 / 30 dias
+
+
+@router.get("/api/security/report")
+async def security_report(limit: int = 30) -> dict:
+    """Eventos de segurança (mais novos primeiro), quais são novidade e as fotos (miniaturas, em base64)."""
+    from skills import seguranca
+
+    def build() -> dict:
+        data = seguranca._load()  # noqa: SLF001
+        news = {e["id"] for e in seguranca.unseen(data)}
+        events = []
+        for e in data["events"][-max(1, min(100, limit)):][::-1]:
+            item = {k: v for k, v in e.items() if k != "scan"}
+            item["new"] = e["id"] in news
+            item["label"] = seguranca.KIND_LABEL.get(e["kind"], e["kind"])
+            if e.get("photo"):
+                item["photo_b64"] = _photo_b64(e["photo"])
+            if e.get("scan") and e["id"] in news:
+                item["scan"] = e["scan"]
+            events.append(item)
+        p = prefs.get_all()
+        return {"events": events, "unseen": len(news), "speech": seguranca.summary_speech(seguranca.unseen(data)),
+                "guard": {"camera": bool(p.get("camera_guard_enabled")), "usb": bool(p.get("usb_alert_enabled", True)),
+                          "optimize": bool(p.get("auto_optimize_enabled", True)), "has_face": face.has_profile()}}
+
+    return await asyncio.to_thread(build)
+
+
+@router.post("/api/security/seen")
+async def security_seen() -> dict:
+    from skills import seguranca
+
+    await asyncio.to_thread(seguranca.mark_seen)
+    return {"status": "ok"}
 
 
 @router.get("/api/presence")

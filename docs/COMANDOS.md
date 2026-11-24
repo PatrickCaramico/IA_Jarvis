@@ -1,6 +1,6 @@
 # JARVIS — Comandos do dia a dia
 
-**Versão do projeto:** 9.1.2 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
+**Versão do projeto:** 9.3.0 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
 
 > Montado a partir do código do projeto. Se algum comando não responder como descrito, me avise que eu ajusto o guia.
 > Para a lista técnica de rotas, veja [API.md](API.md); para o `.env`, [CONFIGURACAO.md](CONFIGURACAO.md).
@@ -577,6 +577,27 @@ Habilidades plug-and-play (pasta `backend/skills/`). Funcionam pela frase exata 
 | "Como está o uso do processador?" / "quanto de memória está usando?" | Processador, memória, disco e bateria. Vale com a central bloqueada. |
 | ⚠️ "Fecha o Discord" / "encerra o Spotify" | Pergunta antes e fecha todas as janelas do programa. Programas do Windows, antivírus e o próprio JARVIS nunca são fechados. |
 | Sozinho (vigia) | Processador acima de 90% por 2 minutos ou memória acima de 92% por 1 minuto: avisa uma vez (no máximo a cada 30 min), diz o programa que mais gasta e oferece fechar ("sim"). "Desliga o vigia do sistema" / "liga o vigia do sistema". |
+
+**Segurança e otimização (V9.3)** — tudo local: nenhuma foto sai do PC
+
+| Diga | O que acontece |
+|---|---|
+| "Liga o vigia da câmera" / "desliga o vigia da câmera" (ou Configurações › Bloqueio) | Precisa da foto do rosto cadastrada. **Bloqueada:** olha a cada ~20 s; se alguém que não é de casa aparecer em duas olhadas seguidas, guarda a foto, avisa no celular e na tela e diz "Não reconheço quem está aí". **Liberada:** confere a cada ~60 s; se outra pessoa estiver sozinha na frente do PC, bloqueia a central (com foto); se o senhor sair por 2 a 15 minutos (escolha), bloqueia sozinho (e o Windows também, se marcado). A luz da câmera acende rapidinho a cada olhada. |
+| "Relatório de segurança" / "alguém tentou entrar?" / "alguém mexeu no meu PC?" | Fala o resumo e abre a janela **🛡️ SEGURANÇA**: quem tentou entrar ou apareceu sem ser reconhecido (com a foto; toque para ampliar), pendrives ligados, bloqueios automáticos e a otimização do dia (com **VER E LIMPAR**). Ao entrar na central, ela **abre sozinha** quando há novidade. Também na paleta Ctrl+K. |
+| "Há quanto tempo eu estou no PC?" / "o que eu estou fazendo?" | Com o vigia ligado: há quanto tempo o senhor está na frente do PC e quantas vezes saiu hoje (sugere uma pausa depois de 1 h 30). Não descreve a cena (nada vai para a IA). |
+| Sozinho: pendrive | Um pendrive ou HD externo ligado no PC vira aviso na tela e no celular, com a letra e o tamanho, e entra no relatório. |
+| Sozinho: otimização do dia | 1 vez por dia, com o PC parado há 10 min (das 9h às 23h), faz a varredura. Se achar temporários, lixeira cheia, muitos programas abrindo com o Windows ou disco quase cheio, deixa a sugestão no relatório. Nada é apagado sem o senhor mandar. |
+
+Uma tentativa de entrar pelo rosto que falha também entra no relatório (com foto, se o vigia estiver ligado).
+
+**Auto-análise (V9.2)**
+
+| Diga | O que acontece |
+|---|---|
+| "Faz uma auto análise" / "analisa o meu PC" / "faz um diagnóstico do sistema" | O JARVIS examina o PC agora e responde com o estado e a sugestão principal. Também mostra o cartão **AUTO-ANÁLISE** com o que olhou e até 4 sugestões. Ele olha: memória e processador, o navegador com muitas abas (conta as do navegador do JARVIS), programas em segundo plano gastando memória (Teams, Discord, Steam, OneDrive…), ele mesmo, há quantos dias o PC não reinicia, se o Windows está usando o disco como memória e o espaço livre no disco. |
+| "Por que a memória está alta?" / "por que o processador tá no talo?" / "como liberar memória?" / "como melhorar o desempenho?" | O mesmo diagnóstico. Com a memória a partir de 80%, oferece ⚠️ fechar o programa mais pesado que é seguro fechar (nunca o navegador, programas do Windows nem o próprio JARVIS) e só fecha depois do "sim". |
+| Botão **⚡ ANALISAR** na central | Aparece embaixo de PROCESSADOR ou MEMÓRIA quando o uso fica no amarelo (70% ou mais) ou no vermelho (90% ou mais). Um toque pede a auto-análise. |
+| Sozinho (aviso calmo) | Memória acima de 85% por 3 minutos: aviso na tela e no celular, com a sugestão principal, no máximo 1 vez por hora e sem voz. Acima de 92%, continua o aviso falado do vigia, que oferece fechar o que mais gasta. |
 
 Para a varredura completa (temporários, lixeira, inicialização), continue usando "meu PC está lento".
 

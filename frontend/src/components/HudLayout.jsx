@@ -1321,7 +1321,7 @@ export default function HudLayout({
         {!briefing && <StateHint jarvisState={jarvisState} listening={listening} interim={interim} micOk={micOk} onCancel={onCancel} doing={doing} />}
         <div className="hl-orb">
           {orbSlot}
-          {!briefing && !zenMode && <OrbTelemetry api={api} connected={connected} />}
+          {!briefing && !zenMode && <OrbTelemetry api={api} connected={connected} onAnalyze={onCommand ? () => onCommand("faz uma auto análise") : null} />}
           {/* V4.3: identificação no orbe enquanto o JARVIS cumprimenta (início do briefing) */}
           {briefingRunning && briefing.index < 0 && photoUrl && (
             <span className="bf-identity" aria-hidden="true">

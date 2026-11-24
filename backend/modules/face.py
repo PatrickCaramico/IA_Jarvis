@@ -371,3 +371,69 @@ def detect_presence(timeout: float = 1.2) -> bool:
     finally:
         cap.release()
     return False
+
+
+# ---------- V9.3: olhada rápida do vigia da câmera ----------
+_ref_cache: dict = {"key": None, "refs": []}
+
+
+def _reference_embeddings(refs: Optional[list[tuple[str, Path]]] = None) -> list[tuple[Optional[str], np.ndarray]]:
+    """Vetores das fotos cadastradas, guardados enquanto as fotos não mudam (a olhada do vigia fica em ~0,3 s)."""
+    items = refs or [(None, PHOTO_PATH)]
+    key = tuple((pid, str(p), Path(p).stat().st_mtime if Path(p).exists() else 0) for pid, p in items)
+    if _ref_cache["key"] == key:
+        return _ref_cache["refs"]
+    out = []
+    for pid, path in items:
+        try:
+            img = cv2.imdecode(np.frombuffer(Path(path).read_bytes(), np.uint8), cv2.IMREAD_COLOR)
+        except OSError:
+            continue
+        emb, _ = _embedding(img) if img is not None else (None, 0)
+        if emb is not None:
+            out.append((pid, emb))
+    _ref_cache.update(key=key, refs=out)
+    return out
+
+
+def look_once(refs: Optional[list[tuple[str, Path]]] = None, warmup: int = 4) -> dict:
+    """V9.3: uma olhada pela webcam (local, sem salvar nada): quantos rostos, se algum é de quem está cadastrado e
+    quantos são desconhecidos. Devolve {"faces", "known", "unknown", "best", "jpeg"} — o jpeg (miniatura) só vem
+    quando há alguém desconhecido, para o relatório de segurança. A câmera é liberada no final."""
+    _load_models()
+    references = _reference_embeddings(refs)
+    cap = open_camera()
+    frame = None
+    try:
+        for i in range(warmup + 6):  # os primeiros quadros saem escuros (a câmera ajusta a luz)
+            ok, img = cap.read()
+            if ok:
+                frame = img
+                if i >= warmup:
+                    break
+    finally:
+        cap.release()
+    if frame is None:
+        raise RuntimeError("A câmera não entregou imagem.")
+    faces = _detect(frame)
+    known = unknown = 0
+    best = -1.0
+    for f in faces:
+        try:
+            emb = _recognizer.feature(_recognizer.alignCrop(frame, f)).copy()
+        except cv2.error:
+            continue
+        score = max((float(_recognizer.match(r, emb, cv2.FaceRecognizerSF_FR_COSINE)) for _, r in references), default=-1.0)
+        best = max(best, score)
+        if score >= settings.FACE_THRESHOLD:
+            known += 1
+        else:
+            unknown += 1
+    jpeg = None
+    if unknown:
+        h, w = frame.shape[:2]
+        scale = min(1.0, 360 / max(w, 1))
+        small = cv2.resize(frame, (int(w * scale), int(h * scale))) if scale < 1 else frame
+        ok, buf = cv2.imencode(".jpg", small, [cv2.IMWRITE_JPEG_QUALITY, 70])
+        jpeg = buf.tobytes() if ok else None
+    return {"faces": len(faces), "known": known, "unknown": unknown, "best": round(best, 3), "jpeg": jpeg}

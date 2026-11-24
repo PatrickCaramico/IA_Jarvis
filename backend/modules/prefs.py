@@ -67,6 +67,12 @@ _DEFAULTS: dict[str, Any] = {
     "intro_song_on_entry": True,          # V8.13: toca a música de entrada ao entrar na central (sem playlist)
     "intro_song_morning": True,           # V8.14.1: toca a música de entrada na inicialização do dia ("bom dia")
     "screen_time_enabled": True,          # V9.0: mede o tempo de tela por programa (só o nome do programa, no PC)
+    "camera_guard_enabled": False,        # V9.3: vigia da câmera (olha a cada ~20 s bloqueada, ~60 s liberada; tudo local)
+    "camera_guard_auto_lock": True,       # V9.3: com o vigia ligado, bloqueia a central se o senhor sair ou se for outra pessoa
+    "camera_guard_away_minutes": 5,       # V9.3: minutos sem o senhor na frente do PC para bloquear sozinho
+    "camera_guard_lock_windows": False,   # V9.3: ao bloquear sozinho, bloqueia também o Windows (Win+L)
+    "usb_alert_enabled": True,            # V9.3: avisa quando um pendrive/HD externo é ligado
+    "auto_optimize_enabled": True,        # V9.3: 1x por dia, com o PC parado, procura o que dá para limpar (só sugere)
     "music_volume": 60,                   # V8.15.1: volume da música (barra do painel VOZ; o fim do briefing sobe até ele)
     "briefing_pause_music": True,         # V8.15.1: pausa o Spotify enquanto o briefing é lido (e retoma no fim)
     "intro_song_morning_day": "",         # V8.14.1: dia (AAAA-MM-DD) em que já tocou de manhã (uma vez por dia)
@@ -142,6 +148,8 @@ def validate_patch(patch: dict[str, Any]) -> Optional[str]:
         "always_on", "keep_awake",  # V8.12.3
         "intro_song_on_entry", "intro_song_morning", "briefing_pause_music",  # V8.13 / V8.14.1 / V8.15.1
         "screen_time_enabled",  # V9.0
+        "camera_guard_enabled", "camera_guard_auto_lock", "camera_guard_lock_windows", "usb_alert_enabled",
+        "auto_optimize_enabled",  # V9.3
     )
     for key in bools:
         if key in patch and not isinstance(patch[key], bool):
@@ -166,6 +174,10 @@ def validate_patch(patch: dict[str, Any]) -> Optional[str]:
         # V8.13.1: 1 e 2 minutos para bloquear mais rápido quando você sai de perto
         if isinstance(v, bool) or v not in {0, 1, 2, 5, 10, 15, 30}:
             return "lock_auto_relock_minutes deve ser 0, 1, 2, 5, 10, 15 ou 30."
+    if "camera_guard_away_minutes" in patch:  # V9.3
+        v = patch["camera_guard_away_minutes"]
+        if isinstance(v, bool) or v not in {2, 3, 5, 10, 15}:
+            return "camera_guard_away_minutes deve ser 2, 3, 5, 10 ou 15."
     if "lock_intro_sound" in patch and patch["lock_intro_sound"] not in {"default", "custom", "off"}:
         return "lock_intro_sound inválido. Use 'default', 'custom' ou 'off'."
     for key in ("lock_intro_playlist_uri", "fan_intro_playlist_uri"):
