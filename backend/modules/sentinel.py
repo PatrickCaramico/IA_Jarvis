@@ -99,6 +99,31 @@ def is_unlock_only(norm: str) -> bool:
     return bool(norm) and not re.fullmatch(r"abrir|abre|abra", norm) and bool(_UNLOCK_ONLY.fullmatch(norm))
 
 
+# V9.5.1: "abre o clima", "mostra o mercado"... no bloqueio abrem a janela do cartão na tela (LockDetail), além
+# de responder. Antes só falava (ou nem isso, quando caía no pedido protegido) e nenhuma janela abria.
+_OPEN_VERB = re.compile(r"\b(?:abre|abrir|abra|mostra|mostrar|mostre|ver|veja|exibe|exibir|expande|expandir|amplia|ampliar)\b")
+_OPEN_CARDS = [
+    ("weather", r"clima|tempo|previsao(?: do tempo)?|temperatura", "o clima"),
+    ("rates", r"mercado|dolar|euro|bitcoin|cotac(?:ao|oes)|moedas?", "o mercado"),
+    ("headline", r"manchetes?", "as manchetes"),
+    ("water", r"agua|hidratacao", "a água de hoje"),
+    # (Spotify fica de fora: "abre o Spotify" é abrir o programa no PC, que continua pedindo o rosto)
+    ("today", r"(?:o )?dia de hoje|nascer do sol|por do sol|sol", "o dia de hoje"),
+    ("status", r"sistemas?|status", "os sistemas"),
+]
+OPEN_CARD_NAMES = {key: name for key, _, name in _OPEN_CARDS}
+
+
+def open_card_intent(norm: str) -> Optional[str]:
+    """Qual cartão do bloqueio o pedido manda abrir ("abre o clima" -> "weather"), ou None."""
+    if len(norm.split()) > 7 or not _OPEN_VERB.search(norm):
+        return None
+    for key, rx, _name in _OPEN_CARDS:
+        if re.search(rf"\b(?:{rx})\b", norm):
+            return key
+    return None
+
+
 def answer_card(question: str, reply: str) -> dict:
     """V6.5.8: mini janela simples: a pergunta e a resposta."""
     q = re.sub(r"^\s*(?:ei\s+)?jarvis[\s,!.]*", "", (question or "").strip(), flags=re.I)
@@ -112,8 +137,14 @@ async def classify_and_answer(message: str, state: str, wake_words: Optional[lis
     norm = strip_wake_words(raw_norm, wake_words)
     guest = state == "guest"
 
+    opened = open_card_intent(norm)  # V9.5.1: cartão do bloqueio para abrir na tela
+
     def public(reply: str, action: Optional[str] = None, card: Optional[dict] = None) -> dict[str, Any]:
         # V6.5.8: card = mini janela da resposta no bloqueio (clima da semana, ou o texto explicado)
+        # V9.5.1: open = o cartão do bloqueio que abre na tela (aí a mini janela não aparece junto)
+        if opened:
+            return {"reply": reply, "public": True, "requires_unlock": False, "action": action or "open_card",
+                    "card": None, "open": opened}
         return {"reply": reply, "public": True, "requires_unlock": False, "action": action, "card": card}
 
     def protected(reply: Optional[str] = None) -> dict[str, Any]:
@@ -154,6 +185,11 @@ async def classify_and_answer(message: str, state: str, wake_words: Optional[lis
             return public(f"Sistemas operacionais, senhor{detail}.")
         except Exception:  # noqa: BLE001
             return public("Sistemas operacionais, senhor.")
+
+    # V9.5.1: abrir um cartão que não é o clima ("abre o mercado"): a janela mostra tudo; a fala só confirma.
+    # O clima segue adiante e fala a previsão de agora.
+    if opened and opened != "weather":
+        return public(f"Aqui está {OPEN_CARD_NAMES[opened]}, senhor.")
 
     # V6.6.1: Spotify no bloqueio também (antes só no modo visitante): "toca minha playlist", "pausa", "próxima"
     if (_MUSIC.search(norm) or "spotify" in norm) and (_MUSIC_CONTEXT.search(norm) or len(norm.split()) <= 3) \

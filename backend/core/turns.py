@@ -61,8 +61,22 @@ async def handle_restricted_turn(message: str) -> dict:
     Não usa a IA, não grava histórico nem memória. Pedidos protegidos devolvem
     requires_unlock=True para a tela pedir o escaneamento facial (o pedido fica pendente no frontend).
     """
+    # V9.5.1: ainda falando a resposta anterior: corta e atende (como com a central aberta). Antes devolvia 409 e o
+    # pedido do bloqueio sumia em silêncio ("abre o clima" logo depois de outra resposta não fazia nada).
+    if session.busy and speech.only_speaking():
+        await speech.interrupt()
     if session.busy:
-        raise HTTPException(status_code=409, detail="O JARVIS já está ocupado com outra solicitação.")
+        # ocupado de verdade (escaneando o rosto, outro pedido): espera um pouco antes de desistir
+        for _ in range(12):
+            await asyncio.sleep(0.25)
+            if not session.busy:
+                break
+    if session.busy:
+        reply = "Um instante, senhor. Ainda estou terminando o pedido anterior."
+        await runtime.manager.broadcast({"type": "sentinel_reply", "text": reply, "question": message, "card": None,
+                                         "requires_unlock": False, "access": access.effective_state()})
+        return {"status": "busy", "response": reply, "cards": [], "source": "sentinel", "public": True,
+                "requires_unlock": False, "action": None, "card": None}
     state = access.effective_state()
     session.busy = True
     try:
@@ -86,6 +100,7 @@ async def handle_restricted_turn(message: str) -> dict:
             "text": reply,
             "question": message,
             "card": result.get("card"),  # V6.5.8: mini janela da resposta
+            "open": result.get("open"),  # V9.5.1: cartão do bloqueio que abre na tela
             "requires_unlock": result["requires_unlock"],
             "access": state,
         }
@@ -101,6 +116,7 @@ async def handle_restricted_turn(message: str) -> dict:
         "requires_unlock": result["requires_unlock"],
         "action": result.get("action"),
         "card": result.get("card"),
+        "open": result.get("open"),
     }
 
 

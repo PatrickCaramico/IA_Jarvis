@@ -888,6 +888,8 @@ export default function App() {
       case "sentinel_reply":
         setSentinelReply(msg.text || "");
         if (msg.card) setLockAnswer({ question: msg.question || "", card: msg.card, at: Date.now() }); // V6.5.8
+        // V9.5.1: "abre o clima" no bloqueio abre a janela do cartão (LockCards ouve este evento)
+        if (msg.open) window.dispatchEvent(new CustomEvent("jarvis-lock-open-card", { detail: msg.open }));
         break;
       case "water_updated":
         // Mantém o texto da resposta igual ao cartão de água (seção 18)
