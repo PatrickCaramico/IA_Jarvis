@@ -108,6 +108,12 @@ def diagnose(snap: dict) -> dict:
         tips.append(f"O disco está quase cheio ({snap.get('disk_free_gb', 0):.0f} GB livres). "
                     "Diga 'meu PC está lento' que eu faço a limpeza.")
 
+    # V9.4.1: a lista de programas não respondeu a tempo (o Windows está sobrecarregado): diz isso e sugere o básico
+    if "processos" in (snap.get("slow") or []):
+        findings.append({"label": "Programas", "value": "o Windows demorou demais para listar (sinal de PC sobrecarregado)"})
+        tips.insert(0, "O Windows está tão carregado que demorou para listar os programas: feche o que não estiver usando, "
+                       "a começar pelas abas do navegador, ou reinicie o PC.")
+
     # fala: 1 a 3 frases (estado + a dica principal + a oferta)
     if ram < 70 and cpu < 70 and not tips:
         speech = f"Está tudo tranquilo, senhor: memória em {ram:.0f}% e processador em {cpu:.0f}%."
@@ -123,8 +129,50 @@ def diagnose(snap: dict) -> dict:
     return {"findings": findings, "tips": tips, "offer": offer, "speech": speech}
 
 
+# V9.4.1: prazo por etapa. Antes a análise inteira tinha 15 s e, com a memória alta (justamente quando o senhor
+# pede a análise), ler cada programa aberto passava disso: o JARVIS dizia "demorou demais e eu interrompi" e não
+# respondia nada. Agora cada etapa tem o seu prazo; a que estourar fica de fora e a resposta sai com o resto.
+STEP_LIMIT_S = {"processos": 12.0, "swap": 3.0, "disco": 3.0, "abas": 3.0}
+_pool = None
+
+
+def _executor():
+    import concurrent.futures as cf
+
+    global _pool
+    if _pool is None:
+        _pool = cf.ThreadPoolExecutor(max_workers=4, thread_name_prefix="auto_analise")
+    return _pool
+
+
+def _run_all(steps: dict, defaults: dict, timings: dict) -> dict:
+    """Roda as etapas AO MESMO TEMPO, cada uma com o seu prazo (STEP_LIMIT_S), contado desde o começo.
+
+    V9.4.2: antes rodavam uma depois da outra e os tempos somavam (no Windows, só perguntar pelo navegador do
+    JARVIS fechado leva ~2 s). Etapa que estoura o prazo devolve o padrão; a thread termina sozinha depois."""
+    import concurrent.futures as cf
+
+    started = time.monotonic()
+    futures = {name: _executor().submit(fn) for name, fn in steps.items()}
+    out = {}
+    for name, fut in futures.items():
+        left = max(0.0, STEP_LIMIT_S[name] - (time.monotonic() - started))
+        try:
+            out[name] = fut.result(timeout=left)
+            timings[name] = round(time.monotonic() - started, 1)
+        except cf.TimeoutError:
+            timings[name] = None
+            out[name] = defaults[name]
+            log.warning("Auto-análise: %s passou de %.1f s; segui sem essa parte.", name, STEP_LIMIT_S[name])
+        except Exception:  # noqa: BLE001 - uma etapa com defeito não derruba a análise
+            timings[name] = None
+            out[name] = defaults[name]
+            log.exception("Auto-análise: a etapa %s falhou", name)
+    return out
+
+
 def snapshot() -> dict:
-    """As medições do PC agora (~0,5 s, por causa da leitura de processador de cada programa)."""
+    """As medições do PC agora. Etapas em paralelo e com prazo; snap["slow"] lista as que ficaram de fora."""
     import os
     import shutil
 
@@ -138,25 +186,27 @@ def snapshot() -> dict:
         "cpu": psutil.cpu_percent(interval=None),
         "ram": vm.percent,
         "ram_total_gb": vm.total / 1024 ** 3,
-        "swap": psutil.swap_memory().percent,
-        "procs": processes(),
         "jarvis_mb": psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2,
         "uptime_days": (time.time() - psutil.boot_time()) / 86400,
-        "tabs": None,
     }
-    try:
+
+    def disk():
         du = shutil.disk_usage(settings.BASE_DIR.anchor or "/")
-        snap["disk_free_gb"] = du.free / 1024 ** 3
-        snap["disk_free_pct"] = du.free * 100 / du.total
-    except OSError:
-        pass
-    try:  # abas do navegador do JARVIS, se ele estiver aberto (consulta local, prazo curto)
+        return du.free / 1024 ** 3, du.free * 100 / du.total
+
+    def tabs():  # abas do navegador do JARVIS, se ele estiver aberto (consulta local, prazo curto)
         from skills.navegador import cdp
 
-        if cdp.available():
-            snap["tabs"] = len(cdp.tabs())
-    except Exception:  # noqa: BLE001 - sem navegador do JARVIS: só não conta as abas
-        log.debug("Abas do navegador indisponíveis", exc_info=True)
+        return len(cdp.tabs()) if cdp.available() else None
+
+    timings: dict = {}
+    got = _run_all({"processos": processes, "swap": lambda: psutil.swap_memory().percent, "disco": disk, "abas": tabs},
+                   {"processos": [], "swap": 0.0, "disco": None, "abas": None}, timings)
+    snap["procs"], snap["swap"], snap["tabs"] = got["processos"], got["swap"], got["abas"]
+    if got["disco"]:
+        snap["disk_free_gb"], snap["disk_free_pct"] = got["disco"]
+    snap["slow"] = [k for k, v in timings.items() if v is None]
+    log.info("Auto-análise: tempos por etapa (s, desde o começo) %s", timings)
     return snap
 
 
@@ -189,7 +239,7 @@ def _parse(norm: str, _original: str) -> Optional[dict]:
     description=("Examina o PC agora (memória, processador, navegador, programas em segundo plano, o próprio JARVIS, "
                  "tempo ligado e disco) e sugere o que fazer para aliviar; oferece fechar o programa mais pesado."),
     permission=Permission.READ,
-    timeout=15,
+    timeout=30,  # V9.4.1: era 15; as etapas têm prazo próprio (STEP_LIMIT_S), a resposta sai antes disso
     parse=_parse,
     params={"type": "object", "properties": {}},
     examples=["faz uma auto análise", "por que a memória está alta?", "como liberar memória?"],

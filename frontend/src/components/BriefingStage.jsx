@@ -86,6 +86,13 @@ export function VoiceHints({ onSay, exclude = [], compact = false }) {
           <i aria-hidden="true">{h.icon}</i>"{h.say}"
         </button>
       ))}
+      {/* V9.4.2: 📜 logs na faixa de dicas: abre a janela com os registros e erros do JARVIS */}
+      {!compact && !pinMode && (
+        <button type="button" className="bf-hint bf-logs" onClick={() => window.dispatchEvent(new CustomEvent("jarvis-open-logs"))}
+          title="Ver os registros e erros do JARVIS">
+          <i aria-hidden="true">📜</i>logs
+        </button>
+      )}
       {canPin && (
         <button
           type="button"

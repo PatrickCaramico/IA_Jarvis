@@ -12,6 +12,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import MotivationWidget from "./MotivationWidget.jsx";
 import ReactiveCard from "./ReactiveCard.jsx";
 import BriefingStage, { VoiceHints } from "./BriefingStage.jsx";
+import RemindersStrip from "./RemindersStrip.jsx";
 import { OrbTelemetry, StateHint } from "./HudCenter.jsx";
 import { micCaption } from "../utils/hudCenter.js";
 import { wasStreamed } from "../utils/streamState.js";
@@ -579,6 +580,7 @@ const CONTROL_SECTIONS = [
       { icon: "🛒", label: "COMPRAS", sub: "O que tem na lista", cmd: "o que tem na lista de compras" },
       { icon: "🥤", label: "BEBI UM COPO", sub: "Registra 250 ml", cmd: "bebi um copo de água", tone: "sky" },
       { icon: "💧", label: "ÍNDICE DE ÁGUA", sub: "Hidratação de hoje", cmd: "índice de água", tone: "sky" },
+      { id: "reminder", icon: "⏰", label: "NOVO LEMBRETE", sub: "Fica visível na central", tone: "amber" }, // V9.4.2
     ],
   },
   {
@@ -605,6 +607,7 @@ const CONTROL_SECTIONS = [
       { id: "notes", icon: "📝", label: "NOTAS DA VERSÃO", sub: "O que mudou em cada versão" }, // V7.3
       { id: "holo_saved", icon: "⭐", label: "HOLOGRAMAS SALVOS", sub: "Rever apresentações e receitas" }, // V7.14
       { id: "diagnostic", icon: "🩺", label: "DIAGNÓSTICO", sub: "Testar IA, voz, internet e mais" }, // V7.4
+      { id: "logs", icon: "📜", label: "LOGS", sub: "Registros e erros do JARVIS" }, // V9.4.2
       // V6.6.5: app Android: espelha a tela do JARVIS numa TV (Chromecast, Smart TV, Miracast)
       { id: "cast", icon: "📺", label: "TRANSMITIR", sub: "Para a TV ou outro aparelho" },
       { id: "silent", icon: "🤫", label: "SILENCIOSO" },
@@ -749,6 +752,14 @@ function HudControlsMenu({
       case "notes":
         setOpen(false);
         window.dispatchEvent(new CustomEvent("jarvis-open-notes"));
+        break;
+      case "logs": // V9.4.2
+        setOpen(false);
+        window.dispatchEvent(new CustomEvent("jarvis-open-logs"));
+        break;
+      case "reminder": // V9.4.2
+        setOpen(false);
+        window.dispatchEvent(new CustomEvent("jarvis-new-reminder"));
         break;
       case "desktop_app":
         setOpen(false);
@@ -1348,6 +1359,9 @@ export default function HudLayout({
             <button type="button" className="hl-agents-trigger" onClick={() => window.dispatchEvent(new CustomEvent("jarvis-desktop-download"))} title="App do JARVIS para Windows, com a ilha no topo da tela">
               ⬇ APP WINDOWS
             </button>
+            <button type="button" className="hl-agents-trigger" onClick={() => window.dispatchEvent(new CustomEvent("jarvis-open-reactor"))} title="Personalizar o reator: forma, cor, contraste e brilho (V9.4.2)">
+              🎨 REATOR
+            </button>
             <button type="button" className="hl-agents-trigger" onClick={() => window.dispatchEvent(new CustomEvent("jarvis-open-branding"))} title="Branding Book: identidade visual do JARVIS">
               📘 BRANDING
             </button>
@@ -1358,6 +1372,7 @@ export default function HudLayout({
         )}
         {/* V5.6: contagens regressivas pedidas por voz, logo abaixo do orbe */}
         {!briefing && <CountdownWidget items={countdowns} onRemove={onRemoveCountdown} />}
+        {!briefing && !zenMode && api && <RemindersStrip api={api} /* V9.4.2: lembretes visíveis na central */ />}
         {!briefing && <div className="hl-quote"><MotivationWidget /></div>}
         {!briefing && !busy && <VoiceHints onSay={onCommand} />}
         <BriefingStage briefing={briefing} onClose={onCloseBriefing} onSkip={onSkipBriefing} onSay={onCommand} />

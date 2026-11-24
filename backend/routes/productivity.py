@@ -157,6 +157,13 @@ async def alarm_delete(alarm_id: int) -> dict:
     return {"status": "ok"}
 
 
+async def _reminders_changed() -> None:
+    """V9.4.2: a faixa de lembretes da central (em todos os aparelhos) atualiza na hora."""
+    from core import runtime
+
+    await runtime.manager.broadcast({"type": "reminders_updated"})
+
+
 @router.get("/api/reminders")
 async def list_reminders(only_pending: bool = False) -> dict:
     return {"reminders": reminders.get_reminders(only_pending=only_pending)}
@@ -169,6 +176,7 @@ async def create_reminder(req: ReminderRequest) -> dict:
     except ValueError as exc:
         raise HTTPException(status_code=400, detail="Formato de data inválido. Use YYYY-MM-DD HH:MM.") from exc
     rem = reminders.add_reminder(req.texto, dt)
+    await _reminders_changed()
     return {"status": "ok", "reminder": rem}
 
 
@@ -176,6 +184,7 @@ async def create_reminder(req: ReminderRequest) -> dict:
 async def remove_reminder(rem_id: int) -> dict:
     if not reminders.delete_reminder(rem_id):
         raise HTTPException(status_code=404, detail="Lembrete não encontrado.")
+    await _reminders_changed()
     return {"status": "ok"}
 
 

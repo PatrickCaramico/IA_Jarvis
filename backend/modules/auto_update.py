@@ -7,6 +7,14 @@ mas sem falar: só avisa na ilha. Depois do reinício:
 - a ilha e a janela do app se recarregam sozinhas;
 - o app do Windows se reabre sozinho quando o código dele mudou (desktop/jarvis_desktop.py).
 Dá para desligar em Configurações › Atualizações (Modo Desk).
+
+V9.4.1 (pedido do usuário: "ele mesmo atualizar e me avisar"): antes só atualizava com o PC 30 min sem uso ou de
+madrugada, e calado. Na prática quase nunca rodava com o PC em uso, e a versão nova ficava esperando o botão (que às
+vezes nem funcionava). Agora:
+  - confere a cada 40 minutos (a primeira, 3 minutos depois de ligar);
+  - achou versão nova: AVISA na tela (com ATUALIZAR AGORA e ADIAR 1 H), no celular e por voz, e espera 2 minutos;
+  - depois atualiza sozinho assim que o JARVIS estiver parado (sem falar nem responder há 2 minutos) e não houver
+    nada em tela cheia (vídeo, jogo, apresentação). A central aberta mostra a tela de atualização e volta sozinha.
 """
 from __future__ import annotations
 
@@ -17,9 +25,11 @@ import time
 
 log = logging.getLogger("jarvis.auto_update")
 
-FIRST_CHECK_S = 10 * 60  # deixa o JARVIS ligar com calma
-CHECK_EVERY_S = 30 * 60
-QUIET_FOR_S = 5 * 60  # ninguém falou com ele por esse tempo
+FIRST_CHECK_S = 3 * 60  # V9.4.1: era 10 min
+CHECK_EVERY_S = 40 * 60  # V9.4.1: o usuário pediu "a cada 40 minutos" (era 30, mas só atualizava com o PC parado)
+QUIET_FOR_S = 2 * 60  # V9.4.1: ninguém falou com ele por esse tempo (era 5 min)
+NOTICE_S = 120  # o aviso fica 2 min na tela antes de atualizar (dá para adiar)
+POSTPONE_S = 60 * 60
 # V8.7.2: e o PC parado de verdade (antes atualizava no meio de um vídeo do YouTube, que engasgava):
 USER_IDLE_S = 30 * 60  # ninguém mexeu no mouse/teclado por 30 min...
 NIGHT_HOURS = range(1, 6)  # ...ou de madrugada (1h às 6h)
@@ -70,13 +80,58 @@ def fullscreen_app() -> bool:
 
 
 def pc_free(now_hour: int | None = None, idle_s: float | None = None, fullscreen: bool | None = None) -> bool:
-    """O PC está livre para atualizar? Nada em tela cheia e (madrugada ou 30 min sem mexer no mouse/teclado)."""
-    import datetime as _dt
+    """O PC está livre para atualizar? V9.4.1: basta não ter nada em tela cheia (vídeo, jogo, apresentação).
 
-    hour = _dt.datetime.now().hour if now_hour is None else now_hour
-    idle = user_idle_seconds() if idle_s is None else idle_s
+    Antes exigia também madrugada ou 30 min sem mexer no mouse/teclado, e por isso quase nunca atualizava sozinho.
+    now_hour e idle_s ficam por compatibilidade (não decidem mais)."""
     full = fullscreen_app() if fullscreen is None else fullscreen
-    return not full and (hour in NIGHT_HOURS or idle >= USER_IDLE_S)
+    return not full
+
+
+# ------------------------------------------------------------------ V9.4.1: aviso, adiar e atualizar agora
+_state: dict = {"postponed_until": 0.0, "now": False, "notice": None, "failed": None}
+FAILED_QUIET_S = 6 * 60 * 60  # a mesma versão que falhou não é anunciada de novo por 6 h (o botão continua valendo)
+
+
+def postpone(seconds: float = POSTPONE_S, now: float | None = None) -> dict:
+    """ADIAR 1 H: a atualização avisada espera (a próxima conferência respeita o prazo)."""
+    now = time.time() if now is None else now
+    _state["postponed_until"] = now + seconds
+    _state["now"] = False
+    return {"postponed_until": _state["postponed_until"]}
+
+
+def update_now() -> None:
+    """ATUALIZAR AGORA: pula o resto da espera do aviso."""
+    _state["now"] = True
+    _state["postponed_until"] = 0.0
+
+
+def postponed(now: float | None = None) -> bool:
+    return (time.time() if now is None else now) < _state["postponed_until"]
+
+
+def pending_notice() -> dict | None:
+    """O aviso em andamento (a central que abrir no meio da contagem mostra o mesmo aviso)."""
+    return _state.get("notice")
+
+
+def reset_for_tests() -> None:
+    _state.update(postponed_until=0.0, now=False, notice=None, failed=None)
+
+
+async def _announce(latest: str, notes: list) -> None:
+    from core import runtime, speech
+
+    notice = {"type": "update_soon", "version": latest, "in_s": NOTICE_S, "at": time.time(), "notes": notes[:4]}
+    _state["notice"] = notice
+    await runtime.manager.broadcast(notice)
+    runtime.note_island({"type": "response", "text": f"⬆ Versão {latest} disponível: atualizo em 2 minutos."})
+    runtime.notify("system", "⬆ Atualização do JARVIS", f"A versão {latest} chegou. Atualizo sozinho em 2 minutos.")
+    try:
+        await speech.say_quietly(f"Senhor, chegou a versão {latest}. Atualizo sozinho em dois minutos; se preferir, adie na tela.")
+    except Exception:  # noqa: BLE001 - sem voz, o aviso na tela e no celular continua
+        log.warning("Aviso falado da atualização falhou", exc_info=True)
 
 
 def enabled() -> bool:
@@ -111,28 +166,65 @@ def is_quiet(now: float | None = None) -> bool:
 
 
 async def check_and_update(sleep=asyncio.sleep, now=time.time) -> str:
-    """Uma rodada: "desligada" | "em dia" | "ocupado" | "atualizando" | "erro"."""
+    """Uma rodada: "desligada" | "em dia" | "adiada" | "ocupado" | "atualizando" | "erro"."""
     from core import runtime
     from modules import self_update
 
     if not enabled():
         return "desligada"
+    if postponed(now()):
+        return "adiada"
     info = await asyncio.to_thread(self_update.check, True)
     if not info.get("available"):
         return "em dia"
-    for _ in range(36):  # espera até ~3 h por um momento parado (madrugada ou PC sem uso)
-        if is_quiet(now()):
+    latest = info.get("latest") or "nova"
+    failed = _state.get("failed")
+    if failed and failed[0] == latest and now() - failed[1] < FAILED_QUIET_S:
+        return "erro"  # já avisei que essa não deu; não repete o aviso a cada 40 min
+    await _announce(latest, info.get("notes") or [])
+    # V9.4.1: 2 minutos de aviso (ATUALIZAR AGORA pula; ADIAR 1 H cancela esta rodada)
+    waited = 0
+    while waited < NOTICE_S and not _state["now"]:
+        if postponed(now()):
+            _state["notice"] = None
+            await runtime.manager.broadcast({"type": "update_soon", "cancelled": True})
+            return "adiada"
+        await sleep(5)
+        waited += 5
+    for _ in range(36):  # espera até ~3 h por um momento sem fala nem tela cheia (antes: PC parado 30 min)
+        if postponed(now()):
+            _state["notice"] = None
+            await runtime.manager.broadcast({"type": "update_soon", "cancelled": True})
+            return "adiada"
+        if _state["now"] or is_quiet(now()):
             break
         await sleep(5 * 60)
     else:
         return "ocupado"
-    latest = info.get("latest") or "nova"
-    log.info("Atualização automática: versão %s encontrada, atualizando com o JARVIS parado.", latest)
+    _state["now"] = False
+    _state["notice"] = None
+    log.info("Atualização automática: versão %s encontrada, atualizando.", latest)
     runtime.note_island({"type": "response", "text": f"⬆ Atualizando o JARVIS para a versão {latest}… volto em instantes."})
     from routes.system import perform_update
 
     res = await perform_update(announce=False)
-    return "atualizando" if res.get("status") == "restarting" else "erro"
+    if res.get("status") == "restarting":
+        # a central aberta entra na tela de atualização e recarrega quando a versão nova subir
+        await runtime.manager.broadcast({"type": "update_started", "boot_id": res.get("boot_id"), "before": res.get("before"),
+                                         "after": res.get("after"), "changed": res.get("changed"),
+                                         "versao_nova": res.get("versao_nova", latest), "destaques": res.get("destaques", [])})
+        return "atualizando"
+    _state["failed"] = (latest, now())
+    msg = res.get("message") or "Não consegui atualizar agora."
+    await runtime.manager.broadcast({"type": "update_soon", "cancelled": True, "error": msg})
+    runtime.notify("system", "⚠ Atualização do JARVIS", msg)
+    try:
+        from modules import event_log
+
+        event_log.add("error", "A atualização automática não deu certo", msg)
+    except Exception:  # noqa: BLE001
+        log.debug("event_log indisponível", exc_info=True)
+    return "erro"
 
 
 async def auto_update_loop() -> None:

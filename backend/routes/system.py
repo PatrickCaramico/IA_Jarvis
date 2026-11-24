@@ -85,7 +85,25 @@ async def system_update_status(force: bool = False) -> dict:
     from modules import auto_update
 
     info = await asyncio.to_thread(self_update.check, force)
-    return {**info, "auto_on_open": await asyncio.to_thread(auto_update.on_open_enabled), "busy": session.busy}
+    return {**info, "auto_on_open": await asyncio.to_thread(auto_update.on_open_enabled), "busy": session.busy,
+            "notice": auto_update.pending_notice()}  # V9.4.1: aviso de atualização em andamento (contagem)
+
+
+@router.post("/api/system/update/postpone")
+async def system_update_postpone() -> dict:
+    """V9.4.1: ADIAR 1 H no aviso da atualização automática."""
+    from modules import auto_update
+
+    return auto_update.postpone()
+
+
+@router.post("/api/system/update/now")
+async def system_update_now() -> dict:
+    """V9.4.1: ATUALIZAR AGORA no aviso da atualização automática (pula o resto da espera)."""
+    from modules import auto_update
+
+    auto_update.update_now()
+    return {"status": "ok"}
 
 
 class AutostartRequest(BaseModel):
@@ -847,6 +865,14 @@ async def get_cameras() -> dict:
 @router.get("/api/logs")
 async def get_logs(limit: int = 50) -> dict:
     return {"events": event_log.list_events(limit)}
+
+
+@router.get("/api/logs/file")
+async def get_log_file(level: str = "WARNING", q: str = "", limit: int = 200) -> dict:
+    """V9.4.2: janela LOGS da central: erros e avisos (ou tudo) do logs/jarvis.log, com o rastro de cada erro."""
+    from modules import log_view
+
+    return await asyncio.to_thread(log_view.read, level, q[:80], limit)
 
 
 @router.get("/api/diagnostics")

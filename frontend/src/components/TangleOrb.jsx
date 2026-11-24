@@ -10,12 +10,14 @@ const COLORS = { default: [90, 205, 255], ok: [74, 222, 128], fail: [251, 113, 1
 const ENERGY = { idle: 1, listening: 1.35, processing: 1.2, speaking: 1.7 };
 const SPIN = { idle: 1, listening: 1.2, processing: 2.6, speaking: 1.4 };
 
-export default function TangleOrb({ state = "idle", tone = "default", lite = false, className = "" }) {
+// V9.4.2: rgb = [R, G, B] da cor escolhida em 🎨 REATOR (sem ele, as cores de sempre)
+// V9.4.2: fps limita os quadros por segundo (na central, 30: medido, o desenho a 60 qps custava ~18x o orbe de fios)
+export default function TangleOrb({ state = "idle", tone = "default", lite = false, className = "", rgb = null, fps = 0 }) {
   const canvasRef = useRef(null);
-  const live = useRef({ state, tone });
+  const live = useRef({ state, tone, rgb });
   useEffect(() => {
-    live.current = { state, tone };
-  }, [state, tone]);
+    live.current = { state, tone, rgb };
+  }, [state, tone, rgb]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -42,15 +44,20 @@ export default function TangleOrb({ state = "idle", tone = "default", lite = fal
     const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(fit) : null;
     ro?.observe(canvas);
 
+    const minGap = fps > 0 ? 1000 / fps - 2 : 0;
     const draw = (now) => {
+      if (minGap && now - last < minGap) {
+        raf = requestAnimationFrame(draw);
+        return;
+      }
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
       const s = now / 1000;
-      const { state: st, tone: tn } = live.current;
+      const { state: st, tone: tn, rgb: custom } = live.current;
       const target = (ENERGY[st] || 1) * (st === "speaking" ? 1 + 0.35 * Math.abs(Math.sin(s * 7.3) * Math.sin(s * 3.1)) : 1);
       energy += (target - energy) * Math.min(1, dt * 4);
       spin += dt * 0.12 * (SPIN[st] || 1);
-      const [R, G, B] = COLORS[tn] || COLORS.default;
+      const [R, G, B] = (tn === "default" && custom) || COLORS[tn] || COLORS.default;
       const cx = size / 2;
       const rad = size * 0.4;
       g.clearRect(0, 0, size, size);
@@ -100,7 +107,7 @@ export default function TangleOrb({ state = "idle", tone = "default", lite = fal
       cancelAnimationFrame(raf);
       ro?.disconnect();
     };
-  }, [lite]);
+  }, [lite, fps]);
 
   return <canvas ref={canvasRef} className={`to-canvas ${className}`} aria-hidden="true" />;
 }
