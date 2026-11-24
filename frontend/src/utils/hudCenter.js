@@ -110,6 +110,7 @@ export function telemetryMenu(kind, sys = {}, agenda = []) {
   const items = (agenda || []).filter((i) => i && (i.title || i.label)).slice(0, 3);
   return {
     title: "PRÓXIMOS",
+    list: true, // V9.4.6: hora em cima e o título embaixo, quebrando linha (títulos longos passavam da borda)
     value: items[0] ? String(items[0].label || "").trim() || "Em breve" : "Nada marcado",
     bar: null,
     note: items.length ? null : "Nenhum compromisso ou lembrete pendente.",

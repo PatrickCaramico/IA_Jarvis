@@ -2,6 +2,14 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 9.4.6 — 25 de novembro de 2026
+
+**🧭 Menu PRÓXIMOS sem texto saindo da caixa**
+- Compromissos com nome longo (ex.: "Jogo do Palmeiras: Chapecoense x Palmeiras (Brasileirão)") passavam da borda do menu.
+  - Agora cada compromisso mostra a hora em cima e o nome embaixo, quebrando em até duas linhas.
+  - Os outros menus (Processador, Memória, Disco livre) também quebram o texto em vez de vazar.
+- Conferido nas telas de 1366, 1600 e 1920 pixels de largura: nenhum menu sai da caixa nem da tela.
+
 ## 9.4.5 — 25 de novembro de 2026
 
 **💬 Transcrição ao vivo**

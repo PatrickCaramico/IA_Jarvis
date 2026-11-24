@@ -45,7 +45,12 @@ const DATA = {
   "/api/weather": { place: "São Paulo", temperature: 21, description: "parcialmente nublado", maximum: 26, minimum: 17, rain_probability: 100, icon: "⛅",
     week: [["Hoje", 26, 17, "⛅"], ["Amanhã", 25, 18, "🌧"], ["Sáb 14", 27, 18, "⛅"], ["Dom 15", 28, 16, "🌦"], ["Seg 16", 26, 19, "☀"], ["Ter 17", 28, 18, "☀"]]
       .map(([label, max, min, icon]) => ({ label, max, min, icon, rain: 40 })) },
-  "/api/agenda/next": { items: [
+  // V9.4.5: ?longo=1 = títulos longos (para conferir que o menu PRÓXIMOS não estoura)
+  "/api/agenda/next": { items: q.get("longo") === "1" ? [
+    { label: "Hoje", title: "Discord - Aquecimento Orbes: Semana 1", kind: "agenda" },
+    { label: "Hoje 18:00", title: "Jogo do Palmeiras: Chapecoense x Palmeiras (Brasileirão)", kind: "agenda" },
+    { label: "Hoje 19:00", title: "Entrar no Discord pelo Opera (Aquecimento Orbes) e revisar a pauta da semana", kind: "agenda" },
+  ] : [
     { label: "Hoje 21:00", title: "Ligar para a mãe", kind: "lembrete" },
     { label: "Amanhã 09:30", title: "Reunião de planejamento", kind: "agenda" },
   ] },
