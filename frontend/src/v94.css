@@ -683,3 +683,105 @@ html.ld-open #root * { animation-play-state: paused !important; } /* a janela fi
 @media (prefers-reduced-motion: reduce) {
   .hc-menu, .hc-menu-bar > s, .hc-menu-rows > div, .hc-menu-btn { animation: none !important; }
 }
+
+/* ==========================================================
+   V9.5.0: TELA DE BLOQUEIO RENOVADA (Clássico e Sentinela)
+   ========================================================== */
+/* ---- reator (components/LockReactor.jsx) ---- */
+.lr { position: relative; display: grid; place-items: center; --lr-c: 79, 220, 255; }
+.lr > * { grid-area: 1 / 1; }
+.lr-seconds, .lr-hand { position: absolute; inset: -20px; pointer-events: none; }
+.lr-seconds { width: calc(100% + 40px); height: calc(100% + 40px); }
+.lr-seconds line { stroke: rgba(var(--lr-c), 0.22); stroke-width: 0.8; }
+.lr-seconds line.is-major { stroke: rgba(var(--lr-c), 0.5); stroke-width: 1.4; }
+.lr-hand { animation: lr-turn 60s linear infinite; }
+.lr-hand i { position: absolute; left: 50%; top: 0; width: 6px; height: 6px; margin-left: -3px; border-radius: 50%;
+  background: #e0fbff; box-shadow: 0 0 10px rgba(var(--lr-c), 0.95), 0 0 2px #fff; }
+@keyframes lr-turn { to { transform: rotate(360deg); } }
+.lr-state { position: absolute; inset: -16px; border-radius: 50%; pointer-events: none; }
+.lr-state i { position: absolute; inset: 0; border-radius: 50%; border: 2px solid rgba(var(--lr-c), 0.0); opacity: 0; }
+.lr-state b { position: absolute; inset: 0; border-radius: 50%; opacity: 0;
+  background: conic-gradient(from 0deg, rgba(var(--lr-c), 0) 0deg, rgba(var(--lr-c), 0) 290deg, rgba(var(--lr-c), 0.55) 350deg, rgba(var(--lr-c), 0) 360deg);
+  -webkit-mask: radial-gradient(circle, transparent 62%, #000 63%, #000 70%, transparent 71%);
+  mask: radial-gradient(circle, transparent 62%, #000 63%, #000 70%, transparent 71%); }
+/* ouvindo: anel verde respirando */
+.lr.is-listening { --lr-c: 52, 211, 153; }
+.lr.is-listening .lr-state i { border-color: rgba(52, 211, 153, 0.8); animation: lr-breathe 1.6s ease-in-out infinite; }
+@keyframes lr-breathe { 0%, 100% { opacity: 0.25; transform: scale(0.98); } 50% { opacity: 0.9; transform: scale(1.03); } }
+/* falando: pulso mais curto em ciano */
+.lr.is-speaking .lr-state i { border-color: rgba(79, 220, 255, 0.7); animation: lr-breathe 0.9s ease-in-out infinite; }
+/* reconhecendo o rosto: feixe de varredura girando */
+.lr.is-scanning .lr-state b { opacity: 1; animation: lr-turn 1.6s linear infinite; }
+.lr.is-scanning .lr-state i { border-color: rgba(79, 220, 255, 0.45); opacity: 1; }
+.lr.is-scanning .lr-hand { animation-duration: 6s; }
+/* liberado: verde e os anéis se abrindo para fora */
+.lr.is-ok { --lr-c: 52, 211, 153; }
+.lr.is-ok .lr-state i { border-color: rgba(52, 211, 153, 0.95); opacity: 1; box-shadow: 0 0 30px rgba(52, 211, 153, 0.55); }
+.lr-burst { position: absolute; inset: -16px; pointer-events: none; }
+.lr-burst i { position: absolute; inset: 0; border-radius: 50%; border: 2px solid rgba(52, 211, 153, 0.85); animation: lr-burst 1.1s cubic-bezier(0.2, 0.7, 0.3, 1) both; }
+.lr-burst i:nth-child(2) { animation-delay: 0.18s; }
+.lr-burst i:nth-child(3) { animation-delay: 0.36s; }
+@keyframes lr-burst { from { opacity: 0.9; transform: scale(1); } to { opacity: 0; transform: scale(1.9); } }
+/* recusado: vermelho e um tremor curto */
+.lr.is-fail { --lr-c: 248, 113, 113; }
+.lr.is-fail .lr-state i { border-color: rgba(248, 113, 113, 0.9); opacity: 1; animation: lr-shake 420ms cubic-bezier(0.36, 0.07, 0.19, 0.97) both; }
+@keyframes lr-shake { 20%, 60% { transform: translateX(-5px); } 40%, 80% { transform: translateX(5px); } }
+/* forma personalizada (fios, minimal, emaranhado) do mesmo tamanho do Reator Arc */
+.lr-shape { width: clamp(170px, min(32vh, 26vw), 300px); height: auto; aspect-ratio: 1; }
+.snt-orb .lr-shape { width: clamp(150px, min(36vh, 30vw), 340px); }
+/* personalizado: o anel dos segundos e o ponteiro na cor escolhida */
+.lr-custom .lr-seconds line { stroke: var(--rx-color); opacity: 0.3; }
+.lr-custom .lr-seconds line.is-major { opacity: 0.65; }
+.lr-custom .lr-hand i { box-shadow: 0 0 10px var(--rx-color), 0 0 2px #fff; }
+/* o anel tracejado antigo vira o anel dos segundos */
+.ls-orb-wrapper:has(> div > .lr) > .ls-hud-ring { display: none; }
+
+/* ---- colunas de cartões alinhadas no topo (antes cada uma centralizava na própria altura e ficava torta) ---- */
+@media (min-width: 1200px) and (min-height: 741px) {
+  .ls-container .lc-row { top: clamp(150px, 20vh, 220px); transform: none; }
+}
+
+/* ---- barra de baixo: microfone, palmas, "espaço = liberar" e o ⚙ GERENCIAR ---- */
+.lk-dock { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; padding: 6px 8px 6px 12px; border-radius: 999px;
+  border: 1px solid rgba(200, 236, 255, 0.18); background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0) 60%), rgba(6, 20, 44, 0.72);
+  box-shadow: 0 8px 26px rgba(0, 8, 30, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.12); }
+.lk-dock .snt-key { font: 600 10px "Orbitron", monospace; letter-spacing: 0.16em; color: rgba(201, 246, 255, 0.6); }
+.lk-dock-classic { margin-top: 6px; }
+.lk-essential { margin-top: 4px; }
+.lm { position: relative; }
+.lm-btn { position: relative; display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 999px; cursor: pointer;
+  border: 1px solid rgba(79, 220, 255, 0.45); background: rgba(79, 220, 255, 0.1); color: #dff8ff;
+  font: 600 10.5px "Orbitron", monospace; letter-spacing: 0.14em; transition: background-color 160ms ease, transform 160ms ease; }
+.lm-btn:hover, .lm-btn.is-open { background: rgba(79, 220, 255, 0.22); }
+.lm-btn:active { transform: scale(0.97); }
+.lm-menu { position: absolute; bottom: calc(100% + 12px); left: 50%; z-index: 80; width: min(560px, calc(100vw - 32px)); padding: 14px 16px 16px;
+  border-radius: 18px; border: 1px solid rgba(200, 236, 255, 0.3);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0) 45%), linear-gradient(160deg, rgba(12, 36, 72, 0.97), rgba(4, 12, 30, 0.98));
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.55), 0 0 30px rgba(79, 220, 255, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  transform: translateX(-50%); transform-origin: 50% 100%; animation: lm-in 260ms cubic-bezier(0.2, 0.9, 0.25, 1.15) both; }
+@keyframes lm-in { from { opacity: 0; transform: translateX(-50%) translateY(10px) scale(0.94); } to { opacity: 1; transform: translateX(-50%); } }
+.lm-menu header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.lm-menu header b { font: 600 11px "Orbitron", monospace; letter-spacing: 0.18em; color: #67e8f9; }
+.lm-menu header button { width: 28px; height: 28px; border-radius: 8px; border: 1px solid rgba(201, 246, 255, 0.25); background: rgba(2, 8, 19, 0.6); color: #c9f6ff; cursor: pointer; }
+.lm-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.lm-grid > .ls-chip { justify-content: center; animation: ld-rise 280ms both; }
+.lm-grid > .ls-chip:nth-child(n+4) { animation-delay: 40ms; } .lm-grid > .ls-chip:nth-child(n+7) { animation-delay: 80ms; } .lm-grid > .ls-chip:nth-child(n+10) { animation-delay: 120ms; }
+
+/* ---- economia de madrugada (html.lock-sleep, LockScreen.jsx: useLockSleep) ---- */
+#root::after { content: ""; position: fixed; inset: 0; z-index: 9000; pointer-events: none; background: rgba(0, 3, 10, 0.62); opacity: 0; transition: opacity 1.2s ease; }
+html.lock-sleep #root::after { opacity: 1; }
+html:not(.lock-sleep) #root::after { visibility: hidden; transition: opacity 400ms ease, visibility 0s 400ms; }
+html.lock-sleep #root * { animation-play-state: paused !important; }
+
+/* ---- a central entra abrindo a partir do reator (uma vez, ao montar) ---- */
+.hl-root { animation: hl-reveal 620ms cubic-bezier(0.2, 0.9, 0.25, 1) backwards; }
+@keyframes hl-reveal { from { clip-path: circle(8% at 50% 50%); opacity: 0.4; } to { clip-path: circle(150% at 50% 50%); opacity: 1; } }
+html.is-eco .hl-root { animation: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .lr-hand, .lr-state i, .lr-state b, .lr-burst i, .lm-menu, .lm-grid > .ls-chip, .hl-root { animation: none !important; }
+}
+.lk-dock .ls-mic-toggle { margin: 0; }
+/* a cor escolhida vence o "sentinela dormindo" do fundo blueprint (que zerava o filtro) */
+.lr .rx-custom.rx-reator > .arc-hud { filter: hue-rotate(var(--rx-hue)) contrast(var(--rx-contrast)); }
+.lr .rx-custom.rx-reator > .arc-hud.snt-hud { filter: hue-rotate(var(--rx-hue)) contrast(var(--rx-contrast)) brightness(0.92); }
