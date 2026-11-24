@@ -59,3 +59,35 @@ export function markLauncherWorks() {
 export function launcherWorks() {
   return read(KEY_LAUNCHER) === "1";
 }
+
+// V9.4.5: depois de uma ATUALIZAÇÃO a página recarrega e o PC volta bloqueado; a "verificação rápida" do boot
+// ligava a câmera sozinha e o escaneamento facial aparecia a cada atualização (a automática roda a cada 40 min,
+// muitas vezes com ninguém na frente do PC). Agora quem recarrega por atualização deixa esta marca e o boot
+// mostra o bloqueio pronto, sem ligar a câmera. Vale 10 min e só uma vez.
+const KEY_UPDATE_RELOAD = "jarvis.updateReload";
+export const UPDATE_RELOAD_WINDOW_MS = 10 * 60 * 1000;
+
+export function markUpdateReload(now = Date.now(), storage = globalThis.sessionStorage) {
+  try {
+    storage?.setItem(KEY_UPDATE_RELOAD, String(now));
+  } catch {
+    /* sem armazenamento: no pior caso, a verificação rápida roda como antes */
+  }
+}
+
+/** Esta abertura veio de um recarregamento por atualização? (consome a marca) */
+export function consumeUpdateReload(now = Date.now(), storage = globalThis.sessionStorage) {
+  try {
+    const at = Number(storage?.getItem(KEY_UPDATE_RELOAD));
+    storage?.removeItem(KEY_UPDATE_RELOAD);
+    return Number.isFinite(at) && at > 0 && now - at >= 0 && now - at < UPDATE_RELOAD_WINDOW_MS;
+  } catch {
+    return false;
+  }
+}
+
+/** Recarrega a página por causa de uma atualização (sem o escaneamento facial automático depois). */
+export function reloadAfterUpdate() {
+  markUpdateReload();
+  window.location.reload();
+}

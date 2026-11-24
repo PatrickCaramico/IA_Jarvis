@@ -1,3 +1,5 @@
+import { reloadAfterUpdate } from "./session.js";
+
 // V8.3.1: o app do Windows (ilha e janela) carrega a interface do PC (frontend/dist). Quando a interface nova
 // chega (baixada do site ou montada em segundo plano), a página aberta continuava com a antiga até fechar e
 // abrir o app. Agora ela confere de tempos em tempos e se recarrega sozinha, só quando não atrapalha.
@@ -29,7 +31,7 @@ export function watchNewBuild(canReload, everyMs = 60000) {
         const served = bundleName(await r.text());
         pending = Boolean(served) && served !== mine;
       }
-      if (pending && canReload()) window.location.reload();
+      if (pending && canReload()) reloadAfterUpdate(); // V9.4.5: sem o escaneamento facial automático depois
     } catch {
       /* JARVIS reiniciando: tenta na próxima */
     }

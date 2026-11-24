@@ -60,7 +60,7 @@ import { checkOutcome, markAutoUpdateAttempt, readAutoUpdateAttempt, shouldAutoU
 import { rememberAlwaysOn, rememberStartup } from "./utils/bootStatus.js";
 import { EMPTY_STREAM, applyStream, markStreamed } from "./utils/streamState.js";
 import BootReconnect from "./components/BootReconnect.jsx";
-import { canResumeSession, hasLoggedBefore, launcherWorks, markLauncherWorks, rememberLogin } from "./utils/session.js";
+import { canResumeSession, consumeUpdateReload, hasLoggedBefore, launcherWorks, markLauncherWorks, rememberLogin, reloadAfterUpdate } from "./utils/session.js";
 import { enqueue, canDrain } from "./utils/turnQueue.js";
 import CommandPalette from "./components/CommandPalette.jsx";
 import { startMood } from "./utils/mood.js";
@@ -1067,6 +1067,7 @@ export default function App() {
     setBootError("");
     const params = new URLSearchParams(window.location.search);
     const wake = params.get("wake") === "clap";
+    const afterUpdate = consumeUpdateReload(); // V9.4.5: consome a marca logo no começo (vale uma abertura só)
     if (wake) {
       params.delete("wake");
       const clean = params.toString() ? `?${params.toString()}` : "";
@@ -1103,6 +1104,8 @@ export default function App() {
         // Verificação rápida: ao abrir (pelo site ou no PC), já lê o rosto uma vez.
         // É você: entra direto na sua central. Não é: a tela oferece criar um perfil novo.
         // No app do celular a câmera seria a do PC, então lá continua pelo PIN.
+        // V9.4.5: recarregou por atualização: o bloqueio fica pronto, sem ligar a câmera sozinho (palmas ainda escaneiam)
+        if (afterUpdate && !wake) wakeHandledRef.current = true;
         if (!wakeHandledRef.current && !REMOTE_SCREEN) {
           wakeHandledRef.current = true;
           quickEnterRef.current = true;
@@ -1323,7 +1326,7 @@ export default function App() {
         if (h.boot_id && h.boot_id !== oldBoot) {
           clearInterval(poll);
           setUpdating((u) => ({ ...u, message: "Versão nova no ar. Carregando a central…", stage: "Pronto", target: 100, etapa: "pronto" }));
-          setTimeout(() => window.location.reload(), 900); // pega também a interface nova
+          setTimeout(() => reloadAfterUpdate(), 900); // pega também a interface nova
           return;
         }
         if (!wentDown) {
@@ -1365,7 +1368,7 @@ export default function App() {
       if (d.status === "latest") {
         setAppUpdateNote(`App em dia (${d.version || "ok"}). Carregando a central mais nova…`);
         setAppUpdatePct(null);
-        setTimeout(() => window.location.reload(), 1500);
+        setTimeout(() => reloadAfterUpdate(), 1500);
         return;
       }
       setAppUpdateNote(d.message || "");
@@ -1401,7 +1404,7 @@ export default function App() {
     }
     if (action === "reload") {
       // site/outro aparelho: a central mais nova vem do servidor do site; o PC só se atualiza pedido nele mesmo
-      setTimeout(() => window.location.reload(), 700);
+      setTimeout(() => reloadAfterUpdate(), 700);
       return "Carregando a central mais nova…";
     }
     let info;
