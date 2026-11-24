@@ -48,4 +48,5 @@ def test_all_tmp_replaces_use_safe_io():
     mods = Path(__file__).resolve().parents[1] / "modules"
     for name in ["sports_provider", "desk_missions", "face", "lock_pin", "profiles"]:
         src = (mods / f"{name}.py").read_text(encoding="utf-8")
-        assert "replace_file(" in src and "tmp.replace(" not in src, name
+        # V9.4.3: safe_io.write_json também vale (grava pelo replace_file e atualiza o cache de leitura)
+        assert ("replace_file(" in src or "safe_io.write_json(" in src) and "tmp.replace(" not in src, name

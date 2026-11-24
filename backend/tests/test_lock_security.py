@@ -11,8 +11,10 @@ from modules import access, lock_log, lock_pin, prefs
 def test_pin_hash_salted_and_never_plain(isolated_data):
     lock_pin.set_pin("4821")
     raw = (isolated_data / "lock_pin.json").read_text(encoding="utf-8")
-    assert "4821" not in raw
     data = json.loads(raw)
+    # V9.4.3: o PIN não pode estar guardado como valor. Antes o teste procurava "4821" no texto inteiro e falhava por
+    # acaso quando o horário gravado ("updated_at": 1795536805.6148217) tinha esses dígitos.
+    assert "pin" not in data and all(v != "4821" for v in data.values()) and '"4821"' not in raw
     assert data["algo"] == "scrypt" and len(bytes.fromhex(data["salt"])) == 16
     # Mesmo PIN gera hash diferente (sal novo)
     first_hash = data["hash"]
