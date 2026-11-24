@@ -355,3 +355,139 @@ html:root.is-eco .rxm-ring, html:root.is-eco .rxm-core { animation: none; }
 .rxs-actions button.is-main { background: rgba(79, 220, 255, 0.22); border-color: rgba(79, 220, 255, 0.9); color: #fff; }
 @media (max-width: 720px) { .rxs-body { grid-template-columns: 1fr; } }
 @media (prefers-reduced-motion: reduce) { .rxm-ring, .rxm-core { animation: none !important; } }
+
+/* ==========================================================
+   V9.4.5: TRANSCRIÇÃO AO VIVO (components/ChatPeek.jsx)
+   Vidro (variáveis --g-*), aparece subindo e crescendo, sai descendo e sumindo. Só existe enquanto aparece.
+   Animações só com transform/opacity.
+   ========================================================== */
+.cpk {
+  position: fixed;
+  right: 20px;
+  bottom: 78px;
+  z-index: 60;
+  width: min(480px, calc(100vw - 32px));
+  max-height: min(56vh, 520px);
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--g-radius, 16px);
+  /* "vidro pintado" como o resto da central (glass.css, V9.1.2: dentro da .hl-root o desfoque ao vivo é desligado
+     porque refazia a cada quadro com o orbe girando atrás): tinta densa + reflexo + aresta clara */
+  background: var(--g-shine), linear-gradient(160deg, rgba(14, 38, 72, 0.96), rgba(5, 14, 32, 0.97));
+  border: 1px solid var(--g-edge-hi, rgba(200, 236, 255, 0.32));
+  box-shadow: var(--g-shadow), 0 0 40px var(--g-accent-soft, rgba(34, 211, 238, 0.18));
+  color: #e6f6ff;
+  transform-origin: 85% 100%;
+  animation: cpk-in 340ms cubic-bezier(0.2, 0.9, 0.25, 1.15) both;
+  will-change: transform, opacity;
+}
+.cpk.cpk-out { animation: cpk-out 260ms cubic-bezier(0.4, 0, 0.9, 0.5) both; pointer-events: none; }
+@keyframes cpk-in {
+  from { opacity: 0; transform: translateY(26px) scale(0.92); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes cpk-out {
+  from { opacity: 1; transform: none; }
+  to { opacity: 0; transform: translateY(18px) scale(0.95); }
+}
+/* brilho que corre na borda enquanto ele fala (só opacity) */
+.cpk::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  border: 1px solid var(--g-accent, #22d3ee);
+  opacity: 0;
+  pointer-events: none;
+}
+.cpk.is-live::after { animation: cpk-glow 1.8s ease-in-out infinite; }
+@keyframes cpk-glow { 0%, 100% { opacity: 0.12; } 50% { opacity: 0.55; } }
+
+.cpk-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px 8px 14px;
+  border-bottom: 1px solid var(--g-edge, rgba(200, 236, 255, 0.16));
+  font-size: 11px;
+  letter-spacing: 0.16em;
+}
+.cpk-head b { font-weight: 600; color: #bfeaff; white-space: nowrap; }
+.cpk-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--g-accent, #22d3ee); box-shadow: 0 0 8px var(--g-accent, #22d3ee); }
+.cpk.is-live .cpk-dot { animation: cpk-glow 1.2s ease-in-out infinite; }
+.cpk-tag { color: var(--g-accent, #22d3ee); font-size: 10px; }
+.cpk-wave { display: inline-flex; align-items: center; gap: 2px; height: 14px; }
+.cpk-wave i { width: 3px; height: 14px; border-radius: 2px; background: var(--g-accent, #22d3ee); transform-origin: 50% 50%; animation: cpk-bar 0.9s ease-in-out infinite; }
+.cpk-wave i:nth-child(2) { animation-delay: -0.3s; }
+.cpk-wave i:nth-child(3) { animation-delay: -0.6s; }
+.cpk-wave i:nth-child(4) { animation-delay: -0.15s; }
+@keyframes cpk-bar { 0%, 100% { transform: scaleY(0.3); } 50% { transform: scaleY(1); } }
+.cpk-btn {
+  margin-left: auto;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--g-edge-hi, rgba(200, 236, 255, 0.32));
+  background: rgba(255, 255, 255, 0.05);
+  color: #cfefff;
+  font: inherit;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+}
+.cpk-btn + .cpk-btn { margin-left: 0; }
+.cpk-btn:hover { background: var(--g-accent-soft, rgba(34, 211, 238, 0.18)); }
+.cpk-x { padding: 3px 7px; letter-spacing: 0; }
+
+.cpk-body {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 10px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  scrollbar-width: thin;
+}
+.cpk-msg {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 15px;
+  line-height: 1.45;
+  animation: cpk-line 260ms ease-out both;
+}
+@keyframes cpk-line { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.cpk-msg b { font-size: 10px; letter-spacing: 0.16em; font-weight: 600; }
+.cpk-user { align-self: flex-end; text-align: right; max-width: 85%; color: #d5e6f5; }
+.cpk-user b { color: #93c5fd; }
+.cpk-user span { padding: 6px 10px; border-radius: 12px 12px 4px 12px; background: rgba(147, 197, 253, 0.1); border: 1px solid rgba(147, 197, 253, 0.18); }
+.cpk-user.is-live span { font-style: italic; opacity: 0.85; }
+.cpk-jarvis { color: #f1faff; font-size: 16px; }
+.cpk-jarvis b { color: var(--g-accent, #22d3ee); }
+.cpk-error b { color: #fca5a5; }
+
+/* botão do Canal Ativo que liga/desliga a transcrição */
+.hl-peek-toggle {
+  align-self: flex-start;
+  margin: 0 0 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(200, 236, 255, 0.18);
+  background: transparent;
+  color: #8fb8cc;
+  font: inherit;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+}
+.hl-peek-toggle.is-on { color: var(--g-accent, #22d3ee); border-color: rgba(34, 211, 238, 0.4); }
+
+/* celular: vira uma folha acima da barra de baixo, na largura toda */
+@media (max-width: 760px) {
+  .cpk { right: 12px; left: 12px; width: auto; bottom: 84px; max-height: 50vh; transform-origin: 50% 100%; }
+  .cpk-msg { font-size: 15px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cpk, .cpk.cpk-out, .cpk-msg, .cpk::after, .cpk-wave i, .cpk-dot { animation: none !important; }
+  .cpk.cpk-out { opacity: 0; }
+}

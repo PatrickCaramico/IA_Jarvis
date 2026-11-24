@@ -172,6 +172,12 @@ class DemoSocket {
         { kind: "app", name: "Celular · SM-A546E", ip: "192.168.1.58", since: 2 },
       ] }), 300);
       setTimeout(() => send({ type: "response", text: "Em Maragogi, 27 graus e sol. Vale levar protetor solar hoje.", cards: [] }), 900);
+      // V9.4.5: ?fala=1 mostra a transcrição ao vivo: ele fala por 5 s e a janela fecha sozinha depois
+      if (q.get("fala") === "1") {
+        setTimeout(() => send({ type: "state", state: "speaking" }), 1500);
+        setTimeout(() => send({ type: "response", text: "Bom dia, senhor. Hoje faz 24 graus em São Paulo, com chance de chuva à tarde. Sua primeira reunião é às 10h.", cards: [] }), 1600);
+        setTimeout(() => send({ type: "state", state: "idle" }), 6500);
+      }
       // V8.13: ?stream=1 mostra uma resposta chegando em pedaços (streaming), parada no meio
       if (q.get("stream") === "1") {
         const full = "Back in Black saiu em 1980 e virou a trilha do Homem de Ferro em 2008, senhor. O riff de abertura";

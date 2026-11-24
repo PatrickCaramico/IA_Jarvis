@@ -2,6 +2,17 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 9.4.5 — 25 de novembro de 2026
+
+**💬 Transcrição ao vivo**
+- **Quando o JARVIS fala, a conversa abre numa janela de vidro maior**, com o que ele está dizendo e o que o senhor disse.
+  - Antes a fala só aparecia no Canal Ativo, que ficou pequeno na coluna direita (ou nem aparecia, com a coluna recolhida).
+  - A janela sobe crescendo ao abrir, a borda pulsa em ciano enquanto ele fala e ela desce sumindo 7 segundos depois que ele termina.
+  - Passar o mouse por cima segura a janela aberta. O ✕ fecha até a próxima fala, e o botão CHAT abre o Canal Ativo com a conversa toda.
+  - No celular, ela aparece como uma folha acima da barra de baixo.
+- **Dá para desligar:** o botão "◉ TRANSCRIÇÃO" no Canal Ativo liga e desliga. A escolha fica salva em cada aparelho.
+- Não abre na Área Limpa, que já tem a janelinha dela, nem durante o briefing.
+
 ## 9.4.4 — 25 de novembro de 2026
 
 **🎨 Personalizar o Reator: o Emaranhado não trava mais a tela**
