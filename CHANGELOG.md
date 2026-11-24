@@ -2,6 +2,41 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 9.4.5 — 25 de novembro de 2026
+
+**💬 Transcrição ao vivo**
+- **Quando o JARVIS fala, a conversa abre numa janela de vidro maior**, com o que ele está dizendo e o que o senhor disse.
+  - Antes a fala só aparecia no Canal Ativo, que ficou pequeno na coluna direita (ou nem aparecia, com a coluna recolhida).
+  - A janela sobe crescendo ao abrir, a borda pulsa em ciano enquanto ele fala e ela desce sumindo 7 segundos depois que ele termina.
+  - Passar o mouse por cima segura a janela aberta. O ✕ fecha até a próxima fala, e o botão CHAT abre o Canal Ativo com a conversa toda.
+  - No celular, ela aparece como uma folha acima da barra de baixo.
+- **Dá para desligar:** o botão "◉ TRANSCRIÇÃO" no Canal Ativo liga e desliga. A escolha fica salva em cada aparelho.
+- Não abre na Área Limpa, que já tem a janelinha dela, nem durante o briefing.
+
+**🔒 Tela de bloqueio: cartões que expandem**
+- **Tocar num cartão abre uma janela maior, que nasce do próprio cartão e volta para ele ao fechar.**
+- Cada janela ganhou a sua animação:
+  - **Clima:** a cena animada em tamanho grande, a temperatura de agora entre a mínima e a máxima e a barra da chance de chuva.
+  - **Hoje:** o sol no arco do dia, do nascer ao pôr.
+  - **Água:** o copo enchendo, com ondinha.
+  - **Mercado:** a faixa do dia, da mínima à máxima, com o valor de agora.
+  - **Spotify:** capa maior com equalizador. **Sistemas:** anel pulsando.
+  - As linhas entram em cascata.
+- **Mais leve:** o fundo escurece sem o desfoque de tela cheia (que era refeito a cada quadro com o orbe girando atrás), e as animações do bloqueio param enquanto a janela está aberta.
+- Corrigido: só o primeiro cartão de cada coluna era alcançável pelo teclado e pelo leitor de tela.
+- Corrigido: o cabeçalho das janelas do Spotify e do Mercado saía torto.
+
+**🧭 Leituras em volta do reator viram menus**
+- **Processador, Memória, Disco livre e Próximo agora são clicáveis** e abrem um menu de vidro animado.
+  - **Processador e Memória:** o valor com a barra, uma frase do que isso significa, a quantidade de processos e os atalhos **O QUE ESTÁ PESANDO?**, **AUTO-ANÁLISE** e **VARREDURA COMPLETA**.
+  - **Disco livre:** avisa se o espaço está pouco e oferece **VER O QUE DÁ PARA LIMPAR**.
+  - **Próximos:** os 3 próximos compromissos e lembretes, com **NOVO LEMBRETE** e **MINHA AGENDA**.
+- O menu fecha no Esc, tocando fora ou depois de escolher uma ação.
+
+**🙂 Sem escaneamento facial depois de atualizar**
+- Depois de cada atualização, a central aparecia já ligando a câmera para escanear o rosto, mesmo sem ninguém na frente do PC (a atualização automática roda a cada 40 minutos).
+- Agora, depois de uma atualização, a tela de bloqueio aparece pronta e espera o senhor: espaço, toque, tecla de acesso ou PIN. Abrir a central normalmente continua com a verificação rápida.
+
 ## 9.4.4 — 25 de novembro de 2026
 
 **🎨 Personalizar o Reator: o Emaranhado não trava mais a tela**

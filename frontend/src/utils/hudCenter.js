@@ -64,3 +64,59 @@ export function diskText(gb) {
   if (!Number.isFinite(v)) return "—";
   return v >= 1000 ? `${(v / 1024).toFixed(1).replace(".", ",")} TB` : `${Math.round(v)} GB`;
 }
+
+/**
+ * V9.4.5: o menu que abre ao tocar numa leitura em volta do reator (processador, memória, disco, próximo).
+ * Puro: devolve o título, o valor, as linhas e as ações; o componente só desenha e executa.
+ * Ação: { id, icon, label, command } (frase para o JARVIS) ou { id, icon, label, event } (evento da central).
+ */
+export function telemetryMenu(kind, sys = {}, agenda = []) {
+  const s = sys || {};
+  const temp = typeof s.temperature === "number" ? `${s.temperature} °C` : null;
+  const heavy = { id: "heavy", icon: "🔎", label: "O QUE ESTÁ PESANDO?", command: "o que está pesando no pc" };
+  const analyze = { id: "analyze", icon: "⚡", label: "AUTO-ANÁLISE", command: "faz uma auto análise" };
+  const scan = { id: "scan", icon: "🧹", label: "VARREDURA COMPLETA", event: "pc-scan" };
+  if (kind === "cpu" || kind === "ram") {
+    const v = kind === "cpu" ? s.cpu_percent : s.ram_percent;
+    const n = Number(v);
+    const note = !Number.isFinite(n) ? "Sem leitura agora." : n >= 90 ? "Muito alto: vale ver o que está pesando."
+      : n >= 70 ? "Alto: algum programa está exigindo." : "Tranquilo.";
+    return {
+      title: kind === "cpu" ? "PROCESSADOR" : "MEMÓRIA",
+      value: Number.isFinite(n) ? `${Math.round(n)}%` : "—",
+      bar: Number.isFinite(n) ? Math.min(100, Math.max(0, n)) : null,
+      note,
+      rows: [
+        ["Programas e processos", s.processes != null ? String(s.processes) : null],
+        ["Temperatura", temp],
+        [kind === "cpu" ? "Memória" : "Processador", Number.isFinite(Number(kind === "cpu" ? s.ram_percent : s.cpu_percent))
+          ? `${Math.round(Number(kind === "cpu" ? s.ram_percent : s.cpu_percent))}%` : null],
+      ].filter(([, val]) => val),
+      actions: [heavy, analyze, scan],
+    };
+  }
+  if (kind === "disk") {
+    const gb = Number(s.disk_free_gb);
+    return {
+      title: "DISCO LIVRE",
+      value: diskText(s.disk_free_gb),
+      bar: null,
+      note: !Number.isFinite(gb) ? "Sem leitura agora." : gb < 15 ? "Pouco espaço: vale limpar temporários e a lixeira." : "Espaço de sobra.",
+      rows: [],
+      actions: [{ ...scan, label: "VER O QUE DÁ PARA LIMPAR" }, analyze],
+    };
+  }
+  // próximo compromisso
+  const items = (agenda || []).filter((i) => i && (i.title || i.label)).slice(0, 3);
+  return {
+    title: "PRÓXIMOS",
+    value: items[0] ? String(items[0].label || "").trim() || "Em breve" : "Nada marcado",
+    bar: null,
+    note: items.length ? null : "Nenhum compromisso ou lembrete pendente.",
+    rows: items.map((i) => [String(i.label || "").trim() || "Em breve", `${i.kind === "lembrete" ? "⏰ " : "📅 "}${i.title || "Compromisso"}`]),
+    actions: [
+      { id: "reminder", icon: "⏰", label: "NOVO LEMBRETE", event: "new-reminder" },
+      { id: "agenda", icon: "📅", label: "MINHA AGENDA", command: "minha agenda" },
+    ],
+  };
+}

@@ -28,6 +28,8 @@ import lazyComponent from "../utils/lazyComponent.jsx";
 import JarvisLogo from "./JarvisLogo.jsx";
 import NewsWindow from "./NewsWindow.jsx";
 import ZenGlance from "./ZenGlance.jsx";
+import ChatPeek from "./ChatPeek.jsx";
+import { peekEnabled, setPeekEnabled } from "../utils/chatPeek.js";
 import { applyBackground } from "../utils/theme.js";
 
 // Carregados sob demanda (otimização 4.2: pacote inicial menor)
@@ -1043,6 +1045,7 @@ export default function HudLayout({
     return () => clearTimeout(t);
   }, [rightOpen, rightActivity, lastMsgId, listening, busy, interim]);
   const listRef = useRef(null);
+  const [peekOn, setPeekOn] = useState(peekEnabled); // V9.4.5: transcrição ao vivo
   const talking = jarvisState === "speaking";
   const voiceTag = listening ? "OUVINDO" : talking ? "FALANDO" : jarvisState === "processing" ? "PROCESSANDO" : "SILÊNCIO";
   const micOk = services.microphone === true;
@@ -1332,7 +1335,7 @@ export default function HudLayout({
         {!briefing && <StateHint jarvisState={jarvisState} listening={listening} interim={interim} micOk={micOk} onCancel={onCancel} doing={doing} />}
         <div className="hl-orb">
           {orbSlot}
-          {!briefing && !zenMode && <OrbTelemetry api={api} connected={connected} onAnalyze={onCommand ? () => onCommand("faz uma auto análise") : null} />}
+          {!briefing && !zenMode && <OrbTelemetry api={api} connected={connected} onAnalyze={onCommand ? () => onCommand("faz uma auto análise") : null} onCommand={onCommand} />}
           {/* V4.3: identificação no orbe enquanto o JARVIS cumprimenta (início do briefing) */}
           {briefingRunning && briefing.index < 0 && photoUrl && (
             <span className="bf-identity" aria-hidden="true">
@@ -1398,6 +1401,12 @@ export default function HudLayout({
         </Panel>
         <Panel id="chat" title="JARVIS · CANAL ATIVO" tag={busy ? "OCUPADO" : "PRONTO"} className="hl-channel" onMoveToSecondary={handleMoveToSecondary}>
           <ChatTools api={api} onCommand={onCommand} />
+          {/* V9.4.5: liga e desliga a transcrição ao vivo (a janela de vidro que abre quando ele fala) */}
+          <button type="button" className={`hl-peek-toggle${peekOn ? " is-on" : ""}`} aria-pressed={peekOn}
+            onClick={() => setPeekOn(setPeekEnabled(!peekOn))}
+            title={peekOn ? "A conversa abre numa janela maior quando o JARVIS fala. Toque para desligar." : "Toque para a conversa abrir numa janela maior quando o JARVIS falar."}>
+            ◉ TRANSCRIÇÃO {peekOn ? "LIGADA" : "DESLIGADA"}
+          </button>
           {log.length > 0 && <ChatClear api={api} />}
           <div className="hl-messages" ref={listRef} aria-live="polite" aria-label="Conversa">
             {log.length === 0 && !listening && (
@@ -1487,6 +1496,18 @@ export default function HudLayout({
         </span>
       </footer>
 
+      <ChatPeek
+        log={log}
+        enabled={peekOn}
+        speaking={talking}
+        listening={listening}
+        interim={interim}
+        streamText={streamText}
+        zen={zenMode}
+        briefing={Boolean(briefing)}
+        TextComp={Typed}
+        onOpenChat={() => { setRightOpen(true); touchRight(); }}
+      />
       {newsOpen && <NewsWindow api={api} onClose={() => setNewsOpen(false)} />}
       {(screensOpen || Boolean(screensTab)) && (
         <ScreensOverlay

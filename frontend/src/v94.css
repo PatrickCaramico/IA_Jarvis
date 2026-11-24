@@ -355,3 +355,327 @@ html:root.is-eco .rxm-ring, html:root.is-eco .rxm-core { animation: none; }
 .rxs-actions button.is-main { background: rgba(79, 220, 255, 0.22); border-color: rgba(79, 220, 255, 0.9); color: #fff; }
 @media (max-width: 720px) { .rxs-body { grid-template-columns: 1fr; } }
 @media (prefers-reduced-motion: reduce) { .rxm-ring, .rxm-core { animation: none !important; } }
+
+/* ==========================================================
+   V9.4.5: TRANSCRIÇÃO AO VIVO (components/ChatPeek.jsx)
+   Vidro (variáveis --g-*), aparece subindo e crescendo, sai descendo e sumindo. Só existe enquanto aparece.
+   Animações só com transform/opacity.
+   ========================================================== */
+.cpk {
+  position: fixed;
+  right: 20px;
+  bottom: 78px;
+  z-index: 60;
+  width: min(480px, calc(100vw - 32px));
+  max-height: min(56vh, 520px);
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--g-radius, 16px);
+  /* "vidro pintado" como o resto da central (glass.css, V9.1.2: dentro da .hl-root o desfoque ao vivo é desligado
+     porque refazia a cada quadro com o orbe girando atrás): tinta densa + reflexo + aresta clara */
+  background: var(--g-shine), linear-gradient(160deg, rgba(14, 38, 72, 0.96), rgba(5, 14, 32, 0.97));
+  border: 1px solid var(--g-edge-hi, rgba(200, 236, 255, 0.32));
+  box-shadow: var(--g-shadow), 0 0 40px var(--g-accent-soft, rgba(34, 211, 238, 0.18));
+  color: #e6f6ff;
+  transform-origin: 85% 100%;
+  animation: cpk-in 340ms cubic-bezier(0.2, 0.9, 0.25, 1.15) both;
+  will-change: transform, opacity;
+}
+.cpk.cpk-out { animation: cpk-out 260ms cubic-bezier(0.4, 0, 0.9, 0.5) both; pointer-events: none; }
+@keyframes cpk-in {
+  from { opacity: 0; transform: translateY(26px) scale(0.92); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes cpk-out {
+  from { opacity: 1; transform: none; }
+  to { opacity: 0; transform: translateY(18px) scale(0.95); }
+}
+/* brilho que corre na borda enquanto ele fala (só opacity) */
+.cpk::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  border: 1px solid var(--g-accent, #22d3ee);
+  opacity: 0;
+  pointer-events: none;
+}
+.cpk.is-live::after { animation: cpk-glow 1.8s ease-in-out infinite; }
+@keyframes cpk-glow { 0%, 100% { opacity: 0.12; } 50% { opacity: 0.55; } }
+
+.cpk-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px 8px 14px;
+  border-bottom: 1px solid var(--g-edge, rgba(200, 236, 255, 0.16));
+  font-size: 11px;
+  letter-spacing: 0.16em;
+}
+.cpk-head b { font-weight: 600; color: #bfeaff; white-space: nowrap; }
+.cpk-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--g-accent, #22d3ee); box-shadow: 0 0 8px var(--g-accent, #22d3ee); }
+.cpk.is-live .cpk-dot { animation: cpk-glow 1.2s ease-in-out infinite; }
+.cpk-tag { color: var(--g-accent, #22d3ee); font-size: 10px; }
+.cpk-wave { display: inline-flex; align-items: center; gap: 2px; height: 14px; }
+.cpk-wave i { width: 3px; height: 14px; border-radius: 2px; background: var(--g-accent, #22d3ee); transform-origin: 50% 50%; animation: cpk-bar 0.9s ease-in-out infinite; }
+.cpk-wave i:nth-child(2) { animation-delay: -0.3s; }
+.cpk-wave i:nth-child(3) { animation-delay: -0.6s; }
+.cpk-wave i:nth-child(4) { animation-delay: -0.15s; }
+@keyframes cpk-bar { 0%, 100% { transform: scaleY(0.3); } 50% { transform: scaleY(1); } }
+.cpk-btn {
+  margin-left: auto;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--g-edge-hi, rgba(200, 236, 255, 0.32));
+  background: rgba(255, 255, 255, 0.05);
+  color: #cfefff;
+  font: inherit;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+}
+.cpk-btn + .cpk-btn { margin-left: 0; }
+.cpk-btn:hover { background: var(--g-accent-soft, rgba(34, 211, 238, 0.18)); }
+.cpk-x { padding: 3px 7px; letter-spacing: 0; }
+
+.cpk-body {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 10px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  scrollbar-width: thin;
+}
+.cpk-msg {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 15px;
+  line-height: 1.45;
+  animation: cpk-line 260ms ease-out both;
+}
+@keyframes cpk-line { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.cpk-msg b { font-size: 10px; letter-spacing: 0.16em; font-weight: 600; }
+.cpk-user { align-self: flex-end; text-align: right; max-width: 85%; color: #d5e6f5; }
+.cpk-user b { color: #93c5fd; }
+.cpk-user span { padding: 6px 10px; border-radius: 12px 12px 4px 12px; background: rgba(147, 197, 253, 0.1); border: 1px solid rgba(147, 197, 253, 0.18); }
+.cpk-user.is-live span { font-style: italic; opacity: 0.85; }
+.cpk-jarvis { color: #f1faff; font-size: 16px; }
+.cpk-jarvis b { color: var(--g-accent, #22d3ee); }
+.cpk-error b { color: #fca5a5; }
+
+/* botão do Canal Ativo que liga/desliga a transcrição */
+.hl-peek-toggle {
+  align-self: flex-start;
+  margin: 0 0 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(200, 236, 255, 0.18);
+  background: transparent;
+  color: #8fb8cc;
+  font: inherit;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+}
+.hl-peek-toggle.is-on { color: var(--g-accent, #22d3ee); border-color: rgba(34, 211, 238, 0.4); }
+
+/* celular: vira uma folha acima da barra de baixo, na largura toda */
+@media (max-width: 760px) {
+  .cpk { right: 12px; left: 12px; width: auto; bottom: 84px; max-height: 50vh; transform-origin: 50% 100%; }
+  .cpk-msg { font-size: 15px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cpk, .cpk.cpk-out, .cpk-msg, .cpk::after, .cpk-wave i, .cpk-dot { animation: none !important; }
+  .cpk.cpk-out { opacity: 0; }
+}
+
+/* ==========================================================
+   V9.4.5: JANELAS DE DETALHE DO BLOQUEIO (LockDetail.jsx) maiores e animadas
+   A janela "expande" do cartão tocado (Web Animations no componente). O fundo escurece SEM desfoque: o blur de
+   tela cheia era refeito a cada quadro com o orbe girando atrás; agora as animações de trás param (html.ld-open).
+   ========================================================== */
+.ld-overlay { background: rgba(2, 6, 20, 0.72); -webkit-backdrop-filter: none; backdrop-filter: none; animation: ld-fade 220ms ease-out; }
+.ld-overlay.is-closing { animation: ld-fade-out 260ms ease-in forwards; }
+@keyframes ld-fade-out { to { opacity: 0; } }
+.ld-card {
+  width: min(560px, 100%);
+  padding: 18px 22px 22px;
+  border-radius: 20px;
+  border: 1px solid rgba(200, 236, 255, 0.28);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.015) 32%, rgba(255, 255, 255, 0) 55%),
+    linear-gradient(160deg, rgba(10, 34, 70, 0.97), rgba(3, 12, 32, 0.98));
+  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.6), 0 0 36px rgba(94, 234, 212, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  animation: none;
+  transform-origin: 50% 50%;
+  will-change: transform, opacity;
+  scrollbar-width: thin;
+}
+.ld-head { margin-bottom: 14px; }
+.ld-grid { gap: 10px; }
+.ld-row dt { font-size: 0.9rem; }
+.ld-row dd { font-size: 0.95rem; }
+.ld-grid:has(> .ld-row:nth-child(5)) { grid-template-columns: 1fr 1fr; column-gap: 22px; } /* lista longa em duas colunas */
+
+/* linhas entram em cascata (até 12) */
+.ld-in { animation: ld-rise 380ms cubic-bezier(0.2, 0.9, 0.3, 1) both; }
+.ld-card .ld-in:nth-child(1) { animation-delay: 120ms; } .ld-card .ld-in:nth-child(2) { animation-delay: 160ms; }
+.ld-card .ld-in:nth-child(3) { animation-delay: 200ms; } .ld-card .ld-in:nth-child(4) { animation-delay: 240ms; }
+.ld-card .ld-in:nth-child(5) { animation-delay: 280ms; } .ld-card .ld-in:nth-child(6) { animation-delay: 320ms; }
+.ld-card .ld-in:nth-child(7) { animation-delay: 360ms; } .ld-card .ld-in:nth-child(n+8) { animation-delay: 400ms; }
+@keyframes ld-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+.ld-hero2 { position: relative; display: flex; align-items: center; gap: 18px; margin: 0 0 16px; padding: 14px 16px; border-radius: 16px;
+  background: rgba(94, 234, 212, 0.06); border: 1px solid rgba(94, 234, 212, 0.18); overflow: hidden; animation: ld-rise 420ms 60ms both; }
+.ld-hero2 strong { display: block; font-family: "Orbitron", sans-serif; font-size: 2.6rem; line-height: 1; color: #f0fbff; }
+.ld-hero2 span { color: #5eead4; font-size: 0.95rem; text-transform: capitalize; }
+
+/* clima: a cena animada do cartão, em tamanho grande */
+.ld-wx-hero { min-height: 132px; padding-left: 150px; }
+.ld-wx-scene { position: absolute; left: 10px; top: 50%; width: 64px; height: 64px; transform: translateY(-50%) scale(1.9); transform-origin: left center; }
+.ld-wx-scene .ws-scene { position: absolute; inset: 0; right: auto; top: 0; }
+.ld-wx-temp strong { font-size: 3.4rem; }
+.ld-range { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; margin: 0 0 12px;
+  font-family: "JetBrains Mono", Consolas, monospace; font-size: 0.85rem; color: rgba(201, 246, 255, 0.75); }
+.ld-range-bar { position: relative; height: 6px; border-radius: 999px; background: linear-gradient(90deg, #38bdf8, #5eead4 45%, #fbbf24 80%, #f97316); opacity: 0.9; }
+.ld-range-bar i { position: absolute; top: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; background: #fff;
+  box-shadow: 0 0 0 3px rgba(2, 8, 19, 0.85), 0 0 12px rgba(255, 255, 255, 0.8); animation: ld-pin 600ms 300ms cubic-bezier(0.2, 1.4, 0.4, 1) both; }
+@keyframes ld-pin { from { transform: scale(0); } to { transform: scale(1); } }
+.ld-range-sm { grid-template-columns: 1fr; margin: 0 0 8px; }
+.ld-range-sm .ld-range-bar { height: 4px; background: linear-gradient(90deg, #f87171, #94a3b8 50%, #34d399); }
+.ld-range-sm .ld-range-bar i { width: 10px; height: 10px; margin: -5px 0 0 -5px; }
+.ld-meter { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; margin: 0 0 14px; font-size: 0.9rem; color: rgba(201, 246, 255, 0.75); }
+.ld-meter b { font-family: "JetBrains Mono", Consolas, monospace; color: #e6f7fb; }
+.ld-meter b.is-warn { color: #fbbf24; }
+.ld-meter-bar, .ld-track { height: 8px; border-radius: 999px; background: rgba(201, 246, 255, 0.1); overflow: hidden; }
+.ld-meter-bar span, .ld-track span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #38bdf8, #5eead4);
+  transform-origin: left center; animation: ld-grow 900ms 250ms cubic-bezier(0.2, 0.9, 0.3, 1) both; }
+.ld-meter-bar span.is-warn { background: linear-gradient(90deg, #38bdf8, #fbbf24); }
+@keyframes ld-grow { from { transform: scaleX(0); } }
+.ld-track span { animation: none; background: #1ed760; }
+
+/* sistemas: anel pulsando */
+.ld-sys-ring { position: relative; width: 58px; height: 58px; flex: none; border-radius: 50%; border: 2px solid rgba(248, 113, 113, 0.7); }
+.ld-sys-ring.is-ok { border-color: rgba(52, 211, 153, 0.8); }
+.ld-sys-ring i { position: absolute; inset: -2px; border-radius: 50%; border: 2px solid currentColor; color: #f87171; animation: ld-ping 2.4s ease-out infinite; }
+.ld-sys-ring.is-ok i { color: #34d399; }
+.ld-sys-ring i + i { animation-delay: 1.2s; }
+@keyframes ld-ping { from { transform: scale(1); opacity: 0.7; } to { transform: scale(1.7); opacity: 0; } }
+.ld-services { grid-template-columns: 1fr 1fr; column-gap: 18px; }
+.ld-services .on i { animation: ld-blink 2.6s ease-in-out infinite; }
+@keyframes ld-blink { 50% { opacity: 0.45; } }
+
+/* hoje: o sol no arco do dia */
+.ld-sunarc { display: block; padding: 12px 16px 10px; }
+.ld-arc-box { position: relative; aspect-ratio: 240 / 90; }
+.ld-sunarc svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.ld-arc-bg { fill: none; stroke: rgba(201, 246, 255, 0.18); stroke-width: 2; stroke-dasharray: 3 5; }
+.ld-arc-fg { fill: none; stroke: #fbbf24; stroke-width: 3; stroke-linecap: round; filter: drop-shadow(0 0 6px rgba(251, 191, 36, 0.6)); animation: ld-fade 900ms 200ms both; }
+.ld-arc-ground { stroke: rgba(201, 246, 255, 0.25); stroke-width: 1; }
+.ld-sun-dot { position: absolute; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%;
+  background: radial-gradient(circle, #fff7c2, #fbbf24 60%, #f59e0b); box-shadow: 0 0 22px rgba(251, 191, 36, 0.9);
+  animation: ld-pin 700ms 350ms cubic-bezier(0.2, 1.4, 0.4, 1) both; }
+/* o arco ocupa o quadro do svg: a posição do sol acompanha a largura (padding do herói descontado) */
+.ld-sunarc.is-night .ld-sun-dot { background: radial-gradient(circle, #f8fafc, #cbd5e1); box-shadow: 0 0 18px rgba(224, 242, 254, 0.7); }
+.ld-arc-labels { display: flex; justify-content: space-between; margin-top: 6px; font-family: "JetBrains Mono", Consolas, monospace; font-size: 0.8rem; }
+.ld-arc-labels span { color: rgba(201, 246, 255, 0.7); text-transform: none; font-size: 0.8rem; }
+.ld-arc-labels b { color: #fbbf24; font-weight: 500; }
+
+/* água: o copo enchendo */
+.ld-glass { position: relative; width: 64px; height: 88px; flex: none; border: 2px solid rgba(201, 246, 255, 0.55); border-top: 0;
+  border-radius: 4px 4px 16px 16px; overflow: hidden; background: rgba(2, 8, 19, 0.4); }
+.ld-h2o-level { position: absolute; inset: 0; background: linear-gradient(180deg, #38bdf8, #0284c7); transform: translateY(var(--lvl, 100%));
+  animation: ld-fill 1100ms 200ms cubic-bezier(0.2, 0.9, 0.3, 1) both; }
+@keyframes ld-fill { from { transform: translateY(100%); } }
+.ld-h2o-wave { position: absolute; left: -50%; top: -5px; width: 200%; height: 10px; border-radius: 40%; background: #7dd3fc; animation: ld-slosh 2.2s ease-in-out infinite alternate; }
+@keyframes ld-slosh { from { transform: translateX(-12%); } to { transform: translateX(12%); } }
+
+/* spotify: capa maior com equalizador */
+.ld-cover-wrap { position: relative; }
+.ld-cover { width: 180px; height: 180px; }
+.ld-eq { position: absolute; right: 8px; bottom: 14px; display: flex; align-items: flex-end; gap: 3px; height: 22px; padding: 4px 6px; border-radius: 8px; background: rgba(0, 0, 0, 0.55); }
+.ld-eq i { width: 3px; height: 100%; border-radius: 2px; background: #1ed760; transform-origin: bottom; transform: scaleY(0.25); }
+.ld-cover-wrap.is-playing .ld-eq i { animation: cpk-bar 0.9s ease-in-out infinite; }
+.ld-cover-wrap.is-playing .ld-eq i:nth-child(2) { animation-delay: -0.45s; }
+.ld-cover-wrap.is-playing .ld-eq i:nth-child(3) { animation-delay: -0.2s; }
+.ld-cover-wrap.is-playing .ld-eq i:nth-child(4) { animation-delay: -0.7s; }
+.ld-cover-wrap.is-playing .ld-eq i:nth-child(5) { animation-delay: -0.1s; }
+.ld-track { width: 100%; height: 5px; }
+
+/* relógio */
+.ld-clock-hero { flex-direction: column; align-items: flex-start; gap: 6px; }
+.ld-clock-hero strong { font-size: 3.6rem; }
+
+/* cotações: uma por linha, com a faixa do dia (mínima → máxima) */
+.ld-rates section strong { font-size: 1.5rem; }
+
+/* com a janela aberta, o bloqueio atrás para de animar (está escurecido; não precisa gastar a placa de vídeo) */
+html.ld-open #root * { animation-play-state: paused !important; } /* a janela fica no <body>, fora do #root */
+
+@media (max-width: 520px) {
+  .ld-card { padding: 16px 16px 20px; }
+  .ld-grid:has(> .ld-row:nth-child(5)), .ld-services { grid-template-columns: 1fr; }
+  .ld-wx-hero { padding-left: 128px; min-height: 116px; }
+  .ld-wx-scene { transform: translateY(-50%) scale(1.6); }
+  .ld-hero2 strong { font-size: 2.2rem; }
+  .ld-wx-temp strong, .ld-clock-hero strong { font-size: 2.8rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ld-in, .ld-hero2, .ld-range-bar i, .ld-meter-bar span, .ld-sys-ring i, .ld-services .on i, .ld-arc-fg, .ld-sun-dot,
+  .ld-h2o-level, .ld-h2o-wave, .ld-eq i, .ld-overlay, .ld-overlay.is-closing { animation: none !important; }
+}
+
+/* ==========================================================
+   V9.4.5: leituras em volta do reator viram botões com menu (HudCenter.jsx: Readout + TelemetryMenu)
+   O menu é vidro pintado (sem desfoque ao vivo: a central toda é assim, ver glass.css) e cresce a partir da leitura.
+   ========================================================== */
+.hl-orb > .hc-telemetry:has(.hc-readout.is-open) { z-index: 30; }
+.hc-readout { position: relative; pointer-events: auto; }
+.hc-r-hit { all: unset; display: grid; gap: 3px; cursor: pointer; border-radius: 8px; padding: 4px 6px; margin: -4px -6px;
+  transition: transform 160ms ease, opacity 160ms ease; }
+.hc-r-hit:hover { transform: translateX(2px); }
+.hc-readout[data-side="right"] .hc-r-hit:hover { transform: translateX(-2px); }
+.hc-r-hit:focus-visible { outline: 1px solid #4fdcff; outline-offset: 2px; }
+.hc-r-hit::after { content: "▾"; position: absolute; top: 0; font-size: 9px; color: rgba(103, 232, 249, 0.55); opacity: 0; transition: opacity 160ms ease; }
+.hc-readout[data-side="left"] .hc-r-hit::after { right: 2px; }
+.hc-readout[data-side="right"] .hc-r-hit::after { left: 2px; }
+.hc-r-hit:hover::after, .hc-readout.is-open .hc-r-hit::after { opacity: 1; }
+.hc-readout.is-open { border-color: #4fdcff; }
+
+.hc-menu {
+  position: absolute; top: calc(100% + 10px); z-index: 40; width: 270px; padding: 12px 14px 14px; text-align: left;
+  border-radius: var(--g-radius, 16px); border: 1px solid var(--g-edge-hi, rgba(200, 236, 255, 0.32));
+  background: var(--g-shine), linear-gradient(160deg, rgba(14, 38, 72, 0.97), rgba(5, 14, 32, 0.98));
+  box-shadow: var(--g-shadow), 0 0 30px var(--g-accent-soft, rgba(34, 211, 238, 0.18));
+  color: #e6f6ff; transform-origin: top left; animation: hc-menu-in 260ms cubic-bezier(0.2, 0.9, 0.25, 1.15) both;
+}
+.hc-menu.is-left { left: -10px; }
+.hc-menu.is-right { right: -10px; transform-origin: top right; }
+@keyframes hc-menu-in { from { opacity: 0; transform: translateY(-6px) scale(0.92); } to { opacity: 1; transform: none; } }
+.hc-menu-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.hc-menu-head span { font: 600 9px "Orbitron", monospace; letter-spacing: 0.18em; color: rgba(103, 232, 249, 0.75); }
+.hc-menu-head b { font: 600 1.35rem "Orbitron", sans-serif; color: #f0fbff; text-shadow: 0 0 10px rgba(79, 220, 255, 0.45); white-space: nowrap; }
+.hc-menu-bar { display: block; height: 5px; margin: 8px 0 2px; border-radius: 999px; background: rgba(79, 220, 255, 0.14); overflow: hidden; }
+.hc-menu-bar > s { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #38bdf8, #4fdcff); transform-origin: left;
+  animation: ld-grow 700ms 80ms cubic-bezier(0.2, 0.9, 0.3, 1) both; }
+.hc-readout.is-warn .hc-menu-bar > s { background: linear-gradient(90deg, #38bdf8, #fbbf24); }
+.hc-readout.is-hot .hc-menu-bar > s { background: linear-gradient(90deg, #fbbf24, #f87171); }
+.hc-menu-note { margin: 8px 0 0; font-size: 0.85rem; color: rgba(201, 246, 255, 0.8); }
+.hc-menu-rows { margin: 10px 0 0; display: grid; gap: 6px; }
+.hc-menu-rows > div { display: flex; justify-content: space-between; gap: 10px; padding-bottom: 5px; border-bottom: 1px dashed rgba(201, 246, 255, 0.12);
+  animation: ld-rise 300ms both; }
+.hc-menu-rows > div:nth-child(2) { animation-delay: 50ms; } .hc-menu-rows > div:nth-child(3) { animation-delay: 100ms; }
+.hc-menu-rows dt { font-size: 0.8rem; color: rgba(201, 246, 255, 0.65); white-space: nowrap; }
+.hc-menu-rows dd { margin: 0; font-size: 0.85rem; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hc-menu-actions { display: grid; gap: 6px; margin-top: 12px; }
+.hc-menu-btn { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 10px; cursor: pointer; text-align: left;
+  border: 1px solid rgba(79, 220, 255, 0.28); background: rgba(79, 220, 255, 0.06); color: #cfefff;
+  font: 600 10px "Orbitron", monospace; letter-spacing: 0.12em; transition: transform 140ms ease, background-color 140ms ease; animation: ld-rise 300ms 120ms both; }
+.hc-menu-btn:hover { background: rgba(79, 220, 255, 0.16); transform: translateX(3px); }
+.hc-menu-btn:focus-visible { outline: 1px solid #4fdcff; }
+.hc-menu-btn span { font-size: 13px; }
+@media (prefers-reduced-motion: reduce) {
+  .hc-menu, .hc-menu-bar > s, .hc-menu-rows > div, .hc-menu-btn { animation: none !important; }
+}
