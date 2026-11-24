@@ -13,10 +13,16 @@ def test_slow_process_list_does_not_kill_the_analysis(real_skills, monkeypatch):
         time.sleep(2)  # o Windows sobrecarregado demorando para listar os programas
         return []
 
+    def slow_tabs_probe():
+        time.sleep(0.25)  # como no Windows: o navegador do JARVIS fechado demora a recusar a conexão
+        return False
+
     monkeypatch.setattr("skills.system_guard.processes", slow_processes)
+    monkeypatch.setattr("skills.navegador.cdp.available", slow_tabs_probe)
     t0 = time.monotonic()
     snap = aa.snapshot()
-    assert time.monotonic() - t0 < 1.8 and snap["slow"] == ["processos"] and snap["procs"] == []
+    # V9.4.2: as etapas rodam juntas: o total é o prazo da mais lenta (0,3 s), não a soma
+    assert time.monotonic() - t0 < 1.5 and snap["slow"] == ["processos"] and snap["procs"] == []
     result = aa.diagnose({**snap, "ram": 91, "cpu": 40})
     assert "demorou para listar os programas" in result["speech"]
     assert any(f["label"] == "Programas" for f in result["findings"])

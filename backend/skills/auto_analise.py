@@ -136,31 +136,43 @@ STEP_LIMIT_S = {"processos": 12.0, "swap": 3.0, "disco": 3.0, "abas": 3.0}
 _pool = None
 
 
-def _with_deadline(name: str, fn, default, timings: dict):
-    """Roda fn numa thread com prazo. Estourou: devolve default (a thread termina sozinha, sem segurar a resposta)."""
+def _executor():
     import concurrent.futures as cf
 
     global _pool
     if _pool is None:
         _pool = cf.ThreadPoolExecutor(max_workers=4, thread_name_prefix="auto_analise")
+    return _pool
+
+
+def _run_all(steps: dict, defaults: dict, timings: dict) -> dict:
+    """Roda as etapas AO MESMO TEMPO, cada uma com o seu prazo (STEP_LIMIT_S), contado desde o começo.
+
+    V9.4.2: antes rodavam uma depois da outra e os tempos somavam (no Windows, só perguntar pelo navegador do
+    JARVIS fechado leva ~2 s). Etapa que estoura o prazo devolve o padrão; a thread termina sozinha depois."""
+    import concurrent.futures as cf
+
     started = time.monotonic()
-    fut = _pool.submit(fn)
-    try:
-        value = fut.result(timeout=STEP_LIMIT_S[name])
-        timings[name] = round(time.monotonic() - started, 1)
-        return value
-    except cf.TimeoutError:
-        timings[name] = None
-        log.warning("Auto-análise: %s passou de %.0f s; segui sem essa parte.", name, STEP_LIMIT_S[name])
-        return default
-    except Exception:  # noqa: BLE001 - uma etapa com defeito não derruba a análise
-        timings[name] = None
-        log.exception("Auto-análise: a etapa %s falhou", name)
-        return default
+    futures = {name: _executor().submit(fn) for name, fn in steps.items()}
+    out = {}
+    for name, fut in futures.items():
+        left = max(0.0, STEP_LIMIT_S[name] - (time.monotonic() - started))
+        try:
+            out[name] = fut.result(timeout=left)
+            timings[name] = round(time.monotonic() - started, 1)
+        except cf.TimeoutError:
+            timings[name] = None
+            out[name] = defaults[name]
+            log.warning("Auto-análise: %s passou de %.1f s; segui sem essa parte.", name, STEP_LIMIT_S[name])
+        except Exception:  # noqa: BLE001 - uma etapa com defeito não derruba a análise
+            timings[name] = None
+            out[name] = defaults[name]
+            log.exception("Auto-análise: a etapa %s falhou", name)
+    return out
 
 
 def snapshot() -> dict:
-    """As medições do PC agora. Cada etapa tem prazo (STEP_LIMIT_S); snap["slow"] lista as que ficaram de fora."""
+    """As medições do PC agora. Etapas em paralelo e com prazo; snap["slow"] lista as que ficaram de fora."""
     import os
     import shutil
 
@@ -169,7 +181,6 @@ def snapshot() -> dict:
     from config import settings
     from skills.system_guard import processes
 
-    timings: dict = {}
     vm = psutil.virtual_memory()
     snap = {
         "cpu": psutil.cpu_percent(interval=None),
@@ -177,27 +188,25 @@ def snapshot() -> dict:
         "ram_total_gb": vm.total / 1024 ** 3,
         "jarvis_mb": psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2,
         "uptime_days": (time.time() - psutil.boot_time()) / 86400,
-        "tabs": None,
     }
-    snap["procs"] = _with_deadline("processos", processes, [], timings)
-    snap["swap"] = _with_deadline("swap", lambda: psutil.swap_memory().percent, 0.0, timings)
 
     def disk():
         du = shutil.disk_usage(settings.BASE_DIR.anchor or "/")
         return du.free / 1024 ** 3, du.free * 100 / du.total
-
-    got = _with_deadline("disco", disk, None, timings)
-    if got:
-        snap["disk_free_gb"], snap["disk_free_pct"] = got
 
     def tabs():  # abas do navegador do JARVIS, se ele estiver aberto (consulta local, prazo curto)
         from skills.navegador import cdp
 
         return len(cdp.tabs()) if cdp.available() else None
 
-    snap["tabs"] = _with_deadline("abas", tabs, None, timings)
+    timings: dict = {}
+    got = _run_all({"processos": processes, "swap": lambda: psutil.swap_memory().percent, "disco": disk, "abas": tabs},
+                   {"processos": [], "swap": 0.0, "disco": None, "abas": None}, timings)
+    snap["procs"], snap["swap"], snap["tabs"] = got["processos"], got["swap"], got["abas"]
+    if got["disco"]:
+        snap["disk_free_gb"], snap["disk_free_pct"] = got["disco"]
     snap["slow"] = [k for k, v in timings.items() if v is None]
-    log.info("Auto-análise: tempos por etapa %s", timings)
+    log.info("Auto-análise: tempos por etapa (s, desde o começo) %s", timings)
     return snap
 
 

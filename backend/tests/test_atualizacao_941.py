@@ -14,7 +14,9 @@ pytestmark = pytest.mark.skipif(not shutil.which("git"), reason="precisa do git"
 
 
 def git(cwd, *args):
-    return subprocess.run(["git", "-C", str(cwd), *args], capture_output=True, text=True, check=True).stdout.strip()
+    # utf-8: no Windows o padrão do console estragava os acentos da mensagem do stash ("mudanÃ§as")
+    return subprocess.run(["git", "-C", str(cwd), *args], capture_output=True, text=True, encoding="utf-8",
+                          errors="replace", check=True).stdout.strip()
 
 
 @pytest.fixture
