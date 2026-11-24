@@ -867,6 +867,14 @@ async def get_logs(limit: int = 50) -> dict:
     return {"events": event_log.list_events(limit)}
 
 
+@router.get("/api/logs/file")
+async def get_log_file(level: str = "WARNING", q: str = "", limit: int = 200) -> dict:
+    """V9.4.2: janela LOGS da central: erros e avisos (ou tudo) do logs/jarvis.log, com o rastro de cada erro."""
+    from modules import log_view
+
+    return await asyncio.to_thread(log_view.read, level, q[:80], limit)
+
+
 @router.get("/api/diagnostics")
 async def diagnostics(format: str = "json"):  # noqa: A002 - nome do parâmetro na URL
     """V4.2.2: diagnóstico sem segredos para o botão "Copiar diagnóstico" (rota protegida pelo bloqueio)."""

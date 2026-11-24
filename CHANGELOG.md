@@ -13,6 +13,30 @@ Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 - Antes, a atualização automática só rodava com o PC 30 minutos sem uso ou de madrugada, e sem avisar. Na prática, quase nunca rodava.
 - Se der errado, ele avisa uma vez (na tela e no celular), em vez de repetir a cada 40 minutos.
 
+**🎨 Personalizar o Reator**
+- Botão 🎨 REATOR, embaixo do orbe da central: muda só o orbe do centro, com a prévia ao vivo em cada estado (em espera, ouvindo, pensando, falando).
+  - Forma: Fios (o de sempre), Minimal (três anéis e um núcleo), Reator (o Arc clássico) ou Emaranhado.
+  - Cor: 8 prontas ou qualquer outra.
+  - Contraste, brilho, velocidade do giro e quantidade de fios.
+- Cada forma mostra o quanto pesa. Medido na central: Fios e Minimal são as mais leves, o Reator fica no meio e o Emaranhado é o mais pesado.
+  - O Emaranhado agora roda na versão leve, a 30 quadros por segundo: ficou cerca de 3 vezes mais leve do que a 60.
+- Fica salvo em cada aparelho, porque no celular dá para escolher uma forma mais leve.
+
+**📜 Logs na central**
+- Na faixa DIGA (embaixo do orbe) e em CONTROLES › LOGS: uma janela com os registros do JARVIS, com busca e o botão COPIAR. Antes, só abrindo o arquivo de log no PC.
+  - ERROS E AVISOS: cada erro com o rastro completo (toque para abrir).
+  - EVENTOS e TUDO: o que o JARVIS registrou e as últimas linhas do log.
+
+**⏰ Lembretes visíveis na central**
+- CONTROLES › NOVO LEMBRETE (ou o ＋ LEMBRETE na central) abre uma janela rápida com "do que lembrar" e o horário.
+  - Atalhos de horário: em 15 min, em 30 min, em 1 h, hoje às 18h e amanhã às 9h.
+- Os próximos lembretes ficam numa faixa na central, acima da frase de inspiração, com o horário e um ✕ para apagar.
+  - A faixa atualiza na hora em todos os aparelhos, inclusive quando o lembrete é criado por voz.
+
+**⚡ Auto-análise não estoura mais o tempo**
+- Com a memória alta, ler cada programa aberto passava do prazo, e o JARVIS dizia que "demorou demais" sem responder nada.
+- Agora cada etapa tem o seu prazo. A que demorar fica de fora, e a resposta sai com o resto, dizendo que o Windows está sobrecarregado e o que fazer.
+
 **🔧 Botão ATUALIZAR voltou a funcionar**
 - Ele parava quando a pasta do JARVIS no PC estava "fora do lugar". Agora:
   - **Arquivos regenerados no PC** (o package-lock, reescrito pelo npm install): voltam ao original antes de baixar.

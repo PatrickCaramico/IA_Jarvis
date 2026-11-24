@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import ArcReactorHUD from "./components/ArcReactorHUD.jsx";
-import WireOrb from "./components/WireOrb.jsx";
 import LockScreen, { BlueprintStamp } from "./components/LockScreen.jsx";
 import CommandBar from "./components/CommandBar.jsx";
 import ProfileMenu from "./components/ProfileMenu.jsx";
@@ -69,6 +68,10 @@ import { shouldAutoOpen } from "./utils/security.js";
 import { lockKeyPress, pastedImage } from "./utils/lockExtras.js";
 import RecordingBadge from "./components/RecordingBadge.jsx";
 import UpdateSoon from "./components/UpdateSoon.jsx";
+import LogsWindow from "./components/LogsWindow.jsx";
+import ReminderModal from "./components/ReminderModal.jsx";
+import ReactorOrb from "./components/ReactorOrb.jsx";
+import ReactorStudio from "./components/ReactorStudio.jsx";
 
 // Carregados sob demanda (otimização 4.2: pacote inicial menor)
 // V7: telas e janelas que nem sempre aparecem também saem do pacote inicial
@@ -132,7 +135,23 @@ export default function App() {
   alarmRef.current = alarm;
   // Botão ATUALIZAR: null | { message } enquanto baixa a versão nova e reinicia
   const [updating, setUpdating] = useState(null);
-  const [updateSoon, setUpdateSoon] = useState(null); // V9.4.1: { version, until, notes } — aviso da atualização automática
+  const [updateSoon, setUpdateSoon] = useState(null);
+  const [logsOpen, setLogsOpen] = useState(false); // V9.4.2: janela 📜 LOGS
+  const [reminderOpen, setReminderOpen] = useState(false); // V9.4.2: NOVO LEMBRETE
+  const [reactorOpen, setReactorOpen] = useState(false); // V9.4.2: 🎨 PERSONALIZAR O REATOR
+  useEffect(() => {
+    const openLogs = () => setLogsOpen(true);
+    const newReminder = () => setReminderOpen(true);
+    window.addEventListener("jarvis-open-logs", openLogs);
+    window.addEventListener("jarvis-new-reminder", newReminder);
+    const openReactor = () => setReactorOpen(true);
+    window.addEventListener("jarvis-open-reactor", openReactor);
+    return () => {
+      window.removeEventListener("jarvis-open-reactor", openReactor);
+      window.removeEventListener("jarvis-open-logs", openLogs);
+      window.removeEventListener("jarvis-new-reminder", newReminder);
+    };
+  }, []); // V9.4.1: { version, until, notes } — aviso da atualização automática
   const [lockPhase, setLockPhase] = useState("ready"); // ready | scanning | verified | failed
   const [lockMessage, setLockMessage] = useState("");
   const [name, setName] = useState("");
@@ -3442,6 +3461,12 @@ export default function App() {
         {pcScan && <PcScanPanel key={pcScan.at} api={api} initial={pcScan.data} onClose={() => setPcScan(null)} />}
       <RecordingBadge onStop={(t) => send(t)} /* V9.4: ⏺ GRAVANDO do modo gravar */ />
       {updateSoon && <UpdateSoon api={api} soon={updateSoon} onClose={() => setUpdateSoon(null)} /* V9.4.1 */ />}
+      {logsOpen && <LogsWindow api={api} onClose={() => setLogsOpen(false)} />}
+      {reactorOpen && <ReactorStudio onClose={() => setReactorOpen(false)} />}
+      {reminderOpen && (
+        <ReminderModal api={api} onClose={() => setReminderOpen(false)}
+          onSaved={() => { window.dispatchEvent(new CustomEvent("jarvis-reminders-changed")); setNotice("Lembrete criado. Ele está na central."); }} />
+      )}
       {photoDrag && <div className="ph-drop" aria-hidden="true"><div>🖼 SOLTE A IMAGEM AQUI<small>O JARVIS analisa, lê, pesquisa ou explica. A foto não é guardada.</small></div></div>}
       {photoWin && (
         <PhotoPanel
@@ -3968,7 +3993,7 @@ export default function App() {
               fanShieldUrl={publicUrl("/fan/palmeiras/palmeiras_shield.png")}
             />
           ) : (
-            <WireOrb state={listening || heardAwake ? "listening" : jarvisState} flash={orbFlash} />
+            <ReactorOrb state={listening || heardAwake ? "listening" : jarvisState} flash={orbFlash} /* V9.4.2: forma/cor de 🎨 REATOR */ />
           )
         }
         commandSlot={<CommandBar onSend={(text) => send(text)} disabled={busy} listening={listening} onToggleMic={toggleMic} />}

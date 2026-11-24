@@ -18,9 +18,10 @@ function makeRng(seed) {
   };
 }
 
-function buildWires() {
+// V9.4.2: a quantidade de fios é escolhida em 🎨 REATOR (menos fios = mais leve)
+function buildWires(count = WIRES) {
   const rand = makeRng(20261020);
-  return Array.from({ length: WIRES }, () => {
+  return Array.from({ length: count }, () => {
     const radius = 150 + (rand() - 0.5) * 20;
     const a1 = 4 + rand() * 12;
     const m1 = 2 + Math.floor(rand() * 4);
@@ -56,8 +57,8 @@ const NODES = [20, 118, 205, 292].map((deg) => {
 // flash: "success" | "error" | null (verde ou vermelho por um instante).
 const STATE_TEXT = { idle: "EM ESPERA", listening: "OUVINDO", processing: "ANALISANDO", speaking: "FALANDO" };
 
-export default function WireOrb({ state = "idle", flash = null }) {
-  const wires = useMemo(buildWires, []);
+export default function WireOrb({ state = "idle", flash = null, wires: count = WIRES }) {
+  const wires = useMemo(() => buildWires(count), [count]);
   const label = flash === "error" ? "ERRO" : flash === "success" ? "CONCLUÍDO" : STATE_TEXT[state] || "";
 
   return (
