@@ -26,7 +26,10 @@ from typing import Awaitable, Callable, Optional
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-import pygame  # noqa: E402
+from core.lazy import LazyModule  # noqa: E402
+
+# V9.4.1: o pygame (~1 s, bem mais com o disco frio) carrega na primeira fala ou no preload, não na subida
+pygame = LazyModule("pygame")
 
 # V4.4: o edge_tts (com o aiohttp) levava ~4 s só para importar e segurava a subida do servidor.
 # Agora ele é carregado na primeira fala ou por preload() em segundo plano logo após o servidor subir.
@@ -48,6 +51,12 @@ async def preload() -> None:
         await asyncio.to_thread(_get_edge_tts)
     except Exception:  # noqa: BLE001
         log.warning("Não foi possível pré-carregar o edge-tts.", exc_info=True)
+    try:  # V9.4.1: o pygame também carrega aqui, depois que o servidor já está respondendo
+        from core.lazy import warm
+
+        await asyncio.to_thread(warm, pygame)
+    except Exception:  # noqa: BLE001
+        log.warning("Não foi possível pré-carregar o pygame.", exc_info=True)
 
 from config import settings  # noqa: E402
 

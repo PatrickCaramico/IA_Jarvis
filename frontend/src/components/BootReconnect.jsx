@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { formatElapsed, knownAlwaysOn, nextCheckProgress, reconnectHint } from "../utils/bootStatus.js";
+import { formatElapsed, knownAlwaysOn, knownStartup, nextCheckProgress, reconnectHint, startupText } from "../utils/bootStatus.js";
 
 // V8.12.3: "RECONECTANDO AO SEU JARVIS" mostra o estado de verdade: a central (site) no ar, o JARVIS do PC sendo
 // procurado (há quanto tempo, quantas tentativas e a barrinha até a próxima) e se o PC está no "sempre ligado".
@@ -12,6 +12,7 @@ export default function BootReconnect({ probe, launchState, onLaunch, onRetry, o
   }, []);
 
   const alwaysOn = knownAlwaysOn();
+  const lastStartup = startupText(knownStartup()); // V9.4.1: onde a demora estava da última vez
   const elapsed = probe?.since ? now - probe.since : 0;
   const progress = probe?.checking ? 1 : nextCheckProgress(now, probe?.lastAt, probe?.nextAt);
   const launching = launchState === "opening" || launchState === "trying" || launchState === "asked";
@@ -45,6 +46,13 @@ export default function BootReconnect({ probe, launchState, onLaunch, onRetry, o
             {alwaysOn === true ? "ativo · liga com o Windows" : alwaysOn === false ? "desligado neste PC" : "confirmo quando o PC responder"}
           </span>
         </li>
+        {lastStartup && (
+          <li className="br-row is-idle">
+            <span className="br-led" aria-hidden="true" />
+            <span className="br-label">ÚLTIMA SUBIDA</span>
+            <span className="br-value">{lastStartup}</span>
+          </li>
+        )}
         <li className="br-meter" aria-hidden="true">
           <span style={{ transform: `scaleX(${progress})` }} />
         </li>

@@ -28,6 +28,12 @@ class TriggerRequest(BaseModel):
     message: str = "Bom dia"
 
 
+def _startup_info() -> dict:
+    from core import startup_timing
+
+    return startup_timing.info()
+
+
 @router.get("/api/health")
 async def health() -> dict:
     provider, personality = prefs.get_llm_config()
@@ -45,6 +51,7 @@ async def health() -> dict:
         # V8.12.3: a tela de "reconectando" do site lembra se este PC liga sozinho (nada pessoal)
         "always_on": bool(prefs.get_all().get("always_on", True)),
         "cooldown": {"active": in_cooldown, "remaining": remaining},
+        "startup": _startup_info(),  # V9.4.1: quanto tempo levou para ligar (por etapa)
         "services": {
             "ai": bool(settings.OPENAI_API_KEY or settings.ANTHROPIC_API_KEY or settings.GEMINI_API_KEY),
             "microphone": True,

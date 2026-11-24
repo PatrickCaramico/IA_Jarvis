@@ -58,7 +58,7 @@ import { APP_VERSION } from "./utils/version.js";
 import { PC_SCAN_EVENT, openPcScan, scanFromCards } from "./utils/pcScan.js";
 import { tabTitle } from "./utils/tabTitle.js";
 import { checkOutcome, markAutoUpdateAttempt, readAutoUpdateAttempt, shouldAutoUpdateOnOpen, updateButtonAction } from "./utils/updateCheck.js";
-import { rememberAlwaysOn } from "./utils/bootStatus.js";
+import { rememberAlwaysOn, rememberStartup } from "./utils/bootStatus.js";
 import { EMPTY_STREAM, applyStream, markStreamed } from "./utils/streamState.js";
 import BootReconnect from "./components/BootReconnect.jsx";
 import { canResumeSession, hasLoggedBefore, launcherWorks, markLauncherWorks, rememberLogin } from "./utils/session.js";
@@ -1044,6 +1044,7 @@ export default function App() {
       // V8.12.3: guarda se este PC está no "sempre ligado" (a tela de reconectar mostra quando ele cair)
       api("/api/health", { timeout: 5000 }).then((h) => {
         if (typeof h?.always_on === "boolean") rememberAlwaysOn(h.always_on);
+        rememberStartup(h?.startup); // V9.4.1: quanto a última subida levou (aparece na tela de reconexão)
       }).catch(() => {});
       setName(profile.name ?? "");
       setHasPhoto(Boolean(profile.has_photo));
@@ -1124,6 +1125,7 @@ export default function App() {
           try {
             const h = await res.json();
             if (typeof h?.always_on === "boolean") rememberAlwaysOn(h.always_on);
+            rememberStartup(h?.startup);
           } catch {
             /* resposta sem JSON: entra mesmo assim */
           }

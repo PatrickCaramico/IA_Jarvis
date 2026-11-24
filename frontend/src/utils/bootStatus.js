@@ -13,6 +13,39 @@ export function rememberAlwaysOn(value) {
   }
 }
 
+// V9.4.1: quanto o PC levou para ligar o JARVIS da última vez (do /api/health "startup"), para a tela de reconexão
+// mostrar onde está a demora: no Windows até o JARVIS começar, ou no próprio JARVIS até responder.
+const KEY_STARTUP = "jarvis.lastStartup";
+
+export function rememberStartup(info) {
+  if (!info || typeof info !== "object" || info.process_to_ready_s == null) return;
+  try {
+    localStorage.setItem(KEY_STARTUP, JSON.stringify({
+      windows_to_process_s: info.windows_to_process_s ?? null,
+      process_to_ready_s: info.process_to_ready_s,
+      ready_at: info.ready_at || "",
+    }));
+  } catch {
+    /* aba anônima: segue sem lembrar */
+  }
+}
+
+export function knownStartup() {
+  try {
+    const v = JSON.parse(localStorage.getItem(KEY_STARTUP) || "null");
+    return v && typeof v === "object" ? v : null;
+  } catch {
+    return null;
+  }
+}
+
+/** "Windows → JARVIS: 48 s · JARVIS pronto em 3 s" (ou só a 2ª parte, quando o PC já estava ligado). */
+export function startupText(info) {
+  if (!info || info.process_to_ready_s == null) return "";
+  const ready = `JARVIS pronto em ${formatElapsed(info.process_to_ready_s * 1000)}`;
+  return info.windows_to_process_s != null ? `Windows até o JARVIS: ${formatElapsed(info.windows_to_process_s * 1000)} · ${ready}` : ready;
+}
+
 // true | false | null (nunca soube)
 export function knownAlwaysOn() {
   let raw = null;

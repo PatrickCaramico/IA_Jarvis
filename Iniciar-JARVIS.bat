@@ -61,12 +61,6 @@ if not exist "%BACKEND%\venv\Lib\site-packages\uvicorn" set "NEED_PIP=1"
 if not exist "%BACKEND%\venv\Lib\site-packages\icalendar" set "NEED_PIP=1"
 rem V7.7: certificado da conexao criptografada (https) na rede de casa
 if not exist "%BACKEND%\venv\Lib\site-packages\cryptography" set "NEED_PIP=1"
-rem V8.1.5: edge-tts antigo nao fala mais (a Microsoft mudou o servico de voz): atualiza sozinho
-"%BACKEND%\venv\Scripts\python.exe" -c "import importlib.metadata as m,sys; v=m.version('edge-tts').split('.'); sys.exit(0 if (int(v[0]),int(v[1]))>=(7,3) else 1)" >nul 2>nul
-if errorlevel 1 (
-  echo  [2/5] Atualizando a voz do JARVIS ^(edge-tts^)...
-  "%BACKEND%\venv\Scripts\python.exe" -m pip install --disable-pip-version-check -q -U "edge-tts>=7.3.0"
-)
 if defined NEED_PIP (
   echo  [2/5] Instalando dependencias do backend...
   "%BACKEND%\venv\Scripts\python.exe" -m pip install -r "%BACKEND%\requirements.txt"
@@ -81,7 +75,13 @@ set "PY=%BACKEND%\venv\Scripts\python.exe"
 rem ---------- Ja estava aberto? (V4.4) ----------
 rem Se uma versao anterior ainda ocupa as portas, a nova falhava escondida e a antiga continuava.
 rem Agora o Iniciar sempre substitui: encerra o que estiver na porta 8000 (e, mais abaixo, na 5173) antes de subir.
-powershell -NoProfile -Command "$p = Get-NetTCPConnection -LocalPort 8000,8443 -State Listen -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique; if ($p) { Write-Host '  JARVIS ja estava aberto: reiniciando com a versao atual...'; $p | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue }; $d=(Get-Date).AddSeconds(8); while((Get-Date) -lt $d -and (Get-NetTCPConnection -LocalPort 8000,8443 -State Listen -ErrorAction SilentlyContinue)){ Start-Sleep -Milliseconds 200 } }"
+rem V9.4.1: o PowerShell so abre se algo ja ocupa a porta. Logo depois de ligar o PC, so abrir o PowerShell
+rem levava alguns segundos, e quase sempre nao havia nada para encerrar. Porta escutando = endereco remoto 0.0.0.0:0
+rem (o netstat traduz a palavra LISTENING no Windows em portugues, por isso nao dependemos dela).
+netstat -ano -p tcp | findstr /r /c:":8000  *0\.0\.0\.0:0 " /c:":8443  *0\.0\.0\.0:0 " >nul 2>nul
+if not errorlevel 1 (
+  powershell -NoProfile -Command "$p = Get-NetTCPConnection -LocalPort 8000,8443 -State Listen -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique; if ($p) { Write-Host '  JARVIS ja estava aberto: reiniciando com a versao atual...'; $p | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue }; $d=(Get-Date).AddSeconds(8); while((Get-Date) -lt $d -and (Get-NetTCPConnection -LocalPort 8000,8443 -State Listen -ErrorAction SilentlyContinue)){ Start-Sleep -Milliseconds 200 } }"
+)
 
 rem ---------- 3. Backend (V9.4: liga ANTES de conferir a interface local) ----------
 rem A central abre pelo site do Netlify e so precisa do backend. Antes, o backend so subia depois de conferir,
@@ -104,6 +104,14 @@ if defined RELOAD (
   powershell -NoProfile -Command "$env:JARVIS_NETWORK_MODE='%NETMODE%'; Start-Process -FilePath '%PY%' -ArgumentList ('-m uvicorn main:app --host %HOST% --port 8000 ' + '%RELOAD%').Trim() -WorkingDirectory '%BACKEND%' -WindowStyle Hidden"
 ) else (
   powershell -NoProfile -Command "$env:JARVIS_NETWORK_MODE='%NETMODE%'; Start-Process -FilePath '%PY%' -ArgumentList 'run_server.py --host %HOST% --port 8000' -WorkingDirectory '%BACKEND%' -WindowStyle Hidden"
+)
+
+rem V8.1.5: edge-tts antigo nao fala mais (a Microsoft mudou o servico de voz): atualiza sozinho.
+rem V9.4.1: conferido DEPOIS de ligar o backend (antes, abrir o Python so para isso atrasava a subida).
+"%PY%" -c "import importlib.metadata as m,sys; v=m.version('edge-tts').split('.'); sys.exit(0 if (int(v[0]),int(v[1]))>=(7,3) else 1)" >nul 2>nul
+if errorlevel 1 (
+  echo  [3/5] Atualizando a voz do JARVIS ^(edge-tts^)...
+  "%PY%" -m pip install --disable-pip-version-check -q -U "edge-tts>=7.3.0"
 )
 
 rem ---------- 4. Dependencias do Frontend ----------

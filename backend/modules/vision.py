@@ -3,9 +3,10 @@ import base64
 import logging
 import os
 
-import cv2
-
 from config import settings
+from core.lazy import LazyModule
+
+cv2 = LazyModule("cv2")  # V9.4.1: só carrega quando a câmera é usada (não segura a subida do backend)
 
 log = logging.getLogger("jarvis.vision")
 
