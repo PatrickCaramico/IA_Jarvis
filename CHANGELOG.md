@@ -2,6 +2,22 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 9.5.0 — 25 de novembro de 2026
+
+**🔒 Tela de bloqueio renovada (estilos Clássico e Sentinela)**
+- **Layout mais limpo.**
+  - Os 10 botões que ficavam embaixo do reator (Nova pessoa, Atualizar, Modo Desk, Robô, App Windows, Branding, Otimizar, Notas, Diagnóstico) foram para o **⚙ GERENCIAR**, um menu de vidro que abre para cima. A bolinha mostra quando há atualização.
+  - O menu também tem o estilo do bloqueio, o **🎨 REATOR** e o **alterar foto do rosto**.
+  - À vista fica só o essencial: entrar e, quando o rosto não é reconhecido, **USAR PIN** e **CRIAR PERFIL**.
+  - Uma barra única embaixo junta o microfone, as palmas, o "espaço = liberar" e o ⚙ GERENCIAR.
+  - As duas colunas de cartões agora começam na mesma altura (antes a da direita ficava mais baixa).
+- **Reator do bloqueio.**
+  - Usa o reator que o senhor personalizou no 🎨 REATOR (forma e cor). Sem personalização, continua o Reator Arc de sempre.
+  - Um anel em volta mostra o que está acontecendo: verde respirando ao ouvir, pulso ao falar, feixe girando ao reconhecer o rosto, verde ao liberar e vermelho com um tremor ao recusar.
+  - **Anel dos segundos:** um ponteiro dá a volta em 60 segundos, no compasso do relógio.
+  - Ao liberar, os anéis se abrem para fora, e a central entra abrindo do centro, a partir do reator.
+- **Economia de madrugada.** Entre 0h e 6h, com o bloqueio parado e ninguém mexendo há 2 minutos, a tela escurece e as animações param. Qualquer tecla, toque ou movimento acorda na hora.
+
 ## 9.4.6 — 25 de novembro de 2026
 
 **🧭 Menu PRÓXIMOS sem texto saindo da caixa**

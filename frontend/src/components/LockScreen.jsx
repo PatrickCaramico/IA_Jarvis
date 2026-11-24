@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
-import ArcReactorHUD from "./ArcReactorHUD.jsx";
+import LockReactor from "./LockReactor.jsx";
+import LockManage from "./LockManage.jsx";
+import { lockSleeping } from "../utils/lockLook.js";
 import { FaceScanStatus } from "./FaceScanOverlay.jsx";
 import LockCards from "./LockCards.jsx";
 import ProgressBar from "./ProgressBar.jsx";
@@ -122,6 +124,31 @@ function useClock(active) {
   return useNow(active); // relógio central (hooks/useNow.js)
 }
 
+// V9.5.0: economia de madrugada (utils/lockLook.js: lockSleeping). Marca html.lock-sleep: a tela escurece e as
+// animações param; qualquer tecla, toque ou movimento acorda na hora.
+function useLockSleep(phase, listening) {
+  useEffect(() => {
+    let last = Date.now();
+    const root = document.documentElement;
+    const wake = () => {
+      last = Date.now();
+      if (root.classList.contains("lock-sleep")) root.classList.remove("lock-sleep");
+    };
+    const check = () => {
+      const on = lockSleeping({ hour: new Date().getHours(), idleMs: Date.now() - last, phase, listening });
+      root.classList.toggle("lock-sleep", on);
+    };
+    const events = ["pointermove", "pointerdown", "keydown", "wheel", "touchstart"];
+    events.forEach((ev) => window.addEventListener(ev, wake, { passive: true }));
+    const t = setInterval(check, 30_000);
+    return () => {
+      clearInterval(t);
+      events.forEach((ev) => window.removeEventListener(ev, wake));
+      root.classList.remove("lock-sleep");
+    };
+  }, [phase, listening]);
+}
+
 export default function LockScreen({
   photoUrl,
   phase,
@@ -172,6 +199,7 @@ export default function LockScreen({
   const newCheck = Boolean(lastFrame) || scanning || (phase === "verified" && Boolean(photoUrl));
   const sentinelOn = Boolean(sentinel?.enabled);
   const now = useClock(sentinelOn && sentinel?.showClock);
+  useLockSleep(phase, sentinelOn && (sentinel?.state === "awake" || sentinel?.state === "listening"));
   // V9.4: avatar holográfico (se a imagem não vier, volta para o reator/orbe)
   const [avatarBroken, setAvatarBroken] = useState(false);
   useEffect(() => setAvatarBroken(false), [avatarUrl]);
@@ -307,6 +335,79 @@ export default function LockScreen({
       {updateNote && <p className="ls-update-note" role="status">{updateNote}</p>}
     </div>
     </>
+  );
+
+  // V9.5.0: Clássico e Sentinela: só o essencial fica à vista (PIN, criar perfil quando o rosto é novo, progresso
+  // da atualização do app); o resto vai para o ⚙ GERENCIAR (LockManage), junto com o estilo e o "alterar foto".
+  const ready = phase === "ready" || phase === "failed";
+  const essentialActions = (
+    <>
+      {unknownFace && (
+        <p className="ls-hint ls-new-hint" role="status">
+          Não reconheci você. Se é a sua primeira vez aqui, crie o seu perfil; se já tem perfil, tente de novo com o rosto de frente para a câmera ou use o PIN.
+        </p>
+      )}
+      {(showPinButton && !phoneApp) || unknownFace ? (
+        <div className="ls-secondary lk-essential">
+          {showPinButton && !phoneApp && (
+            <button type="button" className={`ls-chip ${failCount >= 2 ? "is-strong" : ""}`} onClick={onUsePin}>⌨ USAR PIN</button>
+          )}
+          {unknownFace && (
+            <button type="button" className="ls-chip is-strong" onClick={(e) => { e.stopPropagation(); onNewProfile(); }}>＋ SOU NOVO: CRIAR PERFIL</button>
+          )}
+        </div>
+      ) : null}
+      {updateProgress != null && (
+        <div className="ls-update-progress"><ProgressBar pct={updateProgress} label="Atualizando o app" /></div>
+      )}
+      {updateNote && <p className="ls-update-note" role="status">{updateNote}</p>}
+    </>
+  );
+  const manageMenu = (
+    <LockManage updateCount={phoneApp ? 0 : updateCount}>
+      <div className="ls-secondary lm-grid">
+        {guestEnabled && phase !== "scanning" && phase !== "verified" && (
+          <button type="button" className="ls-chip" onClick={onGuest}>👤 MODO VISITANTE</button>
+        )}
+        {onNewProfile && ready && !unknownFace && (
+          <button type="button" className="ls-chip" onClick={(e) => { e.stopPropagation(); onNewProfile(); }} title="Criar o perfil de uma pessoa nova neste PC">＋ NOVA PESSOA</button>
+        )}
+        {onUpdate && ready && (
+          <button type="button" className="ls-chip" onClick={(e) => { e.stopPropagation(); onUpdate(); }}
+            title={phoneApp ? "Procurar e instalar a versão nova do app" : "Baixar a versão mais nova do JARVIS e reiniciar"}>
+            {phoneApp ? "⟳ ATUALIZAR APP" : "⟳ ATUALIZAR"}
+            {!phoneApp && updateCount > 0 && <span className="upd-badge">{updateCount}</span>}
+          </button>
+        )}
+        {ready && (
+          <>
+            <button type="button" className={`ls-chip${deskOn ? " is-strong" : ""}`} aria-pressed={deskOn}
+              onClick={(e) => {
+                e.stopPropagation();
+                const next = !deskOn;
+                window.dispatchEvent(new CustomEvent("jarvis-desk-toggle", { detail: next }));
+                if (next && !phoneApp) handleBtnClick();
+              }}
+              title={deskOn ? "Desligar: entrar na central clássica" : "Entrar no Modo Desk (o JARVIS como app de assistente)"}>
+              {deskOn ? "🖥 MODO DESK: LIGADO" : "🖥 MODO DESK"}
+            </button>
+            {onDeskLock && !deskLock && (
+              <button type="button" className="ls-chip" onClick={(e) => { e.stopPropagation(); onDeskLock(true); }}>🤖 BLOQUEIO COM O ROBÔ</button>
+            )}
+            <button type="button" className="ls-chip" onClick={() => window.dispatchEvent(new CustomEvent("jarvis-desktop-download"))}>⬇ APP WINDOWS</button>
+            <button type="button" className="ls-chip" onClick={() => window.dispatchEvent(new CustomEvent("jarvis-open-branding"))}>📘 BRANDING</button>
+            <button type="button" className="ls-chip" onClick={() => window.dispatchEvent(new CustomEvent("jarvis-open-optimizer"))}>⚡ OTIMIZAR</button>
+            <button type="button" className="ls-chip" onClick={() => window.dispatchEvent(new CustomEvent("jarvis-open-notes"))}>📝 NOTAS</button>
+            <button type="button" className="ls-chip" onClick={() => window.dispatchEvent(new CustomEvent("jarvis-open-diagnostic"))}>🩺 DIAGNÓSTICO</button>
+            <button type="button" className="ls-chip" onClick={() => window.dispatchEvent(new CustomEvent("jarvis-open-reactor"))} title="Forma e cor do reator (vale também aqui no bloqueio)">🎨 REATOR</button>
+          </>
+        )}
+        {styleToggle}
+        {!phoneApp && onChangePhoto && (
+          <button type="button" className="ls-chip" onClick={(e) => { e.stopPropagation(); onChangePhoto(); }}>📷 ALTERAR FOTO DO ROSTO</button>
+        )}
+      </div>
+    </LockManage>
   );
 
   // ---------------------------------------------------------------- V8.8.0: bloqueio do Modo Desk (ideia 11)
@@ -492,7 +593,7 @@ export default function LockScreen({
           <div className={`ls-orb-wrapper snt-orb ${clap?.pulse ? "is-clap-pulse" : ""}`} key={`orb-${clap?.pulse || 0}`}>
             <div className={`ls-hud-ring${scanning ? " is-scanning" : ""}`} />
             <div className={newCheck ? "ls-reactor-hidden" : undefined}>
-              {avatarNode || <ArcReactorHUD state={orbSentinelState} photoUrl={newCheck ? null : photoUrl} tone={tone} liveFrame={null} className="snt-hud" />}
+              {avatarNode || <LockReactor state={orbSentinelState} phase={phase} listening={st === "awake" || st === "listening"} photoUrl={newCheck ? null : photoUrl} tone={tone} className="snt-hud" />}
             </div>
             {newCheck && <div className="ls-face-over"><FaceCircle scan={lastFrame} phase={phase} photoUrl={photoUrl} /></div>}
           </div>
@@ -517,15 +618,16 @@ export default function LockScreen({
         )}
         {keyBadge}
         {phonePinButton}
-        {phase !== "pin" && secondaryActions}
+        {phase !== "pin" && essentialActions}
 
         {phase !== "scanning" && phase !== "pin" && (
           <LockCards api={cards?.api} cards={sentinel.showClock ? cardsList.filter((c) => c !== "clock") : cardsList}
             fanModeEnabled={cards?.fanModeEnabled} allRight={fanPanel} fresh={freshCards} />
         )}
 
+        {/* V9.5.0: barra única embaixo: microfone, palmas, "espaço = liberar" e o ⚙ GERENCIAR (o "alterar foto" foi para ele) */}
         {!phoneApp && (
-          <div className="snt-footer">
+          <div className="snt-footer lk-dock">
             <button
               type="button"
               className={`snt-mic ${sentinel.micStatus === "listening" && !sentinel.muted ? "on" : ""}`}
@@ -536,15 +638,11 @@ export default function LockScreen({
               <span className="ls-key-badge">P</span>
             </button>
             <ClapIndicator clap={clap} />
-            <span className="snt-key">{phase === "ready" && !keyGate ? "ESPAÇO = LIBERAR" : ""}</span>
+            {phase === "ready" && !keyGate && <span className="snt-key">ESPAÇO = LIBERAR</span>}
+            {phase !== "scanning" && phase !== "pin" && manageMenu}
           </div>
         )}
-
-        {phase !== "scanning" && phase !== "pin" && !phoneApp && (
-          <button type="button" className="snt-photo-link" onClick={(e) => { e.stopPropagation(); onChangePhoto(); }}>
-            alterar foto
-          </button>
-        )}
+        {phoneApp && phase !== "scanning" && phase !== "pin" && <div className="lk-dock">{manageMenu}</div>}
         {phase !== "scanning" && phase !== "pin" ? <BlueprintStamp sheet="SENTINELA" fan={fanToggle} bg={bgToggle} audio={audioToggle} /> : <BlueprintStamp sheet="SENTINELA" />}
         {/* V4.5: QR pequeno para baixar o app Android (só no modo rede) */}
         {cards?.api && phase !== "scanning" && phase !== "pin" && !phoneApp && <MobileAppQr api={cards.api} />}
@@ -609,7 +707,7 @@ export default function LockScreen({
         <div className={`ls-orb-wrapper ${clap?.pulse ? "is-clap-pulse" : ""}`} key={`orb-${clap?.pulse || 0}`}>
           <div className={`ls-hud-ring${scanning ? " is-scanning" : ""}`} />
           <div className={newCheck ? "ls-reactor-hidden" : undefined}>
-            {avatarNode || <ArcReactorHUD state={orbState} photoUrl={newCheck ? null : photoUrl} tone={tone} liveFrame={null} />}
+            {avatarNode || <LockReactor state={orbState} phase={phase} photoUrl={newCheck ? null : photoUrl} tone={tone} />}
           </div>
           {newCheck && <div className="ls-face-over"><FaceCircle scan={lastFrame} phase={phase} photoUrl={photoUrl} /></div>}
         </div>
@@ -643,20 +741,7 @@ export default function LockScreen({
             {!phoneApp && <span className="ls-key-badge">ESPAÇO</span>}
           </button>}
 
-          {secondaryActions}
-
-          {!phoneApp && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onChangePhoto();
-              }}
-              className="ls-link-photo"
-            >
-              ⚙ Alterar foto de identificação facial
-            </button>
-          )}
+          {essentialActions}
         </div>
       )}
 
@@ -664,20 +749,25 @@ export default function LockScreen({
         <LockCards api={cards?.api} cards={cardsList} fanModeEnabled={cards?.fanModeEnabled} allRight={fanPanel} fresh={freshCards} />
       )}
 
-      {mic && (
-        <button
-          type="button"
-          className={`ls-mic-toggle ${mic.muted ? "" : "on"}`}
-          onClick={(e) => { e.stopPropagation(); mic.onToggle(); }}
-          title={mic.muted ? "Ligar o microfone (palmas e escuta)" : "Silenciar o microfone"}
-          aria-pressed={!mic.muted}
-        >
-          <span className="dot" /> {mic.muted ? "MIC SILENCIADO · aperte P para ligar" : "MIC LIGADO"}
-          <span className="ls-key-badge">P</span>
-        </button>
-      )}
-
       <ClapIndicator clap={clap} />
+      {/* V9.5.0: os atalhos (antes 10 botões embaixo do reator) ficam no ⚙ GERENCIAR */}
+      {(mic || (phase !== "scanning" && phase !== "pin")) && (
+        <div className="lk-dock lk-dock-classic">
+          {mic && (
+            <button
+              type="button"
+              className={`ls-mic-toggle ${mic.muted ? "" : "on"}`}
+              onClick={(e) => { e.stopPropagation(); mic.onToggle(); }}
+              title={mic.muted ? "Ligar o microfone (palmas e escuta)" : "Silenciar o microfone"}
+              aria-pressed={!mic.muted}
+            >
+              <span className="dot" /> {mic.muted ? "MIC SILENCIADO · aperte P para ligar" : "MIC LIGADO"}
+              <span className="ls-key-badge">P</span>
+            </button>
+          )}
+          {phase !== "scanning" && phase !== "pin" && manageMenu}
+        </div>
+      )}
 
       {/* Rodapé Tático */}
       <footer className="ls-footer">
