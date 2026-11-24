@@ -1,11 +1,11 @@
 // V9.4.2: personalizar o Reator Arc (forma, cor, contraste, brilho, velocidade e fios)
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { DEFAULTS, cssVars, hexToRgb, isDefault, load, normalize, save } from "../src/utils/reactor.js";
+import { DEFAULTS, cssVars, hexToRgb, isDefault, load, normalize, resetFromUrl, save } from "../src/utils/reactor.js";
 
 function memory() {
   const data = {};
-  return { getItem: (k) => data[k] ?? null, setItem: (k, v) => { data[k] = String(v); } };
+  return { getItem: (k) => data[k] ?? null, setItem: (k, v) => { data[k] = String(v); }, removeItem: (k) => { delete data[k]; } };
 }
 
 test("valores estranhos voltam para o que a central sabe desenhar", () => {
@@ -29,4 +29,20 @@ test("variáveis do orbe", () => {
   assert.equal(cssVars({})["--rx-hue"], "1deg"); // o ciano do JARVIS quase não gira
   assert.deepEqual(hexToRgb("#22c55e"), [34, 197, 94]);
   assert.deepEqual(hexToRgb("x"), [79, 220, 255]);
+});
+
+test("V9.4.4: ?reator=padrao volta ao padrão", () => {
+  const st = memory();
+  save({ shape: "emaranhado" }, st);
+  assert.equal(resetFromUrl("?upd=0", st), false);
+  assert.equal(load(st).shape, "emaranhado");
+  assert.equal(resetFromUrl("?reator=padrao", st), true);
+  assert.deepEqual(load(st), DEFAULTS);
+});
+
+test("V9.4.4: o canvas do Emaranhado fica preso ao quadro do orbe e não engole cliques", async () => {
+  const { readFileSync } = await import("node:fs");
+  const css = readFileSync(new URL("../src/v94.css", import.meta.url), "utf8");
+  assert.match(css, /\.rx-wrap \{ position: relative;/);
+  assert.match(css, /\.rx-wrap \.to-canvas \{[^}]*pointer-events: none/);
 });

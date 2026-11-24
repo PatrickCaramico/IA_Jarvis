@@ -90,3 +90,15 @@ export function cssVars(cfg) {
     "--rx-slow": (100 / n.speed).toFixed(3),
   };
 }
+
+/** V9.4.4: saída de emergência. Abrir a central com ?reator=padrao no endereço volta o reator ao padrão (sem precisar
+ *  clicar em nada, caso alguma forma atrapalhe a tela). Devolve true se resetou. */
+export function resetFromUrl(search = globalThis.location?.search || "", storage = globalThis.localStorage) {
+  try {
+    if (new URLSearchParams(search).get("reator") !== "padrao") return false;
+    storage?.removeItem(KEY);
+    return true;
+  } catch {
+    return false;
+  }
+}
