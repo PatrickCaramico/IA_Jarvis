@@ -46,30 +46,100 @@ def _git(*args: str) -> subprocess.CompletedProcess:
     )
 
 
+# V9.4.1: arquivos que o próprio JARVIS regenera no PC (o npm install reescreve o package-lock). Modificados, eles
+# travavam o "git pull --ff-only" e o ATUALIZAR parava sem atualizar nada. Esses voltam ao original antes de baixar.
+GENERATED = ("frontend/package-lock.json", "package-lock.json")
+CHANNEL = "main"  # o canal publicado (o mesmo da central do site)
+
+
+def _ok(cp: subprocess.CompletedProcess) -> bool:
+    return cp.returncode == 0
+
+
+def _dirty() -> list[str]:
+    """Arquivos do projeto (já versionados) modificados nesta pasta."""
+    out = _git("status", "--porcelain", "--untracked-files=no").stdout
+    return [line[3:].strip().strip('"') for line in out.splitlines() if len(line) > 3]
+
+
+def _upstream() -> str:
+    """A referência remota que esta pasta segue, ou "" se ela não existe mais (ramo apagado no GitHub)."""
+    up = _git("rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}")
+    name = up.stdout.strip() if _ok(up) else ""
+    if name and _ok(_git("rev-parse", "--verify", "--quiet", name)):
+        return name
+    return ""
+
+
+def _fail(before: str, message: str, detail: str = "") -> dict:
+    if detail:
+        log.warning("Atualização: %s | %s", message, detail)
+    return {"ok": False, "changed": False, "before": before, "after": before, "message": message}
+
+
 def pull() -> dict:
-    """Baixa a atualização. Retorna {ok, changed, before, after, message}. Roda fora do loop (to_thread)."""
+    """Baixa a atualização. Retorna {ok, changed, before, after, message, stashed, switched}. Roda fora do loop.
+
+    V9.4.1: antes era um "git pull --ff-only" só, e qualquer coisa fora do lugar travava o ATUALIZAR:
+      - arquivos regenerados no PC (package-lock) modificados -> voltam ao original;
+      - outras mudanças locais nos arquivos do projeto -> ficam guardadas num "git stash" com data (nada se perde;
+        dá para recuperar com "git stash list");
+      - a pasta num ramo que não existe mais no GitHub (ou sem ramo) -> volta para o main, o canal publicado;
+      - em vez de "git pull", faz fetch + merge só para frente (nunca mistura nem apaga commits locais).
+    """
     if not shutil.which("git") or not (ROOT / ".git").exists():
         return {"ok": True, "changed": False, "before": "", "after": "",
                 "message": "Sem Git nesta pasta: só reinicio os sistemas."}
+    before = ""
     try:
         before = _git("rev-parse", "--short", "HEAD").stdout.strip()
-        result = _git("pull", "--ff-only")
+        fetched = _git("fetch", "--prune", "origin")
+        if not _ok(fetched):
+            return _fail(before, "Não consegui falar com o GitHub agora. Confira a internet e tente de novo.",
+                         (fetched.stderr or "").strip()[-300:])
+        restored = [f for f in _dirty() if f in GENERATED]
+        if restored:
+            _git("checkout", "--", *restored)
+            log.info("Atualização: arquivos regenerados voltaram ao original: %s", ", ".join(restored))
+        stashed = False
+        if _dirty():
+            label = f"JARVIS {time.strftime('%Y-%m-%d %H:%M')}: mudanças locais guardadas antes da atualização"
+            st = _git("stash", "push", "-m", label)
+            if not _ok(st):
+                return _fail(before, "Há arquivos modificados nesta pasta e não consegui guardá-los. Nada foi alterado.",
+                             (st.stderr or st.stdout).strip()[-300:])
+            stashed = True
+            log.warning("Atualização: mudanças locais guardadas no git stash (%s).", label)
+        target = _upstream()
+        switched = ""
+        if not target:
+            branch = _git("rev-parse", "--abbrev-ref", "HEAD").stdout.strip()
+            if branch != CHANNEL:
+                has_main = _ok(_git("rev-parse", "--verify", "--quiet", CHANNEL))
+                co = _git("checkout", CHANNEL) if has_main else _git("checkout", "-b", CHANNEL, "--track", f"origin/{CHANNEL}")
+                if not _ok(co):
+                    return _fail(before, "Não consegui voltar para o ramo principal. Nada foi alterado.",
+                                 (co.stderr or co.stdout).strip()[-300:])
+                switched = CHANNEL
+                log.warning("Atualização: a pasta estava em %s (sem ramo no GitHub); voltei para o %s.", branch, CHANNEL)
+            target = f"origin/{CHANNEL}"
+        merged = _git("merge", "--ff-only", target)
         after = _git("rev-parse", "--short", "HEAD").stdout.strip()
     except subprocess.TimeoutExpired:
-        return {"ok": False, "changed": False, "before": "", "after": "",
-                "message": "O GitHub demorou demais para responder. Confira a internet e tente de novo."}
+        return _fail(before, "O GitHub demorou demais para responder. Confira a internet e tente de novo.")
     except OSError as exc:
-        return {"ok": False, "changed": False, "before": "", "after": "", "message": f"Não consegui rodar o Git: {exc}"}
-    if result.returncode != 0:
-        detail = (result.stderr or result.stdout).strip().splitlines()
-        log.warning("git pull falhou: %s", " | ".join(detail[-3:]))
-        return {"ok": False, "changed": False, "before": before, "after": after,
-                "message": "Não consegui baixar a atualização (há mudanças locais nesta pasta ou o GitHub recusou). "
-                           "Nada foi alterado."}
+        return {"ok": False, "changed": False, "before": before, "after": before, "message": f"Não consegui rodar o Git: {exc}"}
+    if not _ok(merged):
+        return _fail(before, "Esta pasta tem alterações próprias (commits) que não existem no GitHub, então não "
+                             "atualizei para não perder nada. Nada foi alterado.",
+                     (merged.stderr or merged.stdout).strip()[-300:])
     changed = bool(before and after and before != after)
     log.info("Atualização: %s -> %s", before, after)
-    return {"ok": True, "changed": changed, "before": before, "after": after,
-            "message": f"Atualizado de {before} para {after}." if changed else "Já estava na versão mais nova."}
+    msg = f"Atualizado de {before} para {after}." if changed else "Já estava na versão mais nova."
+    if stashed:
+        msg += " Havia mudanças locais nesta pasta: ficaram guardadas (git stash)."
+    return {"ok": True, "changed": changed, "before": before, "after": after, "message": msg,
+            "stashed": stashed, "switched": switched}
 
 
 # ------------------------------------------------------------------ V8.1.7: andamento
@@ -237,10 +307,10 @@ def check(force: bool = False) -> dict:
     if not shutil.which("git") or not (ROOT / ".git").exists():
         return {**base, "message": "Sem Git nesta pasta."}
     try:
-        fetched = _git("fetch", "--quiet")
+        fetched = _git("fetch", "--quiet", "--prune", "origin")
         if fetched.returncode != 0:
             return {**base, "message": "Não consegui falar com o GitHub agora."}
-        upstream = _git("rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}").stdout.strip() or "origin/main"
+        upstream = _upstream() or f"origin/{CHANNEL}"  # V9.4.1: ramo apagado no GitHub = o main
         behind = int((_git("rev-list", "--count", f"HEAD..{upstream}").stdout or "0").strip() or 0)
         subjects = [s for s in _git("log", "--no-merges", "--format=%s", f"HEAD..{upstream}").stdout.splitlines() if s.strip()]
         latest_src = _git("show", f"{upstream}:backend/version.py").stdout

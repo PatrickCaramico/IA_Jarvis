@@ -54,6 +54,10 @@ def test_auto_update_waits_for_quiet_and_respects_switch(monkeypatch):
     async def no_sleep(s):
         return None
 
+    async def no_announce(latest, notes):  # V9.4.1: o aviso (tela, celular e voz) é testado em test_atualizacao_941
+        return None
+
+    monkeypatch.setattr(auto_update, "_announce", no_announce)
     # desligada
     desk.update_config({"atualizacao": {"automatica": False}})
     assert asyncio.run(auto_update.check_and_update(sleep=no_sleep)) == "desligada"
@@ -204,11 +208,10 @@ def test_v872_update_does_not_choke_the_pc():
     assert priority.creationflags("below") in (0, 0x4000) and priority.creationflags("xyz") == 0
     if __import__("sys").platform != "win32":
         assert priority.set_self("below") is False
-    # PC livre: nada em tela cheia e (madrugada ou 30 min sem mexer)
+    # V9.4.1: PC livre = nada em tela cheia (antes também exigia madrugada ou 30 min sem mexer, e quase nunca atualizava)
     assert auto_update.pc_free(now_hour=3, idle_s=0, fullscreen=False)
-    assert auto_update.pc_free(now_hour=15, idle_s=31 * 60, fullscreen=False)
-    assert not auto_update.pc_free(now_hour=15, idle_s=60, fullscreen=False)  # vendo vídeo / usando o PC
-    assert not auto_update.pc_free(now_hour=3, idle_s=99999, fullscreen=True)  # vídeo em tela cheia
+    assert auto_update.pc_free(now_hour=15, idle_s=60, fullscreen=False)  # usando o PC: atualiza (depois do aviso)
+    assert not auto_update.pc_free(now_hour=3, idle_s=99999, fullscreen=True)  # vídeo/jogo em tela cheia: espera
     su = (ROOT / "backend" / "modules" / "self_update.py").read_text(encoding="utf-8")
     assert su.count("_low()") >= 3
     assert 'priority.set_self("below")' in (ROOT / "backend" / "run_server.py").read_text(encoding="utf-8")

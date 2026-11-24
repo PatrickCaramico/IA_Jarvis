@@ -2,6 +2,25 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 9.4.2 — 25 de novembro de 2026
+
+**⬆ O JARVIS se atualiza sozinho e avisa**
+- A cada 40 minutos ele confere se há versão nova (a primeira vez, 3 minutos depois de ligar).
+- Achou: avisa na central, no celular e por voz ("Senhor, chegou a versão 9.4.3. Atualizo sozinho em dois minutos") e mostra o aviso com a contagem e dois botões:
+  - ATUALIZAR AGORA: não espera os 2 minutos;
+  - ADIAR 1 H: deixa para depois.
+- Passados os 2 minutos, ele atualiza assim que não estiver falando nem respondendo e não houver nada em tela cheia (vídeo, jogo, apresentação). A central aberta mostra a tela de atualização e volta sozinha na versão nova.
+- Antes, a atualização automática só rodava com o PC 30 minutos sem uso ou de madrugada, e sem avisar. Na prática, quase nunca rodava.
+- Se der errado, ele avisa uma vez (na tela e no celular), em vez de repetir a cada 40 minutos.
+
+**🔧 Botão ATUALIZAR voltou a funcionar**
+- Ele parava quando a pasta do JARVIS no PC estava "fora do lugar". Agora:
+  - **Arquivos regenerados no PC** (o package-lock, reescrito pelo npm install): voltam ao original antes de baixar.
+  - **Outras mudanças locais nos arquivos do projeto:** ficam guardadas num "git stash" com data. Nada se perde.
+  - **Pasta num ramo que não existe mais no GitHub:** volta para o ramo principal, que é o publicado.
+  - **Commits próprios no PC:** ele não atualiza, para não perder nada, e diz o motivo.
+- Quando algo dá errado, a central fica na mesma tela e mostra o motivo. Antes, ela jogava para a tela de bloqueio, e parecia que o botão não fazia nada.
+
 ## 9.4.1 — 25 de novembro de 2026
 
 **🚀 O JARVIS responde mais rápido ao ligar o PC**

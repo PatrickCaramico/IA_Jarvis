@@ -84,6 +84,9 @@ def _protect_real_data(tmp_path_factory, monkeypatch):
     from skills import modo_gravar
 
     lock_key.reset_for_tests()  # V9.4: contagem de teclas erradas em memória
+    from modules import auto_update
+
+    auto_update.reset_for_tests()  # V9.4.1: aviso/adiamento da atualização automática
     modo_gravar.reset_for_tests()  # V9.4: cópia em memória das rotinas gravadas
     monkeypatch.setattr(settings_module(), "ACCESS_TOKEN_FILE", base / "access_token.txt")
     yield

@@ -68,6 +68,7 @@ import { startMood } from "./utils/mood.js";
 import { shouldAutoOpen } from "./utils/security.js";
 import { lockKeyPress, pastedImage } from "./utils/lockExtras.js";
 import RecordingBadge from "./components/RecordingBadge.jsx";
+import UpdateSoon from "./components/UpdateSoon.jsx";
 
 // Carregados sob demanda (otimização 4.2: pacote inicial menor)
 // V7: telas e janelas que nem sempre aparecem também saem do pacote inicial
@@ -131,6 +132,7 @@ export default function App() {
   alarmRef.current = alarm;
   // Botão ATUALIZAR: null | { message } enquanto baixa a versão nova e reinicia
   const [updating, setUpdating] = useState(null);
+  const [updateSoon, setUpdateSoon] = useState(null); // V9.4.1: { version, until, notes } — aviso da atualização automática
   const [lockPhase, setLockPhase] = useState("ready"); // ready | scanning | verified | failed
   const [lockMessage, setLockMessage] = useState("");
   const [name, setName] = useState("");
@@ -790,6 +792,18 @@ export default function App() {
         // V5.7: a resposta a um pedido DESTE aparelho: a voz toca aqui (o PC ficou em silêncio)
         if (msg.client_id && msg.client_id === clientId() && msg.text) enqueueHere(msg.text, msg.say_id);
         break;
+      case "update_soon": // V9.4.1: versão nova chegando (aviso com contagem; ADIAR / ATUALIZAR AGORA)
+        if (msg.cancelled) {
+          setUpdateSoon(null);
+          if (msg.error) setNotice(`Atualização automática: ${msg.error}`);
+        } else {
+          setUpdateSoon({ version: msg.version, until: Date.now() + (msg.in_s || 120) * 1000, notes: msg.notes || [] });
+        }
+        break;
+      case "update_started": // V9.4.1: a atualização automática começou: a central acompanha e volta sozinha
+        setUpdateSoon(null);
+        if (!IS_JARVIS_APP) followRestartRef.current({ ...msg, status: "restarting" });
+        break;
       case "open_panel":
         // V8.11: uma Skill pediu para abrir um painel (ex.: "quais são suas habilidades?" abre a aba ⚡ da Central)
         if (msg.panel === "agents" && (!msg.client_id || msg.client_id === clientId())) {
@@ -1209,6 +1223,10 @@ export default function App() {
       .then((info) => {
         if (!alive) return;
         setUpdateInfo(info);
+        if (info?.notice?.version && info.notice.at) { // V9.4.1: abriu no meio da contagem
+          const until = info.notice.at * 1000 + (info.notice.in_s || 120) * 1000;
+          if (until > Date.now()) setUpdateSoon({ version: info.notice.version, until, notes: info.notice.notes || [] });
+        }
         if (first && !autoOnOpenRef.current && shouldAutoUpdateOnOpen(info, readAutoUpdateAttempt())) {
           autoOnOpenRef.current = true;
           markAutoUpdateAttempt(info);
@@ -1240,24 +1258,36 @@ export default function App() {
   const updateJarvis = useCallback(async (firstMessage) => {
     // V8.11: firstMessage = texto da atualização ao abrir (quando vem de um clique, chega o evento: ignora)
     const opening = typeof firstMessage === "string" ? firstMessage : "";
+    // V9.4.1: se der errado, volta para a MESMA tela (antes jogava para o bloqueio, e parecia que nada funcionava)
+    const backTo = screenRef.current === "boot" ? "lock" : screenRef.current;
     setUpdating({ message: opening || "Baixando a versão mais nova…", stage: "Baixando", target: 30 });
     setScreen("boot");
     let res;
     try {
-      res = await api("/api/system/update", { method: "POST", body: JSON.stringify({ confirm: true }) });
+      res = await api("/api/system/update", { method: "POST", body: JSON.stringify({ confirm: true }), timeout: 150_000 });
     } catch (err) {
       setUpdating(null);
-      setLockMessage(err.message);
-      setScreen("lock");
+      setScreen(backTo);
+      setNotice(`Não consegui atualizar: ${err.message}`);
+      if (backTo === "lock") setLockMessage(err.message);
       return;
     }
     if (res.status !== "restarting") {
       setUpdating(null);
-      setLockPhase("failed");
-      setLockMessage(res.message || "Não consegui atualizar.");
-      setScreen("lock");
+      setScreen(backTo);
+      setNotice(res.message || "Não consegui atualizar.");
+      if (backTo === "lock") {
+        setLockPhase("failed");
+        setLockMessage(res.message || "Não consegui atualizar.");
+      }
       return;
     }
+    followRestartRef.current(res);
+  }, []);
+  const followRestartRef = useRef(() => {});
+  // Acompanha o reinício até a versão nova responder e recarrega a página (botão e, V9.4.1, atualização automática)
+  followRestartRef.current = (res) => {
+    setScreen("boot");
     const base = res.changed ? `Versão nova baixada (${res.after}).` : "Já estava na versão mais nova.";
     // V8.1.7: a tela mostra as etapas de verdade (o PC conta em /api/system/update/progress)
     // V8.12.2: versao_nova e destaques (do CHANGELOG baixado) para a tela mostrar "8.12.1 → 8.12.2" e o que há de novo
@@ -1298,7 +1328,7 @@ export default function App() {
         setUpdating((u) => ({ ...u, message: "Está demorando mais que o normal. Se não voltar, abra o Iniciar-JARVIS.bat no PC.", slow: true, stage: "Demorando", target: 90 }));
       }
     }, 1000);
-  }, []);
+  };
   updateJarvisRef.current = updateJarvis; // V8.11: a atualização ao abrir chama por aqui
   const updatePct = useCreepingProgress(updating?.target ?? 0, updating?.target === 100); // no fim, salta para 100
 
@@ -3305,6 +3335,7 @@ export default function App() {
         )}
         {audioOpen && <AudioSettingsModal api={api} onClose={() => setAudioOpen(false)} onMicChange={setMicrophoneId} />}
         {lockAnswer && <LockAnswer answer={lockAnswer} onClose={() => setLockAnswer(null)} />}
+        {updateSoon && <UpdateSoon api={api} soon={updateSoon} onClose={() => setUpdateSoon(null)} />}
         {fanModeEnabled && <FanGoalOverlay event={fanEvent} onDone={clearFanEvent} />}
         {brandingOpen && <BrandingBook onClose={() => setBrandingOpen(false)} />}
         {optimizerOpen && <OptimizerPanel api={api} onClose={() => setOptimizerOpen(false)} />}
@@ -3410,6 +3441,7 @@ export default function App() {
       {diagOpen && <DiagnosticPanel api={api} connected={connected} onClose={() => setDiagOpen(false)} />}
         {pcScan && <PcScanPanel key={pcScan.at} api={api} initial={pcScan.data} onClose={() => setPcScan(null)} />}
       <RecordingBadge onStop={(t) => send(t)} /* V9.4: ⏺ GRAVANDO do modo gravar */ />
+      {updateSoon && <UpdateSoon api={api} soon={updateSoon} onClose={() => setUpdateSoon(null)} /* V9.4.1 */ />}
       {photoDrag && <div className="ph-drop" aria-hidden="true"><div>🖼 SOLTE A IMAGEM AQUI<small>O JARVIS analisa, lê, pesquisa ou explica. A foto não é guardada.</small></div></div>}
       {photoWin && (
         <PhotoPanel
