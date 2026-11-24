@@ -23,12 +23,23 @@ BACKGROUND_VOLUME = 25
 NORMAL_VOLUME = 60  # padrão; V8.15.1: no fim sobe até o volume que você escolheu no painel VOZ (music_volume)
 
 
-def target_volume() -> int:
-    """O volume da música depois do briefing: o que você escolheu no painel VOZ (ou 60)."""
+END_VOLUME = 80  # V9.4: no fim do briefing do dia, a música sobe ainda mais (preferência briefing_end_volume)
+
+
+def _int(value, default: int) -> int:
     try:
-        v = int(prefs.get_all().get("music_volume") or NORMAL_VOLUME)
+        return int(value if value not in (None, "") else default)
     except (TypeError, ValueError):
-        v = NORMAL_VOLUME
+        return default
+
+
+def target_volume() -> int:
+    """O volume da música depois do briefing.
+
+    V8.15.1: subia até o volume do painel VOZ (music_volume, 60). V9.4: o senhor pediu para subir ainda mais ao fim
+    do briefing do dia: vai até o maior entre o music_volume e o briefing_end_volume (80 por padrão)."""
+    data = prefs.get_all()
+    v = max(_int(data.get("music_volume"), NORMAL_VOLUME), _int(data.get("briefing_end_volume"), END_VOLUME))
     return max(BACKGROUND_VOLUME, min(100, v))
 DEFAULT_SONG = "Back in Black AC/DC"
 

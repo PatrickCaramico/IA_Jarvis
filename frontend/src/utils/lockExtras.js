@@ -95,3 +95,17 @@ export function recordingText(rec) {
   const steps = n === 0 ? "faça os pedidos" : `${n} ${n === 1 ? "passo" : "passos"}${rec.max && n >= rec.max ? " (cheio)" : ""}`;
   return `GRAVANDO${name} · ${steps}`;
 }
+
+// ---------------------------------------------------------------- briefing (pauta em etiquetas)
+export const PAUTA_ICON = { weather: "☀", agenda: "▦", email: "✉", news: "◉", health: "♥", tasks: "☑", water: "◍", notifications: "◔", metrics: "♥", commands: "◎" };
+
+/** Rótulo curto de cada assunto na pauta ("RADAR · NOTÍCIAS" -> "Notícias"; notícia -> o tema). */
+const GENERIC = new Set(["hoje", "agora", "amanha", "amanhã", "semana", "ontem"]);
+export function pautaLabel(card) {
+  const parts = String(card?.label || card?.title || "").split("·").map((x) => x.trim()).filter(Boolean);
+  // "AGENDA · HOJE" -> "Agenda" (a última parte é genérica); "PANORAMA · CLIMA" -> "Clima"
+  const pick = parts.length > 1 && GENERIC.has(parts[parts.length - 1].toLowerCase()) ? parts[0] : parts[parts.length - 1];
+  const raw = card?.kind === "news" ? card.title : pick;
+  const t = String(raw || "").trim().toLowerCase();
+  return t ? t.charAt(0).toUpperCase() + t.slice(1) : "Assunto";
+}

@@ -677,63 +677,11 @@ export default function App() {
     }).catch(() => {});
   }, []);
 
-  // Ao ativar o Modo Torcedor, sobe o widget de notícias imediatamente e, se for dia de jogo, o widget de placar
+  // V9.4: o Modo Torcedor NÃO abre mais as janelas flutuantes de notícias e placar sozinho. Antes elas subiam a
+  // cada abertura da central (no dia de jogo o modo liga sozinho), por cima do briefing e da coluna esquerda, que
+  // já mostra PARTIDA e NOTÍCIAS. Continuam disponíveis na Central de Widgets; ao desligar o modo, elas fecham.
   useEffect(() => {
-    if (fanModeEnabled) {
-      api("/api/fan/match")
-        .then((res) => {
-          const isMatchDay = Boolean(res?.match?.is_match_day);
-          setFloatingWindows((current) => {
-            let next = [...current];
-            if (!next.some((item) => item.type === "fan_news")) {
-              next.push({
-                id: `fan_news-${Date.now()}`,
-                type: "fan_news",
-                monitor: 1,
-                minimized: false,
-                maximized: false,
-                left: 28,
-                top: 76,
-                width: 360,
-                height: 380,
-              });
-            }
-            if (isMatchDay && !next.some((item) => item.type === "fan_score")) {
-              next.push({
-                id: `fan_score-${Date.now() + 1}`,
-                type: "fan_score",
-                monitor: 1,
-                minimized: false,
-                maximized: false,
-                left: 410,
-                top: 76,
-                width: 380,
-                height: 280,
-              });
-            }
-            return next;
-          });
-        })
-        .catch(() => {
-          setFloatingWindows((current) => {
-            if (current.some((item) => item.type === "fan_news")) return current;
-            return [
-              ...current,
-              {
-                id: `fan_news-${Date.now()}`,
-                type: "fan_news",
-                monitor: 1,
-                minimized: false,
-                maximized: false,
-                left: 28,
-                top: 76,
-                width: 360,
-                height: 380,
-              },
-            ];
-          });
-        });
-    } else {
+    if (!fanModeEnabled) {
       setFloatingWindows((current) => current.filter((item) => item.type !== "fan_news" && item.type !== "fan_score"));
     }
   }, [fanModeEnabled]);
@@ -3655,7 +3603,8 @@ export default function App() {
           onOpenSpotifyWindow={openSpotifyWindow}
         />
       )}
-      {floatingWindows.map((item) => (
+      {/* V9.4: durante o briefing nada flutua por cima do palco (as janelas voltam quando ele termina) */}
+      {!(briefing && briefing.phase === "running") && floatingWindows.map((item) => (
         <div
           key={item.id}
           id={item.id}

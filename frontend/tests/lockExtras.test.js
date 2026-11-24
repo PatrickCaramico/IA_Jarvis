@@ -2,7 +2,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { isLockKeyCandidate, isNight, keyLabel, lockKeyPress, pastedImage, recordingText, weatherScene } from "../src/utils/lockExtras.js";
+import { pautaLabel, isLockKeyCandidate, isNight, keyLabel, lockKeyPress, pastedImage, recordingText, weatherScene } from "../src/utils/lockExtras.js";
 
 const at = (h, m = 0) => new Date(2026, 10, 24, h, m);
 
@@ -65,4 +65,19 @@ test("V9.4: o ⚡ ANALISAR recebe o clique (a telemetria em volta tem pointer-ev
   const css = readFileSync(new URL("../src/hud-center.css", import.meta.url), "utf8");
   assert.match(css, /\.hl-orb > \.hc-telemetry \{[^}]*pointer-events: none/);
   assert.match(css, /\.hc-r-analyze \{[^}]*pointer-events: auto/);
+});
+
+test("V9.4: pauta do briefing em etiquetas curtas", () => {
+  assert.equal(pautaLabel({ kind: "weather", label: "PANORAMA · CLIMA", title: "Céu limpo" }), "Clima");
+  assert.equal(pautaLabel({ kind: "news", label: "RADAR · NOTÍCIAS", title: "Palmeiras" }), "Palmeiras");
+  assert.equal(pautaLabel({ kind: "email", label: "COMUNICAÇÕES · E-MAIL" }), "E-mail");
+  assert.equal(pautaLabel({ kind: "agenda", label: "AGENDA · HOJE" }), "Agenda");
+  assert.equal(pautaLabel({ kind: "metrics", label: "MODO TORCEDOR · HOJE" }), "Modo torcedor");
+  assert.equal(pautaLabel({}), "Assunto");
+});
+
+test("V9.4: a faixa do jogo tem linha própria na grade (não empurra as colunas)", () => {
+  const css = readFileSync(new URL("../src/v94.css", import.meta.url), "utf8");
+  assert.match(css, /\.hl-root > \.fmb-root \{ grid-column: 1 \/ -1; grid-row: 2;/);
+  assert.match(css, /\.hl-root:has\(> \.fmb-root\) > \.hl-right \{ grid-row: 3; \}/);
 });

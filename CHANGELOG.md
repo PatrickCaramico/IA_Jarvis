@@ -32,6 +32,25 @@ Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 - Enquanto grava, aparece ⏺ GRAVANDO no topo, com o número de passos.
 - "Quais são as minhas gravações?" lista as rotinas, e "apaga a rotina estudo" apaga (depois do "sim").
 
+**🚀 O JARVIS liga mais rápido**
+- O backend agora sobe logo no começo. A interface local (que a central do site nem usa) é conferida e montada depois.
+  - Antes, o backend só ligava depois de conferir, baixar (até 20 s) ou montar essa interface, e a central ficava "procurando o JARVIS do PC" por cerca de 1 minuto.
+- Ao entrar no Windows, a espera antes de ligar caiu de 20 s para 5 s.
+
+**☀ Briefing do dia mais organizado**
+- As informações entram uma de cada vez, com animação.
+  - Antes, na abertura, os cerca de 10 cartões apareciam juntos em volta do orbe.
+- Os próximos assuntos viram uma pauta de etiquetas pequenas, que acende na vez de cada um. Os já falados ficam como cartões pequenos (os 4 últimos).
+- Cartões novos: uma cor por assunto (clima, agenda, e-mail, saúde, tarefas…), título em até 2 linhas e um brilho ao entrar.
+  - O cartão de e-mail sem conexão não mostra mais nomes de variáveis técnicas.
+- **Música:** a de entrada começa enquanto o briefing ainda está sendo montado. Antes, ela só começava depois de montar tudo (notícias, clima, e-mails…), por isso demorava.
+- No fim do briefing do dia, a música sobe ainda mais: até 80%, ou até o volume do painel VOZ, se ele for maior. Dá para escolher entre 60% e 100% no painel VOZ.
+
+**⚽ Modo Torcedor sem bagunça**
+- **Layout quebrado:** a faixa "HOJE É DIA DE JOGO" ia parar no canto de cima e empurrava a central para a coluna da direita, sumindo com o reator. Agora ela tem uma linha só dela, embaixo do topo.
+- As janelas flutuantes de notícias e placar não abrem mais sozinhas a cada abertura da central. Elas cobriam o briefing e repetiam a PARTIDA e as NOTÍCIAS da coluna esquerda. Continuam na Central de Widgets.
+- Durante o briefing, nenhuma janela flutua por cima do palco.
+
 **⚡ Botão ANALISAR voltou a funcionar**
 - O ⚡ ANALISAR embaixo de PROCESSADOR e MEMÓRIA aparecia, mas não respondia ao clique: a área das leituras em volta do reator ignorava o mouse, e o botão herdava isso. Agora ele pede a auto-análise na hora.
 

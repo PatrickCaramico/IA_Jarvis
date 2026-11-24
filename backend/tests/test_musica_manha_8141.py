@@ -37,7 +37,8 @@ def test_starts_quiet_and_raises_at_the_end(fake):
     log.clear()
     mm.finish(plan, sleep=lambda s: None)
     vols = [v for kind, v, *_ in log if kind == "vol"]
-    assert vols[0] > mm.BACKGROUND_VOLUME and vols[-1] == mm.NORMAL_VOLUME and vols == sorted(vols)
+    # V9.4: no fim do briefing do dia a música sobe ainda mais (END_VOLUME, 80), não só até os 60 do painel
+    assert vols[0] > mm.BACKGROUND_VOLUME and vols[-1] == mm.END_VOLUME and vols == sorted(vols)
 
 
 def test_only_once_a_day(fake):

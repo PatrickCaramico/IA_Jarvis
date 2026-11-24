@@ -132,6 +132,15 @@ DATA["/api/security/report"] = q.get("sec") === "1" ? {
   ],
 } : { unseen: 0, events: [], guard: {} };
 
+// V9.4: ?fan=1 Modo Torcedor em dia de jogo (a faixa HOJE É DIA DE JOGO na grade); ?ram=90 memória alta
+if (q.get("fan") === "1") {
+  DATA["/api/prefs"] = { ...DATA["/api/prefs"], fan_mode_enabled: true, fan_team: "palmeiras" };
+  DATA["/api/fan/match"] = { match: { id: "demo", opponent: "Chapecoense", competition: "Brasileirão", venue: "Arena Condá", home_away: "away",
+    date: new Date(Date.now() + 10 * 3600000).toISOString(), time_known: true, status: "scheduled", is_match_day: true, countdown: "Em 10h 35min",
+    score: { home: 0, away: 0 }, sources: ["espn", "google_news"] }, team: { name: "Palmeiras" }, upcoming: [] };
+}
+if (q.get("ram")) DATA["/api/system"] = { ...DATA["/api/system"], ram_percent: Number(q.get("ram")) };
+
 // ?upd=0: sem atualização pendente (com ela, a atualização ao abrir roda e a demo para no bloqueio)
 if (q.get("upd") === "0") DATA["/api/system/update/status"] = { available: false, count: 0 };
 

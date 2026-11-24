@@ -77,62 +77,16 @@ if defined NEED_PIP (
   )
 )
 
-rem ---------- 3. Dependencias do Frontend ----------
-if not exist "%FRONTEND%\node_modules\vite" (
-  echo  [3/5] Instalando dependencias do frontend...
-  where npm >nul 2>nul
-  if errorlevel 1 (
-    echo  [ERRO] Node.js/npm nao encontrado.
-    pause
-    exit /b 1
-  )
-  pushd "%FRONTEND%"
-  call npm install
-  popd
-)
-
-rem ---------- 4. Interface compilada (V4.4) ----------
-rem Fora do modo dev, a interface roda ja compilada (frontend\dist) num servidor leve em Python:
-rem sem Node e sem compilar a cada abertura. O build so e refeito quando o codigo mudou.
 set "PY=%BACKEND%\venv\Scripts\python.exe"
-set "SERVE=%ROOT%scripts\serve_frontend.py"
-set "USE_VITE="
-if "%JARVIS_DEV%"=="1" set "USE_VITE=1"
-if not defined USE_VITE (
-  "%PY%" "%SERVE%" --stale
-  if errorlevel 1 (
-    rem V8.2.2: primeiro tenta baixar a interface pronta do site (segundos); se nao der, monta aqui (minutos)
-    echo  [4/5] Interface mudou: baixando a versao pronta...
-    set "JARVIS_PREBUILT_WAIT=20"
-    "%PY%" "%ROOT%scripts\prebuilt.py" "%FRONTEND%"
-  )
-  "%PY%" "%SERVE%" --stale
-  if errorlevel 1 (
-    rem V8.2.3: com uma interface ja montada, o JARVIS LIGA NA HORA com ela e a nova e montada em segundo
-    rem plano (antes o JARVIS ficava desligado os minutos todos da montagem e a atualizacao parecia travada)
-    if exist "%FRONTEND%\dist\index.html" (
-      echo  [4/5] Interface nova sera montada em segundo plano ^(o JARVIS ja liga com a atual^)...
-      set "BUILD_LATER=1"
-    ) else (
-      echo  [4/5] Primeira vez: montando a interface ^(alguns minutos^)...
-      pushd "%FRONTEND%"
-      call npm run build >nul
-      if errorlevel 1 (
-        echo  [AVISO] Build falhou. Usando o modo de desenvolvimento ^(mais lento^).
-        set "USE_VITE=1"
-      )
-      popd
-    )
-  )
-)
-
 rem ---------- Ja estava aberto? (V4.4) ----------
 rem Se uma versao anterior ainda ocupa as portas, a nova falhava escondida e a antiga continuava.
-rem Agora o Iniciar sempre substitui: encerra o que estiver nas portas 8000 e 5173 antes de subir.
-powershell -NoProfile -Command "$p = Get-NetTCPConnection -LocalPort 8000,5173,8443,5443 -State Listen -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique; if ($p) { Write-Host '  JARVIS ja estava aberto: reiniciando com a versao atual...'; $p | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue }; $d=(Get-Date).AddSeconds(8); while((Get-Date) -lt $d -and (Get-NetTCPConnection -LocalPort 8000,5173,8443,5443 -State Listen -ErrorAction SilentlyContinue)){ Start-Sleep -Milliseconds 200 } }"
+rem Agora o Iniciar sempre substitui: encerra o que estiver na porta 8000 (e, mais abaixo, na 5173) antes de subir.
+powershell -NoProfile -Command "$p = Get-NetTCPConnection -LocalPort 8000,8443 -State Listen -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique; if ($p) { Write-Host '  JARVIS ja estava aberto: reiniciando com a versao atual...'; $p | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue }; $d=(Get-Date).AddSeconds(8); while((Get-Date) -lt $d -and (Get-NetTCPConnection -LocalPort 8000,8443 -State Listen -ErrorAction SilentlyContinue)){ Start-Sleep -Milliseconds 200 } }"
 
-rem ---------- 5. Iniciar em segundo plano ----------
-echo  [5/5] Iniciando backend e frontend...
+rem ---------- 3. Backend (V9.4: liga ANTES de conferir a interface local) ----------
+rem A central abre pelo site do Netlify e so precisa do backend. Antes, o backend so subia depois de conferir,
+rem baixar (ate 20 s) ou montar a interface local, e a central ficava "procurando" o PC por um minuto.
+echo  [3/5] Ligando o backend...
 
 set "RELOAD="
 if "%JARVIS_DEV%"=="1" set "RELOAD=--reload"
@@ -152,6 +106,57 @@ if defined RELOAD (
   powershell -NoProfile -Command "$env:JARVIS_NETWORK_MODE='%NETMODE%'; Start-Process -FilePath '%PY%' -ArgumentList 'run_server.py --host %HOST% --port 8000' -WorkingDirectory '%BACKEND%' -WindowStyle Hidden"
 )
 
+rem ---------- 4. Dependencias do Frontend ----------
+if not exist "%FRONTEND%\node_modules\vite" (
+  echo  [4/5] Instalando dependencias do frontend...
+  where npm >nul 2>nul
+  if errorlevel 1 (
+    echo  [ERRO] Node.js/npm nao encontrado.
+    pause
+    exit /b 1
+  )
+  pushd "%FRONTEND%"
+  call npm install
+  popd
+)
+
+rem ---------- 5. Interface compilada (V4.4) ----------
+rem Fora do modo dev, a interface roda ja compilada (frontend\dist) num servidor leve em Python:
+rem sem Node e sem compilar a cada abertura. O build so e refeito quando o codigo mudou.
+set "PY=%BACKEND%\venv\Scripts\python.exe"
+set "SERVE=%ROOT%scripts\serve_frontend.py"
+set "USE_VITE="
+if "%JARVIS_DEV%"=="1" set "USE_VITE=1"
+if not defined USE_VITE (
+  "%PY%" "%SERVE%" --stale
+  if errorlevel 1 (
+    rem V8.2.2: primeiro tenta baixar a interface pronta do site (segundos); se nao der, monta aqui (minutos)
+    echo  [5/5] Interface mudou: baixando a versao pronta...
+    set "JARVIS_PREBUILT_WAIT=20"
+    "%PY%" "%ROOT%scripts\prebuilt.py" "%FRONTEND%"
+  )
+  "%PY%" "%SERVE%" --stale
+  if errorlevel 1 (
+    rem V8.2.3: com uma interface ja montada, o JARVIS LIGA NA HORA com ela e a nova e montada em segundo
+    rem plano (antes o JARVIS ficava desligado os minutos todos da montagem e a atualizacao parecia travada)
+    if exist "%FRONTEND%\dist\index.html" (
+      echo  [5/5] Interface nova sera montada em segundo plano ^(o JARVIS ja liga com a atual^)...
+      set "BUILD_LATER=1"
+    ) else (
+      echo  [5/5] Primeira vez: montando a interface ^(alguns minutos^)...
+      pushd "%FRONTEND%"
+      call npm run build >nul
+      if errorlevel 1 (
+        echo  [AVISO] Build falhou. Usando o modo de desenvolvimento ^(mais lento^).
+        set "USE_VITE=1"
+      )
+      popd
+    )
+  )
+)
+
+rem Interface local (porta 5173): encerra a anterior, se houver, e sobe a atual
+powershell -NoProfile -Command "$p = Get-NetTCPConnection -LocalPort 5173,5443 -State Listen -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique; if ($p) { $p | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue }; $d=(Get-Date).AddSeconds(8); while((Get-Date) -lt $d -and (Get-NetTCPConnection -LocalPort 5173,5443 -State Listen -ErrorAction SilentlyContinue)){ Start-Sleep -Milliseconds 200 } }"
 if defined USE_VITE (
   powershell -NoProfile -Command "Start-Process -FilePath 'cmd.exe' -ArgumentList '/c npm run dev -- --host %HOST%' -WorkingDirectory '%FRONTEND%' -WindowStyle Hidden"
 ) else (

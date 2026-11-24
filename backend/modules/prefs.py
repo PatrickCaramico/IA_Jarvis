@@ -77,6 +77,7 @@ _DEFAULTS: dict[str, Any] = {
     "auto_optimize_enabled": True,        # V9.3: 1x por dia, com o PC parado, procura o que dá para limpar (só sugere)
     "music_volume": 60,                   # V8.15.1: volume da música (barra do painel VOZ; o fim do briefing sobe até ele)
     "briefing_pause_music": True,         # V8.15.1: pausa o Spotify enquanto o briefing é lido (e retoma no fim)
+    "briefing_end_volume": 80,            # V9.4: no fim do briefing do dia, a música sobe até aqui (se for mais que music_volume)
     "intro_song_morning_day": "",         # V8.14.1: dia (AAAA-MM-DD) em que já tocou de manhã (uma vez por dia)
     "fan_intro_playlist_uri": "",         # playlist própria com o Modo Torcedor ativo
     "lock_backend_enforce": True,         # bloqueio real: rotas pessoais respondem 403 bloqueado
@@ -216,6 +217,10 @@ def validate_patch(patch: dict[str, Any]) -> Optional[str]:
         v = patch["music_volume"]
         if isinstance(v, bool) or not isinstance(v, int) or not 0 <= v <= 100:
             return "music_volume deve ser um número de 0 a 100."
+    if "briefing_end_volume" in patch:  # V9.4
+        v = patch["briefing_end_volume"]
+        if isinstance(v, bool) or not isinstance(v, int) or not 0 <= v <= 100:
+            return "briefing_end_volume deve ser um número de 0 a 100."
     if "intro_song" in patch:  # V8.13: o nome da música (busca no Spotify)
         v = patch["intro_song"]
         if not isinstance(v, str) or len(v.strip()) > 120:

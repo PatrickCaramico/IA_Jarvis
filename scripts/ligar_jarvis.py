@@ -19,7 +19,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 BAT = ROOT / "Iniciar-JARVIS.bat"
 HEALTH = "http://127.0.0.1:8000/api/health"
-LOGON_DELAY_S = 20  # deixa o Windows terminar de abrir (rede, área de trabalho) antes de ligar
+# V9.4: eram 20 s fixos ao entrar no Windows, somados à inicialização (a central ficava "procurando" o PC por ~1 min).
+# 5 s bastam para a área de trabalho assentar; o backend não depende da rede para subir.
+LOGON_DELAY_S = 5
 
 log = logging.getLogger("jarvis.ligar")
 
