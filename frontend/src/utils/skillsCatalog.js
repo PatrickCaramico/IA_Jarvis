@@ -17,6 +17,7 @@ export const GROUPS = {
   tempo_de_tela: { label: "Tempo de tela", icon: "⏱", order: 12 }, // V9.0
   ocr_tela: { label: "Texto da tela", icon: "🔤", order: 13 }, // V9.0
   navegador: { label: "Navegador", icon: "🌐", order: 14 }, // V9.0
+  auto_analise: { label: "Auto-análise", icon: "⚡", order: 3 }, // V9.2
   inicializacao: { label: "Inicialização", icon: "🚀", order: 70 },
   microfone: { label: "Microfone", icon: "🎙", order: 65 },
   habilidades: { label: "Central", icon: "⚡", order: 80 },

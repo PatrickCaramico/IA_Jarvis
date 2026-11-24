@@ -2,6 +2,21 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 9.2.0 — 24 de novembro de 2026
+
+**⚡ Auto-análise: o JARVIS examina o PC e sugere o que fazer**
+- "Faz uma auto análise", "por que a memória está alta?" ou "como liberar memória?". Ele diz o estado do PC e a sugestão principal, e mostra o cartão AUTO-ANÁLISE com até 4 sugestões, por exemplo:
+  - o navegador pesando, com muitas abas;
+  - programas que ficam em segundo plano gastando memória (Teams, Discord, Steam, OneDrive…);
+  - o próprio JARVIS gastando demais;
+  - o PC há muitos dias sem reiniciar;
+  - o Windows usando o disco como memória;
+  - o disco quase cheio.
+- Com a memória alta, oferece fechar o programa mais pesado que é seguro fechar, e só fecha depois do "sim".
+- Na central, o botão ⚡ ANALISAR aparece embaixo de PROCESSADOR ou MEMÓRIA quando o uso fica alto.
+- O vigia do sistema agora avisa antes: com a memória acima de 85% por 3 minutos, um aviso calmo na tela e no celular, no máximo 1 vez por hora e sem voz.
+  - Antes, ele só avisava acima de 92%.
+
 ## 9.1.2 — 23 de novembro de 2026
 
 **🪶 Central leve no navegador, com as animações lisas**

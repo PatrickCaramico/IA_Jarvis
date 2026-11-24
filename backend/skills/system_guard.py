@@ -31,6 +31,8 @@ SAMPLE_S = 15
 CPU_LIMIT, CPU_WINDOW_S = 90.0, 120
 RAM_LIMIT, RAM_WINDOW_S = 92.0, 60
 COOLDOWN_S = 30 * 60
+# V9.2: aviso mais cedo e mais calmo (só tela e celular, com a sugestão da auto-análise), no máximo 1 vez por hora
+RAM_SOFT_LIMIT, RAM_SOFT_WINDOW_S, RAM_SOFT_COOLDOWN_S = 85.0, 180, 60 * 60
 NAMES_TTL_S = 10
 
 
@@ -271,7 +273,10 @@ class Watch:
             kinds.append("cpu")
         if self._sustained(2, RAM_LIMIT, RAM_WINDOW_S, now):
             kinds.append("ram")
-        due = [k for k in kinds if now - self.last_alert.get(k, -1e12) >= COOLDOWN_S]
+        elif self._sustained(2, RAM_SOFT_LIMIT, RAM_SOFT_WINDOW_S, now):
+            kinds.append("ram_suave")
+        cooldown = {"ram_suave": RAM_SOFT_COOLDOWN_S}
+        due = [k for k in kinds if now - self.last_alert.get(k, -1e12) >= cooldown.get(k, COOLDOWN_S)]
         for k in due:
             self.last_alert[k] = now
         return due
@@ -294,9 +299,27 @@ def alert_text(kind: str, top: list[dict], cpu: float, ram: float) -> tuple[str,
     return text, hog["name"]
 
 
+async def _soft_alert(ram: float) -> None:
+    """V9.2: memória acima de 85% há uns minutos: aviso calmo na tela e no celular, com a dica da auto-análise."""
+    from core import runtime
+    from skills import auto_analise
+
+    snap = await asyncio.to_thread(auto_analise.snapshot)
+    result = auto_analise.diagnose(snap)
+    tip = result["tips"][0] if result["tips"] else ""
+    text = f"Senhor, a memória está em {snap['ram']:.0f}% há alguns minutos.{(' ' + tip) if tip else ''} Diga 'faz uma auto análise' para ver tudo."
+    runtime.notify("system", "🧠 Memória alta", text)
+    await runtime.manager.broadcast({"type": "alert", "text": text})
+    log.info("Vigia do sistema (aviso calmo): %s", text)
+
+
 async def _alert(kind: str, cpu: float, ram: float) -> None:
     from core import confirm, runtime, session, speech
     from modules import access
+
+    if kind == "ram_suave":
+        await _soft_alert(ram)
+        return
 
     top = [p for p in await asyncio.to_thread(processes) if not p["protected"]]
     text, victim = alert_text(kind, top, cpu, ram)

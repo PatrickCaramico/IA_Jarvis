@@ -52,19 +52,26 @@ export function StateHint({ jarvisState, listening, interim, micOk, onCancel, do
   );
 }
 
-function Readout({ side, label, value, level = "", bar = null, sub = null }) {
+function Readout({ side, label, value, level = "", bar = null, sub = null, onAnalyze = null }) {
+  // V9.2: uso alto (amarelo ou vermelho) ganha o atalho para a auto-análise do JARVIS
+  const high = level === "is-warn" || level === "is-hot";
   return (
     <li className={`hc-readout ${level}`} data-side={side}>
       <span className="hc-r-label">{label}</span>
       <b className="hc-r-value">{value}</b>
       {bar !== null && <i className="hc-r-bar"><s style={{ width: `${Math.min(100, Math.max(0, Number(bar) || 0))}%` }} /></i>}
       {sub && <small className="hc-r-sub">{sub}</small>}
+      {high && onAnalyze && (
+        <button type="button" className="hc-r-analyze" onClick={onAnalyze} title="O JARVIS examina o PC e sugere o que fazer">
+          ⚡ ANALISAR
+        </button>
+      )}
     </li>
   );
 }
 
 /** Anel e leituras em volta do reator (filhos diretos de .hl-orb; nada de <div>, que lá vira o próprio reator). */
-export function OrbTelemetry({ api, connected }) {
+export function OrbTelemetry({ api, connected, onAnalyze = null }) {
   const sys = usePolled(api, "/api/system", 6000);
   const agenda = usePolled(api, "/api/agenda/next?limit=1", 5 * 60 * 1000);
   const next = nextAgenda(agenda?.items);
@@ -82,8 +89,10 @@ export function OrbTelemetry({ api, connected }) {
       </svg>
       {hasSys && (
         <ul className="hc-telemetry" data-side="left" aria-label="Uso do PC">
-          <Readout side="left" label="PROCESSADOR" value={pctText(sys.cpu_percent)} level={usageLevel(sys.cpu_percent)} bar={sys.cpu_percent} />
-          <Readout side="left" label="MEMÓRIA" value={pctText(sys.ram_percent)} level={usageLevel(sys.ram_percent)} bar={sys.ram_percent} />
+          <Readout side="left" label="PROCESSADOR" value={pctText(sys.cpu_percent)} level={usageLevel(sys.cpu_percent)} bar={sys.cpu_percent}
+            onAnalyze={onAnalyze} />
+          <Readout side="left" label="MEMÓRIA" value={pctText(sys.ram_percent)} level={usageLevel(sys.ram_percent)} bar={sys.ram_percent}
+            onAnalyze={onAnalyze} />
         </ul>
       )}
       {(hasSys || next) && (

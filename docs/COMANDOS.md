@@ -1,6 +1,6 @@
 # JARVIS — Comandos do dia a dia
 
-**Versão do projeto:** 9.1.2 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
+**Versão do projeto:** 9.2.0 (Windows). Substitui o antigo `Guia de comandos do dia a dia.md`.
 
 > Montado a partir do código do projeto. Se algum comando não responder como descrito, me avise que eu ajusto o guia.
 > Para a lista técnica de rotas, veja [API.md](API.md); para o `.env`, [CONFIGURACAO.md](CONFIGURACAO.md).
@@ -577,6 +577,15 @@ Habilidades plug-and-play (pasta `backend/skills/`). Funcionam pela frase exata 
 | "Como está o uso do processador?" / "quanto de memória está usando?" | Processador, memória, disco e bateria. Vale com a central bloqueada. |
 | ⚠️ "Fecha o Discord" / "encerra o Spotify" | Pergunta antes e fecha todas as janelas do programa. Programas do Windows, antivírus e o próprio JARVIS nunca são fechados. |
 | Sozinho (vigia) | Processador acima de 90% por 2 minutos ou memória acima de 92% por 1 minuto: avisa uma vez (no máximo a cada 30 min), diz o programa que mais gasta e oferece fechar ("sim"). "Desliga o vigia do sistema" / "liga o vigia do sistema". |
+
+**Auto-análise (V9.2)**
+
+| Diga | O que acontece |
+|---|---|
+| "Faz uma auto análise" / "analisa o meu PC" / "faz um diagnóstico do sistema" | O JARVIS examina o PC agora e responde com o estado e a sugestão principal. Também mostra o cartão **AUTO-ANÁLISE** com o que olhou e até 4 sugestões. Ele olha: memória e processador, o navegador com muitas abas (conta as do navegador do JARVIS), programas em segundo plano gastando memória (Teams, Discord, Steam, OneDrive…), ele mesmo, há quantos dias o PC não reinicia, se o Windows está usando o disco como memória e o espaço livre no disco. |
+| "Por que a memória está alta?" / "por que o processador tá no talo?" / "como liberar memória?" / "como melhorar o desempenho?" | O mesmo diagnóstico. Com a memória a partir de 80%, oferece ⚠️ fechar o programa mais pesado que é seguro fechar (nunca o navegador, programas do Windows nem o próprio JARVIS) e só fecha depois do "sim". |
+| Botão **⚡ ANALISAR** na central | Aparece embaixo de PROCESSADOR ou MEMÓRIA quando o uso fica no amarelo (70% ou mais) ou no vermelho (90% ou mais). Um toque pede a auto-análise. |
+| Sozinho (aviso calmo) | Memória acima de 85% por 3 minutos: aviso na tela e no celular, com a sugestão principal, no máximo 1 vez por hora e sem voz. Acima de 92%, continua o aviso falado do vigia, que oferece fechar o que mais gasta. |
 
 Para a varredura completa (temporários, lixeira, inicialização), continue usando "meu PC está lento".
 
