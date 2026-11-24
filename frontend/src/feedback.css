@@ -74,9 +74,10 @@
 .np-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--j-muted, #7fa7b5); flex: none; }
 .np.is-playing .np-dot { background: var(--j-green, #10b981); box-shadow: 0 0 8px rgba(16, 185, 129, 0.7); }
 .np-eq { margin-left: auto; display: inline-flex; align-items: flex-end; gap: 2px; height: 10px; }
-/* V9.1.2: as barras sobem e descem por utils/slowSpin.js (scaleY, sem recalcular o layout); antes, uma animação
-   de altura sem fim recalculava a página a cada quadro enquanto a música tocava */
-.np-eq i { width: 2px; height: 10px; background: var(--j-green, #10b981); border-radius: 1px; transform-origin: 50% 100%; transform: scaleY(0.5); }
+/* V9.1.2: sobe e desce com transform (placa de vídeo); antes animava a altura e refazia a página a cada quadro */
+.np-eq i { width: 2px; height: 10px; background: var(--j-green, #10b981); border-radius: 1px; transform-origin: 50% 100%; animation: np-eq 0.9s ease-in-out infinite; will-change: transform; }
+.np-eq i:nth-child(2) { animation-delay: -0.3s; } .np-eq i:nth-child(3) { animation-delay: -0.6s; }
+@keyframes np-eq { 0%, 100% { transform: scaleY(0.3); } 50% { transform: scaleY(1); } }
 .np-body { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .np-cover { width: 44px; height: 44px; border-radius: 6px; object-fit: cover; flex: none; border: 1px solid rgba(79, 220, 255, 0.2); }
 .np-cover-empty { display: grid; place-items: center; color: var(--j-core, #22d3ee); background: rgba(34, 211, 238, 0.08); }
@@ -85,8 +86,7 @@
 .np-text span { font-family: "Rajdhani", sans-serif; font-size: 0.85rem; color: rgba(201, 246, 255, 0.65); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .np.is-paused .np-text, .np.is-paused .np-cover { opacity: 0.6; }
 .np-bar { height: 3px; border-radius: 999px; background: rgba(79, 220, 255, 0.15); overflow: hidden; }
-/* V9.1.2: sem transição: ela reiniciava a cada segundo e virava uma animação sem fim (60 quadros/s com a música tocando) */
-.np-bar span { display: block; height: 100%; background: linear-gradient(90deg, #0ea5e9, #4fdcff); }
+.np-bar span { display: block; height: 100%; background: linear-gradient(90deg, #0ea5e9, #4fdcff); } /* V9.1.2: sem transição (virava animação sem fim) */
 .np-times { display: flex; justify-content: space-between; font-family: var(--font-data, monospace); font-size: 0.65rem; color: rgba(201, 246, 255, 0.5); font-variant-numeric: tabular-nums; }
 .np-controls { display: flex; justify-content: center; gap: 8px; }
 .np-controls button {

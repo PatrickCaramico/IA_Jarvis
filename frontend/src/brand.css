@@ -36,7 +36,8 @@
 .hl-brand .jarvis-logo { color: var(--j-core); filter: drop-shadow(0 0 6px rgba(34, 211, 238, 0.55)); flex-shrink: 0; }
 .jarvis-logo-spin .jarvis-logo-ring1,
 .jarvis-logo-spin .jarvis-logo-ring2 { transform-box: view-box; transform-origin: 32px 32px; }
-/* V9.1.2: os anéis do logo giram por utils/slowSpin.js (18 s e 30 s), não mais por animação CSS sem fim */
+.jarvis-logo-spin .jarvis-logo-ring1 { animation: j-spin 18s linear infinite; }
+.jarvis-logo-spin .jarvis-logo-ring2 { animation: j-spin 30s linear infinite reverse; }
 @keyframes j-spin { to { transform: rotate(360deg); } }
 
 /* ---------- estados do orbe central (Branding Book, seção 6) ---------- */

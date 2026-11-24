@@ -15,15 +15,16 @@ test("respiração vai de 0 a 1 e volta", () => {
   assert.ok(Math.abs(breath(5, 5)) < 1e-9);
 });
 
-test("10 quadros por segundo e parado no modo leve, com movimento reduzido ou aba escondida", () => {
+test("só gira no modo econômico; parado no modo leve, com movimento reduzido ou aba escondida", () => {
   assert.equal(FPS, 10);
-  const mk = (cls = [], motion, hidden = false, reduce = false) => [
+  const mk = (cls = ["is-eco"], motion, hidden = false, reduce = false) => [
     { hidden, documentElement: { classList: { contains: (c) => cls.includes(c) }, dataset: { motion } } },
     { matchMedia: () => ({ matches: reduce }) },
   ];
   assert.equal(paused(...mk()), false);
-  assert.equal(paused(...mk(["is-lite"])), true);
-  assert.equal(paused(...mk([], "reduce")), true);
-  assert.equal(paused(...mk([], undefined, true)), true);
-  assert.equal(paused(...mk([], undefined, false, true)), true);
+  assert.equal(paused(...mk([])), true); // fora do modo econômico, quem anima é o CSS
+  assert.equal(paused(...mk(["is-eco", "is-lite"])), true);
+  assert.equal(paused(...mk(["is-eco"], "reduce")), true);
+  assert.equal(paused(...mk(["is-eco"], undefined, true)), true);
+  assert.equal(paused(...mk(["is-eco"], undefined, false, true)), true);
 });

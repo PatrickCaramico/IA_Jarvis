@@ -1,10 +1,8 @@
-// V9.1.2: GIROS LENTOS A 10 QUADROS POR SEGUNDO. Antes, os fios do orbe, os anéis do reator, o anel do logo, o
-// halo e o equalizador do Spotify eram animações CSS sem fim. Enquanto existe UMA animação CSS rodando, o navegador
-// redesenha a central 60 vezes por segundo — e cada redesenho (planta, vidro, brilhos) é caro: medido em
-// ~1 núcleo do processador inteiro com a central parada em "em espera" (no app do Desk não acontecia).
-// Os giros são lentíssimos (um fio leva 28 a 70 s por volta), então 10 atualizações por segundo ficam iguais
-// no olho e o navegador só redesenha quando algo muda: ~1/3 do custo (medido). Para com a aba escondida, no
-// modo leve e com "reduzir movimento".
+// V9.1.2: MODO ECONÔMICO das animações. Normalmente o orbe, os anéis, o logo e os equalizadores giram por CSS,
+// lisos, a 60 quadros/s (a placa de vídeo faz). Se o PC não acompanhar (utils/frameWatch.js mede), a central põe
+// html.is-eco: as animações CSS param e este relógio gira as mesmas peças a 10 quadros/s — igual no olho, porque
+// os giros são lentos (um fio leva 28 a 70 s por volta), e o navegador só redesenha quando algo muda.
+// Fica parado fora do modo econômico, com a aba escondida, no modo leve e com "reduzir movimento".
 
 export const FPS = 10;
 
@@ -41,7 +39,7 @@ export const SPINS = [
 
 export function paused(doc = document, win = window) {
   const root = doc.documentElement;
-  return doc.hidden || root.classList.contains("is-lite") || root.dataset.motion === "reduce"
+  return doc.hidden || !root.classList.contains("is-eco") || root.classList.contains("is-lite") || root.dataset.motion === "reduce"
     || Boolean(win.matchMedia && win.matchMedia("(prefers-reduced-motion: reduce)").matches);
 }
 

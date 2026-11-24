@@ -4,14 +4,16 @@ Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
 ## 9.1.2 — 23 de novembro de 2026
 
-**🪶 Central muito mais leve no navegador**
+**🪶 Central leve no navegador, com as animações lisas**
 - Parada em "em espera", a central gastava cerca de um núcleo inteiro do processador.
-  - O orbe, os anéis do reator, o anel do logo e o equalizador do Spotify giravam como animações CSS sem fim, e isso faz o navegador redesenhar a tela 60 vezes por segundo.
-  - A barra de progresso da música também reiniciava uma transição a cada segundo.
-- Agora essas peças giram 10 vezes por segundo, num relógio próprio. O visual é o mesmo, porque os giros já eram lentos.
-  - Medido no teste: de ~104% para ~42% de um núcleo, com ou sem música.
-  - Num PC com aceleração da placa de vídeo, deve ficar ainda menor.
-- Com a aba escondida, no modo leve ou com "reduzir movimento", nada gira.
+  - O vilão era o desfoque do vidro, refeito a cada quadro em todos os painéis e botões, e não as animações. Medido: um pontinho de 6 px girando custava ~92% de um núcleo com o desfoque e ~18% sem ele.
+- As partes fixas (painéis, topo, botões, Modo Desk e janelas flutuantes) usam agora um "vidro pintado". O visual é o mesmo (tinta translúcida, reflexo e borda clara), mas sem refazer o desfoque a cada quadro.
+  - O desfoque de verdade ficou só nas janelas que abrem por cima: Configurações, paleta e Central de Widgets.
+- O orbe, os anéis e os equalizadores seguem girando lisos, a 60 quadros por segundo.
+  - O equalizador não anima mais a altura, e a barra da música não tem mais uma transição que reiniciava a cada segundo. As duas coisas obrigavam a página a se redesenhar sempre.
+  - Medido: o redesenho caiu de ~1.030 ms para ~190 ms a cada 3 segundos.
+- Rede de segurança: se o PC não acompanhar (menos de 40 quadros por segundo em medições seguidas), a central entra sozinha no modo econômico, girando tudo 10 vezes por segundo (igual no olho), até recarregar a página.
+  - Para testar: `?eco=1` força o modo econômico e `?eco=0` desliga.
 
 **🔓 Entrar pelo rosto não deixa mais a central em PROCESSANDO**
 - Quando o JARVIS já tinha cumprimentado há pouco, ele entrava sem falar. Mas a tela ficava no PROCESSANDO que a câmera ligou, com "Está demorando (51 s)", depois de toda entrada sem saudação.
