@@ -4,6 +4,7 @@ import { useMemo } from "react";
  * WireOrb — orbe de "fios" azuis (anel de fios luminosos com pontos de energia).
  * Somente visual. Estados: "idle" | "processing" | "speaking".
  * Usado só na tela principal; a tela de bloqueio continua com o ArcReactorHUD.
+ * V9.1.2: quem gira os fios, os pontos e o halo é utils/slowSpin.js (10 quadros/s), não mais o CSS.
  */
 
 const TWO_PI = Math.PI * 2;
@@ -78,11 +79,9 @@ export default function WireOrb({ state = "idle", flash = null }) {
           <g
             key={i}
             className="wo-wire"
-            style={{
-              "--d": w.dur,
-              animationDirection: w.reverse ? "reverse" : "normal",
-              animationDelay: `${w.delay}s`,
-            }}
+            data-spin={w.dur.toFixed(1)}
+            data-dir={w.reverse ? "-1" : "1"}
+            data-start={(((-w.delay / w.dur) * 360) % 360).toFixed(1)}
           >
             <path d={w.d} fill="none" stroke="currentColor" strokeWidth={w.width} strokeOpacity={w.opacity} />
           </g>

@@ -55,10 +55,8 @@
 .hc-ring-ticks { stroke: rgba(79, 220, 255, 0.28); stroke-width: 2.2; stroke-dasharray: 0.6 4.6; }
 .hc-ring-arc { stroke: rgba(79, 220, 255, 0.32); stroke-width: 0.9; stroke-linecap: round; }
 .hc-ring-arc.is-thin { stroke: rgba(167, 243, 255, 0.45); stroke-width: 1.6; }
-.hc-ring-spin { transform-origin: 100px 100px; animation: hc-spin 60s linear infinite; }
-.hc-ring-spin.is-rev { animation-duration: 90s; animation-direction: reverse; }
-.hl-center[data-state="processing"] .hc-ring-spin { animation-duration: 6s; }
-.hl-center[data-state="processing"] .hc-ring-spin.is-rev { animation-duration: 9s; }
+/* V9.1.2: girados por utils/slowSpin.js (60 s / 90 s; pensando, 6 s / 9 s), não mais por animação CSS sem fim */
+.hc-ring-spin { transform-origin: 100px 100px; }
 .hl-center[data-state="processing"] .hc-ring-arc { stroke: rgba(167, 243, 255, 0.6); }
 .hl-center[data-state="speaking"] .hc-ring-arc { stroke: rgba(251, 191, 36, 0.5); }
 .hl-center[data-state="speaking"] .hc-ring-ticks { stroke: rgba(251, 191, 36, 0.3); }

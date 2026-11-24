@@ -571,21 +571,10 @@
 .wo { --k: 1; }
 .wo-processing { --k: 0.22; }
 .wo-speaking { --k: 0.5; }
-.wo-wire {
-  transform-box: view-box;
-  transform-origin: 200px 200px;
-  animation: wo-spin calc(var(--d) * var(--k) * 1s) linear infinite;
-}
-.wo-nodes {
-  transform-box: view-box;
-  transform-origin: 200px 200px;
-  animation: wo-spin calc(70s * var(--k)) linear infinite;
-}
-.wo-halo { animation: wo-breathe 5s ease-in-out infinite; transform-box: view-box; transform-origin: 200px 200px; }
-.wo-speaking .wo-halo { animation-duration: 0.9s; }
-.wo-processing .wo-halo { animation-duration: 1.4s; }
-@keyframes wo-spin { to { transform: rotate(360deg); } }
-@keyframes wo-breathe { 0%, 100% { opacity: 0.55; transform: scale(0.97); } 50% { opacity: 1; transform: scale(1.03); } }
+/* V9.1.2: o giro (fios, pontos) e a respiração (halo) vêm de utils/slowSpin.js a 10 quadros/s. Como animação CSS
+   sem fim, o navegador redesenhava a central 60 vezes por segundo (~1 núcleo do processador em "em espera"). */
+.wo-wire, .wo-nodes, .wo-halo { transform-box: view-box; transform-origin: 200px 200px; }
+.wo-halo { opacity: 0.8; }
 
 @media (max-width: 1500px) {
   .hl-hide-md { display: none; }

@@ -4,6 +4,15 @@ Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
 ## 9.1.2 — 23 de novembro de 2026
 
+**🪶 Central muito mais leve no navegador**
+- Parada em "em espera", a central gastava cerca de um núcleo inteiro do processador.
+  - O orbe, os anéis do reator, o anel do logo e o equalizador do Spotify giravam como animações CSS sem fim, e isso faz o navegador redesenhar a tela 60 vezes por segundo.
+  - A barra de progresso da música também reiniciava uma transição a cada segundo.
+- Agora essas peças giram 10 vezes por segundo, num relógio próprio. O visual é o mesmo, porque os giros já eram lentos.
+  - Medido no teste: de ~104% para ~42% de um núcleo, com ou sem música.
+  - Num PC com aceleração da placa de vídeo, deve ficar ainda menor.
+- Com a aba escondida, no modo leve ou com "reduzir movimento", nada gira.
+
 **🔓 Entrar pelo rosto não deixa mais a central em PROCESSANDO**
 - Quando o JARVIS já tinha cumprimentado há pouco, ele entrava sem falar. Mas a tela ficava no PROCESSANDO que a câmera ligou, com "Está demorando (51 s)", depois de toda entrada sem saudação.
 - Agora ele volta para "em espera" na hora.
