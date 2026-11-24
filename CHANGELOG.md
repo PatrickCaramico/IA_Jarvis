@@ -2,6 +2,21 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 9.3.0 — 24 de novembro de 2026
+
+**🛡️ Segurança: vigia da câmera, relatório com foto, pendrive e otimização do dia**
+Tudo local: nenhuma foto sai do PC.
+
+- **Vigia da câmera.** Liga com "liga o vigia da câmera" ou em Configurações › Bloqueio, e precisa da foto do rosto cadastrada.
+  - Com a central bloqueada, olha a cada ~20 s. Se alguém que não é de casa aparecer, guarda a foto, avisa no celular e na tela e diz que não reconhece quem está ali.
+  - Com a central liberada, confere a cada ~60 s. Bloqueia se outra pessoa estiver sozinha na frente do PC ou se o senhor sair (de 2 a 15 minutos, à escolha). Pode bloquear o Windows também.
+- **Relatório de segurança.** Ao entrar na central, ele abre sozinho quando há novidade. Também pela voz ("relatório de segurança", "alguém tentou entrar?") ou pela paleta.
+  - Mostra quem tentou entrar, com a foto (toque para ampliar), os pendrives ligados, os bloqueios automáticos e a otimização do dia, com o botão VER E LIMPAR.
+- **Pendrive.** Avisa quando um pendrive ou HD externo é ligado no PC.
+- **Otimização do dia.** Com o PC parado, procura temporários, lixeira cheia, programas que abrem com o Windows e disco cheio. Só sugere: nada é apagado sem o senhor mandar.
+- **Presença.** "Há quanto tempo eu estou no PC?" responde com o vigia ligado.
+- **Desbloqueio.** A tentativa de entrar pelo rosto que falha vai para o relatório. O desbloqueio também espera alguns segundos se o vigia estiver usando a câmera naquele instante, em vez de dar "ocupado".
+
 ## 9.2.0 — 24 de novembro de 2026
 
 **⚡ Auto-análise: o JARVIS examina o PC e sugere o que fazer**

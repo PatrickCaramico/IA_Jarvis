@@ -378,3 +378,57 @@ html:root :is(.sg-bg i, .wo svg, .hc-ring-spin) { will-change: transform; }
 html:root.is-eco :is(.wo-wire, .wo-nodes, .wo-halo, .hc-ring-spin, .jarvis-logo-ring1, .jarvis-logo-ring2, .np-eq i, .sg-eq i, .sg-bg i) {
   animation: none !important;
 }
+
+/* ==========================================================================
+   V9.3: relatório de segurança (janela por cima: vidro com desfoque de verdade, só enquanto aberta)
+   ========================================================================== */
+html:root .sec-backdrop {
+  position: fixed; inset: 0; z-index: 70; display: flex; align-items: center; justify-content: center; padding: 16px;
+  background: rgba(1, 6, 16, 0.6); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); animation: g-fade 0.18s ease-out;
+}
+html:root .sec {
+  width: min(720px, 100%); max-height: min(88vh, 820px); display: flex; flex-direction: column; overflow: hidden; color: #dff6ff;
+  background: var(--g-shine), var(--g-tint-strong); -webkit-backdrop-filter: var(--g-blur-strong); backdrop-filter: var(--g-blur-strong);
+  border: 1px solid var(--g-edge-hi); border-radius: 24px; box-shadow: 0 30px 80px rgba(0, 4, 18, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  animation: g-pop 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+html:root .sec-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 22px 12px; }
+html:root .sec-head h2 { margin: 0; font: 700 17px "Orbitron", sans-serif; letter-spacing: 0.16em; }
+html:root .sec-head span { font-size: 13px; color: rgba(201, 246, 255, 0.7); }
+html:root .sec-guards { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 22px 14px; border-bottom: 1px solid var(--g-edge); }
+html:root .sec-chip {
+  padding: 6px 12px; border-radius: 999px; border: 1px solid var(--g-edge); background: rgba(255, 255, 255, 0.05);
+  color: rgba(214, 242, 255, 0.75); font: 600 13px "Rajdhani", sans-serif; cursor: pointer; transition: 0.15s;
+}
+html:root .sec-chip.is-on { border-color: rgba(52, 211, 153, 0.55); background: rgba(52, 211, 153, 0.14); color: #d1fae5; }
+html:root .sec-chip:disabled { opacity: 0.5; cursor: default; }
+html:root .sec-list { list-style: none; margin: 0; padding: 10px 14px; overflow-y: auto; display: grid; gap: 8px; }
+html:root .sec-item { display: flex; gap: 12px; padding: 10px 12px; border-radius: 14px; border: 1px solid var(--g-edge); background: rgba(255, 255, 255, 0.04); }
+html:root .sec-item.is-new { border-color: rgba(251, 191, 36, 0.5); background: rgba(251, 191, 36, 0.07); }
+html:root .sec-item:is(.is-intruso, .is-estranho, .is-tentativa).is-new { border-color: rgba(248, 113, 113, 0.55); background: rgba(248, 113, 113, 0.08); }
+html:root .sec-ico { flex: none; width: 44px; height: 44px; display: grid; place-items: center; font-size: 22px; border-radius: 12px; background: rgba(255, 255, 255, 0.06); }
+html:root .sec-photo { flex: none; padding: 0; border: 1px solid rgba(248, 113, 113, 0.5); border-radius: 12px; overflow: hidden; cursor: zoom-in; background: #000; }
+html:root .sec-photo img { display: block; width: 96px; height: 72px; object-fit: cover; }
+html:root .sec-text { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+html:root .sec-text b { font: 700 14px "Rajdhani", sans-serif; letter-spacing: 0.03em; color: #fff; display: flex; align-items: center; gap: 8px; }
+html:root .sec-text em { font: 700 9px "Orbitron", sans-serif; font-style: normal; letter-spacing: 0.14em; color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.5); border-radius: 999px; padding: 1px 6px; }
+html:root .sec-text span { font-size: 14px; color: rgba(214, 242, 255, 0.85); }
+html:root .sec-text small { font: 500 11px "JetBrains Mono", monospace; color: rgba(214, 242, 255, 0.5); }
+html:root .sec-action {
+  align-self: flex-start; margin-top: 6px; padding: 5px 12px; border-radius: 999px; border: 1px solid rgba(34, 211, 238, 0.55);
+  background: rgba(34, 211, 238, 0.16); color: #cffafe; font: 700 10px "Orbitron", sans-serif; letter-spacing: 0.12em; cursor: pointer;
+}
+html:root .sec-empty { padding: 22px; text-align: center; color: rgba(214, 242, 255, 0.6); }
+html:root .sec-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 22px 16px; border-top: 1px solid var(--g-edge); }
+html:root .sec-foot span { font-size: 12px; color: rgba(214, 242, 255, 0.55); }
+html:root .sec-ok {
+  padding: 9px 18px; border-radius: 999px; border: 1px solid rgba(165, 243, 252, 0.5); background: rgba(34, 211, 238, 0.22);
+  color: #eafcff; font: 700 11px "Orbitron", sans-serif; letter-spacing: 0.14em; cursor: pointer;
+}
+html:root .sec-zoom { position: fixed; inset: 0; z-index: 71; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; background: rgba(0, 0, 0, 0.82); cursor: zoom-out; }
+html:root .sec-zoom img { max-width: min(92vw, 720px); max-height: 75vh; border-radius: 16px; border: 1px solid rgba(248, 113, 113, 0.5); }
+html:root .sec-zoom p { color: #fecaca; font-size: 14px; }
+@media (max-width: 560px) {
+  html:root .sec-photo img { width: 72px; height: 56px; }
+  html:root .sec-foot { flex-direction: column; align-items: stretch; }
+}

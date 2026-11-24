@@ -240,6 +240,32 @@ export default function LockSettings({ api, prefs, onPatch }) {
         <Note>O nome da IA também vale como palavra de ativação. A escuta usa o reconhecimento de voz do Chrome/Edge (precisa de internet) e só funciona com a página aberta em localhost.</Note>
       </Section>
 
+      {/* V9.3: vigia da câmera, pendrive e otimização do dia (tudo local) */}
+      <Section title="VIGIA DA CÂMERA E SEGURANÇA">
+        <Toggle
+          label="Vigia da câmera"
+          hint="Tudo no PC, nenhuma foto sai dele. Bloqueada: olha a cada ~20 s e avisa (com foto) se aparecer alguém que não é de casa. Liberada: confere a cada ~60 s e bloqueia se o senhor sair ou se outra pessoa estiver sozinha. A luz da câmera acende rapidinho a cada olhada."
+          checked={Boolean(prefs.camera_guard_enabled)}
+          onChange={(v) => onPatch({ camera_guard_enabled: v })}
+        />
+        {prefs.camera_guard_enabled && (
+          <>
+            <Toggle label="Bloquear sozinho quando eu sair ou for outra pessoa" checked={prefs.camera_guard_auto_lock !== false}
+              onChange={(v) => onPatch({ camera_guard_auto_lock: v })} />
+            <SelectRow label="Sair da frente do PC por" value={prefs.camera_guard_away_minutes || 5}
+              onChange={(v) => onPatch({ camera_guard_away_minutes: Number(v) })}
+              options={[[2, "2 minutos"], [3, "3 minutos"], [5, "5 minutos"], [10, "10 minutos"], [15, "15 minutos"]]} />
+            <Toggle label="Bloquear também o Windows (Win+L)" checked={Boolean(prefs.camera_guard_lock_windows)}
+              onChange={(v) => onPatch({ camera_guard_lock_windows: v })} />
+          </>
+        )}
+        <Toggle label="Avisar quando ligarem um pendrive ou HD externo" checked={prefs.usb_alert_enabled !== false}
+          onChange={(v) => onPatch({ usb_alert_enabled: v })} />
+        <Toggle label="Otimização do dia" hint="Uma vez por dia, com o PC parado, procura temporários, lixeira e programas que abrem com o Windows. Só sugere: nada é apagado sem o senhor mandar."
+          checked={prefs.auto_optimize_enabled !== false} onChange={(v) => onPatch({ auto_optimize_enabled: v })} />
+        <Note>O relatório de segurança abre sozinho ao entrar na central quando há novidade. Também: "Jarvis, relatório de segurança".</Note>
+      </Section>
+
       <Section title="HISTÓRICO DE ACESSOS">
         <Toggle
           label="Salvar miniatura de rosto não reconhecido"

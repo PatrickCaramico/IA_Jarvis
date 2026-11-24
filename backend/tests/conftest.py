@@ -53,6 +53,7 @@ _WRITABLE_SKILLS = (
     ("skills.deep_brief", "_DIR", "dossies"),
     ("skills.tempo_de_tela", "_PATH", "tempo_de_tela.json"),
     ("skills.navegador", "_PATH", "navegador.json"),  # V9.0
+    ("skills.seguranca", "_PATH", "seguranca.json"),  # V9.3
 )
 
 
