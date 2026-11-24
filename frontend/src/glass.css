@@ -339,3 +339,42 @@ html:root .ww-glass .rounded-lg, html:root .ww-glass .rounded-xl { border-radius
 
 /* no celular não há Ctrl+K e o rodapé fica apertado: o botão COMANDOS sai (a paleta é do PC) */
 @media (max-width: 900px) { html:root .hl-btn-cmdk { display: none; } }
+
+/* ==========================================================================
+   V9.1.2: DESEMPENHO — animações lisas (60 qps) sem pesar o PC
+   Medido: o que pesava não era a animação, era o DESFOQUE (backdrop-filter) refeito a cada quadro em todos os
+   painéis e botões de vidro — um ponto de 6 px girando custava ~1 núcleo com o vidro e ~18% sem ele.
+   1) Superfícies FIXAS (central, Modo Desk, janelas flutuantes, fila): "vidro pintado" — tinta translúcida, reflexo
+      e aresta clara, sem desfoque ao vivo (atrás delas só há o fundo parado: o desfoque não mostrava nada).
+      O desfoque de verdade fica nas janelas que abrem por cima (Configurações, paleta, Widgets, menu lateral).
+   2) Nada anima altura/largura/sombra (refaz a página a cada quadro): só transform/opacity, que a placa de vídeo faz.
+   3) Rede de segurança: se o PC não acompanhar, a central entra sozinha no MODO ECONÔMICO (html.is-eco): as
+      animações CSS param e o relógio de utils/slowSpin.js gira tudo a 10 quadros/s (utils/frameWatch.js decide).
+   ========================================================================== */
+html:root :is(.hl-root, .hl-root *, .dk-root, .dk-root *, .jarvis-floating-window, .jarvis-floating-window *, .turn-queue) {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+/* sem o desfoque, a tinta fica um pouco mais densa para o texto continuar firme sobre a grade */
+html:root .hl-root { --g-tint: rgba(8, 22, 46, 0.66); }
+html:root[data-mode="fan"] .hl-root { --g-tint: rgba(3, 32, 19, 0.7); }
+html:root .hl-root :is(.hl-act, .hl-btn) { background: var(--g-shine), rgba(8, 22, 46, 0.72); }
+html:root .dk-root { --dk-card: rgba(22, 27, 38, 0.82); --dk-card-2: rgba(34, 40, 54, 0.85); }
+html:root .dk-side { background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02)), rgba(16, 19, 27, 0.9); }
+html:root .jarvis-floating-window { background: var(--g-shine), rgba(6, 16, 34, 0.94); }
+html:root .turn-queue { background: var(--g-shine), rgba(6, 16, 34, 0.94); }
+
+/* barras de progresso: sem transição de largura (reiniciava a cada segundo = animação sem fim refazendo a página) */
+html:root :is(.np-bar span, .sg-bar span) { transition: none; }
+/* equalizadores: sobem e descem com transform (placa de vídeo), não com altura */
+html:root .sg-eq i { height: 14px; transform-origin: 50% 100%; animation: g-eq 1.1s ease-in-out infinite; will-change: transform; }
+@keyframes g-eq { 0%, 100% { transform: scaleY(0.29); } 50% { transform: scaleY(1); } }
+/* capa do Spotify: o halo fica parado (a sombra pulsando era refeita a cada quadro) */
+html:root .sg.is-playing .sg-cover { animation: none; }
+/* aurora do Spotify e peças que giram: camada própria na placa de vídeo */
+html:root :is(.sg-bg i, .wo svg, .hc-ring-spin) { will-change: transform; }
+
+/* modo econômico (o relógio de 10 quadros/s assume) */
+html:root.is-eco :is(.wo-wire, .wo-nodes, .wo-halo, .hc-ring-spin, .jarvis-logo-ring1, .jarvis-logo-ring2, .np-eq i, .sg-eq i, .sg-bg i) {
+  animation: none !important;
+}

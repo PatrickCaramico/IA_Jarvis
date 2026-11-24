@@ -256,3 +256,17 @@ def track_service(coro) -> asyncio.Task:
     service_tasks.add(task)
     task.add_done_callback(service_tasks.discard)
     return task
+
+
+async def doing(text: str) -> None:
+    """V9.1.2: conta para as telas o que o JARVIS está fazendo ("pensando com a IA", "esperando o pedido anterior").
+
+    Antes a central só mostrava PROCESSANDO e, depois de 25 s, "Está demorando", sem dizer com o quê.
+    """
+    from core import session
+
+    session.doing = (text or "")[:120]
+    try:
+        await manager.broadcast({"type": "doing", "text": session.doing})
+    except Exception:  # noqa: BLE001 - o aviso na tela nunca atrapalha o pedido
+        log.debug("Aviso do que estou fazendo não foi para a tela", exc_info=True)

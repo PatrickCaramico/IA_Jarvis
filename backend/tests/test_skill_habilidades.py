@@ -15,7 +15,8 @@ def test_lists_groups_and_opens_the_panel(real_skills, monkeypatch):
     result = asyncio.run(router.try_fast_path("Jarvis, quais são suas habilidades?"))
     assert "janelas e monitores" in result.speech and "dossiês" in result.speech and "Abri a lista" in result.speech
     assert "abrir programa" not in result.speech
-    assert sent == [{"type": "open_panel", "panel": "agents", "agent": "habilidades", "client_id": None}]
+    # V9.1.2: o aviso "doing" (com o que está ocupado) também vai para a tela; aqui interessa o painel
+    assert [e for e in sent if e["type"] != "doing"] == [{"type": "open_panel", "panel": "agents", "agent": "habilidades", "client_id": None}]
     registry.set_enabled("deep_brief", False)
     assert "dossiês" in asyncio.run(router.try_fast_path("mostra suas habilidades")).speech  # listar_dossies segue ligado
 

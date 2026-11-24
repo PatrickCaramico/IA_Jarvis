@@ -16,6 +16,8 @@ import "./glass.css"; // V9.1: vidro em toda a interface
 import lazyComponent, { PieceBoundary } from "./utils/lazyComponent.jsx";
 import { initialAccessibility, initialBackground } from "./utils/theme.js";
 import { IS_JARVIS_APP, markDevice } from "./utils/device.js";
+import { startSlowSpin } from "./utils/slowSpin.js";
+import { startFrameWatch } from "./utils/frameWatch.js";
 import NetworkNotice from "./components/NetworkNotice.jsx";
 import SecurityLayer from "./components/SecurityLayer.jsx";
 import "./mobile.css";
@@ -23,6 +25,8 @@ import "./cloud.css";
 
 initialBackground(); // V4.4: fundo blueprint/clássico antes do primeiro desenho
 initialAccessibility(); // V4.5: texto maior, alto contraste e menos movimento já na primeira tela
+startSlowSpin(); // V9.1.2: modo econômico das animações (10 quadros/s), só se o PC não acompanhar
+startFrameWatch(); // V9.1.2: mede se as animações estão lisas e liga o modo econômico se precisar
 markDevice(); // V4.5: <html data-app="android"> dentro do app do celular
 // V6.5.12: no site do Netlify aparece o selo "Powered by Netlify" no canto inferior direito;
 // os botões do rodapé do bloqueio se afastam dele (ver blueprint.css)

@@ -2,6 +2,33 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 9.1.2 — 23 de novembro de 2026
+
+**🪶 Central leve no navegador, com as animações lisas**
+- Parada em "em espera", a central gastava cerca de um núcleo inteiro do processador.
+  - O vilão era o desfoque do vidro, refeito a cada quadro em todos os painéis e botões, e não as animações. Medido: um pontinho de 6 px girando custava ~92% de um núcleo com o desfoque e ~18% sem ele.
+- As partes fixas (painéis, topo, botões, Modo Desk e janelas flutuantes) usam agora um "vidro pintado". O visual é o mesmo (tinta translúcida, reflexo e borda clara), mas sem refazer o desfoque a cada quadro.
+  - O desfoque de verdade ficou só nas janelas que abrem por cima: Configurações, paleta e Central de Widgets.
+- O orbe, os anéis e os equalizadores seguem girando lisos, a 60 quadros por segundo.
+  - O equalizador não anima mais a altura, e a barra da música não tem mais uma transição que reiniciava a cada segundo. As duas coisas obrigavam a página a se redesenhar sempre.
+  - Medido: o redesenho caiu de ~1.030 ms para ~190 ms a cada 3 segundos.
+- Rede de segurança: se o PC não acompanhar (menos de 40 quadros por segundo em medições seguidas), a central entra sozinha no modo econômico, girando tudo 10 vezes por segundo (igual no olho), até recarregar a página.
+  - Para testar: `?eco=1` força o modo econômico e `?eco=0` desliga.
+
+**🔓 Entrar pelo rosto não deixa mais a central em PROCESSANDO**
+- Quando o JARVIS já tinha cumprimentado há pouco, ele entrava sem falar. Mas a tela ficava no PROCESSANDO que a câmera ligou, com "Está demorando (51 s)", depois de toda entrada sem saudação.
+- Agora ele volta para "em espera" na hora.
+
+**⏳ A central diz com o que está ocupada**
+- Embaixo de PROCESSANDO aparece o que o JARVIS está fazendo, por exemplo:
+  - "Pensando com a inteligência artificial… 12 s";
+  - "Pesquisando na internet com a IA";
+  - "Esperando o pedido anterior terminar", quando o pedido está na fila;
+  - o nome da habilidade que está rodando.
+- Se demorar, o aviso também diz o motivo: "Está demorando (51 s): pensando com a inteligência artificial. Pode cancelar e pedir de novo."
+  - Antes, só aparecia "Está demorando", sem dizer com o quê.
+- Ao abrir a central no meio de um pedido demorado, ela já mostra o que está acontecendo.
+
 ## 9.1.1 — 23 de novembro de 2026
 
 **🤖 Bloqueio do Modo Desk mais limpo**

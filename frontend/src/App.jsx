@@ -139,6 +139,7 @@ export default function App() {
   const [jarvisState, setJarvisState] = useState("idle"); // idle | processing | speaking
   const pendingRef = useRef([]); // V9.0: fila de pedidos feitos enquanto ele pensava
   const [paletteOpen, setPaletteOpen] = useState(false); // V9.0: paleta de comandos (Ctrl+K)
+  const [doing, setDoing] = useState(""); // V9.1.2: "pensando com a inteligência artificial", "esperando…"
   const [queued, setQueued] = useState([]);
   // V8.13: resposta da IA chegando em pedaços (streaming) — { seq, text }
   const [stream, setStream] = useState(EMPTY_STREAM);
@@ -761,6 +762,7 @@ export default function App() {
       case "state":
         setJarvisState(msg.state);
         if (msg.state === "idle") setStream(EMPTY_STREAM);
+        if (msg.state !== "processing") setDoing(""); // V9.1.2
         // V8.10.0: falando a resposta não é "ocupado": um pedido novo corta a fala e é atendido (antes era ignorado)
         busyRef.current = msg.state !== "idle" && msg.state !== "speaking";
         // Cancelado no meio do briefing: os cards já falados ficam na fileira
@@ -905,6 +907,9 @@ export default function App() {
         break;
       case "step":
         setSteps((prev) => ({ ...prev, [msg.step]: msg.status }));
+        break;
+      case "doing": // V9.1.2: o que ele está fazendo (aparece embaixo de PROCESSANDO)
+        setDoing(msg.text || "");
         break;
       case "response":
         // V8.13: a final substitui o texto ao vivo; se ele já estava todo na tela, não é "digitado" de novo
@@ -3841,6 +3846,7 @@ export default function App() {
         onCloseScreens={() => setScreensTab(null)}
         onExit={returnToWaiting}
         onCancel={handleCancel}
+        doing={doing}
         onToggleMic={toggleMic}
         zenMode={zenMode}
         onToggleZen={() => setZenMode((prev) => !prev)}

@@ -50,6 +50,7 @@ async def wait_turn(message: str) -> str:
     ticket, epoch = next(_tickets), _epoch
     _waiting.append(ticket)
     await _announce(message)
+    await runtime.doing("esperando o pedido anterior terminar")
     deadline = time.monotonic() + WAIT_LIMIT_S
     try:
         while True:

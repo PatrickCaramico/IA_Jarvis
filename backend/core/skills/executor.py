@@ -103,6 +103,10 @@ async def execute(name: str, args: Optional[dict], ctx: Optional[SkillContext] =
         return SkillResult(speech=sk.ask_confirmation(clean), pending=True)
 
     started = time.monotonic()
+    if ctx.depth == 0:  # V9.1.2: a central mostra a habilidade que está rodando
+        from core import runtime
+
+        await runtime.doing(title)
     try:
         if sk.is_async:
             coro = sk.handler(ctx, **clean)

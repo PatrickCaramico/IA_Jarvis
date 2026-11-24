@@ -29,3 +29,6 @@ speaking = 0  # quantas falas estão tocando agora (usado pela música de abertu
 
 face_ok_at = 0.0  # V5.1: hora (time.monotonic) do último rosto confirmado: libera redefinir o PIN por 3 min
 pending_action: dict | None = None  # 4.2: ação esperando "sim" (sugestão da rotina, organizar pasta)
+
+
+doing = ""  # V9.1.2: o que o JARVIS está fazendo agora (aparece na central embaixo de PROCESSANDO)

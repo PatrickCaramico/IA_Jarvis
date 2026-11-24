@@ -37,9 +37,9 @@ function usePolled(api, path, everyMs) {
   return data;
 }
 
-export function StateHint({ jarvisState, listening, interim, micOk, onCancel }) {
+export function StateHint({ jarvisState, listening, interim, micOk, onCancel, doing = "" }) {
   const elapsed = useElapsed(jarvisState === "processing" && !listening);
-  const hint = stateHint({ state: jarvisState, listening, interim, elapsed, micOk });
+  const hint = stateHint({ state: jarvisState, listening, interim, elapsed, micOk, doing });
   return (
     <p className={`hc-hint is-${hint.tone}`} aria-live="polite">
       <span>{hint.text}</span>

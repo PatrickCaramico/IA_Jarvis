@@ -78,6 +78,9 @@ export default function WireOrb({ state = "idle", flash = null }) {
           <g
             key={i}
             className="wo-wire"
+            data-spin={w.dur.toFixed(1)}
+            data-dir={w.reverse ? "-1" : "1"}
+            data-start={(((-w.delay / w.dur) * 360) % 360).toFixed(1)}
             style={{
               "--d": w.dur,
               animationDirection: w.reverse ? "reverse" : "normal",

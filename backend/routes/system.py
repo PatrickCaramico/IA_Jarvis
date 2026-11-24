@@ -342,6 +342,8 @@ async def websocket_endpoint(ws: WebSocket) -> None:
             device_access.touch(dev, ws.client.host if ws.client else "?")
     await runtime.manager.connect(ws)
     await ws.send_json({"type": "state", "state": "processing" if session.busy else "idle"})
+    if session.busy and session.doing:  # V9.1.2: central aberta no meio de um pedido demorado
+        await ws.send_json({"type": "doing", "text": session.doing})
     await ws.send_json({"type": "access_state", **access.snapshot()})
     # V5.5: aparelhos conectados (a central mostra quem está ligado; o celular aparece ao conectar)
     await runtime.manager.broadcast({"type": "devices", "items": runtime.manager.devices()})
