@@ -3,12 +3,14 @@ import { startPolling } from "../hooks/usePolling.js";
 import useNow from "../hooks/useNow.js";
 import NowPlaying, { useNowPlaying } from "./NowPlaying.jsx";
 import LockDetail from "./LockDetail.jsx";
+import WeatherScene from "./WeatherScene.jsx";
 
 // Cartões somente leitura da tela de bloqueio (seção 17.4). Nada pessoal antes do acesso:
 // só relógio, clima, próximo jogo (Modo Torcedor) e água de hoje.
 // allRight (V4.4): todos os cartões à direita, porque a esquerda fica com o painel do jogo (Modo Torcedor).
 // V7.12: layout "strip": todos os cartões numa faixa que passa devagar pela tela (tela de bloqueio estilo ORBE).
-export default function LockCards({ api, cards = [], fanModeEnabled = false, hidden = false, allRight = false, layout = "columns" }) {
+// V9.4: fresh = widgets que acabaram de ser fixados por voz ("deixa o clima sempre na tela de bloqueio"): entram com animação.
+export default function LockCards({ api, cards = [], fanModeEnabled = false, hidden = false, allRight = false, layout = "columns", fresh = [] }) {
   const [weather, setWeather] = useState(null);
   const [match, setMatch] = useState(null);
   const [water, setWater] = useState(null);
@@ -82,10 +84,12 @@ export default function LockCards({ api, cards = [], fanModeEnabled = false, hid
   }
   if (want("weather") && weather) {
     items.push(
-      <div className="lc-card" key="weather">
+      <div className="lc-card lc-weather-anim" key="weather">
         <div className="lc-label">CLIMA · {String(weather.place || "").split(",")[0].toUpperCase()}</div>
         <div className="lc-value">{weather.temperature}°</div>
         <div className="lc-sub">{weather.description}{weather.rain_probability != null ? ` · chuva ${weather.rain_probability}%` : ""}</div>
+        {/* V9.4: o tempo de agora, animado (sol, lua, nuvens, chuva, raio, neblina, neve) */}
+        <WeatherScene weather={weather} />
       </div>,
     );
   }
@@ -130,12 +134,13 @@ export default function LockCards({ api, cards = [], fanModeEnabled = false, hid
   const left = allRight ? [] : items.filter((el) => !RIGHT.includes(el.key))
     .sort((a, b) => LEFT_ORDER.indexOf(a.key) - LEFT_ORDER.indexOf(b.key));
   // V5.9: cada cartão abre a mini janela de detalhes (toque, clique, Enter ou espaço com o foco nele)
+  const FRESH_KEY = { fan: "fan_match" }; // o cartão "fan" vem da preferência "fan_match"
   const NAMES = { status: "sistemas", spotify: "Spotify", today: "hoje", clock: "agora", weather: "clima", fan: "próximo jogo", water: "água", rates: "mercado", headline: "manchetes" };
   const clickable = (el, copy = false) => (
     <div
       key={copy ? `${el.key}-copia` : el.key}
       aria-hidden={copy || undefined}
-      className="lc-click"
+      className={`lc-click${!copy && fresh.includes(FRESH_KEY[el.key] || el.key) ? " is-new" : ""}`}
       role="button"
       tabIndex={copy ? -1 : 0}
       aria-label={copy ? undefined : `Ver detalhes: ${NAMES[el.key] || el.key}`}

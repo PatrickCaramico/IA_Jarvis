@@ -193,6 +193,9 @@ _PUBLIC_EXACT = {
     ("GET", "/api/auth/token"),       # já é restrita ao computador local
     ("POST", "/api/auth/verify"),
     ("GET", "/api/auth/pin/status"),
+    ("GET", "/api/auth/lock-key"),   # V9.4: só diz se a tecla de acesso está ligada (nunca qual é)
+    ("POST", "/api/auth/lock-key/check"),  # V9.4: confere a tecla apertada no bloqueio (conta as erradas)
+    ("GET", "/api/lock/avatar"),      # V9.4: avatar holográfico (a rota confere se o senhor ligou)
     ("POST", "/api/auth/pin"),
     ("POST", "/api/auth/device/unlock"),  # V6.0: entrar com a digital no app (chave do aparelho)
     ("POST", "/api/guest/enter"),

@@ -2,6 +2,39 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 9.4.0 — 25 de novembro de 2026
+
+**🔒 Tela de bloqueio nova: avatar com o seu rosto, tecla de acesso e widgets animados**
+- **Avatar holográfico.** O PC transforma a foto do seu rosto num holograma e ele fica no centro do bloqueio, no lugar do reator.
+  - Ele flutua, um feixe de varredura passa, acelera enquanto verifica, fica verde ao reconhecer e treme em vermelho se não reconhecer.
+  - Fica salvo no PC e é refeito sozinho quando a foto muda. Liga com "coloca meu avatar na tela de bloqueio" ou em Configurações › Bloqueio.
+- **Tecla de acesso.** Em Configurações › Bloqueio, escolha uma tecla. Com ela ligada, a câmera só começa a verificar o rosto depois dessa tecla: é preciso saber a tecla e ter o rosto.
+  - Espaço, clique, palmas e "abrir central" não abrem mais a câmera. A tela mostra só "⌨ TECLA DE ACESSO", nunca qual é.
+  - 6 teclas erradas seguidas viram uma tentativa no relatório de segurança, com a foto, e a tecla fica 2 minutos sem valer. O PIN continua funcionando.
+- **Widgets por voz, com animação.** "Deixa o clima sempre aparecer na tela de bloqueio" fixa o widget na hora (também relógio, Spotify, água e próximo jogo). "Tira a água da tela de bloqueio" esconde.
+  - O clima mostra a animação do tempo de agora: sol, lua e estrelas, nuvens, chuva, raio, neblina ou neve.
+  - O widget novo entra na tela com uma animação.
+
+**📸 O rosto de quem tentou entrar**
+- Guardar a foto de quem tenta entrar agora vem ligado. Antes, vinha desligado, e o relatório só mostrava a foto com o vigia da câmera ligado.
+- Além do rosto não reconhecido, agora também vale para o PIN errado digitado no PC e para as teclas erradas. A câmera olha uma vez e guarda o rosto de quem não é de casa.
+- Se for o senhor errando o PIN, nada é registrado. As fotos continuam só no PC (no máximo 20, por 30 dias).
+
+**🖼 Analisar imagem pela voz**
+- "Analisa essa imagem", "o que tem nessa foto?" ou "analisa o print que eu tirei".
+  - O JARVIS pega a imagem copiada ou, sem ela, a mais nova dos últimos 30 minutos (Downloads, Área de Trabalho, capturas de tela).
+  - Ele responde em poucas frases e mostra o cartão ANÁLISE DA IMAGEM.
+- Ctrl+V com uma imagem na central abre a janela da foto, igual a arrastar.
+
+**⏺ Modo gravar: ensine o JARVIS a fazer algo**
+- Diga "modo gravar" (ou "vou te ensinar uma rotina chamada estudo") e faça os pedidos normalmente. Depois, diga "para de gravar".
+- Depois, é só dizer o nome ("estudo") para ele refazer tudo, na ordem, com as mesmas regras de segurança de sempre.
+- Enquanto grava, aparece ⏺ GRAVANDO no topo, com o número de passos.
+- "Quais são as minhas gravações?" lista as rotinas, e "apaga a rotina estudo" apaga (depois do "sim").
+
+**⚡ Botão ANALISAR voltou a funcionar**
+- O ⚡ ANALISAR embaixo de PROCESSADOR e MEMÓRIA aparecia, mas não respondia ao clique: a área das leituras em volta do reator ignorava o mouse, e o botão herdava isso. Agora ele pede a auto-análise na hora.
+
 ## 9.3.0 — 24 de novembro de 2026
 
 **🛡️ Segurança: vigia da câmera, relatório com foto, pendrive e otimização do dia**

@@ -21,7 +21,8 @@ router = APIRouter()
 
 class VerifyRequest(BaseModel):
     mode: str = "login"  # "login" | "recheck" (reverificação por palma, já logado)
-    trigger: str = "button"  # "button" | "clap" | "wake" (só para o registro de tentativas)
+    trigger: str = "button"  # "button" | "clap" | "wake" | "key" (só para o registro de tentativas)
+    key: str = ""  # V9.4: com a tecla de acesso ligada, o código da tecla apertada (KeyboardEvent.code)
 
 
 def _thumbnail(jpeg: bytes, width: int = 200) -> bytes:
@@ -52,9 +53,18 @@ async def auth_verify(req: Optional[VerifyRequest] = None) -> dict:
     """
     req = req or VerifyRequest()
     mode = req.mode if req.mode in {"login", "recheck"} else "login"
-    trigger = req.trigger if req.trigger in {"button", "clap", "wake"} else "button"
+    trigger = req.trigger if req.trigger in {"button", "clap", "wake", "key"} else "button"
     if not face.has_profile():
         raise HTTPException(status_code=404, detail="Nenhuma foto de perfil cadastrada.")
+    # V9.4: com a tecla de acesso ligada, a câmera só começa depois da tecla certa. Antes, espaço, clique, palmas ou
+    # "abrir central" bastavam (qualquer um podia começar a verificação). A reverificação por palma não muda.
+    from modules import lock_key
+
+    if mode == "login" and lock_key.enabled():
+        if lock_key.blocked():
+            raise HTTPException(status_code=429, detail="Muitas teclas erradas. Espere 2 minutos ou entre com o PIN.")
+        if not lock_key.matches(req.key):
+            raise HTTPException(status_code=403, detail="Para entrar, aperte a tecla de acesso e olhe para a câmera.")
 
     # V9.3: o vigia da câmera usa a câmera por ~0,5 s a cada olhada: espera um pouco antes de dizer "ocupado"
     for _ in range(12):
@@ -157,10 +167,10 @@ async def auth_verify(req: Optional[VerifyRequest] = None) -> dict:
             else:
                 message = f"Identidade confirmada{', ' + name if name else ''}."
         else:
-            p_now = prefs.get_all()
             photo = None
-            # V9.3: com o vigia da câmera ligado, a foto de quem falhou também vai para o relatório de segurança
-            if (p_now.get("lock_save_failed_photo") or p_now.get("camera_guard_enabled")) and result["saw_face"] and pending["last_jpeg"]:
+            # V9.3: com o vigia da câmera ligado, a foto de quem falhou também vai para o relatório de segurança.
+            # V9.4: guardar a foto agora vem ligado (lock_save_failed_photo); dá para desligar em Configurações.
+            if photos_on() and result["saw_face"] and pending["last_jpeg"]:
                 saved = lock_log.save_intruder(_thumbnail(pending["last_jpeg"]))
                 photo = saved.name if saved else None
             if mode == "login" and result["saw_face"]:
@@ -297,7 +307,7 @@ async def device_revoke(key_id: Optional[str] = None) -> dict:
 
 
 @router.post("/api/auth/pin")
-async def pin_verify(req: PinRequest) -> dict:
+async def pin_verify(req: PinRequest, request: Request) -> dict:
     # V4.5: com várias pessoas, descobre de quem é o PIN sem gastar tentativas; as tentativas
     # erradas contam sempre no PIN do perfil principal (um único limite para o PC todo).
     if profiles.count() > 1 and access.get_state() != access.UNLOCKED:
@@ -350,6 +360,9 @@ async def pin_verify(req: PinRequest) -> dict:
         device_access.alert("O PIN errou muitas vezes e foi bloqueado.")  # V7.6: avisa (uma vez a cada 2 min)
     else:
         message = f"PIN incorreto. Restam {result['remaining_attempts']} tentativas."
+    # V9.4: PIN errado digitado no próprio PC: a câmera olha uma vez e guarda o rosto de quem não é de casa
+    if runtime.is_local_conn(request):
+        runtime.track(snap_attempt(f"PIN errado digitado no PC às {time.strftime('%H:%M')}."))
     return {**result, "name": "", "message": message}
 
 
@@ -428,6 +441,45 @@ async def clear_lock_log() -> dict:
 
 # ------------------------------------------------------------------ V9.3: relatório de segurança
 _PHOTO_RE = re.compile(r"^tentativa_\d{8}_\d{6}\.jpg$")
+SNAP_COOLDOWN_S = 60
+_last_snap = 0.0
+
+
+def photos_on() -> bool:
+    """V9.4: guardar o rosto de quem tenta entrar (padrão ligado; tudo fica no PC)."""
+    p = prefs.get_all()
+    return bool(p.get("lock_save_failed_photo") or p.get("camera_guard_enabled"))
+
+
+async def snap_attempt(text: str) -> None:
+    """V9.4: uma tentativa de entrar sem ser pelo rosto (PIN errado, teclas erradas): a câmera olha uma vez e, se
+    houver alguém que não é de casa, a foto vai junto para o relatório de segurança.
+
+    Antes, só a verificação do rosto guardava a foto; quem errava o PIN não deixava rastro nenhum. Se a câmera
+    estiver ocupada (desbloqueio, vigia) ou sem foto cadastrada, registra a tentativa sem foto. O dono que erra o PIN
+    não vira tentativa (a câmera o reconhece)."""
+    global _last_snap
+    now = time.monotonic()
+    if now - _last_snap < SNAP_COOLDOWN_S:
+        return
+    _last_snap = now
+    look: dict = {}
+    if photos_on() and face.has_profile() and not session.auth_lock.locked():
+        try:
+            async with session.auth_lock:
+                refs = profiles.face_refs() if profiles.count() > 1 else None
+                look = await asyncio.to_thread(face.look_once, refs)
+        except Exception:  # noqa: BLE001 - sem câmera: registra sem foto
+            log.warning("Tentativa de entrar: a câmera não olhou", exc_info=True)
+    if look.get("known") and not look.get("unknown"):
+        return  # é o próprio dono errando o PIN
+    photo = None
+    if look.get("jpeg"):
+        saved = await asyncio.to_thread(lock_log.save_intruder, look["jpeg"])
+        photo = saved.name if saved else None
+    _security_event("tentativa", text, photo)
+    if photo:
+        runtime.notify("security", "🚨 Tentativa de entrar", text + " A foto está no relatório de segurança.")
 
 
 def _security_event(kind: str, text: str, photo: Optional[str] = None) -> None:
@@ -447,6 +499,58 @@ def _photo_b64(name: Optional[str]) -> Optional[str]:
         return base64.b64encode(path.read_bytes()).decode("ascii")
     except OSError:
         return None  # a foto foi apagada pelo limite de 20 / 30 dias
+
+
+# ------------------------------------------------------------------ V9.4: tecla de acesso
+class LockKeyRequest(BaseModel):
+    code: str = ""
+
+
+@router.get("/api/auth/lock-key")
+async def lock_key_status() -> dict:
+    """Bloqueada: só diz se a tecla está ligada (nunca qual é). Liberada: diz qual é, para as Configurações."""
+    from modules import lock_key
+
+    return lock_key.status(full=access.get_state() == access.UNLOCKED)
+
+
+@router.post("/api/auth/lock-key")
+async def lock_key_set(req: LockKeyRequest) -> dict:
+    from modules import lock_key
+
+    if not face.has_profile():
+        raise HTTPException(status_code=400, detail="Cadastre a foto do rosto antes: a tecla só começa a verificação.")
+    try:
+        return await asyncio.to_thread(lock_key.set_key, req.code)
+    except lock_key.LockKeyError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.delete("/api/auth/lock-key")
+async def lock_key_clear() -> dict:
+    from modules import lock_key
+
+    return await asyncio.to_thread(lock_key.clear)
+
+
+@router.post("/api/auth/lock-key/check")
+async def lock_key_check(req: LockKeyRequest, request: Request) -> dict:
+    """A tela bloqueada confere a tecla apertada ANTES de ligar a câmera (tecla errada não pisca "escaneando").
+
+    Muitas teclas erradas seguidas = tentativa no relatório (com o rosto, se for no próprio PC) e 2 min sem valer."""
+    from modules import lock_key
+
+    if not lock_key.enabled() or access.get_state() == access.UNLOCKED:
+        return {"ok": True, "attempt": False, "blocked": 0}
+    result = lock_key.check(req.code)
+    if result["attempt"]:
+        lock_log.add("key", "fail")
+        text = f"Alguém apertou várias teclas erradas na tela de bloqueio às {time.strftime('%H:%M')}."
+        if runtime.is_local_conn(request):
+            runtime.track(snap_attempt(text))
+        else:
+            _security_event("tentativa", text)
+    return result
 
 
 @router.get("/api/security/report")
@@ -514,6 +618,23 @@ async def enter(req: Optional[EnterRequest] = None) -> dict:
 
         runtime.track(speech.speak(phrases.pick("ready"), release_busy=True))
     return {"status": "ok"}
+
+
+@router.get("/api/lock/avatar")
+async def lock_avatar():
+    """V9.4: o avatar holográfico (feito da foto do rosto) para o centro da tela de bloqueio.
+
+    Só responde com o avatar ligado pelo senhor; senão 404 (o bloqueio volta para o reator)."""
+    from fastapi.responses import FileResponse
+
+    from modules import holo_avatar
+
+    if not prefs.get_all().get("lock_avatar_enabled"):
+        raise HTTPException(status_code=404, detail="Avatar desligado.")
+    path = await asyncio.to_thread(holo_avatar.ensure)
+    if path is None:
+        raise HTTPException(status_code=404, detail="Sem foto do rosto cadastrada.")
+    return FileResponse(path, media_type="image/png", headers={"Cache-Control": "no-store"})
 
 
 @router.get("/api/lock/status")

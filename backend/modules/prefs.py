@@ -60,7 +60,9 @@ _DEFAULTS: dict[str, Any] = {
     "lock_cards": ["clock", "weather", "spotify"],   # cartões visíveis na tela de bloqueio
     "lock_auto_relock_minutes": 0,        # 0 (desligado), 1, 2 (V8.13.1), 5, 10, 15 ou 30
     "lock_presence_check": False,         # checagem rápida de rosto antes de bloquear
-    "lock_save_failed_photo": False,      # miniatura de rosto não reconhecido (data/intruders)
+    # V9.4: vem ligado (o relatório de segurança mostra o rosto de quem tentou entrar). Fica só no PC.
+    "lock_save_failed_photo": True,       # miniatura de rosto não reconhecido (data/intruders)
+    "lock_avatar_enabled": False,         # V9.4: avatar holográfico feito da foto do rosto, no centro do bloqueio
     "lock_intro_sound": "default",        # "default" | "custom" | "off"
     "lock_intro_playlist_uri": "",        # playlist do Spotify após a saudação
     "intro_song": "Back in Black AC/DC",  # V8.13: música de entrada (busca no Spotify do usuário; nada embutido)
@@ -118,7 +120,7 @@ PUBLIC_KEYS = {
     "ai_name", "color_theme", "background_style", "theme_colors", "available_themes", "silent_mode",
     "fan_mode_enabled", "fan_team", "fan_team_info",
     "clap_wake_enabled", "clap_sensitivity", "clap_auto_enter", "clap_scope", "clap_relock_on_fail",
-    "lock_cards", "lock_intro_sound", "lock_daily_summary", "lock_unlock_greeting", "lock_auto_relock_minutes", "lock_guest_enabled",
+    "lock_cards", "lock_avatar_enabled", "lock_intro_sound", "lock_daily_summary", "lock_unlock_greeting", "lock_auto_relock_minutes", "lock_guest_enabled",
     "sentinel_enabled", "sentinel_wake_words", "sentinel_show_clock", "sentinel_night_dim",
     "water_vessel", "sfx_volume", "sfx_mode",
     "a11y_text_scale", "a11y_high_contrast", "a11y_reduce_motion",
@@ -150,6 +152,7 @@ def validate_patch(patch: dict[str, Any]) -> Optional[str]:
         "screen_time_enabled",  # V9.0
         "camera_guard_enabled", "camera_guard_auto_lock", "camera_guard_lock_windows", "usb_alert_enabled",
         "auto_optimize_enabled",  # V9.3
+        "lock_avatar_enabled",  # V9.4
     )
     for key in bools:
         if key in patch and not isinstance(patch[key], bool):

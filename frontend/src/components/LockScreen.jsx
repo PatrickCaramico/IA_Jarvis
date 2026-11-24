@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import ArcReactorHUD from "./ArcReactorHUD.jsx";
 import { FaceScanStatus } from "./FaceScanOverlay.jsx";
 import LockCards from "./LockCards.jsx";
@@ -12,6 +12,7 @@ import FanLockPanel from "./FanLockPanel.jsx";
 import MobileAppQr from "./MobileAppQr.jsx";
 import LockOrbe, { FaceCircle } from "./LockOrbe.jsx";
 import DeskLock from "./DeskLock.jsx";
+import HoloAvatar from "./HoloAvatar.jsx";
 
 // Tela inicial biométrica do J.A.R.V.I.S.
 // phase: "ready" | "scanning" | "verified" | "failed" | "pin"
@@ -157,6 +158,10 @@ export default function LockScreen({
   onLockStyle = null,
   deskLock = false, // V8.8.0 (ideia 11): Modo Desk ligado: o bloqueio com o robô JARVIS interagindo
   onDeskLock = null, // (on) => liga/desliga esse bloqueio
+  avatarUrl = null, // V9.4: avatar holográfico (feito da foto do rosto) no centro, no lugar do reator/orbe
+  freshCards = [], // V9.4: widgets recém-fixados por voz (entram com animação)
+  lockKeyOn = false, // V9.4: tecla de acesso ligada: a câmera só começa depois da tecla certa
+  keyShake = 0, // V9.4: muda a cada tecla errada (o aviso treme)
 }) {
   const scanning = phase === "scanning";
   const orbState = scanning ? "processing" : phase === "ready" || phase === "pin" ? "idle" : jarvisState;
@@ -167,6 +172,19 @@ export default function LockScreen({
   const newCheck = Boolean(lastFrame) || scanning || (phase === "verified" && Boolean(photoUrl));
   const sentinelOn = Boolean(sentinel?.enabled);
   const now = useClock(sentinelOn && sentinel?.showClock);
+  // V9.4: avatar holográfico (se a imagem não vier, volta para o reator/orbe)
+  const [avatarBroken, setAvatarBroken] = useState(false);
+  useEffect(() => setAvatarBroken(false), [avatarUrl]);
+  const avatarOn = Boolean(avatarUrl) && !avatarBroken && !phoneApp;
+  const avatarNode = avatarOn ? (
+    <HoloAvatar src={avatarUrl} phase={phase} state={jarvisState} onMissing={() => setAvatarBroken(true)} />
+  ) : null;
+  // V9.4: com a tecla de acesso, espaço/clique não começam a verificação: o aviso diz o que fazer (sem dizer a tecla)
+  const keyGate = lockKeyOn && !phoneApp && (phase === "ready" || phase === "failed");
+  const keyHint = "Aperte a tecla de acesso e olhe para a câmera";
+  const keyBadge = keyGate ? (
+    <span key={`k${keyShake}`} className={`ls-key-lock${keyShake ? " is-shake" : ""}`} role="status">⌨ TECLA DE ACESSO</span>
+  ) : null;
 
   useEffect(() => {
     if (silent) return;
@@ -307,7 +325,9 @@ export default function LockScreen({
         ? (autoEntering ? "Abrindo a central…" : "Aperte espaço ou toque em ENTRAR")
         : phase === "pin"
           ? "Digite o PIN"
-          : sentinelOn && sentinel.micStatus === "listening" && !sentinel.muted
+          : keyGate
+            ? keyHint
+            : sentinelOn && sentinel.micStatus === "listening" && !sentinel.muted
             ? `Diga "abrir central" ou "${wake}, …"`
             : clapHint ? "Aperte espaço, toque no botão ou bata palmas 2x" : "Aperte espaço ou toque no botão para entrar";
     const failedActions = phase === "failed" && !phoneApp ? (
@@ -327,8 +347,8 @@ export default function LockScreen({
         pinBlock={pinBlock}
         mainLabel={phase === "verified" ? "ENTRAR" : phase === "failed" ? "TENTAR DE NOVO" : "DESBLOQUEAR COM O ROSTO"}
         onMain={handleBtnClick}
-        mainVisible={!(phase === "verified" && autoEntering) && !phoneEntry}
-        failedActions={failedActions}
+        mainVisible={!(phase === "verified" && autoEntering) && !phoneEntry && !keyGate}
+        failedActions={keyBadge ? <>{keyBadge}{failedActions}</> : failedActions}
         phoneButtons={phonePinButton}
         hint={phoneEntry ? (phase === "failed" && message ? message : phoneHint) : ""}
         stateHint={deskHint}
@@ -369,9 +389,11 @@ export default function LockScreen({
             ? "Toque para tentar de novo"
             : phase === "pin"
               ? "Digite o PIN"
-              : sentinelOn && sentinel.micStatus === "listening" && !sentinel.muted
-                ? `Diga "abrir central" ou "${wake}, …"`
-                : clapHint ? "Toque, aperte espaço ou bata palmas 2x" : "Toque no orbe ou aperte espaço";
+              : keyGate
+                ? keyHint
+                : sentinelOn && sentinel.micStatus === "listening" && !sentinel.muted
+                  ? `Diga "abrir central" ou "${wake}, …"`
+                  : clapHint ? "Toque, aperte espaço ou bata palmas 2x" : "Toque no orbe ou aperte espaço";
     const failedActions = phase === "failed" && !phoneApp ? (
       <div className="lo-quick">
         {showPinButton && <button type="button" className={`ls-chip ${failCount >= 2 ? "is-strong" : ""}`} onClick={onUsePin}>⌨ USAR PIN</button>}
@@ -392,10 +414,13 @@ export default function LockScreen({
         pinBlock={pinBlock}
         mainLabel={phase === "verified" ? "Entrar" : phase === "failed" ? "Tentar novamente" : "Ativar e entrar"}
         onMain={handleBtnClick}
-        mainVisible={!(phase === "verified" && autoEntering) && !phoneEntry}
+        mainVisible={!(phase === "verified" && autoEntering) && !phoneEntry && !keyGate}
         phoneButtons={phonePinButton}
-        failedActions={failedActions}
+        failedActions={keyBadge ? <>{keyBadge}{failedActions}</> : failedActions}
         hubActions={secondaryActions}
+        avatarNode={avatarNode}
+        freshCards={freshCards}
+        keyGate={keyGate}
         cards={cards}
         cardsList={sentinelOn && sentinel.showClock ? cardsList.filter((c) => c !== "clock") : cardsList}
         fanPanelNode={fanPanel && phase !== "scanning" && phase !== "pin" ? <FanLockPanel api={cards.api} refreshKey={cards.fanRefresh} /> : null}
@@ -467,7 +492,7 @@ export default function LockScreen({
           <div className={`ls-orb-wrapper snt-orb ${clap?.pulse ? "is-clap-pulse" : ""}`} key={`orb-${clap?.pulse || 0}`}>
             <div className={`ls-hud-ring${scanning ? " is-scanning" : ""}`} />
             <div className={newCheck ? "ls-reactor-hidden" : undefined}>
-              <ArcReactorHUD state={orbSentinelState} photoUrl={newCheck ? null : photoUrl} tone={tone} liveFrame={null} className="snt-hud" />
+              {avatarNode || <ArcReactorHUD state={orbSentinelState} photoUrl={newCheck ? null : photoUrl} tone={tone} liveFrame={null} className="snt-hud" />}
             </div>
             {newCheck && <div className="ls-face-over"><FaceCircle scan={lastFrame} phase={phase} photoUrl={photoUrl} /></div>}
           </div>
@@ -487,15 +512,16 @@ export default function LockScreen({
         {phase === "verified" && !sentinel.autoEntering && (
           <button type="button" onClick={handleBtnClick} className="ls-chip is-strong">ENTRAR <span className="ls-key-badge">ESPAÇO</span></button>
         )}
-        {phase === "failed" && !phoneApp && (
+        {phase === "failed" && !phoneApp && !keyGate && (
           <button type="button" onClick={handleBtnClick} className="ls-chip">TENTAR NOVAMENTE <span className="ls-key-badge">ESPAÇO</span></button>
         )}
+        {keyBadge}
         {phonePinButton}
         {phase !== "pin" && secondaryActions}
 
         {phase !== "scanning" && phase !== "pin" && (
           <LockCards api={cards?.api} cards={sentinel.showClock ? cardsList.filter((c) => c !== "clock") : cardsList}
-            fanModeEnabled={cards?.fanModeEnabled} allRight={fanPanel} />
+            fanModeEnabled={cards?.fanModeEnabled} allRight={fanPanel} fresh={freshCards} />
         )}
 
         {!phoneApp && (
@@ -510,7 +536,7 @@ export default function LockScreen({
               <span className="ls-key-badge">P</span>
             </button>
             <ClapIndicator clap={clap} />
-            <span className="snt-key">{phase === "ready" ? "ESPAÇO = LIBERAR" : ""}</span>
+            <span className="snt-key">{phase === "ready" && !keyGate ? "ESPAÇO = LIBERAR" : ""}</span>
           </div>
         )}
 
@@ -540,6 +566,8 @@ export default function LockScreen({
 
   const hint = phoneEntry
     ? (phase === "failed" && message ? message : phoneHint)
+    : keyGate
+      ? keyHint
     : phase === "ready"
       ? clapHint ? "Pressione espaço, clique ou bata palmas 2x para ativar" : "Pressione a barra de espaço ou clique para ativar"
       : phase === "verified"
@@ -581,7 +609,7 @@ export default function LockScreen({
         <div className={`ls-orb-wrapper ${clap?.pulse ? "is-clap-pulse" : ""}`} key={`orb-${clap?.pulse || 0}`}>
           <div className={`ls-hud-ring${scanning ? " is-scanning" : ""}`} />
           <div className={newCheck ? "ls-reactor-hidden" : undefined}>
-            <ArcReactorHUD state={orbState} photoUrl={newCheck ? null : photoUrl} tone={tone} liveFrame={null} />
+            {avatarNode || <ArcReactorHUD state={orbState} photoUrl={newCheck ? null : photoUrl} tone={tone} liveFrame={null} />}
           </div>
           {newCheck && <div className="ls-face-over"><FaceCircle scan={lastFrame} phase={phase} photoUrl={photoUrl} /></div>}
         </div>
@@ -601,7 +629,8 @@ export default function LockScreen({
       {/* Ações / Botão Principal */}
       {phase !== "scanning" && phase !== "pin" && !(phase === "verified" && clap?.autoEntering) && (
         <div className="ls-actions">
-          <button
+          {keyBadge}
+          {!keyGate && <button
             type="button"
             onClick={handleBtnClick}
             className="ls-btn-main"
@@ -612,7 +641,7 @@ export default function LockScreen({
                 : phase === "verified" ? "ENTRAR E FALAR" : phase === "failed" ? "TENTAR NOVAMENTE" : "ATIVAR VOZ E ENTRAR"}
             </span>
             {!phoneApp && <span className="ls-key-badge">ESPAÇO</span>}
-          </button>
+          </button>}
 
           {secondaryActions}
 
@@ -632,7 +661,7 @@ export default function LockScreen({
       )}
 
       {phase !== "scanning" && phase !== "pin" && (
-        <LockCards api={cards?.api} cards={cardsList} fanModeEnabled={cards?.fanModeEnabled} allRight={fanPanel} />
+        <LockCards api={cards?.api} cards={cardsList} fanModeEnabled={cards?.fanModeEnabled} allRight={fanPanel} fresh={freshCards} />
       )}
 
       {mic && (

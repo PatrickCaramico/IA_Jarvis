@@ -37,6 +37,8 @@ export default function LockOrbe({
   phase, name, photoUrl, message, jarvisState, hint, caption, listening, liveScan, pinBlock,
   mainLabel, onMain, mainVisible = true, phoneButtons = null, failedActions = null, hubActions, cards, cardsList, fanPanelNode = null,
   mic = null, clapNode = null, stampNode = null, phoneApp = false, onChangePhoto, styleToggle,
+  avatarNode = null, freshCards = [], // V9.4: avatar holográfico no lugar do orbe; widgets recém-fixados
+  keyGate = false, // V9.4: tecla de acesso ligada: o "ESPAÇO" some da dica
 }) {
   const [hub, setHub] = useState(false);
   const lite = useMemo(() => {
@@ -82,13 +84,13 @@ export default function LockOrbe({
 
       {pinBlock || (
         <div className="lo-orb">
-          <TangleOrb state={orbState} tone={tone} lite={lite} />
+          {avatarNode && !liveScan?.frame && phase !== "verified" ? avatarNode : <TangleOrb state={orbState} tone={tone} lite={lite} />}
           <FaceCircle scan={liveScan?.frame ? liveScan : null} phase={phase} photoUrl={photoUrl} />
         </div>
       )}
 
       <div className="lo-dock">
-        {showCards && <LockCards api={cards?.api} cards={cardsList} fanModeEnabled={cards?.fanModeEnabled} layout="strip" />}
+        {showCards && <LockCards api={cards?.api} cards={cardsList} fanModeEnabled={cards?.fanModeEnabled} layout="strip" fresh={freshCards} />}
         <div className="lo-bottom">
           {phase === "failed" && message && <p className="lo-msg" role="alert" title={message}>{message}</p>}
           {failedActions}
@@ -98,7 +100,7 @@ export default function LockOrbe({
               <span aria-hidden="true">{phase === "verified" ? "➜" : phase === "failed" ? "⟳" : "◉"}</span>
             </button>
           )}
-          <p className="lo-hint">{hint}{!phoneApp && phase !== "pin" && <kbd>ESPAÇO</kbd>}</p>
+          <p className="lo-hint">{hint}{!phoneApp && phase !== "pin" && !keyGate && <kbd>ESPAÇO</kbd>}</p>
         </div>
       </div>
 

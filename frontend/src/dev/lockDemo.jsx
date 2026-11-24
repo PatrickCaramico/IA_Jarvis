@@ -16,6 +16,7 @@ import "../feedback.css";
 import "../blueprint.css";
 import "../alarm.css";
 import "../mobile.css"; // V5.7.1: a demo também mostra o layout do celular
+import "../v94.css"; // V9.4: ?avatar=<url da imagem>&key=1&wx=95&fresh=1
 import { applyFanMode, initialAccessibility } from "../utils/theme.js";
 
 initialAccessibility();
@@ -69,7 +70,7 @@ const lockExtras = (path) => (path === "/api/health"
   : path === "/api/lock/status"
     ? Promise.resolve({ devices: 2, phones: 1, next_alarm: "amanhã às 07:00" })
     : path === "/api/weather"
-      ? Promise.resolve({ place: "São Paulo", temperature: 19, description: "Tempo parcialmente nublado", rain_probability: 67, humidity: 89, wind: 11, sunrise: "05:15", sunset: "18:26", apparent_temperature: 18, minimum: 16, maximum: 24, tomorrow: { minimum: 17, maximum: 27, description: "Céu limpo", rain_probability: 10 } })
+      ? Promise.resolve({ place: "São Paulo", temperature: 19, description: "Tempo parcialmente nublado", code: q.has("wx") ? Number(q.get("wx")) : 2, rain_probability: 67, humidity: 89, wind: 11, sunrise: "05:15", sunset: "18:26", apparent_temperature: 18, minimum: 16, maximum: 24, tomorrow: { minimum: 17, maximum: 27, description: "Céu limpo", rain_probability: 10 } })
       : path === "/api/lock/public-info"
         ? Promise.resolve({
           rates: [
@@ -137,6 +138,10 @@ function Demo() {
     onDeskLock={() => {}}
     updateCount={q.get("desk") === "1" ? 2 : 0}
     phoneApp={phoneApp}
+    avatarUrl={q.get("avatar") || null}
+    lockKeyOn={q.get("key") === "1"}
+    freshCards={q.get("fresh") === "1" ? ["weather"] : []}
+    lockStyle={q.get("style") === "orbe" ? "orbe" : "classico"}
     hasPin={phoneApp}
     onBiometric={phoneApp && q.get("bio") === "1" ? () => setNote("Digital confirmada (demo).") : null}
     cards={{ api: fan ? fanApi : baseApi, list: fan ? ["clock", "weather"] : ["clock", "weather", "spotify"], fanModeEnabled: fan }}

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Note, SaveStatus, Section, SelectRow, Toggle } from "./SettingsControls.jsx";
+import LockKeySection from "./LockKeySection.jsx";
 
 const CARD_LABELS = [
   ["clock", "Relógio e data"],
@@ -10,7 +11,7 @@ const CARD_LABELS = [
 ];
 
 const RESULT_TEXT = { ok: "liberado", fail: "falhou", locked_out: "PIN bloqueado", enter: "entrou", exit: "saiu", lock: "bloqueou", pin_reset: "PIN redefinido" };
-const METHOD_TEXT = { face: "rosto", pin: "PIN", clap: "palmas", wake: "palmas (JARVIS fechado)", guest: "visitante", auto: "bloqueio", voice: "voz" };
+const METHOD_TEXT = { face: "rosto", pin: "PIN", clap: "palmas", wake: "palmas (JARVIS fechado)", guest: "visitante", auto: "bloqueio", voice: "voz", key: "teclas erradas" };
 
 // Aba "Bloqueio" (seção 17 e Modo Sentinela).
 export default function LockSettings({ api, prefs, onPatch }) {
@@ -240,6 +241,9 @@ export default function LockSettings({ api, prefs, onPatch }) {
         <Note>O nome da IA também vale como palavra de ativação. A escuta usa o reconhecimento de voz do Chrome/Edge (precisa de internet) e só funciona com a página aberta em localhost.</Note>
       </Section>
 
+      {/* V9.4: tecla de acesso (tecla + rosto) e avatar holográfico */}
+      <LockKeySection api={api} prefs={prefs} onPatch={onPatch} />
+
       {/* V9.3: vigia da câmera, pendrive e otimização do dia (tudo local) */}
       <Section title="VIGIA DA CÂMERA E SEGURANÇA">
         <Toggle
@@ -268,9 +272,9 @@ export default function LockSettings({ api, prefs, onPatch }) {
 
       <Section title="HISTÓRICO DE ACESSOS">
         <Toggle
-          label="Salvar miniatura de rosto não reconhecido"
-          hint="Desligado por padrão. Guarda no máximo 20 miniaturas em data/intruders e apaga as com mais de 30 dias."
-          checked={prefs.lock_save_failed_photo}
+          label="Guardar o rosto de quem tentar entrar"
+          hint="Ligado por padrão (V9.4): rosto não reconhecido, PIN errado no PC e teclas erradas guardam uma miniatura de quem estava na frente da câmera, e ela aparece no relatório de segurança. No máximo 20, por 30 dias, só no PC."
+          checked={prefs.lock_save_failed_photo !== false}
           onChange={(v) => onPatch({ lock_save_failed_photo: v })}
         />
         <div className="flex gap-2 pt-1">
