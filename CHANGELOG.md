@@ -2,6 +2,16 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 9.5.1 — 25 de novembro de 2026
+
+**🔒 Comandos no bloqueio**
+- **"Abre o clima" agora abre a janela do clima na tela**, saindo do próprio cartão, e fala a previsão de agora.
+  - Vale também para "abre o mercado", "mostra a água", "abre as manchetes" e "mostra os sistemas".
+  - Antes ele só falava, e nenhuma janela abria.
+- **Pedido feito enquanto ele ainda fala é atendido.**
+  - Antes, no bloqueio, um pedido feito enquanto o JARVIS terminava a resposta anterior sumia em silêncio. Agora ele corta a fala e atende, como já fazia com a central aberta.
+  - Se estiver ocupado de verdade (por exemplo, reconhecendo o rosto), espera até 3 segundos e, se não der, avisa com calma em vez de ficar mudo.
+
 ## 9.5.0 — 25 de novembro de 2026
 
 **🔒 Tela de bloqueio renovada (estilos Clássico e Sentinela)**

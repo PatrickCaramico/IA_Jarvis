@@ -41,3 +41,11 @@ test("sem desfoque de tela cheia e com as animações de trás paradas", () => {
   const cards = readFileSync(new URL("../src/components/LockCards.jsx", import.meta.url), "utf8");
   assert.doesNotMatch(cards, /\.map\(clickable\)/); // o índice virava "cópia" e tirava o cartão do teclado
 });
+
+test("V9.5.1: 'abre o clima' no bloqueio abre a janela do cartão (evento do App para o LockCards)", () => {
+  const app = readFileSync(new URL("../src/App.jsx", import.meta.url), "utf8");
+  assert.match(app, /if \(msg\.open\) window\.dispatchEvent\(new CustomEvent\("jarvis-lock-open-card", \{ detail: msg\.open \}\)\)/);
+  const cards = readFileSync(new URL("../src/components/LockCards.jsx", import.meta.url), "utf8");
+  assert.match(cards, /addEventListener\("jarvis-lock-open-card"/);
+  assert.match(cards, /data-card=\{el\.key\}/);
+});

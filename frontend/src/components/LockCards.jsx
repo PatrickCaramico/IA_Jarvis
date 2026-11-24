@@ -26,6 +26,18 @@ export default function LockCards({ api, cards = [], fanModeEnabled = false, hid
     originRef.current = el?.getBoundingClientRect?.() || null;
     setDetail(key);
   };
+  // V9.5.1: pedido de voz no bloqueio ("abre o clima") abre a janela do cartão, saindo dele se estiver na tela
+  useEffect(() => {
+    const onOpen = (e) => {
+      const key = e.detail;
+      if (!key) return;
+      const el = document.querySelector(`.lc-click[data-card="${key}"]:not([aria-hidden="true"])`);
+      originRef.current = el?.getBoundingClientRect?.() || null;
+      setDetail(key);
+    };
+    window.addEventListener("jarvis-lock-open-card", onOpen);
+    return () => window.removeEventListener("jarvis-lock-open-card", onOpen);
+  }, []);
   const want = (key) => cards.includes(key);
 
   const now = useNow(want("clock"));
@@ -145,6 +157,7 @@ export default function LockCards({ api, cards = [], fanModeEnabled = false, hid
     <div
       key={copy ? `${el.key}-copia` : el.key}
       aria-hidden={copy || undefined}
+      data-card={el.key}
       className={`lc-click${!copy && fresh.includes(FRESH_KEY[el.key] || el.key) ? " is-new" : ""}`}
       role="button"
       tabIndex={copy ? -1 : 0}
