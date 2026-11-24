@@ -81,3 +81,11 @@ test("V9.4: a faixa do jogo tem linha própria na grade (não empurra as colunas
   assert.match(css, /\.hl-root > \.fmb-root \{ grid-column: 1 \/ -1; grid-row: 2;/);
   assert.match(css, /\.hl-root:has\(> \.fmb-root\) > \.hl-right \{ grid-row: 3; \}/);
 });
+
+test("V9.4.1: a tela de reconexão diz quanto a última subida levou", async () => {
+  const { startupText } = await import("../src/utils/bootStatus.js");
+  assert.equal(startupText(null), "");
+  assert.equal(startupText({ process_to_ready_s: 3.2 }), "JARVIS pronto em 3 s");
+  assert.equal(startupText({ windows_to_process_s: 48, process_to_ready_s: 3 }), "Windows até o JARVIS: 48 s · JARVIS pronto em 3 s");
+  assert.equal(startupText({ windows_to_process_s: 75, process_to_ready_s: 12 }), "Windows até o JARVIS: 1 min 15 s · JARVIS pronto em 12 s");
+});

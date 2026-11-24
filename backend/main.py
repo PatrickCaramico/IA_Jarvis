@@ -92,6 +92,22 @@ async def lifespan(app: FastAPI):
 
     skills_registry.load()  # V8.11: Skills plug-and-play (backend/skills/)
     skills_registry.start_services(runtime.track_service)
+
+    async def warm_camera_libs() -> None:
+        """V9.4.1: OpenCV e numpy carregam em segundo plano, com o servidor já respondendo (antes seguravam a subida)."""
+        await asyncio.sleep(3)
+        from core.lazy import warm
+        from modules import face
+
+        try:
+            await asyncio.to_thread(warm, face.np, face.cv2)
+        except Exception:  # noqa: BLE001 - sem OpenCV: o rosto avisa quando for usado
+            log.exception("Não consegui pré-carregar o OpenCV")
+
+    runtime.track(warm_camera_libs())
+    from core import startup_timing
+
+    startup_timing.mark_ready()  # V9.4.1: quanto tempo levou para ligar (vai para o log e para o /api/health)
     yield
     for task in list(runtime.service_tasks):
         if not task.done():

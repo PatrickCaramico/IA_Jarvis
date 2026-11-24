@@ -3,6 +3,8 @@
 Nenhuma imagem do rosto é enviada para a internet: a foto de perfil e a comparação
 com a webcam acontecem no seu computador. Só o download inicial dos modelos usa a rede.
 """
+from __future__ import annotations
+
 import json
 import logging
 import tempfile
@@ -11,9 +13,14 @@ import time
 from pathlib import Path
 from typing import Callable, Optional
 
-import cv2
-import numpy as np
 import requests
+
+from core.lazy import LazyModule
+
+# V9.4.1: OpenCV e numpy só carregam no primeiro uso (ou em segundo plano, depois que o servidor já responde).
+# Antes seguravam a subida do backend por vários segundos com o disco frio.
+cv2 = LazyModule("cv2")
+np = LazyModule("numpy")
 
 from config import settings
 from core.safe_io import replace_file

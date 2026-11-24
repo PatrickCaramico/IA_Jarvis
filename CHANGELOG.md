@@ -2,6 +2,15 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 9.4.1 — 25 de novembro de 2026
+
+**🚀 O JARVIS responde mais rápido ao ligar o PC**
+- O backend não carrega mais as bibliotecas de câmera (OpenCV), de cálculo (numpy) e de som (pygame) antes de responder à central. Elas carregam em segundo plano, logo depois que ele já está no ar.
+  - Medido com o disco "frio", como logo depois de ligar o PC: só essas bibliotecas levavam mais de 6 segundos, e no Windows, com o antivírus examinando cada arquivo, bem mais.
+- O Iniciar-JARVIS.bat não abre mais o PowerShell só para conferir se havia um JARVIS antigo na porta: agora ele olha antes com um comando rápido, e quase sempre não há nada para encerrar.
+- A conferência da voz (edge-tts) ficou para depois de o backend ligar.
+- **Para achar o resto da demora:** a tela "RECONECTANDO AO SEU JARVIS" agora mostra a ÚLTIMA SUBIDA, por exemplo "Windows até o JARVIS: 48 s · JARVIS pronto em 3 s". Assim dá para ver se o tempo está no Windows (entrada, atalho da Inicialização) ou no próprio JARVIS. O mesmo número vai para o log e para o /api/health.
+
 ## 9.4.0 — 25 de novembro de 2026
 
 **🔒 Tela de bloqueio nova: avatar com o seu rosto, tecla de acesso e widgets animados**
