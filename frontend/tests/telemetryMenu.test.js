@@ -41,3 +41,12 @@ test("próximos: até 3, com lembrete e agenda", () => {
   assert.deepEqual(m.actions.map((a) => a.id), ["reminder", "agenda"]);
   assert.equal(telemetryMenu("next", null, []).value, "Nada marcado");
 });
+
+test("V9.4.6: títulos longos quebram linha dentro do menu PRÓXIMOS", async () => {
+  assert.equal(telemetryMenu("next", null, [{ label: "Hoje", title: "x" }]).list, true);
+  assert.equal(telemetryMenu("cpu", { cpu_percent: 1 }).list, undefined);
+  const { readFileSync } = await import("node:fs");
+  const css = readFileSync(new URL("../src/v94.css", import.meta.url), "utf8");
+  assert.match(css, /\.hc-menu-rows dd \{[^}]*min-width: 0;[^}]*overflow-wrap: anywhere/);
+  assert.match(css, /\.hc-menu-rows\.is-list dd \{[^}]*-webkit-line-clamp: 2/);
+});

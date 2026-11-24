@@ -87,7 +87,7 @@ function TelemetryMenu({ side, menu, onAction }) {
       {menu.bar != null && <i className="hc-menu-bar"><s style={{ transform: `scaleX(${menu.bar / 100})` }} /></i>}
       {menu.note && <p className="hc-menu-note">{menu.note}</p>}
       {menu.rows.length > 0 && (
-        <dl className="hc-menu-rows">
+        <dl className={`hc-menu-rows${menu.list ? " is-list" : ""}`}>
           {menu.rows.map(([k, v]) => (
             <div key={`${k}-${v}`}><dt>{k}</dt><dd>{v}</dd></div>
           ))}
