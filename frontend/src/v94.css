@@ -626,3 +626,56 @@ html.ld-open #root * { animation-play-state: paused !important; } /* a janela fi
   .ld-in, .ld-hero2, .ld-range-bar i, .ld-meter-bar span, .ld-sys-ring i, .ld-services .on i, .ld-arc-fg, .ld-sun-dot,
   .ld-h2o-level, .ld-h2o-wave, .ld-eq i, .ld-overlay, .ld-overlay.is-closing { animation: none !important; }
 }
+
+/* ==========================================================
+   V9.4.5: leituras em volta do reator viram botões com menu (HudCenter.jsx: Readout + TelemetryMenu)
+   O menu é vidro pintado (sem desfoque ao vivo: a central toda é assim, ver glass.css) e cresce a partir da leitura.
+   ========================================================== */
+.hl-orb > .hc-telemetry:has(.hc-readout.is-open) { z-index: 30; }
+.hc-readout { position: relative; pointer-events: auto; }
+.hc-r-hit { all: unset; display: grid; gap: 3px; cursor: pointer; border-radius: 8px; padding: 4px 6px; margin: -4px -6px;
+  transition: transform 160ms ease, opacity 160ms ease; }
+.hc-r-hit:hover { transform: translateX(2px); }
+.hc-readout[data-side="right"] .hc-r-hit:hover { transform: translateX(-2px); }
+.hc-r-hit:focus-visible { outline: 1px solid #4fdcff; outline-offset: 2px; }
+.hc-r-hit::after { content: "▾"; position: absolute; top: 0; font-size: 9px; color: rgba(103, 232, 249, 0.55); opacity: 0; transition: opacity 160ms ease; }
+.hc-readout[data-side="left"] .hc-r-hit::after { right: 2px; }
+.hc-readout[data-side="right"] .hc-r-hit::after { left: 2px; }
+.hc-r-hit:hover::after, .hc-readout.is-open .hc-r-hit::after { opacity: 1; }
+.hc-readout.is-open { border-color: #4fdcff; }
+
+.hc-menu {
+  position: absolute; top: calc(100% + 10px); z-index: 40; width: 270px; padding: 12px 14px 14px; text-align: left;
+  border-radius: var(--g-radius, 16px); border: 1px solid var(--g-edge-hi, rgba(200, 236, 255, 0.32));
+  background: var(--g-shine), linear-gradient(160deg, rgba(14, 38, 72, 0.97), rgba(5, 14, 32, 0.98));
+  box-shadow: var(--g-shadow), 0 0 30px var(--g-accent-soft, rgba(34, 211, 238, 0.18));
+  color: #e6f6ff; transform-origin: top left; animation: hc-menu-in 260ms cubic-bezier(0.2, 0.9, 0.25, 1.15) both;
+}
+.hc-menu.is-left { left: -10px; }
+.hc-menu.is-right { right: -10px; transform-origin: top right; }
+@keyframes hc-menu-in { from { opacity: 0; transform: translateY(-6px) scale(0.92); } to { opacity: 1; transform: none; } }
+.hc-menu-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.hc-menu-head span { font: 600 9px "Orbitron", monospace; letter-spacing: 0.18em; color: rgba(103, 232, 249, 0.75); }
+.hc-menu-head b { font: 600 1.35rem "Orbitron", sans-serif; color: #f0fbff; text-shadow: 0 0 10px rgba(79, 220, 255, 0.45); white-space: nowrap; }
+.hc-menu-bar { display: block; height: 5px; margin: 8px 0 2px; border-radius: 999px; background: rgba(79, 220, 255, 0.14); overflow: hidden; }
+.hc-menu-bar > s { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #38bdf8, #4fdcff); transform-origin: left;
+  animation: ld-grow 700ms 80ms cubic-bezier(0.2, 0.9, 0.3, 1) both; }
+.hc-readout.is-warn .hc-menu-bar > s { background: linear-gradient(90deg, #38bdf8, #fbbf24); }
+.hc-readout.is-hot .hc-menu-bar > s { background: linear-gradient(90deg, #fbbf24, #f87171); }
+.hc-menu-note { margin: 8px 0 0; font-size: 0.85rem; color: rgba(201, 246, 255, 0.8); }
+.hc-menu-rows { margin: 10px 0 0; display: grid; gap: 6px; }
+.hc-menu-rows > div { display: flex; justify-content: space-between; gap: 10px; padding-bottom: 5px; border-bottom: 1px dashed rgba(201, 246, 255, 0.12);
+  animation: ld-rise 300ms both; }
+.hc-menu-rows > div:nth-child(2) { animation-delay: 50ms; } .hc-menu-rows > div:nth-child(3) { animation-delay: 100ms; }
+.hc-menu-rows dt { font-size: 0.8rem; color: rgba(201, 246, 255, 0.65); white-space: nowrap; }
+.hc-menu-rows dd { margin: 0; font-size: 0.85rem; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hc-menu-actions { display: grid; gap: 6px; margin-top: 12px; }
+.hc-menu-btn { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 10px; cursor: pointer; text-align: left;
+  border: 1px solid rgba(79, 220, 255, 0.28); background: rgba(79, 220, 255, 0.06); color: #cfefff;
+  font: 600 10px "Orbitron", monospace; letter-spacing: 0.12em; transition: transform 140ms ease, background-color 140ms ease; animation: ld-rise 300ms 120ms both; }
+.hc-menu-btn:hover { background: rgba(79, 220, 255, 0.16); transform: translateX(3px); }
+.hc-menu-btn:focus-visible { outline: 1px solid #4fdcff; }
+.hc-menu-btn span { font-size: 13px; }
+@media (prefers-reduced-motion: reduce) {
+  .hc-menu, .hc-menu-bar > s, .hc-menu-rows > div, .hc-menu-btn { animation: none !important; }
+}
