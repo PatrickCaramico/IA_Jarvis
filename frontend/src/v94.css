@@ -1,0 +1,202 @@
+/* ==========================================================
+   V9.4 — avatar holográfico no bloqueio, clima animado, widgets que entram com animação,
+   selo ⏺ GRAVANDO e o aviso da tecla de acesso.
+   Regra da V9.1.2: só transform/opacity nas animações e nada de backdrop-filter em algo que fica sempre na tela.
+   ========================================================== */
+
+/* ---------------- Avatar holográfico (HoloAvatar.jsx) ---------------- */
+.ha-root {
+  --ha: 79, 220, 255;
+  position: relative; width: clamp(200px, 30vmin, 300px); aspect-ratio: 1; display: grid; place-items: center;
+}
+.ha-root.is-ok { --ha: 74, 222, 128; }
+.ha-root.is-fail { --ha: 248, 113, 113; }
+.ha-float { position: relative; width: 78%; aspect-ratio: 1; animation: ha-float 6s ease-in-out infinite; z-index: 2; }
+.ha-face {
+  position: absolute; inset: 0; border-radius: 50%; overflow: hidden;
+  box-shadow: 0 0 40px rgba(var(--ha), 0.28), inset 0 0 30px rgba(var(--ha), 0.25);
+}
+.ha-face img {
+  width: 100%; height: 100%; object-fit: cover; display: block; opacity: 0; transform: scale(1.04);
+  transition: opacity 900ms ease, transform 900ms ease;
+}
+.ha-root.is-loaded .ha-face img { opacity: 0.95; transform: none; animation: ha-flicker 7s steps(1) infinite; }
+.ha-root.is-ok .ha-face img { filter: hue-rotate(-55deg) saturate(1.2); }
+.ha-root.is-fail .ha-face img { filter: hue-rotate(160deg) saturate(1.6); animation: ha-glitch 0.35s steps(2) 3; }
+/* grade de pontos por cima (o "holograma") */
+.ha-grid {
+  position: absolute; inset: 0; border-radius: 50%; pointer-events: none; opacity: 0.35;
+  background-image: radial-gradient(rgba(var(--ha), 0.55) 1px, transparent 1.4px); background-size: 7px 7px;
+  -webkit-mask-image: radial-gradient(circle, #000 55%, transparent 72%); mask-image: radial-gradient(circle, #000 55%, transparent 72%);
+}
+/* feixe de varredura que desce */
+.ha-beam {
+  position: absolute; left: 0; right: 0; top: 0; height: 22%; pointer-events: none;
+  background: linear-gradient(180deg, transparent, rgba(var(--ha), 0.35) 70%, rgba(255, 255, 255, 0.55) 72%, transparent 76%);
+  animation: ha-beam 4.2s linear infinite;
+}
+.ha-root.is-scan .ha-beam { animation-duration: 1.1s; }
+.ha-root.is-speaking .ha-face, .ha-root.is-listening .ha-face { animation: ha-pulse 1.4s ease-in-out infinite; }
+/* anéis e "base" do projetor */
+.ha-ring { position: absolute; inset: 2%; border-radius: 50%; border: 1px dashed rgba(var(--ha), 0.45); animation: ha-spin 40s linear infinite; }
+.ha-ring-2 { inset: 8%; border-style: solid; border-color: rgba(var(--ha), 0.18); border-top-color: rgba(var(--ha), 0.8); animation-duration: 9s; animation-direction: reverse; }
+.ha-root.is-scan .ha-ring-1 { animation-duration: 5s; border-color: rgba(var(--ha), 0.85); }
+.ha-floor {
+  position: absolute; bottom: -6%; width: 70%; height: 14%; border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(var(--ha), 0.4), transparent 70%); opacity: 0.8;
+  animation: ha-floor 6s ease-in-out infinite;
+}
+.ha-cone {
+  position: absolute; bottom: -4%; width: 60%; height: 46%; pointer-events: none; opacity: 0.18;
+  background: linear-gradient(0deg, rgba(var(--ha), 0.6), transparent); clip-path: polygon(40% 100%, 60% 100%, 100% 0, 0 0);
+}
+@keyframes ha-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+@keyframes ha-floor { 0%, 100% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(0.86); opacity: 0.55; } }
+@keyframes ha-beam { from { transform: translateY(-30%); } to { transform: translateY(480%); } }
+@keyframes ha-spin { to { transform: rotate(360deg); } }
+@keyframes ha-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.025); } }
+@keyframes ha-flicker { 0%, 96%, 100% { opacity: 0.95; } 97% { opacity: 0.6; } 98% { opacity: 0.9; } }
+@keyframes ha-glitch { 0% { transform: translateX(-3px); } 50% { transform: translateX(3px); } 100% { transform: none; } }
+.ls-avatar-wrap { display: grid; place-items: center; }
+
+/* ---------------- Clima animado (WeatherScene.jsx) ---------------- */
+.lc-weather-anim { position: relative; overflow: hidden; padding-right: 74px; }
+.ws-scene { position: absolute; right: 6px; top: 6px; width: 64px; height: 64px; pointer-events: none; }
+.ws-sun { position: absolute; left: 14px; top: 10px; width: 30px; height: 30px; border-radius: 50%;
+  background: radial-gradient(circle, #fff7c2, #fbbf24 60%, #f59e0b); box-shadow: 0 0 18px rgba(251, 191, 36, 0.75); }
+.ws-sun i { position: absolute; inset: -9px; border-radius: 50%; border: 2px dotted rgba(253, 230, 138, 0.85); animation: ha-spin 14s linear infinite; }
+.is-partly .ws-sun { left: 6px; top: 4px; }
+.ws-moon { position: absolute; left: 16px; top: 8px; width: 28px; height: 28px; border-radius: 50%;
+  box-shadow: inset -8px -3px 0 0 #e0f2fe; filter: drop-shadow(0 0 8px rgba(224, 242, 254, 0.6)); }
+.is-partly-night .ws-moon { left: 6px; top: 2px; }
+.ws-stars i { position: absolute; width: 3px; height: 3px; border-radius: 50%; background: #fff; animation: ws-twinkle 2.6s ease-in-out infinite; }
+.ws-stars i:nth-child(1) { left: 4px; top: 6px; }
+.ws-stars i:nth-child(2) { left: 52px; top: 14px; animation-delay: 0.7s; }
+.ws-stars i:nth-child(3) { left: 46px; top: 44px; animation-delay: 1.3s; }
+.ws-stars i:nth-child(4) { left: 8px; top: 48px; animation-delay: 1.9s; }
+.ws-cloud { position: absolute; width: 40px; height: 14px; border-radius: 10px; background: #cbd5e1;
+  box-shadow: 0 0 10px rgba(148, 163, 184, 0.5); animation: ws-drift 7s ease-in-out infinite alternate; }
+.ws-cloud::before, .ws-cloud::after { content: ""; position: absolute; border-radius: 50%; background: inherit; }
+.ws-cloud::before { width: 18px; height: 18px; left: 6px; top: -9px; }
+.ws-cloud::after { width: 22px; height: 22px; left: 16px; top: -13px; }
+.ws-cloud-1 { left: 14px; top: 28px; }
+.ws-cloud-2 { left: 2px; top: 16px; width: 30px; height: 11px; opacity: 0.7; animation-duration: 9s; animation-delay: -3s; }
+.is-rain .ws-cloud, .is-storm .ws-cloud { background: #94a3b8; }
+.is-storm .ws-cloud { background: #64748b; }
+.is-night .ws-cloud, .is-partly-night .ws-cloud { background: #94a3b8; opacity: 0.85; }
+.ws-rain i, .ws-snow i { position: absolute; top: 34px; left: calc(14px + var(--i) * 5px); width: 2px; height: 9px; border-radius: 2px;
+  background: linear-gradient(180deg, transparent, #7dd3fc); animation: ws-drop 0.9s linear infinite; animation-delay: calc(var(--i) * -0.13s); }
+.ws-snow i { width: 4px; height: 4px; border-radius: 50%; background: #f8fafc; animation-duration: 2.4s; animation-delay: calc(var(--i) * -0.3s); }
+.ws-flash { position: absolute; inset: -20px; background: rgba(224, 242, 254, 0.9); opacity: 0; animation: ws-flash 5s steps(1) infinite; }
+.ws-fog i { position: absolute; left: 4px; width: 54px; height: 4px; border-radius: 3px; background: rgba(203, 213, 225, 0.7); animation: ws-drift 5s ease-in-out infinite alternate; }
+.ws-fog i:nth-child(1) { top: 22px; }
+.ws-fog i:nth-child(2) { top: 32px; animation-delay: -1.5s; }
+.ws-fog i:nth-child(3) { top: 42px; animation-delay: -3s; }
+@keyframes ws-twinkle { 0%, 100% { opacity: 0.25; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1.2); } }
+@keyframes ws-drift { from { transform: translateX(-4px); } to { transform: translateX(6px); } }
+@keyframes ws-drop { from { transform: translateY(0); opacity: 1; } to { transform: translateY(26px); opacity: 0; } }
+@keyframes ws-flash { 0%, 88%, 92%, 100% { opacity: 0; } 89%, 91% { opacity: 0.55; } }
+
+/* widget que acabou de ser fixado por voz entra com uma animação */
+.lc-click.is-new > .lc-card { animation: lc-new 1.1s cubic-bezier(0.2, 0.9, 0.2, 1.2) both; }
+@keyframes lc-new {
+  0% { opacity: 0; transform: translateY(18px) scale(0.86); }
+  60% { opacity: 1; transform: translateY(-3px) scale(1.03); }
+  100% { opacity: 1; transform: none; }
+}
+
+/* ---------------- Selo ⏺ GRAVANDO (RecordingBadge.jsx) ---------------- */
+.rec-badge {
+  position: fixed; top: 74px; left: 50%; transform: translateX(-50%); z-index: 70; display: inline-flex; align-items: center; gap: 9px;
+  padding: 6px 8px 6px 12px; border-radius: 999px; cursor: pointer; max-width: calc(100vw - 32px);
+  background: rgba(40, 6, 10, 0.92); border: 1px solid rgba(248, 113, 113, 0.65); color: #fee2e2;
+  font: 700 10px "Orbitron", sans-serif; letter-spacing: 0.14em; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+.rec-badge > i { width: 10px; height: 10px; border-radius: 50%; background: #ef4444; box-shadow: 0 0 10px #ef4444; animation: rec-blink 1.2s ease-in-out infinite; flex: none; }
+.rec-badge > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rec-badge > b { padding: 3px 8px; border-radius: 999px; background: rgba(248, 113, 113, 0.22); color: #fff; flex: none; }
+.rec-badge:hover > b { background: rgba(248, 113, 113, 0.4); }
+@keyframes rec-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+
+/* ---------------- Tecla de acesso ---------------- */
+.ls-key-lock { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px;
+  border: 1px dashed rgba(79, 220, 255, 0.45); color: #c9f6ff; font: 600 10px "Orbitron", sans-serif; letter-spacing: 0.14em; }
+.ls-key-lock.is-shake { animation: ls-key-shake 0.4s ease; border-color: rgba(248, 113, 113, 0.7); color: #fecaca; }
+@keyframes ls-key-shake { 0%, 100% { transform: none; } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+.lks-capture { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; }
+.lks-capture kbd { min-width: 34px; padding: 4px 10px; border-radius: 6px; text-align: center; font: 700 13px "Orbitron", monospace;
+  background: rgba(79, 220, 255, 0.12); border: 1px solid rgba(79, 220, 255, 0.5); color: #e6fbff; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ha-float, .ha-floor, .ha-beam, .ha-ring, .ha-face, .ha-face img, .ws-scene *, .lc-click.is-new > .lc-card, .rec-badge > i { animation: none !important; }
+}
+@media (max-width: 640px) {
+  .rec-badge { top: auto; bottom: 86px; }
+  .lc-weather-anim { padding-right: 64px; }
+  .ws-scene { transform: scale(0.85); transform-origin: top right; }
+}
+
+/* ==========================================================
+   V9.4 (2) — Modo Torcedor sem bagunça, briefing em cascata e cartões novos
+   ========================================================== */
+
+/* Faixa "HOJE É DIA DE JOGO": antes era um item solto da grade e empurrava tudo uma célula (a faixa ia para o
+   canto de cima, a central para a coluna da direita e o reator sumia). Agora ela tem uma linha só dela. */
+@media (min-width: 1101px) {
+  .hl-root:has(> .fmb-root) { grid-template-rows: auto auto minmax(0, 1fr) auto; }
+  .hl-root > .fmb-root { grid-column: 1 / -1; grid-row: 2; border-radius: 10px; }
+  .hl-root:has(> .fmb-root) > .hl-left,
+  .hl-root:has(> .fmb-root) > .hl-center,
+  .hl-root:has(> .fmb-root) > .hl-right { grid-row: 3; }
+  .hl-root:has(> .fmb-root) > .hl-bottom { grid-row: 4; }
+  .hl-root.hl-zen:has(> .fmb-root) { grid-template-rows: auto auto 1fr auto !important; }
+  .hl-root.hl-zen:has(> .fmb-root) > .hl-center { grid-row: 3 !important; }
+  .hl-root.hl-zen:has(> .fmb-root) > .hl-bottom { grid-row: 4 !important; }
+  .hl-root.hl-briefing:has(> .fmb-root) > .hl-center { grid-row: 3; }
+  /* o Spotify flutuante (coluna direita recolhida) desce para não cobrir a faixa */
+  .hl-root:has(> .fmb-root) .hl-spotify-float { top: 134px; }
+}
+
+/* Briefing: cada informação entra na sua vez (cascata), nada aparece tudo de uma vez */
+.bf-trail-item { flex: 0 0 200px; max-width: 200px; }
+.bf-trail-item, .bf-slot { animation: bf-deal 520ms cubic-bezier(0.2, 0.8, 0.2, 1) both; animation-delay: calc(var(--i, 0) * 90ms); }
+@keyframes bf-deal { from { opacity: 0; transform: translateY(18px) scale(0.94); } to { opacity: 1; transform: none; } }
+.bf-pauta { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin: 10px 0 0; padding: 0; list-style: none; max-width: 760px; }
+.bf-pauta-item {
+  display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px;
+  border: 1px solid rgba(34, 211, 238, 0.28); background: rgba(5, 12, 24, 0.6); color: rgba(201, 246, 255, 0.55);
+  font: 600 0.66rem var(--font-data, "Orbitron"), sans-serif; letter-spacing: 0.06em;
+  animation: bf-deal 420ms ease-out both; animation-delay: calc(240ms + var(--i, 0) * 120ms);
+  transition: color 300ms, border-color 300ms, background-color 300ms, opacity 300ms;
+}
+.bf-pauta-item > span { color: var(--j-core, #22d3ee); }
+.bf-pauta-item.is-now { color: #fff; border-color: rgba(34, 211, 238, 0.9); background: rgba(34, 211, 238, 0.18); box-shadow: 0 0 14px rgba(34, 211, 238, 0.35); }
+.bf-pauta-item.is-done { opacity: 0.55; text-decoration: line-through rgba(201, 246, 255, 0.4); }
+
+/* Cartões do briefing: uma cor por assunto (faixa à esquerda e ícone), título em até 2 linhas, brilho ao entrar */
+.bf-card { --bf-accent: 34, 211, 238; position: relative; overflow: hidden; border-color: rgba(var(--bf-accent), 0.38);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35), 0 0 22px rgba(var(--bf-accent), 0.12); }
+.bf-card::before { content: ""; position: absolute; left: 0; top: 10px; bottom: 10px; width: 3px; border-radius: 0 3px 3px 0;
+  background: rgb(var(--bf-accent)); box-shadow: 0 0 10px rgba(var(--bf-accent), 0.8); }
+.bf-card[data-kind="weather"] { --bf-accent: 251, 191, 36; }
+.bf-card[data-kind="agenda"] { --bf-accent: 167, 139, 250; }
+.bf-card[data-kind="email"] { --bf-accent: 96, 165, 250; }
+.bf-card[data-kind="health"], .bf-card[data-kind="metrics"] { --bf-accent: 52, 211, 153; }
+.bf-card[data-kind="tasks"] { --bf-accent: 244, 114, 182; }
+.bf-card[data-kind="water"] { --bf-accent: 56, 189, 248; }
+.bf-card[data-kind="notifications"] { --bf-accent: 251, 146, 60; }
+.bf-card .bf-icon { border-color: rgba(var(--bf-accent), 0.55); background: rgba(var(--bf-accent), 0.14); color: rgb(var(--bf-accent)); }
+.bf-card .bf-card-head .bf-label { color: rgb(var(--bf-accent)); }
+.bf-card .bf-title { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.2; }
+.bf-card.is-mini .bf-li-text b { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.bf-card.is-entering::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.14) 50%, transparent 65%);
+  transform: translateX(-100%); animation: bf-shine 1.1s ease-out 0.25s both;
+}
+@keyframes bf-shine { to { transform: translateX(100%); } }
+.bf-slot-open:hover > .bf-card { border-color: rgba(var(--bf-accent), 0.75); }
+
+@media (prefers-reduced-motion: reduce) {
+  .bf-trail-item, .bf-slot, .bf-pauta-item, .bf-card.is-entering::after { animation: none !important; }
+}

@@ -8,7 +8,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 
 from core.skills import registry
 from core.skills.base import Permission, Skill, SkillContext, SkillResult
@@ -68,6 +68,26 @@ async def _open_on_device(url: str) -> None:
     from modules import agents
 
     await agents._open(url)  # noqa: SLF001 - mesmo comportamento dos agentes (abre no aparelho que pediu)
+
+
+# V9.4: observadores do que o JARVIS fez (o modo gravar ouve daqui). Cada um recebe um dicionário:
+# {"kind": "skill", "name", "args", "message", "origin"} quando uma skill pedida pelo usuário termina bem, e
+# {"kind": "phrase", "message"} quando uma função local (modules/tools.py) atendeu a frase (core/turns.py avisa).
+_observers: list[Callable[[dict], None]] = []
+
+
+def observe(fn: Callable[[dict], None]) -> Callable[[dict], None]:
+    if fn not in _observers:
+        _observers.append(fn)
+    return fn
+
+
+def notify(event: dict) -> None:
+    for fn in list(_observers):
+        try:
+            fn(event)
+        except Exception:  # noqa: BLE001 - um observador com defeito nunca atrapalha o pedido
+            log.exception("Observador de ações falhou")
 
 
 async def execute(name: str, args: Optional[dict], ctx: Optional[SkillContext] = None) -> SkillResult:
@@ -134,6 +154,8 @@ async def execute(name: str, args: Optional[dict], ctx: Optional[SkillContext] =
 
     ms = int((time.monotonic() - started) * 1000)
     registry.record(name, True, ms)
+    if ctx.depth == 0 and result.ok and not result.pending:  # V9.4: só o que o usuário pediu (não as subchamadas)
+        notify({"kind": "skill", "name": name, "args": clean, "message": ctx.message, "origin": ctx.origin})
     log.info("skill=%s origin=%s permission=%s status=ok ms=%d", name, ctx.origin, sk.permission.value, ms)
     if result.url:
         try:

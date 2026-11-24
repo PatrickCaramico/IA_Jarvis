@@ -32,6 +32,7 @@ from services.llm_orchestrator import (
 )
 from core import briefing_flow, confirm, runtime, session, speech, reactive_cards, turn_queue
 from core.early_voice import EarlyVoice
+from core.skills import executor as skills_executor
 from core.skills import router as skills_router
 from services import grounding  # V8.12: IA com os pés no chão
 
@@ -593,6 +594,7 @@ async def _handle_turn(message: str, routine: bool, force_deep: bool = False) ->
             await runtime.manager.broadcast({"type": "browser_choice", "browsers": browser_choice.installed()})
             return await finish_local(browser_choice.question())
         if tool_reply:
+            skills_executor.notify({"kind": "phrase", "message": message})  # V9.4: o modo gravar guarda a frase
             if "Não consegui ler os resultados, senhor. Quer que eu use a pesquisa profunda?" in tool_reply:
                 session.pending_deep_search_query = tools.extract_search_query(message) or message
             return await finish_local(tool_reply)

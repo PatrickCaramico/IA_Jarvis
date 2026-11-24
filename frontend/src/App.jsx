@@ -66,6 +66,8 @@ import { enqueue, canDrain } from "./utils/turnQueue.js";
 import CommandPalette from "./components/CommandPalette.jsx";
 import { startMood } from "./utils/mood.js";
 import { shouldAutoOpen } from "./utils/security.js";
+import { lockKeyPress, pastedImage } from "./utils/lockExtras.js";
+import RecordingBadge from "./components/RecordingBadge.jsx";
 
 // Carregados sob demanda (otimização 4.2: pacote inicial menor)
 // V7: telas e janelas que nem sempre aparecem também saem do pacote inicial
@@ -534,6 +536,12 @@ export default function App() {
   const lastVoiceRef = useRef(false); // o último pedido veio por voz? (conversa contínua)
   // Verificação rápida ao abrir: rosto reconhecido entra sozinho na central (sem clicar em ENTRAR)
   const quickEnterRef = useRef(false);
+  // V9.4: tecla de acesso (a câmera só começa depois da tecla certa) e widgets recém-fixados por voz no bloqueio
+  const [lockKeyOn, setLockKeyOn] = useState(false);
+  const lockKeyRef = useRef(false);
+  lockKeyRef.current = lockKeyOn && !REMOTE_SCREEN;
+  const [keyShake, setKeyShake] = useState(0);
+  const [freshLockCards, setFreshLockCards] = useState([]);
   const recheckTimerRef = useRef(null);
   const openWaterPanelRef = useRef(() => {});
   const { openSearchIndicator } = useSearchIndicator();
@@ -669,63 +677,11 @@ export default function App() {
     }).catch(() => {});
   }, []);
 
-  // Ao ativar o Modo Torcedor, sobe o widget de notícias imediatamente e, se for dia de jogo, o widget de placar
+  // V9.4: o Modo Torcedor NÃO abre mais as janelas flutuantes de notícias e placar sozinho. Antes elas subiam a
+  // cada abertura da central (no dia de jogo o modo liga sozinho), por cima do briefing e da coluna esquerda, que
+  // já mostra PARTIDA e NOTÍCIAS. Continuam disponíveis na Central de Widgets; ao desligar o modo, elas fecham.
   useEffect(() => {
-    if (fanModeEnabled) {
-      api("/api/fan/match")
-        .then((res) => {
-          const isMatchDay = Boolean(res?.match?.is_match_day);
-          setFloatingWindows((current) => {
-            let next = [...current];
-            if (!next.some((item) => item.type === "fan_news")) {
-              next.push({
-                id: `fan_news-${Date.now()}`,
-                type: "fan_news",
-                monitor: 1,
-                minimized: false,
-                maximized: false,
-                left: 28,
-                top: 76,
-                width: 360,
-                height: 380,
-              });
-            }
-            if (isMatchDay && !next.some((item) => item.type === "fan_score")) {
-              next.push({
-                id: `fan_score-${Date.now() + 1}`,
-                type: "fan_score",
-                monitor: 1,
-                minimized: false,
-                maximized: false,
-                left: 410,
-                top: 76,
-                width: 380,
-                height: 280,
-              });
-            }
-            return next;
-          });
-        })
-        .catch(() => {
-          setFloatingWindows((current) => {
-            if (current.some((item) => item.type === "fan_news")) return current;
-            return [
-              ...current,
-              {
-                id: `fan_news-${Date.now()}`,
-                type: "fan_news",
-                monitor: 1,
-                minimized: false,
-                maximized: false,
-                left: 28,
-                top: 76,
-                width: 360,
-                height: 380,
-              },
-            ];
-          });
-        });
-    } else {
+    if (!fanModeEnabled) {
       setFloatingWindows((current) => current.filter((item) => item.type !== "fan_news" && item.type !== "fan_score"));
     }
   }, [fanModeEnabled]);
@@ -957,6 +913,10 @@ export default function App() {
       case "prefs_updated":
         // V8.11: "microfone só no botão" mudou por voz: a central troca na hora
         if (typeof msg.mic_push_to_talk === "boolean") setAppPrefs((p) => ({ ...p, mic_push_to_talk: msg.mic_push_to_talk }));
+        // V9.4: "deixa o clima sempre na tela de bloqueio" / "coloca meu avatar": o bloqueio muda na hora, com animação
+        if (Array.isArray(msg.lock_cards)) setAppPrefs((p) => ({ ...p, lock_cards: msg.lock_cards }));
+        if (typeof msg.lock_avatar_enabled === "boolean") setAppPrefs((p) => ({ ...p, lock_avatar_enabled: msg.lock_avatar_enabled }));
+        if (Array.isArray(msg.lock_cards_new) && msg.lock_cards_new.length) setFreshLockCards(msg.lock_cards_new);
         if (msg.fan_mode_enabled !== undefined) {
           const enabled = Boolean(msg.fan_mode_enabled);
           const team = msg.fan_team || fanTeam;
@@ -997,8 +957,16 @@ export default function App() {
   // ---- Verificação facial ----
   // mode "login": tela de bloqueio. mode "recheck": reverificação por palma com a central aberta (seção 16).
   // trigger: "button" | "clap" | "wake" (só para o registro de tentativas).
-  const verify = useCallback(async ({ mode = "login", trigger = "button" } = {}) => {
-    const body = JSON.stringify({ mode, trigger });
+  const verify = useCallback(async ({ mode = "login", trigger = "button", key = "" } = {}) => {
+    // V9.4: com a tecla de acesso ligada, palmas, voz, clique e a verificação rápida ao abrir não ligam a câmera
+    if (mode === "login" && lockKeyRef.current && trigger !== "key") {
+      setScreen("lock");
+      setLockPhase((ph) => (ph === "scanning" || ph === "verified" ? ph : "ready"));
+      setLockMessage("");
+      setKeyShake((n) => n + 1);
+      return;
+    }
+    const body = JSON.stringify({ mode, trigger, key });
     if (mode === "recheck") {
       clearTimeout(recheckTimerRef.current);
       setRecheckOpen(true);
@@ -1594,6 +1562,10 @@ export default function App() {
       loadPinStatus();
       setPinState((cur) => ({ ...cur, message: "", busy: false }));
       setLockPhase("pin");
+      return;
+    }
+    if (lockKeyRef.current && (lockPhase === "ready" || lockPhase === "failed")) {
+      setKeyShake((n) => n + 1); // V9.4: espaço/clique não abrem a câmera; o aviso da tecla treme
       return;
     }
     if (lockPhase === "ready") verify();
@@ -2501,6 +2473,33 @@ export default function App() {
     return () => window.removeEventListener("keydown", onKey);
   }, [screen]);
 
+  // V9.4: estado da tecla de acesso (a tela bloqueada só sabe SE está ligada, nunca qual é)
+  useEffect(() => {
+    if (screen !== "lock" && screen !== "main") return undefined;
+    const load = () => api("/api/auth/lock-key").then((d) => setLockKeyOn(Boolean(d.enabled))).catch(() => {});
+    load();
+    window.addEventListener("jarvis-lock-key-changed", load);
+    return () => window.removeEventListener("jarvis-lock-key-changed", load);
+  }, [screen]);
+  useEffect(() => {
+    if (!freshLockCards.length) return undefined;
+    const t = setTimeout(() => setFreshLockCards([]), 4000);
+    return () => clearTimeout(t);
+  }, [freshLockCards]);
+
+  // V9.4: Ctrl+V com uma imagem na central abre a análise da foto (como arrastar a imagem)
+  useEffect(() => {
+    if (screen !== "main") return undefined;
+    const onPaste = (e) => {
+      const file = pastedImage(e.clipboardData?.items);
+      if (!file) return; // texto colado segue normal (inclusive nos campos)
+      e.preventDefault();
+      openPhotoFile(file);
+    };
+    window.addEventListener("paste", onPaste);
+    return () => window.removeEventListener("paste", onPaste);
+  }, [screen, openPhotoFile]);
+
   // ---- Atalhos: barra de espaço (falar) e Esc (cancelar) ----
   useEffect(() => {
     const onKey = (e) => {
@@ -2520,6 +2519,25 @@ export default function App() {
         return;
       }
       if (alarmRef.current) return; // alarme tocando: ENTER/ESC/S ficam com o cartão do alarme
+      // V9.4: TECLA DE ACESSO. O PC confere a tecla antes de ligar a câmera; a certa começa o rosto e entra sozinho
+      if (screen === "lock" && lockKeyRef.current && (lockPhaseRef.current === "ready" || lockPhaseRef.current === "failed")) {
+        const code = lockKeyPress(e);
+        if (code) {
+          e.preventDefault();
+          api("/api/auth/lock-key/check", { method: "POST", body: JSON.stringify({ code }), timeout: 5000 })
+            .then((r) => {
+              if (r.ok) {
+                quickEnterRef.current = true; // a tecla já mostrou a intenção: rosto reconhecido entra direto
+                verify({ trigger: "key", key: code });
+                return;
+              }
+              setKeyShake((n) => n + 1);
+              if (r.blocked) setLockMessage("Muitas teclas erradas. Espere 2 minutos ou entre com o PIN.");
+            })
+            .catch(() => setKeyShake((n) => n + 1));
+          return;
+        }
+      }
       if (e.code !== "Space" || e.repeat) return;
       const tag = e.target?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA") return; // deixa digitar espaços normalmente
@@ -2535,7 +2553,7 @@ export default function App() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [screen, handleLockContinue, toggleMic, handleCancel, showSettings, paletteOpen]);
+  }, [screen, handleLockContinue, toggleMic, handleCancel, showSettings, paletteOpen, verify]);
 
   // V4.2.2: sons por estado (volume, modo e silêncio vêm das preferências)
   useEffect(() => {
@@ -3182,6 +3200,10 @@ export default function App() {
           mic={!IS_JARVIS_APP ? { muted: sentinelMuted, onToggle: () => toggleLockMicRef.current() } : null}
           clap={clapOn ? { enabled: true, status: clap.status, level: clap.level, needsGesture: clap.needsGesture, pulse: clapPulse, autoEntering } : { enabled: false, autoEntering }}
           cards={{ list: appPrefs.lock_cards || [], api, fanModeEnabled, fanRefresh }}
+          avatarUrl={appPrefs.lock_avatar_enabled ? `${API_URL}/api/lock/avatar?v=${photoVersion}${photoToken}` : null}
+          freshCards={freshLockCards}
+          lockKeyOn={lockKeyOn && !REMOTE_SCREEN}
+          keyShake={keyShake}
           hasPin={hasPin}
           failCount={failCount}
           onUsePin={openPin}
@@ -3385,6 +3407,7 @@ export default function App() {
       {notesOpen && <ReleaseNotes highlight={notesOpen.highlight} onClose={() => setNotesOpen(null)} />}
       {diagOpen && <DiagnosticPanel api={api} connected={connected} onClose={() => setDiagOpen(false)} />}
         {pcScan && <PcScanPanel key={pcScan.at} api={api} initial={pcScan.data} onClose={() => setPcScan(null)} />}
+      <RecordingBadge onStop={(t) => send(t)} /* V9.4: ⏺ GRAVANDO do modo gravar */ />
       {photoDrag && <div className="ph-drop" aria-hidden="true"><div>🖼 SOLTE A IMAGEM AQUI<small>O JARVIS analisa, lê, pesquisa ou explica. A foto não é guardada.</small></div></div>}
       {photoWin && (
         <PhotoPanel
@@ -3580,7 +3603,8 @@ export default function App() {
           onOpenSpotifyWindow={openSpotifyWindow}
         />
       )}
-      {floatingWindows.map((item) => (
+      {/* V9.4: durante o briefing nada flutua por cima do palco (as janelas voltam quando ele termina) */}
+      {!(briefing && briefing.phase === "running") && floatingWindows.map((item) => (
         <div
           key={item.id}
           id={item.id}

@@ -79,8 +79,9 @@ function EmailBody({ c }) {
   if (!c.connected) {
     return (
       <div className="bf-empty">
-        <strong>Triagem desligada</strong>
-        <small>Preencha EMAIL_IMAP_HOST, EMAIL_IMAP_USER e EMAIL_IMAP_PASSWORD no .env.</small>
+        <strong>E-mail ainda não conectado</strong>
+        {/* V9.4: sem detalhe técnico no cartão (antes listava as variáveis do .env) */}
+        <small>Conecte em TELAS › Fontes de Dados.</small>
       </div>
     );
   }
@@ -245,7 +246,7 @@ export default function BriefingCard({ card, compact = false, mini = false, wide
   const Body = BODIES[card.kind];
   const size = compact ? " is-compact" : mini ? " is-mini" : wide ? " is-wide" : "";
   return (
-    <article className={`bf-card bf-${card.kind}${size}${entering ? " is-entering" : ""}`}>
+    <article className={`bf-card bf-${card.kind}${size}${entering ? " is-entering" : ""}`} data-kind={card.kind}>
       <header className="bf-card-head">
         <span className="bf-icon" aria-hidden="true">{card.badge || ICONS[card.kind]}</span>
         <span className="bf-label">{card.label}</span>

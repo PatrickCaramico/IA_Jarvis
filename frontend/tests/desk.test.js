@@ -224,7 +224,8 @@ test("V8.8.0: bloqueio do Desk: falas do balão só com contagens e as peças no
 test("V8.8.1: bloqueio do Desk também no celular (PIN/digital, sem o botão do rosto)", async () => {
   const lock = await import("node:fs").then((fs) => fs.readFileSync(new URL("../src/components/LockScreen.jsx", import.meta.url), "utf8"));
   assert.ok(lock.includes("  if (deskLock) {") && !lock.includes("if (deskLock && !phoneApp)"));
-  assert.ok(lock.includes("mainVisible={!(phase === \"verified\" && autoEntering) && !phoneEntry}") && lock.includes("phoneButtons={phonePinButton}"));
+  // V9.4: o botão do rosto também some com a tecla de acesso ligada (keyGate)
+  assert.ok(lock.includes("mainVisible={!(phase === \"verified\" && autoEntering) && !phoneEntry && !keyGate}") && lock.includes("phoneButtons={phonePinButton}"));
   const css = await import("node:fs").then((fs) => fs.readFileSync(new URL("../src/desk.css", import.meta.url), "utf8"));
   assert.ok(css.includes("V8.8.1: bloqueio do Modo Desk no celular") && css.includes("env(safe-area-inset-bottom)"));
 });

@@ -13,6 +13,7 @@ import "./accessibility.css";
 import "./alarm.css";
 import "./v9.css";
 import "./glass.css"; // V9.1: vidro em toda a interface
+import "./v94.css"; // V9.4: avatar holográfico, clima animado, ⏺ GRAVANDO e tecla de acesso
 import lazyComponent, { PieceBoundary } from "./utils/lazyComponent.jsx";
 import { initialAccessibility, initialBackground } from "./utils/theme.js";
 import { IS_JARVIS_APP, markDevice } from "./utils/device.js";

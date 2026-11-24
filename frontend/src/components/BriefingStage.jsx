@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import BriefingCard, { ReadinessPanel } from "./BriefingCard.jsx";
+import { PAUTA_ICON, pautaLabel } from "../utils/lockExtras.js";
 
 /**
  * V4.3: palco do briefing "bom dia" / "boa noite" no centro da central.
@@ -167,7 +168,7 @@ function DoneRow({ briefing, onClose, onSay }) {
           {visible.map((c, i) => {
             const isHidden = hidden.includes(cardKey(c));
             return (
-              <div key={`${cardKey(c)}-${i}`} className={`bf-slot${isHidden ? " is-hidden" : ""}`}>
+              <div key={`${cardKey(c)}-${i}`} className={`bf-slot${isHidden ? " is-hidden" : ""}`} style={{ "--i": i }}>
                 {/* div, não button: o card de notícia tem o link "Abrir matéria" dentro */}
                 <div
                   role="button"
@@ -220,11 +221,12 @@ export default function BriefingStage({ briefing, onClose, onSkip, onSay }) {
 
   const { tabs = [], activeTab, index = -1, total = 0, progress, current, cards = [], speech, plan = [] } = briefing;
   const tabIdx = tabs.findIndex((t) => t.id === activeTab);
-  // Pauta: com o plano (backend novo), todos os assuntos aparecem desde a saudação; os já falados
-  // ficam acesos e os próximos, apagados, até a vez de cada um. Sem plano, como antes (só os falados).
-  const trail = plan.length
-    ? plan.map((c, i) => ({ card: c, state: i < index ? "is-done" : i === index ? null : "is-next" })).filter((t) => t.state)
-    : cards.slice(0, -1).map((c) => ({ card: c, state: "is-done" }));
+  // V9.4: menos bagunça. Antes, na abertura, os ~10 cartões da pauta apareciam de uma vez em volta do orbe.
+  // Agora os já falados ficam como cartões pequenos (os 4 últimos) e os próximos viram uma pauta de etiquetas
+  // que entram uma a uma (animação em cascata) e acendem quando chega a vez de cada assunto.
+  const done = plan.length ? plan.slice(0, Math.max(0, index)) : cards.slice(0, -1);
+  const shownDone = done.slice(-4);
+  const pauta = plan.length ? plan.map((c, i) => ({ card: c, state: i < index ? "is-done" : i === index ? "is-now" : "is-next" })) : [];
   return (
     <div className={`bf-stage is-running${index < 0 ? " is-opening" : ""}`} aria-live="polite">
       <div className="bf-head">
@@ -251,14 +253,24 @@ export default function BriefingStage({ briefing, onClose, onSkip, onSay }) {
           formam uma fileira logo abaixo dele */}
       <div className="bf-focus-area">
         {current && <BriefingCard key={index} card={current} entering wide />}
-        {trail.length > 0 && (
-          <div className="bf-trail" aria-label={plan.length ? "Pauta do briefing" : "Assuntos já falados"}>
-            {trail.map((t, i) => (
-              <div key={`${i}-${t.state}`} className={`bf-trail-item ${t.state}`}>
-                <BriefingCard card={t.card} mini />
+        {shownDone.length > 0 && (
+          <div className="bf-trail" aria-label="Assuntos já falados">
+            {shownDone.map((c, i) => (
+              <div key={`${done.length - shownDone.length + i}`} className="bf-trail-item is-done" style={{ "--i": i }}>
+                <BriefingCard card={c} mini />
               </div>
             ))}
           </div>
+        )}
+        {pauta.length > 0 && (
+          <ol className="bf-pauta" aria-label="Pauta do briefing">
+            {pauta.map((t, i) => (
+              <li key={i} className={`bf-pauta-item ${t.state}`} style={{ "--i": i }}>
+                <span aria-hidden="true">{t.card.badge || PAUTA_ICON[t.card.kind] || "•"}</span>
+                {pautaLabel(t.card)}
+              </li>
+            ))}
+          </ol>
         )}
       </div>
 

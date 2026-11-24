@@ -173,6 +173,12 @@ que fica sempre na tela; animações só com transform/opacity; `utils/frameWatc
 econômico automático) e a auto-análise do PC (`skills/auto_analise.py`, aviso calmo no `system_guard`).
 V9.3: segurança (`skills/seguranca/`: vigia da câmera com `face.look_once`, pendrive, otimização do dia; relatório em
 `/api/security/report` + `components/SecurityReport.jsx`). A câmera é única: use `session.auth_lock` para usá-la.
+V9.4: bloqueio pessoal — avatar holográfico da foto do rosto (`modules/holo_avatar.py`, `/api/lock/avatar`,
+`components/HoloAvatar.jsx`), tecla de acesso (`modules/lock_key.py`; `/api/auth/verify` exige a tecla quando ligada),
+widgets do bloqueio por voz com clima animado (`skills/tela_de_bloqueio.py`, `components/WeatherScene.jsx`), foto de
+quem erra PIN/teclas (`routes/access.py: snap_attempt`), `skills/analisar_imagem.py` (+ Ctrl+V na central) e o modo
+gravar (`skills/modo_gravar.py`, que ouve `core/skills/executor.observe`/`notify`; `turns.py` avisa as frases das
+funções legadas). Frontend: `utils/lockExtras.js` e `v94.css`.
 
 Próximos, na ordem sugerida:
 - Skills: Quick Capture com escrita no Google Agenda.

@@ -13,6 +13,7 @@ import "../feedback.css";
 import "../briefing.css";
 import "../blueprint.css";
 import "../mobile.css"; // V5.8: mostra também o layout do celular
+import "../v94.css"; // V9.4: pauta em etiquetas, cascata e cartões com cor por assunto
 
 const TABS = [
   { id: "clima", label: "Clima" },

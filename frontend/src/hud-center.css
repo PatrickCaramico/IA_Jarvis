@@ -160,8 +160,11 @@
 /* Celular e telas estreitas: a coluna não recolhe (fica na rolagem), então nada de cartão flutuante */
 @media (max-width: 1100px) { .hl-spotify-float { display: none; } }
 @media (prefers-reduced-motion: reduce) { .hl-spotify-float, .hl-act i.is-spinning { animation: none; } }
-/* V9.2: atalho para a auto-análise quando o uso está alto */
+/* V9.2: atalho para a auto-análise quando o uso está alto.
+   V9.4: o botão não respondia ao clique: a coluna da telemetria tem pointer-events: none (para não roubar o
+   toque do reator) e o botão herdava isso. Agora só ele volta a receber o clique, por cima do anel. */
 .hc-r-analyze {
+  pointer-events: auto; position: relative; z-index: 3;
   justify-self: start; margin-top: 3px; padding: 2px 9px; border-radius: 999px; cursor: pointer;
   border: 1px solid rgba(251, 191, 36, 0.55); background: rgba(251, 191, 36, 0.12); color: #fde68a;
   font: 700 9px "Orbitron", sans-serif; letter-spacing: 0.12em; transition: background-color 0.15s, border-color 0.15s;

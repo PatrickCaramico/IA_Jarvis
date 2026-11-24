@@ -19,6 +19,9 @@ export const GROUPS = {
   navegador: { label: "Navegador", icon: "🌐", order: 14 }, // V9.0
   auto_analise: { label: "Auto-análise", icon: "⚡", order: 3 }, // V9.2
   seguranca: { label: "Segurança", icon: "🛡️", order: 2 }, // V9.3
+  tela_de_bloqueio: { label: "Tela de bloqueio", icon: "🔒", order: 15 }, // V9.4
+  analisar_imagem: { label: "Imagens", icon: "🖼", order: 16 }, // V9.4
+  modo_gravar: { label: "Modo gravar", icon: "⏺", order: 17 }, // V9.4
   inicializacao: { label: "Inicialização", icon: "🚀", order: 70 },
   microfone: { label: "Microfone", icon: "🎙", order: 65 },
   habilidades: { label: "Central", icon: "⚡", order: 80 },

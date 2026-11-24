@@ -135,6 +135,7 @@ async def get_weather(city: str | None = Query(default=None, max_length=80)) -> 
             "temperature": round(current["temperature_2m"]),
             "apparent_temperature": round(current["apparent_temperature"]),
             "description": tools._WMO.get(current.get("weather_code"), "tempo variável"),
+            "code": current.get("weather_code"),  # V9.4: a animação do clima no bloqueio (sol, nuvem, chuva, raio)
             "maximum": round(daily["temperature_2m_max"][0]),
             "minimum": round(daily["temperature_2m_min"][0]),
             "rain_probability": round(probability) if probability is not None else None,

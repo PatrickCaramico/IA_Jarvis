@@ -43,6 +43,8 @@ _WRITABLE = (
     ("desk", "_CLIP_PATH", "copiados.json"),
     ("desk_missions", "_PATH", "missoes.json"),  # V8.1
     ("world_data", "_PREFS_PATH", "olho_avisos.json"),
+    ("lock_key", "_PATH", "tecla_acesso.json"),  # V9.4
+    ("holo_avatar", "_PATH", "avatar_holo.png"),  # V9.4
 )
 # V8.11: arquivos das Skills (módulo completo, em backend/skills/)
 _WRITABLE_SKILLS = (
@@ -54,6 +56,7 @@ _WRITABLE_SKILLS = (
     ("skills.tempo_de_tela", "_PATH", "tempo_de_tela.json"),
     ("skills.navegador", "_PATH", "navegador.json"),  # V9.0
     ("skills.seguranca", "_PATH", "seguranca.json"),  # V9.3
+    ("skills.modo_gravar", "_PATH", "gravacoes.json"),  # V9.4
 )
 
 
@@ -77,6 +80,11 @@ def _protect_real_data(tmp_path_factory, monkeypatch):
     from modules import device_access
 
     device_access.reset_for_tests()  # V7.6: cache em memória dos aparelhos
+    from modules import lock_key
+    from skills import modo_gravar
+
+    lock_key.reset_for_tests()  # V9.4: contagem de teclas erradas em memória
+    modo_gravar.reset_for_tests()  # V9.4: cópia em memória das rotinas gravadas
     monkeypatch.setattr(settings_module(), "ACCESS_TOKEN_FILE", base / "access_token.txt")
     yield
     device_access.reset_for_tests()

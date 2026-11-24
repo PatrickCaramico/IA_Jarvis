@@ -115,6 +115,17 @@ export default function VoiceButton({ api }) {
     }
   };
 
+  // V9.4: volume da música quando o briefing do dia termina (sobe ainda mais que o volume normal)
+  const setEndVolume = async (value) => {
+    const before = prefs?.briefing_end_volume ?? 80;
+    setPrefs((p) => ({ ...(p || {}), briefing_end_volume: value }));
+    try {
+      await api("/api/prefs", { method: "PATCH", body: JSON.stringify({ briefing_end_volume: value }) });
+    } catch {
+      setPrefs((p) => ({ ...(p || {}), briefing_end_volume: before }));
+    }
+  };
+
   const current = prefs?.voice_style || "natural";
   return (
     <span className="hl-act-wrap" ref={wrapRef}>
@@ -154,6 +165,13 @@ export default function VoiceButton({ api }) {
                 <input type="checkbox" checked={prefs ? prefs.intro_song_morning !== false : true} disabled={!prefs}
                   onChange={(e) => togglePref("intro_song_morning", e.target.checked)} />
                 Tocar na inicialização do dia (bom dia), baixinho durante o briefing
+              </label>
+              <label className="hv-check">
+                No fim do briefing do dia, subir a música até
+                <select value={prefs?.briefing_end_volume ?? 80} disabled={!prefs} onChange={(e) => setEndVolume(Number(e.target.value))}
+                  aria-label="Volume da música no fim do briefing">
+                  {[60, 70, 80, 90, 100].map((v) => <option key={v} value={v}>{v}%</option>)}
+                </select>
               </label>
               <label className="hv-check">
                 <input type="checkbox" checked={prefs ? prefs.intro_song_on_entry !== false : true} disabled={!prefs}

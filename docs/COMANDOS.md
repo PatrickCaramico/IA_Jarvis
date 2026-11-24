@@ -589,6 +589,35 @@ Habilidades plug-and-play (pasta `backend/skills/`). Funcionam pela frase exata 
 | Sozinho: otimização do dia | 1 vez por dia, com o PC parado há 10 min (das 9h às 23h), faz a varredura. Se achar temporários, lixeira cheia, muitos programas abrindo com o Windows ou disco quase cheio, deixa a sugestão no relatório. Nada é apagado sem o senhor mandar. |
 
 Uma tentativa de entrar pelo rosto que falha também entra no relatório (com foto, se o vigia estiver ligado).
+Desde a V9.4, a foto de quem tenta entrar vem ligada (Configurações › Bloqueio › "Guardar o rosto de quem tentar entrar") e também vale para o **PIN errado digitado no PC** e para **teclas erradas** com a tecla de acesso ligada. Se a câmera reconhecer o próprio senhor (errou o PIN), nada é registrado.
+
+**Tela de bloqueio, tecla de acesso e avatar (V9.4)**
+
+| Diga / faça | O que acontece |
+|---|---|
+| "Deixa o clima sempre aparecer na tela de bloqueio" / "coloca o clima e a água na tela de bloqueio" / "mostra o relógio no bloqueio" | Fixa o widget no bloqueio (relógio, clima, Spotify, água de hoje, próximo jogo). Ele entra com uma animação, e o clima ganha a animação do tempo de agora: sol girando, lua e estrelas, nuvens, chuva, raio, neblina ou neve. Muda na hora, sem recarregar. |
+| "Tira a água da tela de bloqueio" / "não quero o Spotify no bloqueio" | Esconde o widget. |
+| "Coloca meu avatar na tela de bloqueio" / "tira o avatar da tela de bloqueio" (ou Configurações › Bloqueio) | O PC transforma a foto do seu rosto num **holograma** (ciano, com linhas de varredura), salvo em `data/avatar_holo.png`, e ele aparece no centro do bloqueio, no lugar do reator/orbe. Flutua, um feixe passa por ele, acelera ao verificar, fica verde ao reconhecer e treme em vermelho se não reconhecer. É refeito sozinho quando a foto do rosto muda. |
+| Configurações › Bloqueio › **Tecla de acesso** | Escolha uma tecla (letra, número ou F1–F12; espaço, Enter, Esc e P não valem). Com ela ligada, a câmera **só começa a verificar o rosto depois dessa tecla**: espaço, clique, palmas e "abrir central" não abrem mais a câmera. Rosto reconhecido entra direto. A tela bloqueada mostra só "⌨ TECLA DE ACESSO", nunca qual é. 6 teclas erradas seguidas = tentativa no relatório (com foto) e a tecla fica 2 minutos sem valer. O PIN continua funcionando. |
+
+**Analisar imagem (V9.4)**
+
+| Diga | O que acontece |
+|---|---|
+| "Analisa essa imagem" / "o que tem nessa foto?" / "analisa o print que eu tirei" / "analisa a imagem que eu copiei" / "lê essa imagem" | Pega a imagem copiada (Ctrl+C numa imagem, Win+Shift+S ou um arquivo de imagem copiado no Explorer) ou, sem ela, a imagem mais nova dos últimos 30 minutos em Downloads, Área de Trabalho, Imagens ou capturas de tela. Manda para a IA com o seu pedido, fala a resposta curta e mostra o cartão **ANÁLISE DA IMAGEM**. Nada é guardado. Só no próprio PC. |
+| **Ctrl+V** com uma imagem na central | Abre a janela da foto (analisar, ler, pesquisar, holograma), igual a arrastar a imagem. |
+
+Para copiar só o texto de uma imagem, sem IA, continue usando "copia o texto da imagem que eu copiei".
+
+**Modo gravar (V9.4)** — ensinar o JARVIS a fazer uma sequência
+
+| Diga | O que acontece |
+|---|---|
+| "Modo gravar" / "vou te ensinar uma rotina chamada estudo" / "começa a gravar" | Começa a gravar e mostra **⏺ GRAVANDO** no topo da central, com o número de passos. |
+| (os pedidos, normalmente) | Cada pedido que deu certo vira um passo: "abre o Spotify", "organiza as janelas lado a lado", "volume 30"… O que a IA só respondeu (conversa, pesquisa) não entra. Até 15 passos. |
+| "Para de gravar" / "salva como estudo" / tocar em **PARAR** | Salva a rotina (com o nome do começo ou o que o senhor disser; sem nome, vira "rotina 1"). |
+| "Estudo" (o nome sozinho) / "executa a rotina estudo" | Refaz tudo, na ordem, com as mesmas regras de sempre. Uma ação que pede "sim" pergunta de novo. Se um passo falhar, ele diz qual. |
+| "Quais são as minhas gravações?" / ⚠️ "Apaga a rotina estudo" / "cancela a gravação" | Lista, apaga (pede "sim") ou descarta a gravação em andamento. |
 
 **Auto-análise (V9.2)**
 
@@ -596,7 +625,7 @@ Uma tentativa de entrar pelo rosto que falha também entra no relatório (com fo
 |---|---|
 | "Faz uma auto análise" / "analisa o meu PC" / "faz um diagnóstico do sistema" | O JARVIS examina o PC agora e responde com o estado e a sugestão principal. Também mostra o cartão **AUTO-ANÁLISE** com o que olhou e até 4 sugestões. Ele olha: memória e processador, o navegador com muitas abas (conta as do navegador do JARVIS), programas em segundo plano gastando memória (Teams, Discord, Steam, OneDrive…), ele mesmo, há quantos dias o PC não reinicia, se o Windows está usando o disco como memória e o espaço livre no disco. |
 | "Por que a memória está alta?" / "por que o processador tá no talo?" / "como liberar memória?" / "como melhorar o desempenho?" | O mesmo diagnóstico. Com a memória a partir de 80%, oferece ⚠️ fechar o programa mais pesado que é seguro fechar (nunca o navegador, programas do Windows nem o próprio JARVIS) e só fecha depois do "sim". |
-| Botão **⚡ ANALISAR** na central | Aparece embaixo de PROCESSADOR ou MEMÓRIA quando o uso fica no amarelo (70% ou mais) ou no vermelho (90% ou mais). Um toque pede a auto-análise. |
+| Botão **⚡ ANALISAR** na central | Aparece embaixo de PROCESSADOR ou MEMÓRIA quando o uso fica no amarelo (70% ou mais) ou no vermelho (90% ou mais). Um toque pede a auto-análise. (Até a V9.3 o botão aparecia mas não respondia ao clique; corrigido na V9.4.) |
 | Sozinho (aviso calmo) | Memória acima de 85% por 3 minutos: aviso na tela e no celular, com a sugestão principal, no máximo 1 vez por hora e sem voz. Acima de 92%, continua o aviso falado do vigia, que oferece fechar o que mais gasta. |
 
 Para a varredura completa (temporários, lixeira, inicialização), continue usando "meu PC está lento".
