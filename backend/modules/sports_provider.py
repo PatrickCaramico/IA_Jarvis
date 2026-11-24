@@ -134,9 +134,11 @@ def load_fan_cache() -> Dict[str, Any]:
     if not CACHE_FILE.exists():
         return {}
     try:
-        with open(CACHE_FILE, "r", encoding="utf-8") as f:
-            data = json.load(f)
-            return data if isinstance(data, dict) else {}
+        from core import safe_io
+
+        # V9.4.2: leitura com novas tentativas (o OneDrive prendia o arquivo e dava "Permission denied")
+        data = safe_io.read_json(CACHE_FILE)
+        return data if isinstance(data, dict) else {}
     except Exception as exc:  # noqa: BLE001
         log.warning("Falha ao ler cache de partidas: %s", exc)
         return {}

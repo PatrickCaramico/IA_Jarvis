@@ -30,6 +30,9 @@ logging.basicConfig(
     handlers=[_console_handler, _file_handler],
 )
 log = logging.getLogger("jarvis.main")
+# V9.4.2: o urllib3 registrava cada nova tentativa de rede ("Retrying ...") como aviso; a falha final já é registrada
+# pelo módulo que pediu (clima, notícias, nuvem). Só os erros dele continuam no log.
+logging.getLogger("urllib3").setLevel(logging.ERROR)
 
 # Importados depois do log para que os módulos já usem a configuração acima.
 from core import runtime, watchers  # noqa: E402
@@ -46,8 +49,20 @@ from routes import skills as skills_routes  # noqa: E402
 from version import VERSION  # noqa: E402
 
 
+def quiet_connection_reset(loop: asyncio.AbstractEventLoop, context: dict) -> None:
+    """V9.4.2: no Windows, quando a central, o celular ou o navegador fecham a conexão de repente, o asyncio registra
+    "ConnectionResetError [WinError 10054]" como ERRO com o rastro inteiro (era o erro mais repetido do log, centenas
+    de vezes, sem nada quebrado). Esse caso vira uma linha de depuração; qualquer outro erro segue como antes."""
+    exc = context.get("exception")
+    if isinstance(exc, (ConnectionResetError, ConnectionAbortedError)) and "_call_connection_lost" in str(context.get("message", "")) + str(context.get("handle", "")):
+        log.debug("Conexão fechada pelo outro lado (%s)", exc)
+        return
+    loop.default_exception_handler(context)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    asyncio.get_running_loop().set_exception_handler(quiet_connection_reset)
     try:  # V8.12.2: voltando de uma atualização com a central liberada: continua liberada
         await asyncio.to_thread(access.resume_after_restart)
     except Exception:  # noqa: BLE001 - na dúvida, liga bloqueado (como sempre)
