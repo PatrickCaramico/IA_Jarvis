@@ -46,6 +46,12 @@ const DATA = {
     week: [["Hoje", 26, 17, "⛅"], ["Amanhã", 25, 18, "🌧"], ["Sáb 14", 27, 18, "⛅"], ["Dom 15", 28, 16, "🌦"], ["Seg 16", 26, 19, "☀"], ["Ter 17", 28, 18, "☀"]]
       .map(([label, max, min, icon]) => ({ label, max, min, icon, rain: 40 })) },
   // V9.4.5: ?longo=1 = títulos longos (para conferir que o menu PRÓXIMOS não estoura)
+  // V9.5.6: 💡 BLOCO DE IDEIAS
+  "/api/ideas": { ideas: [
+    { id: 2, titulo: "Aquecimento Orbes", texto: "Roteiro das lives da semana 1 e convidados.", projeto: true, atualizado: 1764000000 },
+    { id: 3, titulo: "Canal no YouTube", texto: "Série sobre o JARVIS: como montei meu assistente.", projeto: true, atualizado: 1763990000 },
+    { id: 1, titulo: "App de receitas", texto: "Reconhecer ingredientes pela câmera e sugerir receitas.", projeto: false, atualizado: 1763900000 },
+  ], google: { configured: true, connected: true, tasks: false } },
   "/api/agenda/next": { items: q.get("longo") === "1" ? [
     { label: "Hoje", title: "Discord - Aquecimento Orbes: Semana 1", kind: "agenda" },
     { label: "Hoje 18:00", title: "Jogo do Palmeiras: Chapecoense x Palmeiras (Brasileirão)", kind: "agenda" },
@@ -177,6 +183,10 @@ class DemoSocket {
         { kind: "app", name: "Celular · SM-A546E", ip: "192.168.1.58", since: 2 },
       ] }), 300);
       setTimeout(() => send({ type: "response", text: "Em Maragogi, 27 graus e sol. Vale levar protetor solar hoje.", cards: [] }), 900);
+      // V9.5.6: ?lembrete=1 = um lembrete vence (aviso ⏰ LEMBRETE com ADIAR e OK)
+      if (q.get("lembrete") === "1") {
+        setTimeout(() => send({ type: "reminder_due", id: 7, texto: "Ligar para a mãe", hora: "14:30", atrasado: false }), 3500);
+      }
       // V9.5.5: ?resposta=1 = resposta nova SEM voz (a transcrição abre o tempo de ler)
       if (q.get("resposta") === "1") {
         setTimeout(() => send({ type: "response", text: "Nos próximos dias: amanhã, Entrar no Discord pelo Opera (Aquecimento Orbes) às 19:00; em 3 dias, Missa igreja às 08:00; em 3 dias, Jogo do Palmeiras: Palmeiras x Estudiantes (Final Libertadores) às 17:00.", cards: [] }), 4000);

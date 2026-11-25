@@ -6,6 +6,9 @@ from fastapi import HTTPException
 from pydantic import BaseModel
 from modules import prefs, tasks, reminders, focus, briefing, memory, event_log, notifications, protocols, routine, triggers, tools, alarms
 from fastapi import APIRouter
+import logging
+
+log = logging.getLogger("jarvis.routes.productivity")
 
 router = APIRouter()
 
@@ -180,11 +183,114 @@ async def create_reminder(req: ReminderRequest) -> dict:
     return {"status": "ok", "reminder": rem}
 
 
+class ReminderPostponeRequest(BaseModel):
+    minutos: int = 10
+
+
+@router.post("/api/reminders/{rem_id}/postpone")
+async def postpone_reminder(rem_id: int, req: ReminderPostponeRequest) -> dict:
+    """V9.5.6: ADIAR do aviso "⏰ LEMBRETE"."""
+    rem = reminders.postpone_by_id(rem_id, req.minutos)
+    if rem is None:
+        raise HTTPException(status_code=404, detail="Lembrete não encontrado.")
+    await _reminders_changed()
+    return {"status": "ok", "reminder": rem}
+
+
 @router.delete("/api/reminders/{rem_id}")
 async def remove_reminder(rem_id: int) -> dict:
     if not reminders.delete_reminder(rem_id):
         raise HTTPException(status_code=404, detail="Lembrete não encontrado.")
     await _reminders_changed()
+    return {"status": "ok"}
+
+
+# ---------------------------------------------------------------- V9.5.6: 💡 BLOCO DE IDEIAS
+class IdeaRequest(BaseModel):
+    texto: str = ""
+    titulo: str = ""
+    projeto: bool = False
+
+
+class IdeaPatch(BaseModel):
+    texto: str | None = None
+    titulo: str | None = None
+    projeto: bool | None = None
+
+
+async def _ideas_changed() -> None:
+    from core import runtime
+
+    await runtime.manager.broadcast({"type": "ideas_updated"})
+
+
+GOOGLE_SYNC_TIMEOUT_S = 25
+
+
+async def _google_sync(fn, *args) -> None:
+    """V9.5.6: manda a mudança para o Google Tarefas em segundo plano (a central não espera o Google)."""
+    from modules import google_tasks
+
+    try:
+        await asyncio.wait_for(asyncio.to_thread(google_tasks.safe, fn, *args), timeout=GOOGLE_SYNC_TIMEOUT_S)
+    except asyncio.TimeoutError:
+        log.warning("Google Tarefas demorou demais; a ideia ficou salva só no JARVIS por enquanto.")
+
+
+@router.get("/api/ideas")
+async def list_ideas(sync: bool = False) -> dict:
+    from modules import google_tasks, ideas
+
+    if sync:  # V9.5.6: ao abrir o bloco, traz o que foi anotado no app do Google Tarefas
+        try:
+            await asyncio.wait_for(asyncio.to_thread(google_tasks.safe, google_tasks.pull), timeout=GOOGLE_SYNC_TIMEOUT_S)
+        except asyncio.TimeoutError:
+            log.warning("Google Tarefas demorou demais para responder; mostrando o bloco do JARVIS.")
+    return {"ideas": await asyncio.to_thread(ideas.list_ideas), "google": await asyncio.to_thread(google_tasks.status)}
+
+
+@router.post("/api/ideas")
+async def create_idea(req: IdeaRequest) -> dict:
+    from modules import ideas
+
+    try:
+        idea = await asyncio.to_thread(ideas.add_idea, req.texto, req.titulo, req.projeto)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    await _ideas_changed()
+    from core import runtime
+    from modules import google_tasks
+
+    runtime.track(_google_sync(google_tasks.push, idea))
+    return {"status": "ok", "idea": idea}
+
+
+@router.patch("/api/ideas/{idea_id}")
+async def edit_idea(idea_id: int, req: IdeaPatch) -> dict:
+    from modules import ideas
+
+    idea = await asyncio.to_thread(lambda: ideas.update_idea(idea_id, text=req.texto, title=req.titulo, project=req.projeto))
+    if idea is None:
+        raise HTTPException(status_code=404, detail="Ideia não encontrada.")
+    await _ideas_changed()
+    from core import runtime
+    from modules import google_tasks
+
+    runtime.track(_google_sync(google_tasks.push, idea))
+    return {"status": "ok", "idea": idea}
+
+
+@router.delete("/api/ideas/{idea_id}")
+async def remove_idea(idea_id: int) -> dict:
+    from core import runtime
+    from modules import google_tasks, ideas
+
+    old_idea = await asyncio.to_thread(ideas.get_idea, idea_id)
+    if not await asyncio.to_thread(ideas.delete_idea, idea_id):
+        raise HTTPException(status_code=404, detail="Ideia não encontrada.")
+    await _ideas_changed()
+    if old_idea and old_idea.get("google_task_id"):
+        runtime.track(_google_sync(google_tasks.remove, old_idea["google_task_id"]))
     return {"status": "ok"}
 
 

@@ -797,3 +797,62 @@ html.is-eco .hl-root { animation: none; }
 .hl-peek-big { margin-left: 6px; }
 /* ⤢ AMPLIAR: janela maior, com a conversa recente inteira */
 .cpk.is-pinned { width: min(620px, calc(100vw - 32px)); max-height: min(72vh, 720px); }
+
+/* ==========================================================
+   V9.5.6: AVISO DE LEMBRETE (ReminderDue.jsx) — fica até OK/ADIAR; vidro pintado, entra de cima
+   ========================================================== */
+.rdu-wrap { position: fixed; top: 84px; left: 50%; z-index: 9400; width: min(560px, calc(100vw - 32px)); transform: translateX(-50%); pointer-events: none; }
+.rdu { position: relative; display: flex; gap: 16px; padding: 18px 20px; border-radius: 18px; pointer-events: auto;
+  border: 1px solid rgba(251, 191, 36, 0.55);
+  background: var(--g-shine), linear-gradient(160deg, rgba(40, 30, 8, 0.96), rgba(12, 14, 30, 0.97));
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.55), 0 0 36px rgba(251, 191, 36, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  color: #fff7e0; animation: rdu-in 380ms cubic-bezier(0.2, 0.9, 0.25, 1.2) both; }
+@keyframes rdu-in { from { opacity: 0; transform: translateY(-18px) scale(0.94); } to { opacity: 1; transform: none; } }
+.rdu-bell { font-size: 2rem; line-height: 1; transform-origin: 50% 10%; animation: rdu-ring 1.2s ease-in-out 3; }
+@keyframes rdu-ring { 0%, 100% { transform: rotate(0); } 15% { transform: rotate(16deg); } 30% { transform: rotate(-14deg); } 45% { transform: rotate(10deg); } 60% { transform: rotate(-6deg); } }
+.rdu-main { flex: 1; min-width: 0; }
+.rdu-tag { font: 600 10px "Orbitron", monospace; letter-spacing: 0.18em; color: #fbbf24; }
+.rdu-text { margin: 6px 0 12px; font-size: 1.15rem; line-height: 1.4; overflow-wrap: anywhere; }
+.rdu-note { margin: -6px 0 10px; font-size: 0.85rem; color: #fca5a5; }
+.rdu-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.rdu-btn { padding: 7px 14px; border-radius: 999px; cursor: pointer; border: 1px solid rgba(251, 191, 36, 0.45); background: rgba(251, 191, 36, 0.08);
+  color: #fde68a; font: 600 10.5px "Orbitron", monospace; letter-spacing: 0.12em; transition: background-color 150ms ease, transform 150ms ease; }
+.rdu-btn:hover { background: rgba(251, 191, 36, 0.2); }
+.rdu-btn:active { transform: scale(0.97); }
+.rdu-btn.is-main { margin-left: auto; background: #fbbf24; color: #1a1300; border-color: #fbbf24; }
+.rdu-btn:disabled { opacity: 0.6; cursor: wait; }
+.rdu-more { position: absolute; top: -8px; right: -8px; min-width: 24px; height: 24px; padding: 0 6px; border-radius: 999px; display: grid; place-items: center;
+  background: #fbbf24; color: #1a1300; font: 700 11px "Orbitron", monospace; }
+@media (prefers-reduced-motion: reduce) { .rdu, .rdu-bell { animation: none !important; } }
+
+/* ==========================================================
+   V9.5.6: 💡 BLOCO DE IDEIAS (IdeasPad.jsx) — usa a janela de vidro dos LOGS (.lgw)
+   ========================================================== */
+.idp { width: min(760px, 100%); }
+.idp-new { display: grid; gap: 8px; padding: 12px; border-radius: 14px; border: 1px solid rgba(251, 191, 36, 0.3); background: rgba(251, 191, 36, 0.05); }
+.idp-new input:not([type="checkbox"]), .idp-new textarea, .idp-edit input, .idp-edit textarea { width: 100%; box-sizing: border-box; padding: 8px 10px; border-radius: 10px;
+  border: 1px solid rgba(79, 220, 255, 0.3); background: rgba(2, 8, 19, 0.55); color: #e6f6ff; font: inherit; font-size: 0.95rem; resize: vertical; }
+.idp-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.idp-check { display: inline-flex; align-items: center; gap: 8px; font-size: 0.88rem; color: #fde68a; cursor: pointer; }
+.idp-check input { width: 16px; height: 16px; margin: 0; accent-color: #fbbf24; flex: none; }
+.idp-save { border-color: rgba(251, 191, 36, 0.6) !important; color: #fde68a !important; }
+.idp-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; overflow-y: auto; min-height: 0; }
+.idp-empty { padding: 18px; text-align: center; color: rgba(201, 246, 255, 0.6); }
+.idp-item { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(79, 220, 255, 0.18);
+  background: rgba(2, 8, 19, 0.35); animation: ld-rise 260ms both; }
+.idp-item.is-project { border-color: rgba(251, 191, 36, 0.45); background: rgba(251, 191, 36, 0.06); }
+.idp-pin { flex: none; width: 32px; height: 32px; border-radius: 10px; border: 1px solid rgba(201, 246, 255, 0.2); background: transparent; cursor: pointer;
+  filter: grayscale(1); opacity: 0.5; transition: opacity 150ms ease, transform 150ms ease; }
+.idp-pin.is-on { filter: none; opacity: 1; border-color: rgba(251, 191, 36, 0.6); }
+.idp-pin:hover { opacity: 1; transform: scale(1.06); }
+.idp-body { flex: 1; min-width: 0; }
+.idp-body b { display: block; font-size: 1rem; color: #f0fbff; overflow-wrap: anywhere; }
+.idp-body p { margin: 4px 0 0; font-size: 0.9rem; line-height: 1.4; color: rgba(214, 240, 255, 0.85); white-space: pre-wrap; overflow-wrap: anywhere; }
+.idp-body small { display: block; margin-top: 4px; font: 600 9px "Orbitron", monospace; letter-spacing: 0.14em; color: rgba(251, 191, 36, 0.8); }
+.idp-acts { display: flex; gap: 6px; flex: none; }
+.idp-del { border-color: rgba(248, 113, 113, 0.7) !important; color: #fecaca !important; }
+.idp-edit { flex: 1; display: grid; gap: 8px; }
+.idp-sync { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 12px; border-radius: 12px;
+  border: 1px dashed rgba(201, 246, 255, 0.25); font-size: 0.85rem; color: rgba(214, 240, 255, 0.85); }
+.idp-sync.is-on { border-style: solid; border-color: rgba(52, 211, 153, 0.45); background: rgba(52, 211, 153, 0.06); }
+.idp-sync span { flex: 1 1 260px; }

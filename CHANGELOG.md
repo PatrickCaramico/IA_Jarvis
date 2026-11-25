@@ -2,6 +2,33 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 9.5.6 — 25 de novembro de 2026
+
+**⏰ Lembrete avisa quando vence**
+- **Quando um lembrete vence, abre o aviso "⏰ LEMBRETE"** com sinal sonoro, e ele fica na tela até o senhor tocar em **OK**, **ADIAR 10 MIN** ou **ADIAR 1 H**.
+  - Antes, o lembrete vencido virava só mais uma linha no Canal Ativo; se a voz não saísse, passava despercebido.
+- A faixa de lembretes atualiza na hora (o vencido sai dela).
+- Lembrete que venceu com o PC desligado avisa o horário original ("lembrete das 14:00").
+- Com a central bloqueada, o aviso aparece sem o texto, que pode ser pessoal.
+- Lembrete com data inválida agora fica registrado no log. Antes era ignorado em silêncio e nunca disparava.
+
+**💡 Bloco de ideias**
+- **Novo botão 💡 BLOCO DE IDEIAS** nos CONTROLES: rascunhos de ideias e projetos, salvos no PC.
+  - Dá para escrever, editar e apagar, e marcar com 📌 o que é projeto em andamento.
+- **Por voz:** "anota uma ideia: …", "nova ideia de projeto: …", "quais são meus projetos".
+- **No "bom dia", o briefing lê os projetos do bloco** (até 5; sem nenhum marcado, as ideias mais recentes), com um card PROJETOS.
+- **Sincronizado com o Google Tarefas** (lista "Ideias JARVIS"), no lugar do Google Keep.
+  - A API do Keep só existe para contas corporativas (Google Workspace); o Google Tarefas tem API oficial para conta pessoal e aparece no celular, no Gmail e na Agenda.
+  - Ideia criada, editada ou apagada no JARVIS muda também na lista; projeto vai com 📌 no título.
+  - O que for anotado nessa lista pelo app do Google Tarefas entra no bloco, ao abrir a janela e antes do "bom dia".
+  - Tarefa concluída no Google deixa de ser projeto: sai do briefing, sem apagar nada.
+  - Usa a mesma conexão do Google da agenda. Quem já tinha conectado precisa conectar de novo uma vez: o botão ☁ CONECTAR GOOGLE TAREFAS aparece no bloco.
+  - Se o Google demorar ou falhar, a ideia fica salva no JARVIS e o motivo vai para o log; no "bom dia", essa leitura espera no máximo 10 segundos.
+
+**⚡ CONTROLES reorganizados**
+- Por assunto: **Anotar e lembrar** (bloco de ideias, novo lembrete, compras, notícias), **Rotinas do dia** (resumo, saindo, dormir, timer, água), **Modos de ambiente**, **Música e som**, **Central** e **Manutenção**.
+- Antes, "Ações rápidas" misturava assuntos e "Sistema & HUD" tinha 16 botões de tudo um pouco.
+
 ## 9.5.5 — 25 de novembro de 2026
 
 **🎸 Música do "bom dia" no Spotify do PC**

@@ -22,6 +22,25 @@ def set_announcer(fn: Callable[[str], Awaitable[None]]) -> None:
     _announcer = fn
 
 
+# V9.5.6: além da fala, a central abre o aviso "⏰ LEMBRETE" (com ADIAR e OK) e a faixa de lembretes atualiza.
+# Antes o lembrete vencido virava só uma linha no Canal Ativo e, sem a voz, passava despercebido.
+_due_hook: Optional[Callable[[dict], Awaitable[None]]] = None
+LATE_AFTER_MIN = 5  # venceu com o PC desligado (ou dormindo): o aviso diz o horário que era
+
+
+def set_due_hook(fn: Callable[[dict], Awaitable[None]]) -> None:
+    global _due_hook
+    _due_hook = fn
+
+
+def due_message(texto: str, alvo: datetime, agora: datetime) -> str:
+    """O que o JARVIS fala quando o lembrete vence (com o horário, se ele venceu há mais de alguns minutos)."""
+    if agora - alvo > timedelta(minutes=LATE_AFTER_MIN):
+        quando = alvo.strftime("%H:%M") if alvo.date() == agora.date() else alvo.strftime("%d/%m às %H:%M")
+        return f"Atenção, lembrete das {quando}: {texto}."
+    return f"Atenção, lembrete: {texto}."
+
+
 def _load_reminders() -> list[dict]:
     if not _REMINDERS_PATH.exists():
         return []
@@ -96,6 +115,18 @@ def postpone_reminder(minutes: int = 10) -> Optional[dict]:
     return candidato
 
 
+def postpone_by_id(rem_id: int, minutes: int = 10, now: Optional[datetime] = None) -> Optional[dict]:
+    """V9.5.6: ADIAR do aviso: este lembrete volta daqui a `minutes` minutos."""
+    rems = _load_reminders()
+    rem = next((r for r in rems if r.get("id") == rem_id), None)
+    if rem is None:
+        return None
+    rem["data_hora"] = ((now or datetime.now()) + timedelta(minutes=max(1, min(int(minutes), 24 * 60)))).strftime("%Y-%m-%d %H:%M")
+    rem["disparado"] = False
+    _save_reminders(rems)
+    return rem
+
+
 def delete_reminder(rem_id: int) -> bool:
     rems = _load_reminders()
     before = len(rems)
@@ -143,14 +174,21 @@ async def check_pending_reminders() -> None:
                         r["disparado"] = True
                     alterado = True
                     log.info("Disparando lembrete: %s", r["texto"])
+                    msg = due_message(r["texto"], alvo, agora)
+                    if _due_hook:  # V9.5.6: o aviso na tela vem antes da fala (que pode demorar ou falhar)
+                        try:
+                            await _due_hook({"id": r.get("id"), "texto": r["texto"], "hora": alvo.strftime("%H:%M"),
+                                             "atrasado": agora - alvo > timedelta(minutes=LATE_AFTER_MIN), "fala": msg})
+                        except Exception:  # noqa: BLE001
+                            log.exception("Falha ao mostrar o aviso do lembrete")
                     if _announcer:
-                        msg = f"Atenção, lembrete: {r['texto']}."
                         try:
                             await _announcer(msg)
                         except Exception:  # noqa: BLE001
                             log.exception("Falha ao anunciar lembrete")
             except ValueError:
-                pass
+                # V9.5.6: antes passava em silêncio (o lembrete nunca disparava e ninguém sabia por quê)
+                log.warning("Lembrete com data inválida (%r): %s", r.get("data_hora"), r.get("texto"))
 
     if alterado:
         _save_reminders(rems)

@@ -212,6 +212,19 @@ tools.set_announcer(announce)
 reminders.set_announcer(announce)
 
 
+async def reminder_due(info: dict) -> None:
+    """V9.5.6: o aviso "⏰ LEMBRETE" na central (fica até o senhor tocar em OK ou ADIAR) e a faixa atualiza.
+    Com a central bloqueada, o aviso não mostra o texto (pode ser pessoal)."""
+    private = access.is_restricted()
+    await runtime.manager.broadcast({"type": "reminder_due", "id": info.get("id"), "hora": info.get("hora"),
+                                     "atrasado": info.get("atrasado", False),
+                                     "texto": None if private else info.get("texto")})
+    await runtime.manager.broadcast({"type": "reminders_updated"})
+
+
+reminders.set_due_hook(reminder_due)
+
+
 # V5.1: alarmes avisam a tela e falam a hora; com a central bloqueada, sem o rótulo
 alarms.configure(broadcast=runtime.manager.broadcast, speak=say_quietly, is_restricted=access.is_restricted)
 
