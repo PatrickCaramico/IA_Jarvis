@@ -118,6 +118,10 @@ def test_segunda_chance_nao_interrompe_outra_musica(fake):
 def test_fim_do_briefing_chama_a_segunda_chance(monkeypatch):
     chamadas = []
     monkeypatch.setattr(mm, "start_late", lambda today=None: chamadas.append("late") or True)
+    from modules import briefing_music
+
+    # a sua música "volta" sem falar com o Spotify de verdade
+    monkeypatch.setattr(briefing_music, "resume", lambda paused: chamadas.append("resume") or True)
 
     async def run(mode, paused, canceled):
         m = briefing_flow.Music(mode)
@@ -128,7 +132,7 @@ def test_fim_do_briefing_chama_a_segunda_chance(monkeypatch):
     asyncio.run(run("morning", None, True))  # cancelado: não toca
     asyncio.run(run("afternoon", None, False))  # só no bom dia
     asyncio.run(run("morning", {"device": "x"}, False))  # a sua música volta, não a da manhã
-    assert chamadas == ["late"]
+    assert chamadas == ["late", "resume"]
 
 
 # ------------------------------------------------------------------ V9.5.4: a música entra antes da primeira fala
