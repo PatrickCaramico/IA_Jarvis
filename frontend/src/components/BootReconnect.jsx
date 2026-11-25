@@ -77,6 +77,7 @@ export default function BootReconnect({ probe, launchState, onLaunch, onRetry, o
         <summary>Não está entrando?</summary>
         <p>Com o JARVIS ligado, o Chrome pode barrar este site de falar com o PC: clique no ícone ao lado do endereço › <b>Acesso à rede local</b> › Permitir, e recarregue.</p>
         <p>O botão LIGAR precisa do <b>Instalar-Botao-Ligar.bat</b> rodado uma vez neste PC.</p>
+        <p>Passou de 3 minutos? No PC, abra o <b>Ver-Logs.bat</b>: o motivo da última queda fica em <b>logs\backend-erro.log</b> e o que o PC tentou para religar, em <b>logs\ligar.log</b>.</p>
         <p>Para ele não desligar mais: em <b>Configurações › Diagnóstico &amp; Backup › Inicialização</b>, deixe o <b>Sempre ligado</b> marcado. Ele liga junto com o Windows, volta sozinho se cair e, na tomada, não deixa o PC dormir.</p>
       </details>
     </div>

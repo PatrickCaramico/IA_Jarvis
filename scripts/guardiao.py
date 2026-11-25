@@ -7,6 +7,8 @@ Não religa quando:
   - o JARVIS está ligando ou atualizando (o Iniciar deixa logs/iniciando.flag enquanto trabalha);
   - foi parado de propósito (o Parar-JARVIS.bat encerra o guardião antes);
   - já religou demais (no máximo 4 vezes por hora, com espera crescente: 1, 5 e 15 min entre as tentativas).
+V9.5.2: também religa quando o JARVIS NUNCA respondeu desde que o guardião ligou (caiu logo ao subir, por exemplo
+depois de uma atualização) e o Iniciar já terminou: antes só religava quem já tinha estado no ar.
 Também deixa um "sinal de vida" (logs/guardiao.beat): com ele ativo, o ouvido offline não tenta religar junto.
 Registro em logs/guardiao.log.
 """
@@ -32,6 +34,7 @@ STARTING_GRACE_S = 300  # o Iniciar leva até uns minutos (interface nova, depen
 COOLDOWNS_S = (60, 300, 900)
 MAX_PER_HOUR = 4
 BEAT_FRESH_S = 60
+NEVER_UP_S = 120  # V9.5.2: o Iniciar terminou e o JARVIS não respondeu em 2 min: religa
 
 log = logging.getLogger("jarvis.guardiao")
 
@@ -39,8 +42,9 @@ log = logging.getLogger("jarvis.guardiao")
 class Guardian:
     """Parte pura: decide quando religar."""
 
-    def __init__(self) -> None:
+    def __init__(self, started: Optional[float] = None) -> None:
         self.seen_up = False
+        self.started = started if started is not None else time.time()
         self.down_since: Optional[float] = None
         self.revives: list[float] = []
 
@@ -49,11 +53,19 @@ class Guardian:
             self.seen_up, self.down_since = True, None
             return False
         if not self.seen_up:
-            return False  # nunca esteve no ar desde que o guardião ligou: quem liga é o Iniciar
-        if self.down_since is None:
-            self.down_since = now
-        if now - self.down_since < DOWN_FOR_S:
-            return False
+            # V9.5.2: nunca respondeu desde que o guardião ligou. Antes esperava para sempre (quem liga é o Iniciar);
+            # se o JARVIS caiu logo ao subir, ninguém religava. Agora, com o Iniciar já terminado, espera 2 min.
+            if starting_age is not None and starting_age < STARTING_GRACE_S:
+                return False
+            if self.down_since is None:
+                self.down_since = self.started  # conta desde que o guardião ligou
+            if now - self.down_since < NEVER_UP_S:
+                return False
+        else:
+            if self.down_since is None:
+                self.down_since = now
+            if now - self.down_since < DOWN_FOR_S:
+                return False
         if starting_age is not None and starting_age < STARTING_GRACE_S:
             return False  # ligando/atualizando agora
         self.revives = [t for t in self.revives if now - t < 3600]

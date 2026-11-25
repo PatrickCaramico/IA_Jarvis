@@ -47,7 +47,9 @@ de `data/` para uma pasta temporária: um módulo novo que grava em `data/` entr
   janela), `scripts/guardiao.py` (religa o backend se cair; respeita `logs/iniciando.flag`, que o
   `Iniciar-JARVIS.bat` deixa enquanto liga/atualiza) e a atualização ao abrir a central (`auto_on_open` em
   `/api/system/update/status`, regra em `frontend/src/utils/updateCheck.js`). O `Parar-JARVIS.bat` encerra o
-  guardião primeiro. Mudou o `.bat`? Mantenha CRLF (há teste) e não use `echo texto%var%> arquivo` (vira `2>`).
+  guardião primeiro. V9.5.2: o `.bat` reinstala as bibliotecas quando o `requirements.txt` muda (hash em
+  `venv\.jarvis-req.sha`), o `run_server.py` grava a queda em `logs/backend-erro.log` e, sem resposta, o
+  `scripts/socorro_subida.py` lê o motivo e resolve (biblioteca faltando: instala e religa). Mudou o `.bat`? Mantenha CRLF (há teste) e não use `echo texto%var%> arquivo` (vira `2>`).
 - `core/safe_io.py`: gravação segura; **`read_json`/`write_json`** (cache por data/tamanho, atômico, guarda cópia
   de arquivo corrompido).
 

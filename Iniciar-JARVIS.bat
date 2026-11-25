@@ -61,14 +61,22 @@ if not exist "%BACKEND%\venv\Lib\site-packages\uvicorn" set "NEED_PIP=1"
 if not exist "%BACKEND%\venv\Lib\site-packages\icalendar" set "NEED_PIP=1"
 rem V7.7: certificado da conexao criptografada (https) na rede de casa
 if not exist "%BACKEND%\venv\Lib\site-packages\cryptography" set "NEED_PIP=1"
+rem V9.5.2: uma atualizacao com biblioteca nova derrubava o backend ao ligar (so as 3 acima eram conferidas).
+rem Agora instala sempre que o requirements.txt mudou (impressao digital guardada em venv\.jarvis-req.sha).
+set "REQ_SUM="
+for /f "skip=1 delims=" %%h in ('certutil -hashfile "%BACKEND%\requirements.txt" SHA256 2^>nul') do if not defined REQ_SUM set "REQ_SUM=%%h"
+set "REQ_OLD="
+if exist "%BACKEND%\venv\.jarvis-req.sha" set /p REQ_OLD=<"%BACKEND%\venv\.jarvis-req.sha"
+if defined REQ_SUM if not "%REQ_SUM%"=="%REQ_OLD%" set "NEED_PIP=1"
 if defined NEED_PIP (
   echo  [2/5] Instalando dependencias do backend...
-  "%BACKEND%\venv\Scripts\python.exe" -m pip install -r "%BACKEND%\requirements.txt"
+  "%BACKEND%\venv\Scripts\python.exe" -m pip install --disable-pip-version-check -r "%BACKEND%\requirements.txt"
   if errorlevel 1 (
     echo  [ERRO] Falha ao instalar dependencias do backend.
     pause
     exit /b 1
   )
+  if defined REQ_SUM (> "%BACKEND%\venv\.jarvis-req.sha" echo %REQ_SUM%)
 )
 
 set "PY=%BACKEND%\venv\Scripts\python.exe"
@@ -191,6 +199,12 @@ if exist "%BACKEND%\venv\Scripts\pythonw.exe" (
 
 rem Abre o painel assim que backend e frontend responderem (ate 60 s), sem espera fixa.
 powershell -NoProfile -Command "$d=(Get-Date).AddSeconds(60); while((Get-Date) -lt $d){ try { $null=Invoke-WebRequest -UseBasicParsing -TimeoutSec 2 'http://127.0.0.1:8000/api/health'; $t=New-Object Net.Sockets.TcpClient('127.0.0.1',5173); $t.Close(); exit 0 } catch { Start-Sleep -Milliseconds 250 } }; exit 1"
+rem V9.5.2: nao respondeu? O socorro espera mais um pouco, le o motivo (logs\backend-erro.log) e resolve o que da
+rem (biblioteca faltando: instala e liga de novo). Antes o JARVIS ficava fora do ar em silencio.
+if errorlevel 1 (
+  echo  [!] O JARVIS ainda nao respondeu: conferindo o motivo...
+  "%PY%" "%ROOT%scripts\socorro_subida.py" "%HOST%" "%NETMODE%"
+)
 rem V5.6.2: se uma aba do JARVIS ja estava aberta, ela reconecta sozinha em poucos segundos; nesse caso
 rem nao abre outra (duas abas entrando juntas falavam duas vezes). Palmas (wake) sempre abrem.
 set "TAB_OPEN="
