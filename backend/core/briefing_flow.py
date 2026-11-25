@@ -30,6 +30,10 @@ MUSIC_WAIT_S = 30
 # V9.5.5: a música ainda não entrou depois desse tempo (o Spotify está abrindo): ele avisa antes de esperar
 CONNECT_NOTICE_AFTER_S = 1.5
 CONNECT_SPEECH = "Conectando ao Spotify, senhor."
+# V9.5.7: a música entra em todo briefing que o senhor inicia (antes só no "bom dia", uma vez por dia)
+MUSIC_MODES = ("morning", "afternoon", "evening")
+NOT_CONNECTED_SPEECH = "O Spotify não está conectado, senhor. Sigo o briefing sem música."
+FAILED_SPEECH = "Não consegui tocar no Spotify agora, senhor. Sigo o briefing sem música."
 
 _skip: asyncio.Event | None = None  # existe só enquanto um briefing está passando
 
@@ -105,6 +109,16 @@ def _morning_music_wanted() -> bool:
         return False
 
 
+def _morning_music_skip() -> Optional[str]:
+    from modules import morning_music
+
+    try:
+        return morning_music.skip_reason()
+    except Exception:  # noqa: BLE001
+        log.exception("Não consegui conferir por que a música não toca")
+        return None
+
+
 async def _morning_music_start():
     """V8.14.1: Back in Black baixinho na inicialização do dia (em paralelo: o briefing não espera)."""
     from modules import morning_music
@@ -152,6 +166,7 @@ class Music:
         self.pause_done = asyncio.Event()
         self.ready = asyncio.Event()  # V9.5.4: a música da manhã já entrou (ou não vai entrar)
         self.trying = False  # V9.5.5: a música da manhã vai mesmo tentar tocar (Spotify conectado, ainda não tocou hoje)
+        self.skip: Optional[str] = None  # V9.5.7: por que não vai tocar ("off", "silent", "not_connected")
         self.task: Optional[asyncio.Task] = None
 
     async def _run(self) -> None:
@@ -161,8 +176,9 @@ class Music:
             self.pause_done.set()
         # a música da manhã (Back in Black) não entra no lugar da sua: só quando não havia nada tocando
         try:
-            if self.mode == "morning" and not self.paused:
+            if self.mode in MUSIC_MODES and not self.paused:
                 self.trying = _morning_music_wanted()
+                self.skip = None if self.trying else _morning_music_skip()
                 if self.trying:
                     self.plan = await _morning_music_start()
         finally:
@@ -177,10 +193,11 @@ class Music:
 
         V9.5.5: se ela ainda não entrou depois de um instante (o Spotify está abrindo), avisa "Conectando ao
         Spotify, senhor." e espera; o briefing começa com a música já tocando."""
-        if self.mode != "morning":
+        if self.mode not in MUSIC_MODES:
             return
         try:
             await asyncio.wait_for(asyncio.shield(self.ready.wait()), timeout=CONNECT_NOTICE_AFTER_S)
+            await self._explain(say)
             return
         except asyncio.TimeoutError:
             pass
@@ -190,6 +207,16 @@ class Music:
             await asyncio.wait_for(self.ready.wait(), timeout=max(0.0, timeout - CONNECT_NOTICE_AFTER_S))
         except asyncio.TimeoutError:
             log.warning("Briefing: a música da manhã não entrou a tempo; começo a falar sem ela.")
+        await self._explain(say)
+
+    async def _explain(self, say) -> None:
+        """V9.5.7: a música não entrou: diz por quê (antes ficava calado e parecia que ele nem tentou)."""
+        if say is None or not self.ready.is_set() or self.plan is not None or self.paused:
+            return
+        if self.trying:
+            await say(FAILED_SPEECH)
+        elif self.skip == "not_connected":
+            await say(NOT_CONNECTED_SPEECH)
 
     async def wait_pause(self, timeout: float = 7.0) -> None:
         try:
@@ -207,14 +234,18 @@ class Music:
             log.exception("Música do briefing não terminou de começar")
         if self.plan is not None:
             try:
-                await asyncio.wait_for(asyncio.to_thread(morning_music.finish, self.plan, canceled), timeout=20)
+                await asyncio.wait_for(asyncio.to_thread(morning_music.finish, self.plan, canceled,
+                                                         target=morning_music.evening_volume() if self.mode == "evening" else None),
+                                       timeout=20)
             except Exception:  # noqa: BLE001
                 log.exception("Música da manhã não terminou")
-        elif self.mode == "morning" and not self.paused and not canceled:
+        elif self.mode in MUSIC_MODES and not self.paused and not canceled:
             # V9.5.4: a música da manhã não começou junto (Spotify ainda abrindo ou rede chegando, logo depois de
             # ligar o PC). Antes ficava sem música; agora tenta de novo no fim, já no volume de depois do briefing.
             try:
-                await asyncio.wait_for(asyncio.to_thread(morning_music.start_late), timeout=40)
+                await asyncio.wait_for(asyncio.to_thread(morning_music.start_late, None,
+                                                         morning_music.evening_volume() if self.mode == "evening" else None),
+                                       timeout=40)
             except Exception:  # noqa: BLE001
                 log.exception("Música da manhã não tocou nem no fim do briefing")
         if self.paused:  # V8.15.1: a sua música continua de onde parou
@@ -232,7 +263,7 @@ async def run_sequence(message: str, turn: int, data: dict, max_history: int, mu
     music = music or start_music(data.get("mode", ""))
     await music.wait_pause()  # V8.15.1: a sua música pausa antes de ele começar a ler
     # V9.5.4/V9.5.5: no "bom dia", a música da manhã entra antes da primeira fala ("Conectando ao Spotify" se demorar)
-    await music.wait_ready(say=None if prefs.is_silent_mode() else _say)
+    await music.wait_ready(say=None if prefs.is_silent_mode() else _say_or_skip)  # V9.5.7: o PRÓXIMO pula o aviso
     if data.get("mode") in ("morning", "afternoon", "evening"):
         try:  # V5.4: "bom dia" pedido por voz também conta: a próxima entrada não repete o briefing
             from modules import entry_greeting

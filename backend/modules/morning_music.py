@@ -54,6 +54,24 @@ class Plan:
         self.song, self.device_id, self.uri, self.playing, self.deferred = song, device_id, uri, playing, deferred
 
 
+def skip_reason() -> Optional[str]:
+    """V9.5.7: por que a música do briefing não vai tocar (para ele dizer em vez de ficar calado), ou None."""
+    data = prefs.get_all()
+    if not data.get("intro_song_morning", True):
+        return "off"
+    if data.get("silent_mode"):
+        return "silent"
+    if not spotify.connected():
+        # só avisa quem configurou o Spotify no JARVIS (quem nunca usou não ouve aviso a cada briefing)
+        return "not_connected" if spotify.configured() else "not_configured"
+    return None
+
+
+def evening_volume() -> int:
+    """V9.5.7: no "boa noite", a música termina no volume do painel VOZ (sem subir até 80 de noite)."""
+    return max(BACKGROUND_VOLUME, min(100, _int(prefs.get_all().get("music_volume"), NORMAL_VOLUME)))
+
+
 def wanted(today: Optional[date] = None) -> Optional[str]:
     """A música a tocar nesta manhã, ou None (desligado, silencioso, sem Spotify ou já tocou hoje)."""
     data = prefs.get_all()
@@ -68,11 +86,8 @@ def wanted(today: Optional[date] = None) -> Optional[str]:
     if not spotify.connected():
         log.info("Música da manhã: o Spotify não está conectado (Fontes de Dados > Spotify).")
         return None
-    # V9.5.5: a marca nova só é gravada depois de tocar de verdade (a antiga, intro_song_morning_day, era gravada
-    # antes e uma tentativa que falhou bloqueava a música do dia; ela é ignorada daqui em diante)
-    if data.get("intro_song_morning_ok_day") == today.isoformat():
-        log.info("Música da manhã: já tocou hoje.")
-        return None
+    # V9.5.7: sem o "uma vez por dia": todo briefing que o senhor iniciar (bom dia, boa tarde, boa noite) toca a música.
+    # Antes, depois da primeira vez no dia, os próximos "bom dia" ficavam sem música e sem aviso.
     return (data.get("intro_song") or DEFAULT_SONG).strip() or None
 
 
@@ -111,7 +126,7 @@ def _mark_played(today: Optional[date] = None) -> None:
     prefs.update(intro_song_morning_ok_day=(today or date.today()).isoformat())
 
 
-def start_late(today: Optional[date] = None) -> bool:
+def start_late(today: Optional[date] = None, volume: Optional[int] = None) -> bool:
     """V9.5.4: segunda chance no FIM do briefing, quando a música não começou junto com ele (logo depois de ligar o
     PC, o Spotify ainda está abrindo ou a rede chegando). Toca já no volume de depois do briefing. True se tocou."""
     song = wanted(today)
@@ -126,14 +141,14 @@ def start_late(today: Optional[date] = None) -> bool:
         if now.get("state") == "playing":
             # a primeira tentativa pode ter conseguido depois do prazo: só sobe o volume da mesma música
             if (now.get("title") or "").lower() == (track.get("name") or "").lower():
-                spotify.set_volume(target_volume())
+                spotify.set_volume(volume or target_volume())
                 _mark_played(today)
                 return True
             log.info("Música da manhã: já tem outra música tocando; não interrompo.")
             return False
         device_id = spotify.ensure_device(wait_s=DEVICE_WAIT_S, prefer_computer=True)
         try:
-            spotify.set_volume(target_volume(), device_id)
+            spotify.set_volume(volume or target_volume(), device_id)
         except Exception:  # noqa: BLE001 - aparelho sem controle de volume: toca no volume dele
             log.info("Música da manhã: o aparelho não deixa mudar o volume.")
         spotify._play({"uris": [track["uri"]]}, device_id=device_id)
@@ -147,7 +162,7 @@ def start_late(today: Optional[date] = None) -> bool:
     return False
 
 
-def finish(plan: Optional[Plan], canceled: bool = False, sleep=time.sleep) -> None:
+def finish(plan: Optional[Plan], canceled: bool = False, sleep=time.sleep, target: Optional[int] = None) -> None:
     """Fim do briefing (thread): sobe o volume aos poucos, ou toca agora a que esperou."""
     if plan is None:
         return
@@ -157,7 +172,7 @@ def finish(plan: Optional[Plan], canceled: bool = False, sleep=time.sleep) -> No
                 spotify._play({"uris": [plan.uri]}, device_id=plan.device_id)
             return
         if plan.playing:
-            target = target_volume()
+            target = target if target is not None else target_volume()  # V9.5.7: "boa noite" termina mais baixo
             for vol in range(BACKGROUND_VOLUME + 10, target + 1, 10):
                 sleep(0.6)
                 spotify.set_volume(vol, plan.device_id)

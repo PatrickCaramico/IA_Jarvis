@@ -41,12 +41,11 @@ def test_sem_preferir_o_pc_continua_como_antes(monkeypatch):
 
 
 # ------------------------------------------------------------------ a marca antiga não bloqueia mais
-def test_marca_antiga_gravada_antes_de_tocar_e_ignorada(monkeypatch):
+def test_marcas_de_ja_tocou_hoje_nao_bloqueiam(monkeypatch):
+    # V9.5.7: nenhuma marca do dia bloqueia mais (toca em todo briefing que o senhor iniciar)
     monkeypatch.setattr(spotify, "connected", lambda: True)
-    prefs.update(intro_song_morning_day=TODAY.isoformat(), intro_song_morning_ok_day="")
-    assert mm.wanted(TODAY)  # pode tocar hoje
-    prefs.update(intro_song_morning_ok_day=TODAY.isoformat())
-    assert mm.wanted(TODAY) is None  # só a marca de quando tocou de verdade conta
+    prefs.update(intro_song_morning_day=TODAY.isoformat(), intro_song_morning_ok_day=TODAY.isoformat())
+    assert mm.wanted(TODAY)
 
 
 # ------------------------------------------------------------------ "Conectando ao Spotify" antes do briefing

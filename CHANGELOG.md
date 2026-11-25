@@ -2,6 +2,18 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 9.5.7 — 25 de novembro de 2026
+
+**🎸 Música em todo briefing que o senhor iniciar**
+- **Bom dia, boa tarde e boa noite** (pelos botões ou por voz) agora tentam abrir o Spotify e começar a música antes da primeira fala.
+  - Antes só o "bom dia" tinha música, e só uma vez por dia: depois da primeira, os próximos ficavam sem música e sem nenhum aviso.
+- **Quando não dá, ele diz por quê,** em vez de ficar calado:
+  - "O Spotify não está conectado, senhor. Sigo o briefing sem música."
+  - "Não consegui tocar no Spotify agora, senhor. Sigo o briefing sem música."
+  - O aviso só sai para quem configurou o Spotify no JARVIS, e o PRÓXIMO pula o aviso.
+- **No "boa noite", a música termina no volume do painel VOZ,** sem subir até 80 de noite.
+- As telas por assunto ("notícias", "agenda"…) continuam sem música.
+
 ## 9.5.6 — 25 de novembro de 2026
 
 **⏰ Lembrete avisa quando vence**
