@@ -2,6 +2,22 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 9.5.4 — 25 de novembro de 2026
+
+**☀ Briefing do dia logo depois de ligar o PC**
+- **O briefing não "pula" mais partes quando a voz falha.**
+  - Logo depois de ligar o PC, o serviço de voz às vezes ainda não responde. Antes, a parte passava na hora: clima, agenda e e-mails voavam pela tela e o briefing parecia ir direto para as notícias.
+  - Agora ele tenta falar de novo e, se ainda não der, deixa o cartão na tela o tempo de ler antes de seguir.
+- **A música da manhã ganha uma segunda chance.**
+  - Se ela não começar junto com o briefing (Spotify ainda abrindo ou rede chegando), toca no fim, já no volume de depois do briefing.
+  - Se a primeira tentativa tocou atrasada, ele só sobe o volume, sem tocar de novo por cima. E nunca interrompe outra música que estiver tocando.
+- **Uma falha não cancela mais a música do dia.** Antes, o dia ficava marcado como "já tocou" antes de a música tocar de verdade.
+
+**⟳ Atualizar por voz**
+- Com o aviso "chegou a versão nova, atualizo sozinho em dois minutos" na tela, **"pode atualizar"** ou **"atualiza agora"** agora funcionam, como o botão ATUALIZAR AGORA. Antes ele não entendia o pedido.
+- **"Adia a atualização"** ou **"atualiza depois"** funcionam como o ADIAR 1 H.
+- Sem aviso, **"atualiza o JARVIS"** confere se há versão nova e atualiza; se não houver, diz que já está em dia. Só no próprio PC, como o botão ATUALIZAR.
+
 ## 9.5.3 — 25 de novembro de 2026
 
 **⟳ Atualizar mesmo com o JARVIS fora do ar**

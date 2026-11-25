@@ -57,11 +57,13 @@ async def interrupt() -> None:
     log.info("Fala interrompida por um pedido novo.")
 
 
-async def speak(text: str, release_busy: bool = True, idle_after: bool = True) -> None:
+async def speak(text: str, release_busy: bool = True, idle_after: bool = True) -> bool:
     """Sintetiza e toca a voz, mantendo o frontend informado sobre cada fase.
 
     idle_after=False (V4.3, briefing em etapas): não volta a tela para "em espera" entre uma parte e outra.
+    V9.5.4: devolve False quando a voz falhou (o briefing segura o cartão em vez de pular para o próximo).
     """
+    ok = True
     turn = session.turn_id
     current = asyncio.current_task()
     if release_busy and current is not None:
@@ -74,7 +76,7 @@ async def speak(text: str, release_busy: bool = True, idle_after: bool = True) -
                 session.busy = False
             if idle_after:
                 await runtime.manager.broadcast({"type": "state", "state": "idle"})
-        return
+        return True
 
     await runtime.manager.broadcast({"type": "step", "step": "tts", "status": "active"})
 
@@ -110,6 +112,7 @@ async def speak(text: str, release_busy: bool = True, idle_after: bool = True) -
     except asyncio.CancelledError:
         raise  # cancelado pelo usuário: o /api/cancel já cuidou do estado da tela
     except Exception:  # noqa: BLE001
+        ok = False
         log.exception("Falha na síntese de voz")
         await runtime.manager.broadcast({"type": "step", "step": "tts", "status": "error"})
         # V7.4.2: mensagem em português (antes vinha o texto técnico da Microsoft, em inglês)
@@ -121,6 +124,7 @@ async def speak(text: str, release_busy: bool = True, idle_after: bool = True) -
                 session.busy = False
             if idle_after:
                 await runtime.manager.broadcast({"type": "state", "state": "idle"})
+    return ok
 
 
 async def speak_after(first: asyncio.Task, rest: str) -> None:

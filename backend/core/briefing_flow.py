@@ -44,6 +44,10 @@ def skip() -> bool:
     return True
 
 
+VOICE_RETRY_S = 1.5  # V9.5.4: espera antes de tentar falar a parte de novo
+MAX_READ_S = 15.0  # V9.5.4: sem voz, o cartão fica no máximo esse tempo na tela
+
+
 async def _say(text: str) -> None:
     if not text:
         await asyncio.sleep(0.8)
@@ -51,7 +55,18 @@ async def _say(text: str) -> None:
     if prefs.is_silent_mode():
         await asyncio.sleep(SILENT_STEP_SECONDS)
         return
-    await speech.speak(text, release_busy=False, idle_after=False)
+    if await speech.speak(text, release_busy=False, idle_after=False) is not False:
+        return
+    # V9.5.4: a voz falhou (logo depois de ligar o PC, o serviço de voz às vezes ainda não responde). Antes a parte
+    # passava na hora: clima, agenda e e-mails voavam pela tela e o briefing "pulava" direto para as notícias.
+    # Agora tenta de novo e, se ainda não der, deixa o cartão na tela o tempo de ler.
+    log.warning("Briefing: a voz falhou nesta parte; tentando de novo.")
+    await asyncio.sleep(VOICE_RETRY_S)
+    if await speech.speak(text, release_busy=False, idle_after=False) is not False:
+        return
+    from core import voice_route
+
+    await asyncio.sleep(min(MAX_READ_S, voice_route.estimate_seconds(text)))
 
 
 async def _say_or_skip(text: str) -> None:
@@ -150,6 +165,13 @@ class Music:
                 await asyncio.wait_for(asyncio.to_thread(morning_music.finish, self.plan, canceled), timeout=20)
             except Exception:  # noqa: BLE001
                 log.exception("Música da manhã não terminou")
+        elif self.mode == "morning" and not self.paused and not canceled:
+            # V9.5.4: a música da manhã não começou junto (Spotify ainda abrindo ou rede chegando, logo depois de
+            # ligar o PC). Antes ficava sem música; agora tenta de novo no fim, já no volume de depois do briefing.
+            try:
+                await asyncio.wait_for(asyncio.to_thread(morning_music.start_late), timeout=40)
+            except Exception:  # noqa: BLE001
+                log.exception("Música da manhã não tocou nem no fim do briefing")
         if self.paused:  # V8.15.1: a sua música continua de onde parou
             await _resume_music(self.paused)
 

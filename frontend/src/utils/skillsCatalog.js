@@ -22,6 +22,7 @@ export const GROUPS = {
   tela_de_bloqueio: { label: "Tela de bloqueio", icon: "🔒", order: 15 }, // V9.4
   analisar_imagem: { label: "Imagens", icon: "🖼", order: 16 }, // V9.4
   modo_gravar: { label: "Modo gravar", icon: "⏺", order: 17 }, // V9.4
+  atualizar: { label: "Atualizar", icon: "⟳", order: 18 }, // V9.5.4
   inicializacao: { label: "Inicialização", icon: "🚀", order: 70 },
   microfone: { label: "Microfone", icon: "🎙", order: 65 },
   habilidades: { label: "Central", icon: "⚡", order: 80 },

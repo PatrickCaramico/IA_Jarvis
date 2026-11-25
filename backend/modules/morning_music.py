@@ -76,19 +76,61 @@ def start(today: Optional[date] = None) -> Optional[Plan]:
             log.info("Música da manhã: não achei %s no Spotify.", song)
             return None
         device_id = spotify.ensure_device()
-        prefs.update(intro_song_morning_day=(today or date.today()).isoformat())
         try:
             spotify.set_volume(BACKGROUND_VOLUME, device_id)
         except Exception:  # noqa: BLE001 - aparelho sem controle de volume: toca depois do briefing
             log.info("Música da manhã: o aparelho não deixa baixar o volume; toco no fim do briefing.")
+            _mark_played(today)
             return Plan(song, device_id, track["uri"], deferred=True)
         spotify._play({"uris": [track["uri"]]}, device_id=device_id)
+        # V9.5.4: o dia só fica marcado depois de tocar (antes marcava antes, e uma falha no meio cancelava o dia)
+        _mark_played(today)
         return Plan(song, device_id, track["uri"], playing=True)
     except spotify.SpotifyError as exc:
         log.info("Música da manhã não tocou: %s", exc.code)
     except Exception:  # noqa: BLE001 - a música nunca atrapalha o briefing
         log.exception("Música da manhã falhou")
     return None
+
+
+def _mark_played(today: Optional[date] = None) -> None:
+    prefs.update(intro_song_morning_day=(today or date.today()).isoformat())
+
+
+def start_late(today: Optional[date] = None) -> bool:
+    """V9.5.4: segunda chance no FIM do briefing, quando a música não começou junto com ele (logo depois de ligar o
+    PC, o Spotify ainda está abrindo ou a rede chegando). Toca já no volume de depois do briefing. True se tocou."""
+    song = wanted(today)
+    if not song:
+        return False
+    try:
+        now = spotify.now_playing()
+        track = spotify.find_track(song)
+        if not track:
+            log.info("Música da manhã (fim do briefing): não achei %s no Spotify.", song)
+            return False
+        if now.get("state") == "playing":
+            # a primeira tentativa pode ter conseguido depois do prazo: só sobe o volume da mesma música
+            if (now.get("title") or "").lower() == (track.get("name") or "").lower():
+                spotify.set_volume(target_volume())
+                _mark_played(today)
+                return True
+            log.info("Música da manhã: já tem outra música tocando; não interrompo.")
+            return False
+        device_id = spotify.ensure_device()
+        try:
+            spotify.set_volume(target_volume(), device_id)
+        except Exception:  # noqa: BLE001 - aparelho sem controle de volume: toca no volume dele
+            log.info("Música da manhã: o aparelho não deixa mudar o volume.")
+        spotify._play({"uris": [track["uri"]]}, device_id=device_id)
+        _mark_played(today)
+        log.info("Música da manhã tocou no fim do briefing (não tinha começado junto).")
+        return True
+    except spotify.SpotifyError as exc:
+        log.info("Música da manhã (fim do briefing) não tocou: %s", exc.code)
+    except Exception:  # noqa: BLE001 - a música nunca atrapalha
+        log.exception("Música da manhã (fim do briefing) falhou")
+    return False
 
 
 def finish(plan: Optional[Plan], canceled: bool = False, sleep=time.sleep) -> None:
