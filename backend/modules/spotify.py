@@ -129,11 +129,39 @@ def _launch_app() -> bool:
         return False
 
 
-def ensure_device(launch: bool = True, wait_s: float = DEVICE_WAIT_S, sleep=time.sleep) -> str:
+def _computer(items: list[dict]) -> dict | None:
+    """O Spotify deste PC (tipo "Computer"), se estiver aberto."""
+    return next((d for d in items if d.get("id") and not d.get("is_restricted")
+                 and (d.get("type") or "").lower() == "computer"), None)
+
+
+def ensure_device(launch: bool = True, wait_s: float = DEVICE_WAIT_S, sleep=time.sleep, prefer_computer: bool = False) -> str:
     """V8.13.2: id do aparelho onde tocar. Antes o JARVIS mandava tocar "em lugar nenhum" e o Spotify recusava
     (404, sem aparelho ativo) quando o app estava fechado ou parado havia um tempo. Agora escolhe um aparelho e,
-    sem nenhum, abre o Spotify do PC e espera ele aparecer."""
-    found = pick_device(devices())
+    sem nenhum, abre o Spotify do PC e espera ele aparecer.
+
+    V9.5.5 (prefer_computer, música da manhã): com o Spotify do celular aberto, o JARVIS escolhia o celular e nem
+    abria o programa no PC (a música do "bom dia" não tocava aqui). Agora abre o do PC e espera por ele; só se ele
+    não aparecer a tempo usa outro aparelho."""
+    items = devices()
+    if prefer_computer:
+        pc = _computer(items)
+        if pc:
+            return pc["id"]
+        if launch and _launch_app():
+            deadline = time.monotonic() + wait_s
+            while time.monotonic() < deadline:
+                sleep(1.0)
+                items = devices()
+                pc = _computer(items)
+                if pc:
+                    return pc["id"]
+            log.warning("O Spotify do PC não apareceu em %.0f s; uso outro aparelho, se houver.", wait_s)
+        found = pick_device(items)
+        if found:
+            return found["id"]
+        raise SpotifyError("no_device", NO_DEVICE_MSG)
+    found = pick_device(items)
     if found:
         return found["id"]
     if launch and _launch_app():

@@ -786,3 +786,14 @@ html.is-eco .hl-root { animation: none; }
 .lr .rx-custom.rx-reator > .arc-hud { filter: hue-rotate(var(--rx-hue)) contrast(var(--rx-contrast)); }
 .lr .rx-custom.rx-reator > .arc-hud.snt-hud { filter: hue-rotate(var(--rx-hue)) contrast(var(--rx-contrast)) brightness(0.92); }
 .br-update { border-color: rgba(251, 191, 36, 0.55) !important; color: #fde68a !important; } /* V9.5.3: ⟳ ATUALIZAR E LIGAR */
+
+/* V9.5.5: Canal Ativo maior e com letra maior (estava pequeno e difícil de ler na coluna da direita) */
+@media (min-width: 761px) {
+  .hl-right .hl-channel { min-height: clamp(280px, 40vh, 480px); }
+}
+.hl-channel .hl-msg { font-size: 1.08rem; line-height: 1.5; }
+.hl-channel .hl-msg.user { font-size: 0.98rem; }
+.hl-channel .hl-msg b { font-size: 0.62rem; }
+.hl-peek-big { margin-left: 6px; }
+/* ⤢ AMPLIAR: janela maior, com a conversa recente inteira */
+.cpk.is-pinned { width: min(620px, calc(100vw - 32px)); max-height: min(72vh, 720px); }

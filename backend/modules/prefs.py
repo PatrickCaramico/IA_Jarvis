@@ -79,6 +79,7 @@ _DEFAULTS: dict[str, Any] = {
     "briefing_pause_music": True,         # V8.15.1: pausa o Spotify enquanto o briefing é lido (e retoma no fim)
     "briefing_end_volume": 80,            # V9.4: no fim do briefing do dia, a música sobe até aqui (se for mais que music_volume)
     "intro_song_morning_day": "",         # V8.14.1: dia (AAAA-MM-DD) em que já tocou de manhã (uma vez por dia)
+    "intro_song_morning_ok_day": "",      # V9.5.5: dia em que TOCOU de verdade (a marca antiga era gravada antes de tocar)
     "fan_intro_playlist_uri": "",         # playlist própria com o Modo Torcedor ativo
     "lock_backend_enforce": True,         # bloqueio real: rotas pessoais respondem 403 bloqueado
     "lock_guest_enabled": False,          # botão "Modo visitante" na tela de bloqueio

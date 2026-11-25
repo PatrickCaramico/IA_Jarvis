@@ -27,6 +27,9 @@ SILENT_STEP_SECONDS = 2.5  # no modo silencioso, tempo de cada card na tela
 # ficar preso: sem Spotify, ele fala na hora (e a música tenta de novo no fim).
 MUSIC_START_TIMEOUT_S = 35
 MUSIC_WAIT_S = 30
+# V9.5.5: a música ainda não entrou depois desse tempo (o Spotify está abrindo): ele avisa antes de esperar
+CONNECT_NOTICE_AFTER_S = 1.5
+CONNECT_SPEECH = "Conectando ao Spotify, senhor."
 
 _skip: asyncio.Event | None = None  # existe só enquanto um briefing está passando
 
@@ -91,6 +94,17 @@ async def _say_or_skip(text: str) -> None:
         await asyncio.gather(talk, skipped, return_exceptions=True)
 
 
+def _morning_music_wanted() -> bool:
+    """V9.5.5: a música da manhã vai tentar tocar? (rápido: só preferências e se o Spotify está conectado)"""
+    from modules import morning_music
+
+    try:
+        return bool(morning_music.wanted())
+    except Exception:  # noqa: BLE001
+        log.exception("Não consegui conferir a música da manhã")
+        return False
+
+
 async def _morning_music_start():
     """V8.14.1: Back in Black baixinho na inicialização do dia (em paralelo: o briefing não espera)."""
     from modules import morning_music
@@ -137,6 +151,7 @@ class Music:
         self.plan = None
         self.pause_done = asyncio.Event()
         self.ready = asyncio.Event()  # V9.5.4: a música da manhã já entrou (ou não vai entrar)
+        self.trying = False  # V9.5.5: a música da manhã vai mesmo tentar tocar (Spotify conectado, ainda não tocou hoje)
         self.task: Optional[asyncio.Task] = None
 
     async def _run(self) -> None:
@@ -147,7 +162,9 @@ class Music:
         # a música da manhã (Back in Black) não entra no lugar da sua: só quando não havia nada tocando
         try:
             if self.mode == "morning" and not self.paused:
-                self.plan = await _morning_music_start()
+                self.trying = _morning_music_wanted()
+                if self.trying:
+                    self.plan = await _morning_music_start()
         finally:
             self.ready.set()
 
@@ -155,12 +172,22 @@ class Music:
         self.task = runtime.track(self._run())
         return self
 
-    async def wait_ready(self, timeout: float = MUSIC_WAIT_S) -> None:
-        """V9.5.4: no "bom dia", espera a música da manhã entrar antes de começar a falar (com limite)."""
+    async def wait_ready(self, timeout: float = MUSIC_WAIT_S, say=None) -> None:
+        """V9.5.4: no "bom dia", espera a música da manhã entrar antes de começar a falar (com limite).
+
+        V9.5.5: se ela ainda não entrou depois de um instante (o Spotify está abrindo), avisa "Conectando ao
+        Spotify, senhor." e espera; o briefing começa com a música já tocando."""
         if self.mode != "morning":
             return
         try:
-            await asyncio.wait_for(self.ready.wait(), timeout=timeout)
+            await asyncio.wait_for(asyncio.shield(self.ready.wait()), timeout=CONNECT_NOTICE_AFTER_S)
+            return
+        except asyncio.TimeoutError:
+            pass
+        if self.trying and say is not None:
+            await say(CONNECT_SPEECH)
+        try:
+            await asyncio.wait_for(self.ready.wait(), timeout=max(0.0, timeout - CONNECT_NOTICE_AFTER_S))
         except asyncio.TimeoutError:
             log.warning("Briefing: a música da manhã não entrou a tempo; começo a falar sem ela.")
 
@@ -204,7 +231,8 @@ async def run_sequence(message: str, turn: int, data: dict, max_history: int, mu
     _skip = asyncio.Event()
     music = music or start_music(data.get("mode", ""))
     await music.wait_pause()  # V8.15.1: a sua música pausa antes de ele começar a ler
-    await music.wait_ready()  # V9.5.4: no "bom dia", a música da manhã entra antes da primeira fala
+    # V9.5.4/V9.5.5: no "bom dia", a música da manhã entra antes da primeira fala ("Conectando ao Spotify" se demorar)
+    await music.wait_ready(say=None if prefs.is_silent_mode() else _say)
     if data.get("mode") in ("morning", "afternoon", "evening"):
         try:  # V5.4: "bom dia" pedido por voz também conta: a próxima entrada não repete o briefing
             from modules import entry_greeting
