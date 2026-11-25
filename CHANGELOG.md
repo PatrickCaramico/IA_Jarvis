@@ -12,6 +12,11 @@ Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 - **Uma tentativa que falhou não bloqueia mais a música do dia.** A versão anterior marcava "já tocou hoje" antes de tocar de verdade; essa marca antiga passa a ser ignorada.
 - **O motivo de a música não tocar vai para o log:** desligada no painel VOZ, modo silencioso, Spotify não conectado ou já tocou hoje.
 
+**💬 Respostas fáceis de ler**
+- **Toda resposta nova abre a janela de transcrição, mesmo sem voz.** Antes ela só abria com a voz tocando; quando ele não falava (voz falhou, modo silencioso, voz no celular), a resposta aparecia só no Canal Ativo pequeno. Agora ela fica aberta o tempo de ler (de 8 a 30 segundos, conforme o tamanho) e aparece com o selo RESPOSTA.
+- **Canal Ativo maior e com letra maior** (antes ficava com uns 170 pixels de altura na coluna da direita).
+- **Botão ⤢ AMPLIAR** no Canal Ativo: abre a conversa recente numa janela grande, que fica aberta até o senhor fechar no ✕.
+
 ## 9.5.4 — 25 de novembro de 2026
 
 **☀ Briefing do dia logo depois de ligar o PC**

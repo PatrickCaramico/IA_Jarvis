@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { CLOSE_AFTER_MS, EXIT_MS, recentMessages, wantsPeek } from "../utils/chatPeek.js";
+import { CLOSE_AFTER_MS, EXIT_MS, newReply, readMs, recentMessages, wantsPeek } from "../utils/chatPeek.js";
 
 // V9.4.5: TRANSCRIÇÃO AO VIVO. Quando o JARVIS fala, a conversa abre numa janela de vidro maior (com animação de
 // entrada e de saída) e fecha sozinha 7 s depois que ele termina. Passar o mouse segura aberta; ✕ fecha até a
@@ -19,7 +19,32 @@ export default function ChatPeek({
   TextComp = null, // o "digitando" do Canal Ativo (Typed), para a resposta aparecer igual
   onOpenChat = null,
 }) {
-  const want = wantsPeek({ enabled, speaking, streaming: Boolean(streamText), listening, zen, briefing });
+  // V9.5.5: resposta nova abre a janela mesmo sem voz (fica o tempo de ler); ⤢ AMPLIAR deixa fixa
+  const seenRef = useRef(null);
+  if (seenRef.current === null) seenRef.current = log.length ? log[log.length - 1].id : ""; // as de antes não abrem
+  const [freshUntil, setFreshUntil] = useState(0);
+  const [pinned, setPinned] = useState(false);
+  useEffect(() => {
+    const reply = newReply(log, seenRef.current);
+    if (!reply) return;
+    seenRef.current = reply.id;
+    setFreshUntil(Date.now() + readMs(reply.text));
+  }, [log]);
+  useEffect(() => {
+    if (!freshUntil) return undefined;
+    const t = setTimeout(() => setFreshUntil(0), Math.max(0, freshUntil - Date.now()));
+    return () => clearTimeout(t);
+  }, [freshUntil]);
+  useEffect(() => {
+    const open = () => {
+      setPinned(true);
+      setDismissed(false); // ⤢ AMPLIAR sempre abre, mesmo depois de fechar no ✕
+    };
+    window.addEventListener("jarvis-chat-peek-open", open);
+    return () => window.removeEventListener("jarvis-chat-peek-open", open);
+  }, []);
+  const fresh = freshUntil > 0;
+  const want = wantsPeek({ enabled, speaking, streaming: Boolean(streamText), listening, zen, briefing, fresh, pinned });
   const [phase, setPhase] = useState("hidden"); // hidden | open | closing
   const [dismissed, setDismissed] = useState(false);
   const [hover, setHover] = useState(false);
@@ -29,6 +54,11 @@ export default function ChatPeek({
   useEffect(() => {
     if (!want) setDismissed(false);
   }, [want]);
+  const close = () => {
+    setDismissed(true);
+    setPinned(false);
+    setFreshUntil(0);
+  };
 
   useEffect(() => {
     if (want && !dismissed) {
@@ -47,7 +77,7 @@ export default function ChatPeek({
     return () => clearTimeout(t);
   }, [phase]);
 
-  const msgs = recentMessages(log, 4);
+  const msgs = recentMessages(log, pinned ? 12 : 4); // ampliada: a conversa recente inteira
   const last = msgs[msgs.length - 1];
   // a última linha acompanha o texto: rola para o fim quando muda
   useEffect(() => {
@@ -56,11 +86,11 @@ export default function ChatPeek({
   }, [last?.id, streamText, interim, phase]);
 
   if (phase === "hidden") return null;
-  const tag = listening ? "OUVINDO" : speaking ? "FALANDO" : streamText ? "ESCREVENDO" : "PRONTO";
+  const tag = listening ? "OUVINDO" : speaking ? "FALANDO" : streamText ? "ESCREVENDO" : fresh ? "RESPOSTA" : "PRONTO";
 
   return (
     <section
-      className={`cpk${phase === "closing" ? " cpk-out" : ""}${speaking || streamText ? " is-live" : ""}`}
+      className={`cpk${phase === "closing" ? " cpk-out" : ""}${speaking || streamText ? " is-live" : ""}${pinned ? " is-pinned" : ""}`}
       aria-label="Transcrição da conversa"
       data-testid="chat-peek"
       onMouseEnter={() => setHover(true)}
@@ -74,11 +104,11 @@ export default function ChatPeek({
           <span className="cpk-wave" aria-hidden="true"><i /><i /><i /><i /></span>
         )}
         {onOpenChat && (
-          <button type="button" className="cpk-btn" onClick={() => { onOpenChat(); setDismissed(true); }} title="Abrir o Canal Ativo com a conversa toda">
+          <button type="button" className="cpk-btn" onClick={() => { onOpenChat(); close(); }} title="Abrir o Canal Ativo com a conversa toda">
             CHAT
           </button>
         )}
-        <button type="button" className="cpk-btn cpk-x" onClick={() => setDismissed(true)} aria-label="Fechar a transcrição">✕</button>
+        <button type="button" className="cpk-btn cpk-x" onClick={close} aria-label="Fechar a transcrição">✕</button>
       </header>
       <div className="cpk-body" ref={bodyRef} aria-live="polite">
         {msgs.map((m) => (

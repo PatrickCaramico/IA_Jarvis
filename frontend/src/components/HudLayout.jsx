@@ -1407,6 +1407,11 @@ export default function HudLayout({
             title={peekOn ? "A conversa abre numa janela maior quando o JARVIS fala. Toque para desligar." : "Toque para a conversa abrir numa janela maior quando o JARVIS falar."}>
             ◉ TRANSCRIÇÃO {peekOn ? "LIGADA" : "DESLIGADA"}
           </button>
+          {/* V9.5.5: a conversa numa janela grande, para ler com calma (fica aberta até fechar) */}
+          <button type="button" className="hl-peek-toggle hl-peek-big" onClick={() => window.dispatchEvent(new CustomEvent("jarvis-chat-peek-open"))}
+            title="Abrir a conversa numa janela grande">
+            ⤢ AMPLIAR
+          </button>
           {log.length > 0 && <ChatClear api={api} />}
           <div className="hl-messages" ref={listRef} aria-live="polite" aria-label="Conversa">
             {log.length === 0 && !listening && (

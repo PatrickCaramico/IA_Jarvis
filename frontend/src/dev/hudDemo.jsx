@@ -177,6 +177,10 @@ class DemoSocket {
         { kind: "app", name: "Celular · SM-A546E", ip: "192.168.1.58", since: 2 },
       ] }), 300);
       setTimeout(() => send({ type: "response", text: "Em Maragogi, 27 graus e sol. Vale levar protetor solar hoje.", cards: [] }), 900);
+      // V9.5.5: ?resposta=1 = resposta nova SEM voz (a transcrição abre o tempo de ler)
+      if (q.get("resposta") === "1") {
+        setTimeout(() => send({ type: "response", text: "Nos próximos dias: amanhã, Entrar no Discord pelo Opera (Aquecimento Orbes) às 19:00; em 3 dias, Missa igreja às 08:00; em 3 dias, Jogo do Palmeiras: Palmeiras x Estudiantes (Final Libertadores) às 17:00.", cards: [] }), 4000);
+      }
       // V9.4.5: ?fala=1 mostra a transcrição ao vivo: ele fala por 5 s e a janela fecha sozinha depois
       if (q.get("fala") === "1") {
         setTimeout(() => send({ type: "state", state: "speaking" }), 1500);

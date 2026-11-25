@@ -25,9 +25,27 @@ export function setPeekEnabled(on, storage = globalThis.localStorage) {
 }
 
 /** A janela deve estar aberta agora? (o fechamento com atraso fica no componente) */
-export function wantsPeek({ enabled = true, speaking = false, streaming = false, listening = false, zen = false, briefing = false } = {}) {
+export function wantsPeek({ enabled = true, speaking = false, streaming = false, listening = false, zen = false, briefing = false,
+  fresh = false, pinned = false } = {}) {
+  if (pinned) return true; // V9.5.5: ⤢ AMPLIAR: fica aberta até o senhor fechar
   if (!enabled || zen || briefing) return false; // a Área Limpa já tem a janelinha dela; o briefing tem o palco
-  return Boolean(speaking || streaming || listening);
+  // V9.5.5: fresh = chegou resposta nova. Antes a janela só abria com a voz tocando: quando ele não falava (voz
+  // falhou, modo silencioso, voz no celular), a resposta aparecia só no Canal Ativo pequeno.
+  return Boolean(speaking || streaming || listening || fresh);
+}
+
+/** V9.5.5: quanto tempo uma resposta nova fica aberta para ler (sem voz): ~60 ms por letra, de 8 a 30 s. */
+export function readMs(text) {
+  const n = String(text || "").length;
+  return Math.max(8000, Math.min(30000, n * 60));
+}
+
+/** V9.5.5: a última mensagem é uma resposta nova do JARVIS (que ainda não abriu a janela)? */
+export function newReply(log, seenId) {
+  const list = Array.isArray(log) ? log : [];
+  const last = list[list.length - 1];
+  if (!last || last.role !== "jarvis" || last.old || !last.text || last.id === seenId) return null;
+  return last;
 }
 
 /** As últimas falas da conversa (sem divisórias nem mensagens antigas de outro dia). */
