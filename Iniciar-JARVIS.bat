@@ -27,6 +27,13 @@ rem Parametro "site" (botao LIGAR O JARVIS da central do site, via Instalar-Bota
 rem liga tudo, mas nao abre aba nova; a central do site ja aberta reconecta sozinha.
 set "FROM_SITE="
 if /i "%~1"=="site" set "FROM_SITE=1"
+rem V9.5.3: parametro "atualizar" (botao ATUALIZAR E LIGAR da tela Reconectando, atalho jarvis://atualizar):
+rem baixa a versao nova antes de ligar. Com o JARVIS fora do ar, a central nao tinha como atualizar.
+set "UPDATE_FIRST="
+if /i "%~1"=="atualizar" (
+  set "FROM_SITE=1"
+  set "UPDATE_FIRST=1"
+)
 
 echo.
 echo  ==============================================
@@ -52,6 +59,12 @@ if not exist "%BACKEND%\venv\Scripts\python.exe" (
     pause
     exit /b 1
   )
+)
+
+rem V9.5.3: atualiza antes de conferir as dependencias (a versao nova pode trazer biblioteca nova)
+if defined UPDATE_FIRST (
+  echo  [1/5] Baixando a versao mais nova...
+  "%BACKEND%\venv\Scripts\python.exe" "%ROOT%scripts\atualizar_jarvis.py"
 )
 
 rem ---------- 2. Dependencias do Backend ----------

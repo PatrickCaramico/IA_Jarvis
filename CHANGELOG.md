@@ -2,6 +2,14 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 9.5.3 — 25 de novembro de 2026
+
+**⟳ Atualizar mesmo com o JARVIS fora do ar**
+- **Botão ⟳ ATUALIZAR E LIGAR na tela "Reconectando".** Com o JARVIS do PC fora do ar, a central não tinha como atualizar, porque quem atualiza é o próprio JARVIS. Agora o botão faz o PC baixar a versão mais nova e ligar.
+  - Usa o mesmo atalho do LIGAR O JARVIS e a mesma atualização segura do botão ATUALIZAR (nunca apaga mudanças locais).
+  - Quem já tinha o botão LIGAR instalado não precisa fazer nada: na primeira vez que o JARVIS ligar nesta versão, ele mesmo ajusta o atalho. Até lá, o botão só liga.
+- **O socorro da subida também procura uma versão corrigida.** Se o JARVIS cair ao ligar por um defeito da versão atual e já houver uma versão nova publicada, o PC baixa, instala o que ela precisar e liga de novo, sozinho.
+
 ## 9.5.2 — 25 de novembro de 2026
 
 **⏻ Inicialização mais confiável**

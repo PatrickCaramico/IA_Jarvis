@@ -1211,7 +1211,8 @@ export default function App() {
   // Agora: logo depois do toque, a tela pede para clicar em "Abrir"; se a janela perder o foco, está ligando;
   // só depois de 30 s sem o JARVIS responder aparece a ajuda de instalar o atalho.
   const launchTimerRef = useRef(null);
-  const launchJarvis = useCallback(() => {
+  // V9.5.3: launchJarvis("atualizar") = ⟳ ATUALIZAR E LIGAR (o PC baixa a versão nova antes de ligar)
+  const launchJarvis = useCallback((mode = "") => {
     clearTimeout(launchTimerRef.current);
     setLaunchState("trying");
     let opened = false;
@@ -1221,7 +1222,7 @@ export default function App() {
       setLaunchState("opening");
     };
     window.addEventListener("blur", onBlur, { once: true });
-    window.location.href = "jarvis://iniciar";
+    window.location.href = mode === "atualizar" ? "jarvis://atualizar" : "jarvis://iniciar";
     setTimeout(() => {
       if (!opened) setLaunchState(launcherWorks() ? "opening" : "asked");
     }, 1200);
@@ -3130,7 +3131,8 @@ export default function App() {
               <BootReconnect
                 probe={probe}
                 launchState={launchState}
-                onLaunch={launchJarvis}
+                onLaunch={() => launchJarvis()}
+                onUpdate={() => launchJarvis("atualizar")}
                 onRetry={boot}
                 onCloud={CLOUD_AVAILABLE ? () => setCloudMode(true) : null}
               />

@@ -785,3 +785,4 @@ html.is-eco .hl-root { animation: none; }
 /* a cor escolhida vence o "sentinela dormindo" do fundo blueprint (que zerava o filtro) */
 .lr .rx-custom.rx-reator > .arc-hud { filter: hue-rotate(var(--rx-hue)) contrast(var(--rx-contrast)); }
 .lr .rx-custom.rx-reator > .arc-hud.snt-hud { filter: hue-rotate(var(--rx-hue)) contrast(var(--rx-contrast)) brightness(0.92); }
+.br-update { border-color: rgba(251, 191, 36, 0.55) !important; color: #fde68a !important; } /* V9.5.3: ⟳ ATUALIZAR E LIGAR */

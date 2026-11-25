@@ -120,6 +120,17 @@ async def lifespan(app: FastAPI):
             log.exception("Não consegui pré-carregar o OpenCV")
 
     runtime.track(warm_camera_libs())
+
+    async def refresh_launcher() -> None:
+        """V9.5.3: o atalho jarvis:// antigo vira o novo (que entende o ⟳ ATUALIZAR E LIGAR da central)."""
+        from modules import launcher_protocol
+
+        try:
+            await asyncio.to_thread(launcher_protocol.refresh)
+        except Exception:  # noqa: BLE001 - sem o atalho novo, o LIGAR continua funcionando como antes
+            log.exception("Não consegui atualizar o atalho jarvis://")
+
+    runtime.track(refresh_launcher())
     from core import startup_timing
 
     startup_timing.mark_ready()  # V9.4.1: quanto tempo levou para ligar (vai para o log e para o /api/health)

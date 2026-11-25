@@ -2,6 +2,7 @@
 
     pythonw scripts/ligar_jarvis.py --logon   # ao entrar no Windows (espera o Windows assentar)
     pythonw scripts/ligar_jarvis.py           # agora
+    pythonw scripts/ligar_jarvis.py --url jarvis://atualizar   # V9.5.3: atalho do site (atualiza e liga)
 
 Se o JARVIS já está no ar, não faz nada. Senão roda o Iniciar-JARVIS.bat no modo "site" (liga tudo, não abre aba)
 com o console escondido. Registro em logs/ligar.log.
@@ -34,11 +35,21 @@ def backend_up(timeout: float = 2.0) -> bool:
         return False
 
 
-def start_command(bat: Path = BAT) -> list[str]:
-    return ["cmd.exe", "/c", str(bat), "site"]
+def start_command(bat: Path = BAT, mode: str = "site") -> list[str]:
+    return ["cmd.exe", "/c", str(bat), mode if mode in MODES else "site"]
 
 
-def start_hidden(bat: Path = BAT) -> bool:
+# V9.5.3: o atalho jarvis:// agora passa o endereço para cá. Só duas coisas são aceitas: ligar (qualquer endereço) ou
+# atualizar e ligar (jarvis://atualizar). O endereço nunca vira comando: só escolhe uma das duas opções fixas.
+MODES = ("site", "atualizar")
+
+
+def mode_from_url(url: str) -> str:
+    u = (url or "").strip().lower()
+    return "atualizar" if u.startswith("jarvis://atualizar") else "site"
+
+
+def start_hidden(bat: Path = BAT, mode: str = "site") -> bool:
     """Roda o Iniciar-JARVIS.bat sem mostrar o console (e num grupo próprio: sobrevive a quem chamou)."""
     if not bat.is_file():
         log.error("Iniciar-JARVIS.bat não encontrado em %s", bat)
@@ -49,7 +60,7 @@ def start_hidden(bat: Path = BAT) -> bool:
         info = subprocess.STARTUPINFO()
         info.dwFlags |= subprocess.STARTF_USESHOWWINDOW
         info.wShowWindow = 0  # SW_HIDE
-    subprocess.Popen(start_command(bat), cwd=str(bat.parent), creationflags=flags, startupinfo=info,  # noqa: S603
+    subprocess.Popen(start_command(bat, mode), cwd=str(bat.parent), creationflags=flags, startupinfo=info,  # noqa: S603
                      close_fds=True)
     return True
 
@@ -60,6 +71,10 @@ def main(argv: list[str]) -> int:
                         format="%(asctime)s %(message)s")
     if "--logon" in argv:
         time.sleep(LOGON_DELAY_S)
+    mode = mode_from_url(argv[argv.index("--url") + 1]) if "--url" in argv and argv.index("--url") + 1 < len(argv) else "site"
+    if mode == "atualizar":  # V9.5.3: botão ⟳ ATUALIZAR E LIGAR da central
+        log.info("Atualizando e ligando o JARVIS (botão da central).")
+        return 0 if start_hidden(mode="atualizar") else 1
     if backend_up():
         log.info("O JARVIS já estava ligado.")
         return 0

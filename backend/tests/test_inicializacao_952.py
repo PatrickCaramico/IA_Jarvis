@@ -69,7 +69,8 @@ def _rescue(**kw):
     calls = []
     base = dict(up=lambda: False, wait=lambda s: False, crash=lambda: "",
                 install=lambda py: calls.append("install") or True,
-                start=lambda py, h, n: calls.append(("start", h, n)), python=Path("py"))
+                start=lambda py, h, n: calls.append(("start", h, n)), python=Path("py"),
+                update=lambda: calls.append("update") and False)
     base.update(kw)
     return socorro.rescue("0.0.0.0", "true", **base), calls
 
@@ -91,7 +92,7 @@ def test_socorro_instala_o_que_falta_e_liga_de_novo():
 
 def test_socorro_nao_instala_sem_motivo():
     result, calls = _rescue(crash=lambda: "ValueError: outra coisa")
-    assert result == "other" and calls == []
+    assert result == "other" and calls == ["update"]  # V9.5.3: procurou versão nova, não havia
     assert _rescue()[0] == "down"
     assert _rescue(crash=lambda: "WinError 10048")[0] == "port"
 

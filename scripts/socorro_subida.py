@@ -6,7 +6,8 @@ Agora este script:
   1. espera mais um pouco, se o JARVIS só está demorando (PC pesado logo depois de ligar);
   2. lê o motivo da queda em logs/backend-erro.log (o run_server.py grava lá);
   3. faltando biblioteca: instala o requirements.txt e liga o backend de novo (uma vez);
-  4. registra tudo em logs/ligar.log.
+  4. V9.5.3: caiu por outro motivo: se há versão nova publicada (talvez com a correção), baixa e liga de novo;
+  5. registra tudo em logs/ligar.log.
 
     python scripts/socorro_subida.py 0.0.0.0 true
 """
@@ -22,6 +23,7 @@ from pathlib import Path
 from typing import Optional
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # atualizar_jarvis.py, ao lado
 BACKEND = ROOT / "backend"
 LOGS = ROOT / "logs"
 CRASH_LOG = LOGS / "backend-erro.log"
@@ -102,9 +104,23 @@ def start_backend(python: Path, host: str, netmode: str) -> None:
     )
 
 
+def update_code() -> bool:
+    """V9.5.3: baixa a versão mais nova (o mesmo git pull seguro do ATUALIZAR). True se mudou algo."""
+    try:
+        import atualizar_jarvis
+
+        res = atualizar_jarvis.update()
+    except Exception:  # noqa: BLE001
+        log.exception("Não consegui procurar uma versão nova")
+        return False
+    log.info("Procurando uma versão corrigida: %s", res.get("message", ""))
+    return bool(res.get("ok") and res.get("changed"))
+
+
 def rescue(host: str = "0.0.0.0", netmode: str = "true", *, up=backend_up, wait=wait_up, crash=last_crash,  # noqa: S104
-           install=install_requirements, start=start_backend, python: Optional[Path] = None) -> str:
-    """Devolve o que aconteceu: "ok", "slow-ok", "fixed", "failed-deps", "port", "other" ou "down"."""
+           install=install_requirements, start=start_backend, python: Optional[Path] = None,
+           update=update_code) -> str:
+    """Devolve o que aconteceu: "ok", "slow-ok", "fixed", "updated", "failed-deps", "port", "other" ou "down"."""
     if up():
         return "ok"
     if wait(EXTRA_WAIT_S):
@@ -123,6 +139,14 @@ def rescue(host: str = "0.0.0.0", netmode: str = "true", *, up=backend_up, wait=
     if reason == "port":
         log.error("A porta 8000 estava ocupada por outro programa. Rode o Parar-JARVIS.bat e ligue de novo.")
         return "port"
+    # V9.5.3: caiu por outro motivo (um defeito desta versão, por exemplo): se já existe uma versão nova
+    # publicada (talvez com a correção), baixa, instala o que ela precisar e liga de novo.
+    if reason == "other" and update():
+        install(python)
+        start(python, host, netmode)
+        if wait(90):
+            log.info("Com a versão nova, o JARVIS ligou.")
+            return "updated"
     if reason == "other":
         log.error("O JARVIS caiu ao ligar. O motivo está em logs/backend-erro.log.")
         return "other"
@@ -138,7 +162,7 @@ def main(argv: list[str]) -> int:
     netmode = argv[1] if len(argv) > 1 else "true"
     result = rescue(host, netmode)
     log.info("Socorro da subida: %s", result)
-    return 0 if result in {"ok", "slow-ok", "fixed"} else 1
+    return 0 if result in {"ok", "slow-ok", "fixed", "updated"} else 1
 
 
 if __name__ == "__main__":

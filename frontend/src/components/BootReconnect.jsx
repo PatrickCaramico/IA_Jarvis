@@ -4,7 +4,7 @@ import { formatElapsed, knownAlwaysOn, knownStartup, nextCheckProgress, reconnec
 // V8.12.3: "RECONECTANDO AO SEU JARVIS" mostra o estado de verdade: a central (site) no ar, o JARVIS do PC sendo
 // procurado (há quanto tempo, quantas tentativas e a barrinha até a próxima) e se o PC está no "sempre ligado".
 // Antes era só um título e uma frase piscando: não dava para saber se a tela estava tentando ou travada.
-export default function BootReconnect({ probe, launchState, onLaunch, onRetry, onCloud }) {
+export default function BootReconnect({ probe, launchState, onLaunch, onUpdate = null, onRetry, onCloud }) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 250);
@@ -63,6 +63,13 @@ export default function BootReconnect({ probe, launchState, onLaunch, onRetry, o
           <span className="br-power" aria-hidden="true">⏻</span>
           <span>{launchState === "trying" ? "ABRINDO…" : "LIGAR O JARVIS"}</span>
         </button>
+        {/* V9.5.3: com o JARVIS do PC fora do ar, a central não tinha como atualizar: o PC baixa a versão nova e liga */}
+        {onUpdate && (
+          <button type="button" onClick={onUpdate} disabled={launchState === "trying"} className="ls-chip br-update"
+            title="O PC baixa a versão mais nova do JARVIS e liga (útil se ele não está subindo)">
+            ⟳ ATUALIZAR E LIGAR
+          </button>
+        )}
         <button type="button" onClick={onRetry} className="ls-chip">TENTAR AGORA</button>
         {onCloud && <button type="button" onClick={onCloud} className="ls-chip">USAR PELA NUVEM</button>}
       </div>
@@ -76,7 +83,7 @@ export default function BootReconnect({ probe, launchState, onLaunch, onRetry, o
       <details className="ls-boot-help">
         <summary>Não está entrando?</summary>
         <p>Com o JARVIS ligado, o Chrome pode barrar este site de falar com o PC: clique no ícone ao lado do endereço › <b>Acesso à rede local</b> › Permitir, e recarregue.</p>
-        <p>O botão LIGAR precisa do <b>Instalar-Botao-Ligar.bat</b> rodado uma vez neste PC.</p>
+        <p>O botão LIGAR precisa do <b>Instalar-Botao-Ligar.bat</b> rodado uma vez neste PC. O <b>⟳ ATUALIZAR E LIGAR</b> passa a funcionar sozinho depois que o JARVIS ligar uma vez na versão 9.5.3; antes disso, ele só liga.</p>
         <p>Passou de 3 minutos? No PC, abra o <b>Ver-Logs.bat</b>: o motivo da última queda fica em <b>logs\backend-erro.log</b> e o que o PC tentou para religar, em <b>logs\ligar.log</b>.</p>
         <p>Para ele não desligar mais: em <b>Configurações › Diagnóstico &amp; Backup › Inicialização</b>, deixe o <b>Sempre ligado</b> marcado. Ele liga junto com o Windows, volta sozinho se cair e, na tomada, não deixa o PC dormir.</p>
       </details>
