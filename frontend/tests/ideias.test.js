@@ -7,7 +7,7 @@ const read = (p) => readFileSync(new URL(p, import.meta.url), "utf8");
 
 test("CONTROLES reorganizados por assunto, com o Bloco de ideias em Anotar e lembrar", () => {
   const hud = read("../src/components/HudLayout.jsx");
-  const titles = [...hud.matchAll(/title: "([A-ZÇÃÉÍÓÚ &]+)",\n/g)].map((m) => m[1]);
+  const titles = [...hud.matchAll(/title: "([A-ZÇÃÉÍÓÚ &]+)",\r?\n/g)] /* \r?: no Windows o Git entrega com CRLF */.map((m) => m[1]);
   for (const t of ["ANOTAR E LEMBRAR", "ROTINAS DO DIA", "MODOS DE AMBIENTE", "MÚSICA & SOM", "CENTRAL", "MANUTENÇÃO"]) {
     assert.ok(titles.includes(t), `faltou a seção ${t}`);
   }
