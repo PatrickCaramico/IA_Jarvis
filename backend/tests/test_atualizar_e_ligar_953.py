@@ -49,7 +49,8 @@ def test_atalho_antigo_vira_o_novo_e_so_o_do_jarvis():
 
 
 def test_fora_do_windows_nao_mexe(monkeypatch):
-    monkeypatch.setattr(launcher_protocol.os, "name", "posix")
+    # (não troca os.name: no CI do Windows isso quebra o próprio pytest)
+    monkeypatch.setattr(launcher_protocol, "_is_windows", lambda: False)
     assert launcher_protocol.refresh() == "skip"
 
 

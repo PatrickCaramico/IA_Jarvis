@@ -33,9 +33,13 @@ def needs_update(current: Optional[str], wanted: str) -> bool:
     return "iniciar-jarvis.bat" in low or "ligar_jarvis.py" in low
 
 
+def _is_windows() -> bool:
+    return os.name == "nt"
+
+
 def refresh() -> str:
     """"updated", "ok", "absent" (atalho não instalado) ou "skip" (fora do Windows/sem pythonw)."""
-    if os.name != "nt":
+    if not _is_windows():
         return "skip"
     pyw = autostart.pythonw()
     if not pyw:
