@@ -26,6 +26,7 @@ TABS = [
     {"id": "agenda", "label": "Agenda"},
     {"id": "proximos", "label": "Próximos dias"},  # V5.6: agenda dos próximos 3 dias e contagens
     {"id": "tarefas", "label": "Tarefas"},   # V5.3: só aparece com tarefas pendentes
+    {"id": "ideias", "label": "Ideias"},     # V9.5.6: projetos do bloco de ideias
     {"id": "jogo", "label": "Jogo"},         # V5.3: só em dia de jogo do time do Modo Torcedor
     {"id": "email", "label": "E-mails"},
     {"id": "noticias", "label": "Notícias"},
@@ -505,6 +506,26 @@ def _focus_segment(pending: list[dict]) -> dict | None:
     return {"tab": "tarefas", "progress": "Montando as prioridades do dia...", "speech": speech, "card": card}
 
 
+def _ideas_segment(limit: int = 5) -> dict | None:
+    """V9.5.6: no "bom dia", os projetos do 💡 BLOCO DE IDEIAS (os marcados como projeto; sem nenhum, as ideias mais
+    recentes). Fica de fora com o bloco vazio."""
+    from modules import ideas
+
+    try:
+        items = ideas.projects(limit)
+    except Exception:  # noqa: BLE001 - sem o bloco, o briefing segue
+        log.exception("Briefing: não consegui ler o bloco de ideias")
+        return None
+    if not items:
+        return None
+    rows = [{"text": i.get("titulo") or "sem título"} for i in items]
+    marked = any(i.get("projeto") for i in items)
+    card = {"kind": "tasks", "label": "PROJETOS · BLOCO DE IDEIAS" if marked else "IDEIAS RECENTES · BLOCO DE IDEIAS",
+            "title": f"Em andamento: {rows[0]['text']}", "items": rows[:5], "more": 0, "total": len(rows),
+            "footer": "Abra em CONTROLES › 💡 BLOCO DE IDEIAS"}
+    return {"tab": "ideias", "progress": "Lendo o bloco de ideias...", "speech": ideas.briefing_speech(items), "card": card}
+
+
 def _match_segment(now: datetime) -> dict | None:
     """V5.3: dia de jogo do time do Modo Torcedor entra no "bom dia" (só lê o cache, sem rede)."""
     from modules import fan_mode, prefs, sports_provider
@@ -652,7 +673,7 @@ async def build_morning_briefing() -> dict:
     if upcoming_seg:
         segments.append(upcoming_seg)
     pending_list = tasks.get_tasks(include_completed=False)
-    for extra in (_focus_segment(pending_list), _match_segment(now)):
+    for extra in (_focus_segment(pending_list), _ideas_segment(), _match_segment(now)):  # V9.5.6: projetos
         if extra:
             segments.append(extra)
     email_seg = _email_segment(tri or {"connected": False})

@@ -25,6 +25,7 @@ _WRITABLE = (
     ("finances", "DATA_PATH", "financas.json"),
     ("files", "UNDO_PATH", "organizacao_ultima.json"),
     ("shopping", "_PATH", "compras.json"),  # V6.0
+    ("ideas", "_PATH", "ideias.json"),  # V9.5.6
     ("device_keys", "_PATH", "chaves_aparelho.json"),  # V6.0
     ("news_alerts", "_PATH", "noticias_avisadas.json"),  # V6.5
     ("phrases", "_PATH", "frases_recentes.json"),  # V6.5.3

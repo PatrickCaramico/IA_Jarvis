@@ -18,7 +18,7 @@ export default function RemindersStrip({ api }) {
     const onWs = (e) => {
       const type = e.detail?.type;
       // "response": o lembrete pode ter sido criado por voz ("me lembra de ... às 15h")
-      if (type === "reminders_updated" || type === "reminder" || type === "response") load();
+      if (type === "reminders_updated" || type === "reminder" || type === "reminder_due" || type === "response") load(); // V9.5.6: venceu = some da faixa
     };
     window.addEventListener("jarvis_ws_event", onWs);
     window.addEventListener("jarvis-reminders-changed", load);

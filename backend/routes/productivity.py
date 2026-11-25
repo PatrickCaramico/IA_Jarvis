@@ -180,11 +180,84 @@ async def create_reminder(req: ReminderRequest) -> dict:
     return {"status": "ok", "reminder": rem}
 
 
+class ReminderPostponeRequest(BaseModel):
+    minutos: int = 10
+
+
+@router.post("/api/reminders/{rem_id}/postpone")
+async def postpone_reminder(rem_id: int, req: ReminderPostponeRequest) -> dict:
+    """V9.5.6: ADIAR do aviso "⏰ LEMBRETE"."""
+    rem = reminders.postpone_by_id(rem_id, req.minutos)
+    if rem is None:
+        raise HTTPException(status_code=404, detail="Lembrete não encontrado.")
+    await _reminders_changed()
+    return {"status": "ok", "reminder": rem}
+
+
 @router.delete("/api/reminders/{rem_id}")
 async def remove_reminder(rem_id: int) -> dict:
     if not reminders.delete_reminder(rem_id):
         raise HTTPException(status_code=404, detail="Lembrete não encontrado.")
     await _reminders_changed()
+    return {"status": "ok"}
+
+
+# ---------------------------------------------------------------- V9.5.6: 💡 BLOCO DE IDEIAS
+class IdeaRequest(BaseModel):
+    texto: str = ""
+    titulo: str = ""
+    projeto: bool = False
+
+
+class IdeaPatch(BaseModel):
+    texto: str | None = None
+    titulo: str | None = None
+    projeto: bool | None = None
+
+
+async def _ideas_changed() -> None:
+    from core import runtime
+
+    await runtime.manager.broadcast({"type": "ideas_updated"})
+
+
+@router.get("/api/ideas")
+async def list_ideas() -> dict:
+    from modules import ideas
+
+    return {"ideas": await asyncio.to_thread(ideas.list_ideas)}
+
+
+@router.post("/api/ideas")
+async def create_idea(req: IdeaRequest) -> dict:
+    from modules import ideas
+
+    try:
+        idea = await asyncio.to_thread(ideas.add_idea, req.texto, req.titulo, req.projeto)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    await _ideas_changed()
+    return {"status": "ok", "idea": idea}
+
+
+@router.patch("/api/ideas/{idea_id}")
+async def edit_idea(idea_id: int, req: IdeaPatch) -> dict:
+    from modules import ideas
+
+    idea = await asyncio.to_thread(lambda: ideas.update_idea(idea_id, text=req.texto, title=req.titulo, project=req.projeto))
+    if idea is None:
+        raise HTTPException(status_code=404, detail="Ideia não encontrada.")
+    await _ideas_changed()
+    return {"status": "ok", "idea": idea}
+
+
+@router.delete("/api/ideas/{idea_id}")
+async def remove_idea(idea_id: int) -> dict:
+    from modules import ideas
+
+    if not await asyncio.to_thread(ideas.delete_idea, idea_id):
+        raise HTTPException(status_code=404, detail="Ideia não encontrada.")
+    await _ideas_changed()
     return {"status": "ok"}
 
 

@@ -23,6 +23,7 @@ export const GROUPS = {
   analisar_imagem: { label: "Imagens", icon: "🖼", order: 16 }, // V9.4
   modo_gravar: { label: "Modo gravar", icon: "⏺", order: 17 }, // V9.4
   atualizar: { label: "Atualizar", icon: "⟳", order: 18 }, // V9.5.4
+  ideias: { label: "Bloco de ideias", icon: "💡", order: 19 }, // V9.5.6
   inicializacao: { label: "Inicialização", icon: "🚀", order: 70 },
   microfone: { label: "Microfone", icon: "🎙", order: 65 },
   habilidades: { label: "Central", icon: "⚡", order: 80 },

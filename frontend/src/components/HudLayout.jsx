@@ -555,7 +555,29 @@ const WHO = { user: "VOCÊ ▸", jarvis: "JARVIS ▸", error: "ERRO ▸" };
 
 // V6.5.5: painel CONTROLES com mais funções, em grade compacta por seção.
 // Cada item ou manda um comando (o mesmo que falar) ou faz uma ação direta na tela.
+// V9.5.6: reorganizado por assunto (antes "Ações rápidas" misturava notícias, compras, água e lembrete, e
+// "Sistema & HUD" tinha 16 botões de tudo um pouco). Novo: 💡 BLOCO DE IDEIAS em "Anotar e lembrar".
 const CONTROL_SECTIONS = [
+  {
+    title: "ANOTAR E LEMBRAR",
+    items: [
+      { id: "ideas", icon: "💡", label: "BLOCO DE IDEIAS", sub: "Rascunhos e projetos", tone: "amber" }, // V9.5.6
+      { id: "reminder", icon: "⏰", label: "NOVO LEMBRETE", sub: "Avisa na hora, na tela e na voz", tone: "amber" }, // V9.4.2
+      { icon: "🛒", label: "COMPRAS", sub: "O que tem na lista", cmd: "o que tem na lista de compras" },
+      { id: "news", icon: "📰", label: "NOTÍCIAS", sub: "Seus temas e busca" },
+    ],
+  },
+  {
+    title: "ROTINAS DO DIA",
+    items: [
+      { icon: "📋", label: "RESUMO AGORA", sub: "Pela hora do dia", cmd: "resumo" },
+      { icon: "🚪", label: "SAINDO DE CASA", sub: "Clima e compras", cmd: "estou saindo" },
+      { icon: "🌙", label: "DORMIR", sub: "Rotina da noite", cmd: "vou dormir" },
+      { icon: "⏱", label: "TIMER 5 MIN", sub: "Avisa em 5 minutos", cmd: "timer de 5 minutos" },
+      { icon: "🥤", label: "BEBI UM COPO", sub: "Registra 250 ml", cmd: "bebi um copo de água", tone: "sky" },
+      { icon: "💧", label: "ÍNDICE DE ÁGUA", sub: "Hidratação de hoje", cmd: "índice de água", tone: "sky" },
+    ],
+  },
   {
     title: "MODOS DE AMBIENTE",
     items: [
@@ -564,25 +586,6 @@ const CONTROL_SECTIONS = [
       { icon: "⚡", label: "NORMAL", sub: "Volume e brilho padrão", cmd: "modo normal" },
       { id: "fan", icon: "⚽", label: "TORCEDOR", tone: "emerald" },
       { icon: "🛡️", label: "SENTINELA", sub: "Bloqueia a central e fica ouvindo \"Jarvis\"", cmd: "modo sentinela", tone: "amber", wide: true },
-    ],
-  },
-  {
-    title: "ROTINAS",
-    items: [
-      { icon: "📋", label: "RESUMO AGORA", sub: "Pela hora do dia", cmd: "resumo" },
-      { icon: "🌙", label: "DORMIR", sub: "Rotina da noite", cmd: "vou dormir" },
-      { icon: "🚪", label: "SAINDO DE CASA", sub: "Clima e compras", cmd: "estou saindo" },
-      { icon: "⏱", label: "TIMER 5 MIN", sub: "Avisa em 5 minutos", cmd: "timer de 5 minutos" },
-    ],
-  },
-  {
-    title: "AÇÕES RÁPIDAS",
-    items: [
-      { id: "news", icon: "📰", label: "NOTÍCIAS", sub: "Seus temas e busca" },
-      { icon: "🛒", label: "COMPRAS", sub: "O que tem na lista", cmd: "o que tem na lista de compras" },
-      { icon: "🥤", label: "BEBI UM COPO", sub: "Registra 250 ml", cmd: "bebi um copo de água", tone: "sky" },
-      { icon: "💧", label: "ÍNDICE DE ÁGUA", sub: "Hidratação de hoje", cmd: "índice de água", tone: "sky" },
-      { id: "reminder", icon: "⏰", label: "NOVO LEMBRETE", sub: "Fica visível na central", tone: "amber" }, // V9.4.2
     ],
   },
   {
@@ -598,25 +601,30 @@ const CONTROL_SECTIONS = [
     ],
   },
   {
-    title: "SISTEMA & HUD",
+    title: "CENTRAL",
     items: [
       { id: "lock", icon: "🔒", label: "BLOQUEAR", sub: "Volta à tela de bloqueio", tone: "amber" },
+      { id: "silent", icon: "🤫", label: "SILENCIOSO" },
+      { id: "zen", icon: "⛶", label: "ÁREA LIMPA" },
+      { id: "background", icon: "🌌", label: "TROCAR FUNDO", sub: "Grade, universo, clássico" },
+      { id: "widgets", icon: "◫", label: "WIDGETS", sub: "Organizar painéis" },
       { id: "agents", icon: "🤖", label: "AGENTES", sub: "Rotas, pesquisa e chat" },
       { id: "desk", icon: "🖥", label: "MODO DESK", sub: "O JARVIS como app de assistente (V8)" },
-      { id: "desktop_app", icon: "⬇", label: "APP PARA WINDOWS", sub: "Janela própria e ilha no topo" },
-      { id: "branding", icon: "📘", label: "BRANDING BOOK", sub: "Identidade visual do JARVIS" }, // V7.2
-      { id: "optimize", icon: "⚡", label: "OTIMIZAR", sub: "Medir e deixar mais rápido" }, // V7.2
-      { id: "notes", icon: "📝", label: "NOTAS DA VERSÃO", sub: "O que mudou em cada versão" }, // V7.3
       { id: "holo_saved", icon: "⭐", label: "HOLOGRAMAS SALVOS", sub: "Rever apresentações e receitas" }, // V7.14
-      { id: "diagnostic", icon: "🩺", label: "DIAGNÓSTICO", sub: "Testar IA, voz, internet e mais" }, // V7.4
-      { id: "logs", icon: "📜", label: "LOGS", sub: "Registros e erros do JARVIS" }, // V9.4.2
       // V6.6.5: app Android: espelha a tela do JARVIS numa TV (Chromecast, Smart TV, Miracast)
       { id: "cast", icon: "📺", label: "TRANSMITIR", sub: "Para a TV ou outro aparelho" },
-      { id: "silent", icon: "🤫", label: "SILENCIOSO" },
-      { id: "background", icon: "🌌", label: "TROCAR FUNDO", sub: "Grade, universo, clássico" },
-      { id: "zen", icon: "⛶", label: "ÁREA LIMPA" },
-      { id: "widgets", icon: "◫", label: "WIDGETS", sub: "Organizar painéis" },
       { id: "settings", icon: "⚙", label: "AJUSTES", sub: "Configurações e IA" },
+    ],
+  },
+  {
+    title: "MANUTENÇÃO",
+    items: [
+      { id: "diagnostic", icon: "🩺", label: "DIAGNÓSTICO", sub: "Testar IA, voz, internet e mais" }, // V7.4
+      { id: "logs", icon: "📜", label: "LOGS", sub: "Registros e erros do JARVIS" }, // V9.4.2
+      { id: "optimize", icon: "⚡", label: "OTIMIZAR", sub: "Medir e deixar mais rápido" }, // V7.2
+      { id: "notes", icon: "📝", label: "NOTAS DA VERSÃO", sub: "O que mudou em cada versão" }, // V7.3
+      { id: "desktop_app", icon: "⬇", label: "APP PARA WINDOWS", sub: "Janela própria e ilha no topo" },
+      { id: "branding", icon: "📘", label: "BRANDING BOOK", sub: "Identidade visual do JARVIS" }, // V7.2
     ],
   },
 ];
@@ -758,6 +766,10 @@ function HudControlsMenu({
       case "logs": // V9.4.2
         setOpen(false);
         window.dispatchEvent(new CustomEvent("jarvis-open-logs"));
+        break;
+      case "ideas": // V9.5.6
+        setOpen(false);
+        window.dispatchEvent(new CustomEvent("jarvis-open-ideas"));
         break;
       case "reminder": // V9.4.2
         setOpen(false);

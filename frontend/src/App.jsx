@@ -68,7 +68,9 @@ import { shouldAutoOpen } from "./utils/security.js";
 import { lockKeyPress, pastedImage } from "./utils/lockExtras.js";
 import RecordingBadge from "./components/RecordingBadge.jsx";
 import UpdateSoon from "./components/UpdateSoon.jsx";
+import ReminderDue from "./components/ReminderDue.jsx";
 import LogsWindow from "./components/LogsWindow.jsx";
+import IdeasPad from "./components/IdeasPad.jsx";
 import ReminderModal from "./components/ReminderModal.jsx";
 import ReactorOrb from "./components/ReactorOrb.jsx";
 import ReactorStudio from "./components/ReactorStudio.jsx";
@@ -137,18 +139,24 @@ export default function App() {
   const [updating, setUpdating] = useState(null);
   const [updateSoon, setUpdateSoon] = useState(null);
   const [logsOpen, setLogsOpen] = useState(false); // V9.4.2: janela 📜 LOGS
+  const [ideasOpen, setIdeasOpen] = useState(false); // V9.5.6: 💡 BLOCO DE IDEIAS
   const [reminderOpen, setReminderOpen] = useState(false); // V9.4.2: NOVO LEMBRETE
+  const [remindersDue, setRemindersDue] = useState([]); // V9.5.6: avisos "⏰ LEMBRETE" esperando OK/ADIAR
+  const doneReminder = useCallback((key) => setRemindersDue((list) => list.filter((r) => r.key !== key)), []);
   const [reactorOpen, setReactorOpen] = useState(false); // V9.4.2: 🎨 PERSONALIZAR O REATOR
   useEffect(() => {
     const openLogs = () => setLogsOpen(true);
     const newReminder = () => setReminderOpen(true);
     window.addEventListener("jarvis-open-logs", openLogs);
+    const openIdeas = () => setIdeasOpen(true);
+    window.addEventListener("jarvis-open-ideas", openIdeas);
     window.addEventListener("jarvis-new-reminder", newReminder);
     const openReactor = () => setReactorOpen(true);
     window.addEventListener("jarvis-open-reactor", openReactor);
     return () => {
       window.removeEventListener("jarvis-open-reactor", openReactor);
       window.removeEventListener("jarvis-open-logs", openLogs);
+      window.removeEventListener("jarvis-open-ideas", openIdeas);
       window.removeEventListener("jarvis-new-reminder", newReminder);
     };
   }, []); // V9.4.1: { version, until, notes } — aviso da atualização automática
@@ -810,6 +818,11 @@ export default function App() {
       case "speak_on_device":
         // V5.7: a resposta a um pedido DESTE aparelho: a voz toca aqui (o PC ficou em silêncio)
         if (msg.client_id && msg.client_id === clientId() && msg.text) enqueueHere(msg.text, msg.say_id);
+        break;
+      case "reminder_due": // V9.5.6: lembrete venceu: aviso que fica na tela até OK/ADIAR, com sinal
+        soundManager.playAlert();
+        setRemindersDue((list) => [...list.filter((r) => r.id !== msg.id || msg.id == null),
+          { key: `${msg.id ?? "x"}-${Date.now()}`, id: msg.id, texto: msg.texto, hora: msg.hora, atrasado: msg.atrasado }].slice(-5));
         break;
       case "update_soon": // V9.4.1: versão nova chegando (aviso com contagem; ADIAR / ATUALIZAR AGORA)
         if (msg.cancelled) {
@@ -3362,6 +3375,7 @@ export default function App() {
         {audioOpen && <AudioSettingsModal api={api} onClose={() => setAudioOpen(false)} onMicChange={setMicrophoneId} />}
         {lockAnswer && <LockAnswer answer={lockAnswer} onClose={() => setLockAnswer(null)} />}
         {updateSoon && <UpdateSoon api={api} soon={updateSoon} onClose={() => setUpdateSoon(null)} />}
+        <ReminderDue api={api} items={remindersDue} onDone={doneReminder} />
         {fanModeEnabled && <FanGoalOverlay event={fanEvent} onDone={clearFanEvent} />}
         {brandingOpen && <BrandingBook onClose={() => setBrandingOpen(false)} />}
         {optimizerOpen && <OptimizerPanel api={api} onClose={() => setOptimizerOpen(false)} />}
@@ -3468,7 +3482,9 @@ export default function App() {
         {pcScan && <PcScanPanel key={pcScan.at} api={api} initial={pcScan.data} onClose={() => setPcScan(null)} />}
       <RecordingBadge onStop={(t) => send(t)} /* V9.4: ⏺ GRAVANDO do modo gravar */ />
       {updateSoon && <UpdateSoon api={api} soon={updateSoon} onClose={() => setUpdateSoon(null)} /* V9.4.1 */ />}
+      <ReminderDue api={api} items={remindersDue} onDone={doneReminder} /* V9.5.6 */ />
       {logsOpen && <LogsWindow api={api} onClose={() => setLogsOpen(false)} />}
+      {ideasOpen && <IdeasPad api={api} onClose={() => setIdeasOpen(false)} /* V9.5.6 */ />}
       {reactorOpen && <ReactorStudio onClose={() => setReactorOpen(false)} />}
       {reminderOpen && (
         <ReminderModal api={api} onClose={() => setReminderOpen(false)}
