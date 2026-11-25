@@ -43,3 +43,18 @@ test("V8.12.3: barrinha até a próxima conferência", () => {
   assert.equal(nextCheckProgress(15_000, 10_000, 12_000), 1);
   assert.equal(nextCheckProgress(9_000, 10_000, 12_000), 0);
 });
+
+test("V9.5.2: demorando mais de 90 s, a tela diz que o PC está conferindo o motivo e religando", () => {
+  assert.match(reconnectHint({ alwaysOn: true, elapsedMs: 100_000 }), /confere o motivo sozinho/);
+  assert.match(reconnectHint({ alwaysOn: true, elapsedMs: 30_000 }), /liga o JARVIS sozinho/);
+  assert.match(reconnectHint({ alwaysOn: true, elapsedMs: 6 * 60_000 }), /desligado ou sem internet/);
+});
+
+test("V9.5.3: tela Reconectando tem ⟳ ATUALIZAR E LIGAR (atalho jarvis://atualizar)", async () => {
+  const { readFileSync } = await import("node:fs");
+  const br = readFileSync(new URL("../src/components/BootReconnect.jsx", import.meta.url), "utf8");
+  assert.match(br, /⟳ ATUALIZAR E LIGAR/);
+  const app = readFileSync(new URL("../src/App.jsx", import.meta.url), "utf8");
+  assert.match(app, /mode === "atualizar" \? "jarvis:\/\/atualizar" : "jarvis:\/\/iniciar"/);
+  assert.match(app, /onUpdate=\{\(\) => launchJarvis\("atualizar"\)\}/);
+});

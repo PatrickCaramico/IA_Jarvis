@@ -2,6 +2,30 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 9.5.3 — 25 de novembro de 2026
+
+**⟳ Atualizar mesmo com o JARVIS fora do ar**
+- **Botão ⟳ ATUALIZAR E LIGAR na tela "Reconectando".** Com o JARVIS do PC fora do ar, a central não tinha como atualizar, porque quem atualiza é o próprio JARVIS. Agora o botão faz o PC baixar a versão mais nova e ligar.
+  - Usa o mesmo atalho do LIGAR O JARVIS e a mesma atualização segura do botão ATUALIZAR (nunca apaga mudanças locais).
+  - Quem já tinha o botão LIGAR instalado não precisa fazer nada: na primeira vez que o JARVIS ligar nesta versão, ele mesmo ajusta o atalho. Até lá, o botão só liga.
+- **O socorro da subida também procura uma versão corrigida.** Se o JARVIS cair ao ligar por um defeito da versão atual e já houver uma versão nova publicada, o PC baixa, instala o que ela precisar e liga de novo, sozinho.
+
+## 9.5.2 — 25 de novembro de 2026
+
+**⏻ Inicialização mais confiável**
+- **O JARVIS não fica mais fora do ar em silêncio depois de uma atualização.**
+  - Antes, se uma versão nova precisava de uma biblioteca que não estava instalada, o JARVIS do PC caía ao ligar. A central ficava minutos em "procurando o PC", e nada dizia o porquê.
+  - Agora o Iniciar instala as bibliotecas sempre que a lista delas muda.
+- **O motivo de uma queda fica registrado** em `logs\backend-erro.log`. Antes o JARVIS subia escondido e o erro sumia.
+- **Socorro da subida.** Se o JARVIS não responde ao ligar, o PC:
+  - espera mais um pouco (às vezes ele só está demorando);
+  - lê o motivo da queda;
+  - se faltar biblioteca, instala e liga de novo, sozinho.
+  - Tudo fica registrado em `logs\ligar.log`.
+- **O guardião religa também quem caiu logo ao subir.** Antes ele só religava se o JARVIS já tivesse estado no ar.
+- **Tela "Reconectando":** depois de 90 segundos, ela explica que o PC está conferindo o motivo e religando. Em "Não está entrando?", diz onde ver o que aconteceu.
+- O **Ver-Logs.bat** mostra primeiro a última queda ao ligar e o que o PC tentou para religar.
+
 ## 9.5.1 — 25 de novembro de 2026
 
 **🔒 Comandos no bloqueio**

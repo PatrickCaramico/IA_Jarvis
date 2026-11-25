@@ -73,6 +73,10 @@ export function reconnectHint({ launchState = "", alwaysOn = null, elapsedMs = 0
   if (alwaysOn && elapsedMs > 5 * 60_000) {
     return "O PC deve estar desligado ou sem internet. Quando ele ligar, o JARVIS sobe sozinho e eu entro.";
   }
+  // V9.5.2: demorando: diz o que está acontecendo no PC (antes a mesma frase ficava minutos na tela)
+  if (alwaysOn && elapsedMs > 90_000) {
+    return "Está demorando mais que o normal. O PC confere o motivo sozinho, instala o que faltar e religa o JARVIS; eu entro assim que ele responder.";
+  }
   if (alwaysOn) return "Este PC liga o JARVIS sozinho. Assim que ele responder, eu entro.";
   return "Assim que o JARVIS do PC responder, eu entro sozinho.";
 }
