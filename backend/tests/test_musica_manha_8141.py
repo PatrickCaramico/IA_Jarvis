@@ -41,12 +41,12 @@ def test_starts_quiet_and_raises_at_the_end(fake):
     assert vols[0] > mm.BACKGROUND_VOLUME and vols[-1] == mm.END_VOLUME and vols == sorted(vols)
 
 
-def test_only_once_a_day(fake):
+def test_toca_em_todo_briefing(fake):
+    # V9.5.7: antes era "uma vez por dia" e os próximos bom dia ficavam sem música e sem aviso
     log, _ = fake
     assert mm.start(TODAY) is not None
     log.clear()
-    assert mm.start(TODAY) is None and log == []
-    assert mm.start(date(2026, 11, 25)) is not None
+    assert mm.start(TODAY) is not None and ("play", "spotify:track:bib", "pc1") in log
 
 
 def test_without_volume_control_it_waits_for_the_briefing(fake):
@@ -87,13 +87,13 @@ def test_spotify_errors_never_break_the_briefing(fake, monkeypatch):
     mm.finish(None)  # nada a fazer
 
 
-def test_briefing_flow_plays_only_in_the_morning(monkeypatch):
+def test_briefing_flow_plays_in_the_day_briefings(monkeypatch):
     from core import briefing_flow, runtime, session
 
     calls = []
     monkeypatch.setattr(mm, "start", lambda: calls.append("start") or "plano")
     monkeypatch.setattr(mm, "wanted", lambda today=None: "Back in Black")  # V9.5.5: Spotify conectado
-    monkeypatch.setattr(mm, "finish", lambda plan, canceled=False: calls.append(("finish", plan, canceled)))
+    monkeypatch.setattr(mm, "finish", lambda plan, canceled=False, **kw: calls.append(("finish", plan, canceled)))
 
     async def quiet(*a, **k):
         return None
@@ -117,5 +117,5 @@ def test_briefing_flow_plays_only_in_the_morning(monkeypatch):
 
     asyncio.run(run("morning"))
     assert calls[0] == "start" and calls[-1] == ("finish", "plano", False)
-    asyncio.run(run("evening"))
-    assert calls == []
+    asyncio.run(run("evening"))  # V9.5.7: o "boa noite" também tem música
+    assert calls[0] == "start" and calls[-1] == ("finish", "plano", False)

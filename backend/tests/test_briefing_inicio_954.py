@@ -99,7 +99,7 @@ def test_segunda_chance_no_fim_toca_no_volume_de_depois(fake):
     assert log == [("vol", mm.target_volume(), "pc1"), ("play", "spotify:track:bib", "pc1")]
     assert prefs.get_all()["intro_song_morning_ok_day"] == "2026-11-25"
     log.clear()
-    assert mm.start_late(TODAY) is False and log == []  # uma vez por dia
+    assert mm.start_late(TODAY) is True  # V9.5.7: sem o "uma vez por dia"
 
 
 def test_segunda_chance_so_sobe_o_volume_se_a_primeira_tocou_atrasada(fake):
@@ -117,7 +117,7 @@ def test_segunda_chance_nao_interrompe_outra_musica(fake):
 
 def test_fim_do_briefing_chama_a_segunda_chance(monkeypatch):
     chamadas = []
-    monkeypatch.setattr(mm, "start_late", lambda today=None: chamadas.append("late") or True)
+    monkeypatch.setattr(mm, "start_late", lambda today=None, volume=None: chamadas.append("late") or True)
     from modules import briefing_music
 
     # a sua música "volta" sem falar com o Spotify de verdade
@@ -130,9 +130,10 @@ def test_fim_do_briefing_chama_a_segunda_chance(monkeypatch):
 
     asyncio.run(run("morning", None, False))
     asyncio.run(run("morning", None, True))  # cancelado: não toca
-    asyncio.run(run("afternoon", None, False))  # só no bom dia
+    asyncio.run(run("afternoon", None, False))  # V9.5.7: boa tarde também
+    asyncio.run(run("topic", None, False))  # telas por assunto ("notícias"): sem música
     asyncio.run(run("morning", {"device": "x"}, False))  # a sua música volta, não a da manhã
-    assert chamadas == ["late", "resume"]
+    assert chamadas == ["late", "late", "resume"]
 
 
 # ------------------------------------------------------------------ V9.5.4: a música entra antes da primeira fala
