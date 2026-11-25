@@ -19,11 +19,15 @@ export default function IdeasPad({ api, onClose }) {
   const [confirmDel, setConfirmDel] = useState(null);
   const [busy, setBusy] = useState(false);
 
-  const load = useCallback(() => {
-    api("/api/ideas").then((d) => { setItems(d.ideas || []); setError(""); })
+  const [google, setGoogle] = useState(null); // V9.5.6: { configured, connected, tasks }
+  const load = useCallback((sync = false) => {
+    // sync = traz o que foi anotado no app do Google Tarefas (lista "Ideias JARVIS")
+    api(`/api/ideas${sync ? "?sync=1" : ""}`, sync ? { timeout: 30_000 } : undefined)
+      .then((d) => { setItems(d.ideas || []); setGoogle(d.google || null); setError(""); })
       .catch(() => setError("Não consegui carregar o bloco de ideias agora."));
   }, [api]);
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load(true); }, [load]);
+  const connectGoogle = () => window.open(`${api.baseUrl || "http://localhost:8000"}/api/integrations/google-calendar/authorize`, "_blank");
   useEffect(() => { // outra tela ou a voz mudou o bloco
     const on = (e) => { if (e.detail?.type === "ideas_updated") load(); };
     window.addEventListener("jarvis_ws_event", on);
@@ -65,6 +69,26 @@ export default function IdeasPad({ api, onClose }) {
           </div>
           <button type="button" className="lgw-btn" onClick={onClose} aria-label="Fechar">✕</button>
         </header>
+
+        {google && (
+          <div className={`idp-sync${google.tasks ? " is-on" : ""}`} role="status">
+            {google.tasks ? (
+              <>
+                <span>☁ Sincronizado com o <b>Google Tarefas</b> (lista "Ideias JARVIS"). O que anotar lá pelo celular aparece aqui; 📌 no título = projeto.</span>
+                <button type="button" className="lgw-btn" onClick={() => load(true)}>↻ SINCRONIZAR</button>
+              </>
+            ) : google.configured ? (
+              <>
+                <span>{google.connected
+                  ? "Falta a permissão do Google Tarefas: conecte o Google de novo uma vez para as ideias irem para lá."
+                  : "Conecte o Google para as ideias irem também para o Google Tarefas (no celular, no Gmail e na Agenda)."}</span>
+                <button type="button" className="lgw-btn idp-save" onClick={connectGoogle}>☁ CONECTAR GOOGLE TAREFAS</button>
+              </>
+            ) : (
+              <span>Para sincronizar com o Google Tarefas, configure o Google em Configurações › Integrações. Enquanto isso, as ideias ficam salvas aqui.</span>
+            )}
+          </div>
+        )}
 
         <form className="idp-new" onSubmit={add}>
           <input value={draft.titulo} onChange={(e) => setDraft({ ...draft, titulo: e.target.value })} placeholder="Título (opcional)" maxLength={80} />

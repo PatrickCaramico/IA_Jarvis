@@ -11,7 +11,10 @@ from config import settings
 
 _TOKEN_PATH = settings.DATA_DIR / "google_calendar_token.json"
 _states: set[str] = set()
-_SCOPES = "https://www.googleapis.com/auth/calendar.readonly"
+TASKS_SCOPE = "https://www.googleapis.com/auth/tasks"
+# V9.5.6: a mesma conexão do Google também dá acesso ao Google Tarefas (lista "Ideias JARVIS" do 💡 Bloco de ideias).
+# Quem conectou antes precisa conectar de novo uma vez para o Google pedir a permissão nova.
+_SCOPES = f"https://www.googleapis.com/auth/calendar.readonly {TASKS_SCOPE}"
 _AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 _TOKEN_URL = "https://oauth2.googleapis.com/token"
 _EVENTS_URL = "https://www.googleapis.com/calendar/v3/calendars/primary/events"
@@ -68,6 +71,19 @@ def _token_data() -> dict:
     if not _TOKEN_PATH.exists():
         raise RuntimeError("Google Calendar ainda não está conectado.")
     return json.loads(_TOKEN_PATH.read_text(encoding="utf-8"))
+
+
+def granted_scopes() -> set[str]:
+    """V9.5.6: as permissões que o Google deu nesta conexão (o token guarda o campo "scope")."""
+    try:
+        return set(str(_token_data().get("scope") or "").split())
+    except (RuntimeError, OSError, ValueError):
+        return set()
+
+
+def access_token() -> str:
+    """V9.5.6: token válido (renova sozinho) para outros módulos do Google (Tarefas)."""
+    return _access_token()
 
 
 def _access_token() -> str:

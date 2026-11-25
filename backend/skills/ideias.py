@@ -62,6 +62,11 @@ async def anotar_ideia(ctx: SkillContext, texto: str, projeto: bool = False) -> 
     except ValueError:
         return SkillResult(ok=False, speech="Não entendi a ideia, senhor. Pode repetir?")
     await ctx.broadcast({"type": "ideas_updated"})
+    from core import runtime
+    from routes.productivity import _google_sync
+    from modules import google_tasks
+
+    runtime.track(_google_sync(google_tasks.push, idea))  # V9.5.6: também na lista "Ideias JARVIS" do Google Tarefas
     if idea["projeto"]:
         return SkillResult(speech="Projeto anotado no bloco de ideias, senhor. Ele entra no briefing de amanhã.")
     return SkillResult(speech="Ideia anotada no bloco de ideias, senhor.")

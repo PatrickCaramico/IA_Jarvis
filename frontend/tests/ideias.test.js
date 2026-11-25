@@ -29,3 +29,10 @@ test("lembrete vencido abre o aviso que fica até OK/ADIAR, com sinal", () => {
   const strip = read("../src/components/RemindersStrip.jsx");
   assert.match(strip, /type === "reminder_due"/); // venceu: a faixa atualiza
 });
+
+test("Bloco de ideias mostra o Google Tarefas: sincronizado, ou o botão para conectar", () => {
+  const pad = read("../src/components/IdeasPad.jsx");
+  assert.match(pad, /\/api\/ideas\$\{sync \? "\?sync=1" : ""\}/); // ao abrir, traz o que foi anotado no app
+  assert.match(pad, /☁ CONECTAR GOOGLE TAREFAS/);
+  assert.match(pad, /google-calendar\/authorize/);
+});

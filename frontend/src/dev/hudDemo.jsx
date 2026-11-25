@@ -51,7 +51,7 @@ const DATA = {
     { id: 2, titulo: "Aquecimento Orbes", texto: "Roteiro das lives da semana 1 e convidados.", projeto: true, atualizado: 1764000000 },
     { id: 3, titulo: "Canal no YouTube", texto: "Série sobre o JARVIS: como montei meu assistente.", projeto: true, atualizado: 1763990000 },
     { id: 1, titulo: "App de receitas", texto: "Reconhecer ingredientes pela câmera e sugerir receitas.", projeto: false, atualizado: 1763900000 },
-  ] },
+  ], google: { configured: true, connected: true, tasks: false } },
   "/api/agenda/next": { items: q.get("longo") === "1" ? [
     { label: "Hoje", title: "Discord - Aquecimento Orbes: Semana 1", kind: "agenda" },
     { label: "Hoje 18:00", title: "Jogo do Palmeiras: Chapecoense x Palmeiras (Brasileirão)", kind: "agenda" },

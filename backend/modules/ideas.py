@@ -86,6 +86,19 @@ def update_idea(idea_id: int, *, text: Optional[str] = None, title: Optional[str
     return idea
 
 
+def get_idea(idea_id: int) -> Optional[dict]:
+    return next((i for i in _load() if i.get("id") == idea_id), None)
+
+
+def link_task(idea_id: int, task_id: str) -> None:
+    """V9.5.6: guarda o id da tarefa no Google Tarefas (modules/google_tasks.py) sem mudar a data da ideia."""
+    items = _load()
+    idea = next((i for i in items if i.get("id") == idea_id), None)
+    if idea is not None and idea.get("google_task_id") != task_id:
+        idea["google_task_id"] = task_id
+        _save(items)
+
+
 def delete_idea(idea_id: int) -> bool:
     items = _load()
     kept = [i for i in items if i.get("id") != idea_id]

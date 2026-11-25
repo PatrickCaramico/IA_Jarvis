@@ -852,3 +852,7 @@ html.is-eco .hl-root { animation: none; }
 .idp-acts { display: flex; gap: 6px; flex: none; }
 .idp-del { border-color: rgba(248, 113, 113, 0.7) !important; color: #fecaca !important; }
 .idp-edit { flex: 1; display: grid; gap: 8px; }
+.idp-sync { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 12px; border-radius: 12px;
+  border: 1px dashed rgba(201, 246, 255, 0.25); font-size: 0.85rem; color: rgba(214, 240, 255, 0.85); }
+.idp-sync.is-on { border-style: solid; border-color: rgba(52, 211, 153, 0.45); background: rgba(52, 211, 153, 0.06); }
+.idp-sync span { flex: 1 1 260px; }

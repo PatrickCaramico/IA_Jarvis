@@ -656,10 +656,24 @@ async def build_morning_briefing() -> dict:
 
     themes = news_themes()
 
-    weather_res, events, tri, *news_lists = await asyncio.gather(
+    def ideas_from_google() -> None:
+        # V9.5.6: o que foi anotado no app do Google Tarefas (lista "Ideias JARVIS") entra antes de ler os projetos
+        from modules import google_tasks
+
+        google_tasks.safe(google_tasks.pull)
+
+    async def ideas_sync_capped() -> None:
+        # o Google lento não atrasa o "bom dia": passou de 10 s, o briefing segue com o bloco do JARVIS
+        try:
+            await asyncio.wait_for(safe(ideas_from_google), timeout=10)
+        except asyncio.TimeoutError:
+            log.warning("Briefing: o Google Tarefas demorou; li o bloco de ideias do JARVIS.")
+
+    weather_res, events, tri, _ideas_sync, *news_lists = await asyncio.gather(
         safe(_fetch_weather, settings.WEATHER_CITY),
         safe(calendar_events, default=[]),
         safe(email_triage.triage, default={"connected": False}),
+        ideas_sync_capped(),
         *(safe(news_for, t, default=[]) for t in themes),
     )
 
