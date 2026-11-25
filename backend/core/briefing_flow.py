@@ -22,6 +22,11 @@ from core import runtime, session, speech
 log = logging.getLogger("jarvis.briefing_flow")
 
 SILENT_STEP_SECONDS = 2.5  # no modo silencioso, tempo de cada card na tela
+# V9.5.4: no "bom dia", o briefing só começa a falar depois que a música da manhã entra (abrindo o Spotify se
+# estiver fechado). Antes os dois começavam juntos e a música chegava atrasada ou nem chegava. Limite para nunca
+# ficar preso: sem Spotify, ele fala na hora (e a música tenta de novo no fim).
+MUSIC_START_TIMEOUT_S = 35
+MUSIC_WAIT_S = 30
 
 _skip: asyncio.Event | None = None  # existe só enquanto um briefing está passando
 
@@ -91,7 +96,7 @@ async def _morning_music_start():
     from modules import morning_music
 
     try:
-        return await asyncio.wait_for(asyncio.to_thread(morning_music.start), timeout=25)
+        return await asyncio.wait_for(asyncio.to_thread(morning_music.start), timeout=MUSIC_START_TIMEOUT_S)
     except Exception:  # noqa: BLE001 - a música nunca atrapalha o briefing
         log.exception("Música da manhã não começou")
         return None
@@ -131,6 +136,7 @@ class Music:
         self.paused = None
         self.plan = None
         self.pause_done = asyncio.Event()
+        self.ready = asyncio.Event()  # V9.5.4: a música da manhã já entrou (ou não vai entrar)
         self.task: Optional[asyncio.Task] = None
 
     async def _run(self) -> None:
@@ -139,12 +145,24 @@ class Music:
         finally:
             self.pause_done.set()
         # a música da manhã (Back in Black) não entra no lugar da sua: só quando não havia nada tocando
-        if self.mode == "morning" and not self.paused:
-            self.plan = await _morning_music_start()
+        try:
+            if self.mode == "morning" and not self.paused:
+                self.plan = await _morning_music_start()
+        finally:
+            self.ready.set()
 
     def start(self) -> "Music":
         self.task = runtime.track(self._run())
         return self
+
+    async def wait_ready(self, timeout: float = MUSIC_WAIT_S) -> None:
+        """V9.5.4: no "bom dia", espera a música da manhã entrar antes de começar a falar (com limite)."""
+        if self.mode != "morning":
+            return
+        try:
+            await asyncio.wait_for(self.ready.wait(), timeout=timeout)
+        except asyncio.TimeoutError:
+            log.warning("Briefing: a música da manhã não entrou a tempo; começo a falar sem ela.")
 
     async def wait_pause(self, timeout: float = 7.0) -> None:
         try:
@@ -186,6 +204,7 @@ async def run_sequence(message: str, turn: int, data: dict, max_history: int, mu
     _skip = asyncio.Event()
     music = music or start_music(data.get("mode", ""))
     await music.wait_pause()  # V8.15.1: a sua música pausa antes de ele começar a ler
+    await music.wait_ready()  # V9.5.4: no "bom dia", a música da manhã entra antes da primeira fala
     if data.get("mode") in ("morning", "afternoon", "evening"):
         try:  # V5.4: "bom dia" pedido por voz também conta: a próxima entrada não repete o briefing
             from modules import entry_greeting

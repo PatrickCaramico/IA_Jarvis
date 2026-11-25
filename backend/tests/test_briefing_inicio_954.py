@@ -75,7 +75,7 @@ def fake(monkeypatch):
     monkeypatch.setattr(spotify, "now_playing", lambda: state["now"])
     monkeypatch.setattr(spotify, "find_track", lambda q: state["track"])
 
-    def ensure_device(launch=True):
+    def ensure_device(launch=True, **kw):
         if not state["device_ok"]:
             raise spotify.SpotifyError("no_device", "sem aparelho")
         return "pc1"
@@ -129,3 +129,60 @@ def test_fim_do_briefing_chama_a_segunda_chance(monkeypatch):
     asyncio.run(run("afternoon", None, False))  # só no bom dia
     asyncio.run(run("morning", {"device": "x"}, False))  # a sua música volta, não a da manhã
     assert chamadas == ["late"]
+
+
+# ------------------------------------------------------------------ V9.5.4: a música entra antes da primeira fala
+def test_bom_dia_espera_a_musica_entrar_antes_de_falar(monkeypatch):
+    ordem = []
+
+    async def fake_start():
+        await asyncio.sleep(0.05)  # o Spotify abrindo
+        ordem.append("musica")
+        return mm.Plan("Back in Black", "pc1", "uri", playing=True)
+
+    async def no_pause():
+        return None
+
+    monkeypatch.setattr(briefing_flow, "_morning_music_start", fake_start)
+    monkeypatch.setattr(briefing_flow, "_pause_music", no_pause)
+
+    async def cenario():
+        m = briefing_flow.Music("morning")
+        m.task = asyncio.ensure_future(m._run())
+        await m.wait_pause()
+        await m.wait_ready()
+        ordem.append("fala")
+        await m.task
+
+    asyncio.run(cenario())
+    assert ordem == ["musica", "fala"]
+
+
+def test_musica_que_nao_entra_nao_prende_o_briefing(monkeypatch):
+    async def demora():
+        await asyncio.sleep(5)
+
+    monkeypatch.setattr(briefing_flow, "_morning_music_start", demora)
+
+    async def cenario():
+        m = briefing_flow.Music("morning")
+        m.task = asyncio.ensure_future(m._run())
+        await m.wait_ready(timeout=0.05)  # passou do limite: fala sem ela
+        m.task.cancel()
+        return True
+
+    assert asyncio.run(cenario()) is True
+
+
+def test_outros_briefings_nao_esperam_musica():
+    async def cenario():
+        m = briefing_flow.Music("evening")  # sem música da manhã
+        await m.wait_ready(timeout=0.01)
+        return m.ready.is_set()
+
+    assert asyncio.run(cenario()) is False  # nem esperou (voltou na hora)
+
+
+def test_musica_da_manha_espera_mais_o_spotify_abrir():
+    assert mm.DEVICE_WAIT_S >= 20
+    assert briefing_flow.MUSIC_START_TIMEOUT_S > mm.DEVICE_WAIT_S

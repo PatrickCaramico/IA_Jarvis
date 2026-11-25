@@ -8,6 +8,10 @@ Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 - **O briefing não "pula" mais partes quando a voz falha.**
   - Logo depois de ligar o PC, o serviço de voz às vezes ainda não responde. Antes, a parte passava na hora: clima, agenda e e-mails voavam pela tela e o briefing parecia ir direto para as notícias.
   - Agora ele tenta falar de novo e, se ainda não der, deixa o cartão na tela o tempo de ler antes de seguir.
+- **No "bom dia", a música entra antes de ele começar a falar.**
+  - Se o Spotify estiver fechado, o JARVIS abre o programa, começa a música baixinho e só então começa o briefing.
+  - Durante a fala, a música fica baixa; no fim, sobe para o volume normal.
+  - Ele espera o Spotify por até 25 segundos (antes eram 12, pouco logo depois de ligar o PC) e o briefing espera no máximo 30. Sem Spotify, ele fala na hora e a música tenta de novo no fim.
 - **A música da manhã ganha uma segunda chance.**
   - Se ela não começar junto com o briefing (Spotify ainda abrindo ou rede chegando), toca no fim, já no volume de depois do briefing.
   - Se a primeira tentativa tocou atrasada, ele só sobe o volume, sem tocar de novo por cima. E nunca interrompe outra música que estiver tocando.

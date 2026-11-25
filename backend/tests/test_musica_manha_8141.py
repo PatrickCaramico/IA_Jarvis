@@ -17,7 +17,7 @@ def fake(monkeypatch):
     monkeypatch.setattr(spotify, "connected", lambda: True)
     monkeypatch.setattr(spotify, "now_playing", lambda: {"state": "playing" if state["playing"] else "idle"})
     monkeypatch.setattr(spotify, "find_track", lambda q: log.append(("find", q)) or state["track"])
-    monkeypatch.setattr(spotify, "ensure_device", lambda launch=True: "pc1")
+    monkeypatch.setattr(spotify, "ensure_device", lambda launch=True, **kw: "pc1")
 
     def set_volume(v, device_id=None):
         if not state["volume_ok"]:
@@ -79,7 +79,7 @@ def test_respects_music_already_playing_silent_mode_and_the_switch(fake):
 
 
 def test_spotify_errors_never_break_the_briefing(fake, monkeypatch):
-    def no_device(launch=True):
+    def no_device(launch=True, **kw):
         raise spotify.SpotifyError("no_device", spotify.NO_DEVICE_MSG)
 
     monkeypatch.setattr(spotify, "ensure_device", no_device)

@@ -20,6 +20,9 @@ from modules import prefs, spotify
 log = logging.getLogger("jarvis.morning_music")
 
 BACKGROUND_VOLUME = 25
+# V9.5.4: logo depois de ligar o PC, o Spotify leva mais que os 12 s de sempre para aparecer depois de aberto.
+# Na música da manhã o JARVIS espera mais: o briefing só começa a falar depois que ela entra (o senhor pediu).
+DEVICE_WAIT_S = 25
 NORMAL_VOLUME = 60  # padrão; V8.15.1: no fim sobe até o volume que você escolheu no painel VOZ (music_volume)
 
 
@@ -75,7 +78,7 @@ def start(today: Optional[date] = None) -> Optional[Plan]:
         if not track:
             log.info("Música da manhã: não achei %s no Spotify.", song)
             return None
-        device_id = spotify.ensure_device()
+        device_id = spotify.ensure_device(wait_s=DEVICE_WAIT_S)  # abre o Spotify se estiver fechado
         try:
             spotify.set_volume(BACKGROUND_VOLUME, device_id)
         except Exception:  # noqa: BLE001 - aparelho sem controle de volume: toca depois do briefing
