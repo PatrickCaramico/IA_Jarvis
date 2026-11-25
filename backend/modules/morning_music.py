@@ -58,9 +58,20 @@ def wanted(today: Optional[date] = None) -> Optional[str]:
     """A música a tocar nesta manhã, ou None (desligado, silencioso, sem Spotify ou já tocou hoje)."""
     data = prefs.get_all()
     today = today or date.today()
-    if not data.get("intro_song_morning", True) or data.get("silent_mode") or not spotify.connected():
+    # V9.5.5: o motivo vai para o log (antes, sem música, não dava para saber por quê)
+    if not data.get("intro_song_morning", True):
+        log.info("Música da manhã: desligada no painel VOZ.")
         return None
-    if data.get("intro_song_morning_day") == today.isoformat():
+    if data.get("silent_mode"):
+        log.info("Música da manhã: modo silencioso ligado.")
+        return None
+    if not spotify.connected():
+        log.info("Música da manhã: o Spotify não está conectado (Fontes de Dados > Spotify).")
+        return None
+    # V9.5.5: a marca nova só é gravada depois de tocar de verdade (a antiga, intro_song_morning_day, era gravada
+    # antes e uma tentativa que falhou bloqueava a música do dia; ela é ignorada daqui em diante)
+    if data.get("intro_song_morning_ok_day") == today.isoformat():
+        log.info("Música da manhã: já tocou hoje.")
         return None
     return (data.get("intro_song") or DEFAULT_SONG).strip() or None
 
@@ -78,7 +89,7 @@ def start(today: Optional[date] = None) -> Optional[Plan]:
         if not track:
             log.info("Música da manhã: não achei %s no Spotify.", song)
             return None
-        device_id = spotify.ensure_device(wait_s=DEVICE_WAIT_S)  # abre o Spotify se estiver fechado
+        device_id = spotify.ensure_device(wait_s=DEVICE_WAIT_S, prefer_computer=True)  # abre o Spotify se estiver fechado
         try:
             spotify.set_volume(BACKGROUND_VOLUME, device_id)
         except Exception:  # noqa: BLE001 - aparelho sem controle de volume: toca depois do briefing
@@ -97,7 +108,7 @@ def start(today: Optional[date] = None) -> Optional[Plan]:
 
 
 def _mark_played(today: Optional[date] = None) -> None:
-    prefs.update(intro_song_morning_day=(today or date.today()).isoformat())
+    prefs.update(intro_song_morning_ok_day=(today or date.today()).isoformat())
 
 
 def start_late(today: Optional[date] = None) -> bool:
@@ -120,7 +131,7 @@ def start_late(today: Optional[date] = None) -> bool:
                 return True
             log.info("Música da manhã: já tem outra música tocando; não interrompo.")
             return False
-        device_id = spotify.ensure_device()
+        device_id = spotify.ensure_device(wait_s=DEVICE_WAIT_S, prefer_computer=True)
         try:
             spotify.set_volume(target_volume(), device_id)
         except Exception:  # noqa: BLE001 - aparelho sem controle de volume: toca no volume dele

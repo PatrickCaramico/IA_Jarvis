@@ -2,6 +2,16 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 9.5.5 — 25 de novembro de 2026
+
+**🎸 Música do "bom dia" no Spotify do PC**
+- **"Conectando ao Spotify, senhor."** Se a música não entra na hora, o JARVIS avisa, abre o Spotify do PC, começa a música baixinho e só então começa o briefing.
+- **Abre o Spotify do PC mesmo com o do celular aberto.**
+  - Antes, com o Spotify do celular aberto, o JARVIS escolhia o celular e nem abria o programa no PC: a música não tocava aqui.
+  - Agora ele abre o do PC e espera por ele. Só se o PC não aparecer a tempo usa outro aparelho.
+- **Uma tentativa que falhou não bloqueia mais a música do dia.** A versão anterior marcava "já tocou hoje" antes de tocar de verdade; essa marca antiga passa a ser ignorada.
+- **O motivo de a música não tocar vai para o log:** desligada no painel VOZ, modo silencioso, Spotify não conectado ou já tocou hoje.
+
 ## 9.5.4 — 25 de novembro de 2026
 
 **☀ Briefing do dia logo depois de ligar o PC**

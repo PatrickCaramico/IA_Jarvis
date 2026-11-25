@@ -90,14 +90,14 @@ def test_falha_no_comeco_nao_marca_o_dia(fake):
     log, state = fake
     state["device_ok"] = False  # Spotify ainda abrindo
     assert mm.start(TODAY) is None
-    assert prefs.get_all().get("intro_song_morning_day") != "2026-11-25"  # ainda pode tocar hoje
+    assert prefs.get_all().get("intro_song_morning_ok_day") != "2026-11-25"  # ainda pode tocar hoje
 
 
 def test_segunda_chance_no_fim_toca_no_volume_de_depois(fake):
     log, _ = fake
     assert mm.start_late(TODAY) is True
     assert log == [("vol", mm.target_volume(), "pc1"), ("play", "spotify:track:bib", "pc1")]
-    assert prefs.get_all()["intro_song_morning_day"] == "2026-11-25"
+    assert prefs.get_all()["intro_song_morning_ok_day"] == "2026-11-25"
     log.clear()
     assert mm.start_late(TODAY) is False and log == []  # uma vez por dia
 
@@ -148,6 +148,7 @@ def test_bom_dia_espera_a_musica_entrar_antes_de_falar(monkeypatch):
         return None
 
     monkeypatch.setattr(briefing_flow, "_morning_music_start", fake_start)
+    monkeypatch.setattr(briefing_flow, "_morning_music_wanted", lambda: True)
     monkeypatch.setattr(briefing_flow, "_pause_music", no_pause)
 
     async def cenario():

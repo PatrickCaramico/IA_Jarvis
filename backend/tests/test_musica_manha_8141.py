@@ -33,7 +33,7 @@ def test_starts_quiet_and_raises_at_the_end(fake):
     log, _ = fake
     plan = mm.start(TODAY)
     assert log == [("find", "Back in Black AC/DC"), ("vol", mm.BACKGROUND_VOLUME, "pc1"), ("play", "spotify:track:bib", "pc1")]
-    assert prefs.get_all()["intro_song_morning_day"] == "2026-11-24"
+    assert prefs.get_all()["intro_song_morning_ok_day"] == "2026-11-24"
     log.clear()
     mm.finish(plan, sleep=lambda s: None)
     vols = [v for kind, v, *_ in log if kind == "vol"]
@@ -92,6 +92,7 @@ def test_briefing_flow_plays_only_in_the_morning(monkeypatch):
 
     calls = []
     monkeypatch.setattr(mm, "start", lambda: calls.append("start") or "plano")
+    monkeypatch.setattr(mm, "wanted", lambda today=None: "Back in Black")  # V9.5.5: Spotify conectado
     monkeypatch.setattr(mm, "finish", lambda plan, canceled=False: calls.append(("finish", plan, canceled)))
 
     async def quiet(*a, **k):

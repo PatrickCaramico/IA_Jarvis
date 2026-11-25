@@ -27,6 +27,7 @@ def test_music_starts_while_the_briefing_is_being_built(monkeypatch):
     monkeypatch.setattr(mm, "start", fake_start)
     monkeypatch.setattr(mm, "finish", lambda plan, canceled=False: order.append(("fim", plan, canceled)))
     monkeypatch.setattr(briefing_flow, "_pause_music", _none)
+    monkeypatch.setattr(mm, "wanted", lambda today=None: "Back in Black")  # V9.5.5: Spotify conectado
 
     async def slow_build():
         await asyncio.sleep(0.3)  # notícias, clima, e-mails...
