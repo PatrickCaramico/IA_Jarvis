@@ -2,6 +2,15 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 9.5.8 — 26 de novembro de 2026
+
+**⚡ O JARVIS liga mais rápido**
+- **O backend começa a subir na hora,** sem abrir o PowerShell antes.
+  - Antes, logo depois de entrar no Windows, só abrir o PowerShell levava alguns segundos com o disco frio, e o JARVIS demorava de 29 a 46 s para responder.
+  - Com o PC já ligado, ele fica pronto em cerca de 2 s.
+- **Cada etapa da subida fica registrada** em `logs\subida.log`, e o `ligar.log` diz quanto tempo depois de entrar no Windows o atalho foi chamado. Assim dá para ver onde está a demora em vez de adivinhar.
+- **Nenhuma janela preta piscando** ao mudar volume, brilho e afins.
+
 ## 9.5.7 — 25 de novembro de 2026
 
 **🎸 Música em todo briefing que o senhor iniciar**

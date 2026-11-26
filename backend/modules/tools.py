@@ -660,9 +660,9 @@ def _open_target(target: str) -> None:
             # Fallback seguro para execução via PowerShell sem risco de command injection (usa variável de ambiente)
             env = os.environ.copy()
             env["JARVIS_TARGET"] = target
-            subprocess.Popen(
+            subprocess.Popen(  # V9.5.8: sem janela (o backend sobe com o pythonw, sem console para herdar)
                 ["powershell", "-NoProfile", "-NonInteractive", "-WindowStyle", "Hidden", "-Command", "Start-Process -FilePath $env:JARVIS_TARGET"],
-                env=env
+                env=env, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
             )
     elif sys.platform == "darwin":
         subprocess.Popen(["open", target])
@@ -843,6 +843,7 @@ Start-Process 'spotify:'
         check=True,
         capture_output=True,
         text=True,
+        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),  # V9.5.8: sem janela (backend no pythonw)
     )
 
 

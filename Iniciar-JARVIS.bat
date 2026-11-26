@@ -9,6 +9,12 @@ set "FRONTEND=%ROOT%frontend"
 rem V8.11: sinal de "ligando/atualizando" para o guardiao nao religar no meio (apagado no fim)
 if not exist "%ROOT%logs" mkdir "%ROOT%logs"
 > "%ROOT%logs\iniciando.flag" echo %date% %time%
+rem V9.5.8: o tempo de cada etapa da subida fica em logs\subida.log, para achar a demora logo depois de entrar
+rem no Windows em vez de adivinhar (junto com o ligar.log e a linha "Subida do backend" do jarvis.log).
+rem Recomeca quando passa de 100 KB.
+if exist "%ROOT%logs\subida.log" for %%F in ("%ROOT%logs\subida.log") do if %%~zF GTR 102400 del "%%~fF" >nul 2>nul
+>> "%ROOT%logs\subida.log" echo.
+>> "%ROOT%logs\subida.log" echo !date! !time! inicio do Iniciar-JARVIS.bat, modo=%~1
 
 rem V5.4.1: a central abre pelo site do Netlify (o mesmo endereco do celular e de qualquer PC).
 rem O site conversa com o backend deste PC. No modo dev (Iniciar-JARVIS-Dev.bat) ou com
@@ -121,11 +127,21 @@ if "%JARVIS_LOCAL%"=="1" (
   set "NETMODE=false"
 )
 rem V7.7: run_server.py = o mesmo backend, mais o https da rede de casa quando ele esta ligado
+rem V9.5.8: liga direto com o pythonw (sem console), sem abrir o PowerShell so para isso: logo depois de entrar
+rem no Windows, com o disco frio, abrir o PowerShell levava alguns segundos antes de o backend comecar a subir.
+rem O run_server.py cuida da saida vazia do pythonw (ensure_streams). Sem o pythonw, usa o PowerShell como antes.
+>> "%ROOT%logs\subida.log" echo !date! !time! backend: ligando
 if defined RELOAD (
   powershell -NoProfile -Command "$env:JARVIS_NETWORK_MODE='%NETMODE%'; Start-Process -FilePath '%PY%' -ArgumentList ('-m uvicorn main:app --host %HOST% --port 8000 ' + '%RELOAD%').Trim() -WorkingDirectory '%BACKEND%' -WindowStyle Hidden"
 ) else (
-  powershell -NoProfile -Command "$env:JARVIS_NETWORK_MODE='%NETMODE%'; Start-Process -FilePath '%PY%' -ArgumentList 'run_server.py --host %HOST% --port 8000' -WorkingDirectory '%BACKEND%' -WindowStyle Hidden"
+  if exist "%BACKEND%\venv\Scripts\pythonw.exe" (
+    set "JARVIS_NETWORK_MODE=%NETMODE%"
+    start "" /d "%BACKEND%" "%BACKEND%\venv\Scripts\pythonw.exe" run_server.py --host %HOST% --port 8000
+  ) else (
+    powershell -NoProfile -Command "$env:JARVIS_NETWORK_MODE='%NETMODE%'; Start-Process -FilePath '%PY%' -ArgumentList 'run_server.py --host %HOST% --port 8000' -WorkingDirectory '%BACKEND%' -WindowStyle Hidden"
+  )
 )
+>> "%ROOT%logs\subida.log" echo !date! !time! backend: disparado
 
 rem V8.1.5: edge-tts antigo nao fala mais (a Microsoft mudou o servico de voz): atualiza sozinho.
 rem V9.4.1: conferido DEPOIS de ligar o backend (antes, abrir o Python so para isso atrasava a subida).
@@ -196,6 +212,7 @@ rem V8.2.3: a interface nova e montada em segundo plano, com o JARVIS ja ligado 
 if defined BUILD_LATER (
   powershell -NoProfile -Command "Start-Process -FilePath '%PY%' -ArgumentList 'build_background.py' -WorkingDirectory '%ROOT%scripts' -WindowStyle Hidden"
 )
+>> "%ROOT%logs\subida.log" echo !date! !time! interface local: disparada
 
 rem V6.3: ouvido offline ("Jarvis, ..." com o navegador fechado). So liga se o modelo Vosk estiver
 rem baixado (%USERPROFILE%\.jarvis-voice). Fica quieto sozinho quando a central esta aberta numa aba do PC.
@@ -210,14 +227,17 @@ if exist "%BACKEND%\venv\Scripts\pythonw.exe" (
   powershell -NoProfile -Command "$p=Start-Process -FilePath '%BACKEND%\venv\Scripts\pythonw.exe' -ArgumentList 'guardiao.py' -WorkingDirectory '%ROOT%scripts' -WindowStyle Hidden -PassThru; try { $p.PriorityClass='BelowNormal' } catch {}"
 )
 
+>> "%ROOT%logs\subida.log" echo !date! !time! ouvido e guardiao: disparados
 rem Abre o painel assim que backend e frontend responderem (ate 60 s), sem espera fixa.
 powershell -NoProfile -Command "$d=(Get-Date).AddSeconds(60); while((Get-Date) -lt $d){ try { $null=Invoke-WebRequest -UseBasicParsing -TimeoutSec 2 'http://127.0.0.1:8000/api/health'; $t=New-Object Net.Sockets.TcpClient('127.0.0.1',5173); $t.Close(); exit 0 } catch { Start-Sleep -Milliseconds 250 } }; exit 1"
 rem V9.5.2: nao respondeu? O socorro espera mais um pouco, le o motivo (logs\backend-erro.log) e resolve o que da
 rem (biblioteca faltando: instala e liga de novo). Antes o JARVIS ficava fora do ar em silencio.
 if errorlevel 1 (
+  >> "%ROOT%logs\subida.log" echo !date! !time! nao respondeu em 60 s: chamando o socorro
   echo  [!] O JARVIS ainda nao respondeu: conferindo o motivo...
   "%PY%" "%ROOT%scripts\socorro_subida.py" "%HOST%" "%NETMODE%"
 )
+>> "%ROOT%logs\subida.log" echo !date! !time! espera terminada
 rem V5.6.2: se uma aba do JARVIS ja estava aberta, ela reconecta sozinha em poucos segundos; nesse caso
 rem nao abre outra (duas abas entrando juntas falavam duas vezes). Palmas (wake) sempre abrem.
 set "TAB_OPEN="
@@ -228,6 +248,7 @@ if not defined WAKE if not defined FROM_SITE (
 if defined TAB_OPEN echo  [OK] A central ja estava aberta numa aba: ela reconectou sozinha.
 if not defined FROM_SITE if not defined TAB_OPEN start "" "%OPEN_URL%"
 
+>> "%ROOT%logs\subida.log" echo !date! !time! fim
 del "%ROOT%logs\iniciando.flag" >nul 2>nul
 
 echo.
