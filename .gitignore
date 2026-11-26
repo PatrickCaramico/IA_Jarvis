@@ -87,3 +87,5 @@ _site/
 desktop/.venv/
 desktop/build/
 desktop/_build_info.py
+# V9.5.9: ícone gerado pelo Gerar-App-Windows.bat
+desktop/jarvis.ico
