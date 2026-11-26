@@ -2,13 +2,14 @@
 em https na porta 8443, no MESMO processo (mesmo estado, mesmos timers): a porta 8000 continua para este PC e
 para as páginas públicas (baixar o app e o certificado); a chave de acesso não é aceita por http na rede.
 
-Uso (o Iniciar-JARVIS.bat chama assim):  python run_server.py --host 0.0.0.0 --port 8000
+Uso (o Iniciar-JARVIS.bat chama assim, com o pythonw desde a V9.5.8):  pythonw run_server.py --host 0.0.0.0 --port 8000
 """
 from __future__ import annotations
 
 import argparse
 import asyncio
 import logging
+import os
 import sys
 import time
 import traceback
@@ -72,7 +73,18 @@ def record_crash(text: str, path: Path = CRASH_LOG) -> None:
         pass
 
 
+def ensure_streams() -> None:
+    """V9.5.8: o Iniciar-JARVIS.bat agora liga o backend com o pythonw (sem console), direto, sem abrir o PowerShell
+    (que levava segundos com o disco frio, logo depois de entrar no Windows). No pythonw, sys.stdout e sys.stderr são
+    None, e o uvicorn cai ao montar o log (chama sys.stdout.isatty()). Aqui eles viram um destino vazio, como antes,
+    quando a saída ia para um console escondido. O log de verdade continua em logs/jarvis.log."""
+    for name in ("stdout", "stderr"):
+        if getattr(sys, name) is None:
+            setattr(sys, name, open(os.devnull, "w", encoding="utf-8"))  # noqa: SIM115 - vive o processo inteiro
+
+
 def run() -> int:
+    ensure_streams()
     try:
         main()
     except KeyboardInterrupt:

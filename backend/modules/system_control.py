@@ -31,9 +31,11 @@ def _pycaw_endpoint():
 
 def _run_ps(script: str) -> str:
     """Executa um trecho de PowerShell e devolve stdout."""
+    # V9.5.8: sem janela. O backend agora sobe com o pythonw (sem console): sem esta flag, cada PowerShell abria
+    # uma janela preta piscando (antes ele herdava o console escondido do python.exe).
     result = subprocess.run(
         ["powershell", "-NoProfile", "-NonInteractive", "-Command", script],
-        capture_output=True, text=True, timeout=10,
+        capture_output=True, text=True, timeout=10, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
     )
     return result.stdout.strip()
 

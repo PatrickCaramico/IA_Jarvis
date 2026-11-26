@@ -15,6 +15,7 @@ import subprocess
 import sys
 import time
 import urllib.request
+from typing import Optional
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -65,11 +66,42 @@ def start_hidden(bat: Path = BAT, mode: str = "site") -> bool:
     return True
 
 
+def logon_note(now: float, boot: Optional[float], logon: Optional[float]) -> str:
+    """V9.5.8 (parte pura): quanto o Windows demorou para chamar o atalho da Inicialização. Antes o ligar.log só
+    dizia "Ligando o JARVIS", e não dava para saber se a demora depois de entrar no Windows vinha do próprio Windows
+    (ele atrasa os programas da pasta Inicializar) ou do JARVIS. O "entrar" é a hora em que o explorer.exe nasceu."""
+    parts = []
+    if logon and now >= logon:
+        parts.append(f"{now - logon:.0f} s depois de entrar no Windows")
+    if boot and now >= boot:
+        parts.append(f"{now - boot:.0f} s depois de ligar o PC")
+    return "Atalho da Inicialização chamado" + (f" ({'; '.join(parts)})." if parts else ".")
+
+
+def logon_times() -> tuple[Optional[float], Optional[float]]:
+    """(hora em que o PC ligou, hora em que o explorer.exe desta sessão nasceu), ou None no que não der para ler."""
+    try:
+        import psutil
+    except ImportError:
+        return None, None
+    boot = logon = None
+    try:
+        boot = psutil.boot_time()
+        starts = [p.info["create_time"] for p in psutil.process_iter(["name", "create_time"])
+                  if (p.info.get("name") or "").lower() == "explorer.exe" and p.info.get("create_time")]
+        logon = min(starts) if starts else None
+    except Exception:  # noqa: BLE001 - só uma anotação no log: sem ela, o JARVIS liga do mesmo jeito
+        log.debug("Sem a hora de entrada no Windows", exc_info=True)
+    return boot, logon
+
+
 def main(argv: list[str]) -> int:
     (ROOT / "logs").mkdir(exist_ok=True)
     logging.basicConfig(filename=ROOT / "logs" / "ligar.log", level=logging.INFO, encoding="utf-8",
                         format="%(asctime)s %(message)s")
     if "--logon" in argv:
+        boot, logon = logon_times()
+        log.info(logon_note(time.time(), boot, logon))
         time.sleep(LOGON_DELAY_S)
     mode = mode_from_url(argv[argv.index("--url") + 1]) if "--url" in argv and argv.index("--url") + 1 < len(argv) else "site"
     if mode == "atualizar":  # V9.5.3: botão ⟳ ATUALIZAR E LIGAR da central
