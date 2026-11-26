@@ -254,19 +254,99 @@ def copy_to_clipboard(text: str) -> bool:
         u.CloseClipboard()
 
 
-def island_hwnd(window=None) -> int:
-    """V8.1.4: acha a janela da ilha pelo título (Win32 puro, funciona de qualquer thread)."""
+def island_hwnd(window=None) -> int:  # noqa: ARG001 - "window" fica por compatibilidade com quem chama
+    """V8.1.4: acha a janela da ilha pelo título (Win32 puro, funciona de qualquer thread).
+
+    V9.5.9: só pelo título. Antes, se a ilha ainda não tinha sido criada, caía no Handle do .NET da janela (o "native"
+    do pywebview): lê-lo obriga o .NET a criar a janela FORA da thread da interface, e as threads de vigia (cliques, esconder) chamam isto
+    a cada ~30 ms desde a abertura. Em cerca de 2 de cada 5 aberturas o app travava inteiro: a ilha nunca aparecia,
+    a janela principal começa escondida, e o app ficava aberto sem nenhuma janela (nada na barra de tarefas).
+    Sem a ilha ainda, devolve 0 e quem chamou tenta de novo no próximo ciclo."""
     try:
         h = _user32().FindWindowW(None, ISLAND_TITLE)
-        if h:
-            return int(h)
+        return int(h) if h else 0
     except Exception as exc:  # noqa: BLE001
         log.info("FindWindow falhou: %s", exc)
-    try:
-        return int(window.native.Handle.ToInt64()) if window is not None else 0
-    except Exception as exc:  # noqa: BLE001
-        log.info("Handle da ilha indisponível: %s", exc)
         return 0
+
+
+# V9.5.9: identidade própria na barra de tarefas. O app roda no pythonw.exe: sem isto, o Windows agrupava as janelas como
+# "Python", com o ícone do Python (o pywebview usa o ícone do executável), e o JARVIS não era reconhecível ali.
+APP_ID = "JARVIS.Assistente"
+ICON_PATH = Path(__file__).with_name("jarvis.ico")  # gerado pelo Gerar-App-Windows.bat (scripts/desktop/build_exe.ps1)
+
+
+def set_app_id(app_id: str = APP_ID) -> bool:
+    """Dá ao processo um AppUserModelID próprio (antes de criar as janelas): a barra de tarefas trata o app como JARVIS."""
+    if sys.platform != "win32":
+        return False
+    try:
+        import ctypes
+
+        return ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(ctypes.c_wchar_p(app_id)) == 0
+    except Exception as exc:  # noqa: BLE001 - sem isto o app funciona igual, só agrupado como Python
+        log.info("AppUserModelID não definido: %s", exc)
+        return False
+
+
+def own_window(title: str) -> int:
+    """A janela de topo DESTE processo com esse título (0 se não houver). Win32 puro, seguro em qualquer thread.
+    Não usa FindWindow: outra janela do Windows também pode se chamar "JARVIS" (uma pasta aberta, por exemplo)."""
+    if sys.platform != "win32":
+        return 0
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        u = ctypes.WinDLL("user32")
+        u.GetWindowThreadProcessId.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.DWORD)]
+        u.GetWindowTextW.argtypes = [wintypes.HWND, wintypes.LPWSTR, ctypes.c_int]
+        me, found = os.getpid(), []
+
+        @ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+        def visit(hwnd, _):
+            pid = wintypes.DWORD()
+            u.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+            if pid.value == me:
+                buf = ctypes.create_unicode_buffer(256)
+                u.GetWindowTextW(hwnd, buf, 256)
+                if buf.value == title:
+                    found.append(int(hwnd))
+                    return False
+            return True
+
+        u.EnumWindows(visit, 0)
+        return found[0] if found else 0
+    except Exception as exc:  # noqa: BLE001
+        log.info("procurar a janela %r falhou: %s", title, exc)
+        return 0
+
+
+def set_window_icon(title: str, path: Path = ICON_PATH) -> bool:
+    """Põe o ícone do JARVIS na janela (barra de tarefas e Alt+Tab). Sem o .ico (app instalado antes), fica o do Python."""
+    if sys.platform != "win32" or not path.is_file():
+        return False
+    hwnd = own_window(title)
+    if not hwnd:
+        return False
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        u = ctypes.WinDLL("user32")
+        u.LoadImageW.argtypes = [wintypes.HINSTANCE, wintypes.LPCWSTR, wintypes.UINT, ctypes.c_int, ctypes.c_int, wintypes.UINT]
+        u.LoadImageW.restype = wintypes.HANDLE
+        u.PostMessageW.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM]
+        ok = False
+        # (ICON_BIG = 1 com SM_CXICON/SM_CYICON) e (ICON_SMALL = 0 com SM_CXSMICON/SM_CYSMICON)
+        for kind, mx, my in ((1, 11, 12), (0, 49, 50)):
+            icon = u.LoadImageW(None, str(path), 1, u.GetSystemMetrics(mx), u.GetSystemMetrics(my), 0x10)  # IMAGE_ICON, LR_LOADFROMFILE
+            if icon:  # PostMessage (não SendMessage): não espera a thread da interface
+                ok = bool(u.PostMessageW(hwnd, 0x0080, kind, icon)) or ok  # WM_SETICON
+        return ok
+    except Exception as exc:  # noqa: BLE001
+        log.info("ícone da janela %r falhou: %s", title, exc)
+        return False
 
 
 def shape_window(window, radius: int) -> bool:
@@ -891,6 +971,7 @@ def main() -> None:
     # V8.6.3: o fundo padrão do navegador embutido (WebView2) é BRANCO e aparecia nas pontas da pílula e em volta do
     # Pac-Man. Preto combina com tudo do app (e é o que fica por baixo das partes recortadas).
     os.environ.setdefault("WEBVIEW2_DEFAULT_BACKGROUND_COLOR", "FF000000")
+    set_app_id()  # V9.5.9: antes de qualquer janela (a barra de tarefas lê o ID quando a janela nasce)
     import webview  # pywebview
 
     try:
@@ -922,6 +1003,7 @@ def main() -> None:
     bridge._main = webview.create_window("JARVIS", f"{FRONT}/?desk=1&app=windows", width=1280, height=820, min_size=(900, 600),
                                         background_color="#0b0d12", js_api=bridge, text_select=True, hidden=island_on)
     bridge._main.events.closing += bridge.on_main_closing
+    bridge._main.events.shown += lambda: set_window_icon("JARVIS")  # V9.5.9: ícone do JARVIS, não o do Python
     if island_on:  # começa escondida: congela as animações assim que a página carrega
         bridge._main.events.loaded += lambda: bridge._main_hidden_mark(not bridge._main_shown)
     if island_on:
@@ -933,6 +1015,7 @@ def main() -> None:
                                               on_top=True, resizable=False, easy_drag=False, background_color="#000000",
                                               js_api=bridge, focus=True, min_size=(120, 30))  # o padrão (200x100) esticava a ilha
         bridge._island.events.shown += lambda: shape_window(bridge._island, island_radius("mini", 9999))
+        bridge._island.events.shown += lambda: set_window_icon(ISLAND_TITLE)  # V9.5.9
         # V8.6.0: a janelinha do modo Pac-Man (transparente e "atravessável": só o avatar aparece; começa escondida)
         bridge._chaser = create_chaser_window()
         threading.Thread(target=watch_island_clicks, args=(bridge,), daemon=True).start()

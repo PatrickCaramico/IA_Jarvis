@@ -2,6 +2,13 @@
 
 Mudanças do JARVIS por versão, da mais nova para a mais antiga.
 
+## 9.5.9 — 26 de novembro de 2026
+
+**🖥️ App do Windows abre sempre e aparece na barra de tarefas**
+- **A ilha aparece em toda abertura do app.**
+  - Antes, em cerca de 2 de cada 5 aberturas, o app travava logo no começo: a ilha não aparecia e a janela do JARVIS começa escondida, então o app ficava aberto sem nenhuma janela e sumia da barra de tarefas.
+- **Na barra de tarefas, o app agora é o JARVIS,** com o ícone dele. Antes aparecia como "Python", com o ícone do Python.
+
 ## 9.5.8 — 26 de novembro de 2026
 
 **⚡ O JARVIS liga mais rápido**
